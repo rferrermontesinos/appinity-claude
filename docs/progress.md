@@ -9,7 +9,7 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 1 | **Aceptado en dispositivo** (2026-10-08) | Entrega 2026-10-08 · fase 1 (rama `fase-1`, PR rferrermontesinos/appinity-claude#2, basada en `fase-0`) |
 | Aceptación de demo | **Hecha** | El usuario confirmó: «He probado la demo y funciona» |
 | 2 | **Validado con la cuenta real del usuario** (2026-10-08) | Entrega 2026-10-08 · fase 2 (rama `fase-2`, PR rferrermontesinos/appinity-claude#3, basada en `fase-1`) |
-| 3 | **Implementado y comprobado automáticamente**; pendiente de validar con la cuenta real | Entrega 2026-10-08 · fase 3 (rama `fase-3`, basada en `fase-2`). Falta el token de TMDb del usuario |
+| 3 | **Implementado y comprobado automáticamente**; pendiente de validar con la cuenta real | Entrega 2026-10-08 · fase 3 (rama `fase-3`, PR rferrermontesinos/appinity-claude#4, basada en `fase-2`). Falta el token de TMDb del usuario |
 | 4 | Pendiente | Last.fm |
 | 5–7 | Pendiente | Afinidad, Top 50 y recomendador |
 | 8–10 | Pendiente | Home, Categories y social |
@@ -21,7 +21,7 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ## Entrega 2026-10-08 · fase 3 (TMDb)
 
-Rama `fase-3` (basada en `fase-2`).
+Rama `fase-3` (basada en `fase-2`), commit `02e65d0`, PR rferrermontesinos/appinity-claude#4.
 
 ### Qué se ha hecho
 
