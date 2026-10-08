@@ -6,7 +6,7 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | Fase | Estado | Evidencia / siguiente paso |
 |---|---|---|
 | 0 | Implementado y comprobado automáticamente. Aceptación en dispositivo pendiente | Entrega 2026-10-08 · fase 0 (rama `fase-0`, PR rferrermontesinos/appinity-claude#1) |
-| 1 | Implementado y comprobado automáticamente. Aceptación en dispositivo pendiente | Entrega 2026-10-08 · fase 1 (rama `fase-1`) |
+| 1 | Implementado y comprobado automáticamente. Aceptación en dispositivo pendiente | Entrega 2026-10-08 · fase 1 (rama `fase-1`, PR rferrermontesinos/appinity-claude#2, basada en `fase-0`) |
 | Aceptación de demo | **Pendiente (usuario)** | Recorrido de 16 pasos del README en el teléfono. No avanzar a Steam hasta confirmarlo |
 | 2–4 | Pendiente | Steam, TMDb y Last.fm, en ese orden |
 | 5–7 | Pendiente | Afinidad, Top 50 y recomendador |
@@ -19,7 +19,7 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ## Entrega 2026-10-08 · fase 1
 
-Rama `fase-1` (basada en `fase-0`). Commit y PR: ver el historial de Git y la PR de `fase-1`.
+Rama `fase-1` (basada en `fase-0`), commit `97bf4e5`, PR rferrermontesinos/appinity-claude#2.
 
 ### Qué se ha hecho
 
