@@ -1,0 +1,14 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/shared" },
+    { "path": "packages/i18n" },
+    { "path": "packages/algorithms" },
+    { "path": "packages/database" },
+    { "path": "packages/catalog" },
+    { "path": "packages/integrations" },
+    { "path": "packages/ingestion" },
+    { "path": "apps/api" },
+    { "path": "workers/sync-worker" }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "@appinity/catalog",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Proveedores de catálogo, resolución de entidades, imágenes y almacenamiento.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": { "@appinity/database": "workspace:*", "@appinity/shared": "workspace:*" },
+  "devDependencies": {}
+}
