@@ -25,9 +25,8 @@ paginación, instantáneas, agregación) y `packages/ingestion/test/pipeline.int
 
 ## Steam · fase 2
 
-**Estado:** implementado y probado con respuestas simuladas (fixtures con el formato documentado). **La conexión
-con una cuenta real está pendiente** de que el usuario configure su clave de la Web API y vincule su cuenta desde
-el teléfono. No se considera validada hasta entonces.
+**Estado:** implementado, probado con respuestas simuladas y **validado con la cuenta real del usuario**
+(2026-10-08: 11 juegos importados, segundo sync sin duplicados; detalle en [progress.md](progress.md)).
 
 ### Ficha (verificada el 2026-10-08)
 
@@ -61,16 +60,24 @@ el teléfono. No se considera validada hasta entonces.
 
 ## Fuentes reales previstas
 
-Se muestran en la app como «Próximamente · fase N» y no son conectables. Sus manifests declaran todas las
-capacidades a `false` hasta verificarlas.
+Revisión del 2026-10-08: análisis de más de 60 plataformas en [fuentes-de-datos.md](fuentes-de-datos.md). Se muestran
+en la app como «Próximamente · fase N» y no son conectables. Sus manifests declaran todas las capacidades a `false`
+hasta verificarlas con una conexión real.
 
-| Fuente | Categorías | Autenticación prevista | Estado | Evidencia |
+| Fuente | Categorías | Autenticación | Estado | Evidencia |
 |---|---|---|---|---|
-| TMDb | movies, series | Por verificar | Pendiente · fase 3 | — |
-| Last.fm | music | Por verificar | Pendiente · fase 4 | — |
-| Google Activity / Data Portability | potencialmente las ocho | Por verificar | Pendiente · fase 11 | — |
-| Apple Music | music | Por verificar | Pendiente · fase 11 | — |
-| SoundCloud, Plex, Google Books, Podchaser, Eventbrite, calendario del dispositivo | ver especificación §9 | Por verificar | Pendiente · fase 11 | — |
+| Google Data Portability (Búsqueda, Maps, YouTube, YouTube Music, Play, reservas) | las ocho | OAuth de Google, acceso temporal renovable | Pendiente · fases 3 y 4 | Documentación oficial revisada; falta la ficha y un export real |
+| Google Books API | books | OAuth (scope `books`) | Pendiente · fase 11 | Documentación oficial revisada |
+| Apple Music (MusicKit) | music | Autorización en el dispositivo | Pendiente · fase 11 | Documentación revisada; condiciones de MusicKit por confirmar |
+| Calendario del dispositivo | food, culture | Permiso nativo | Pendiente · fase 11 | — |
+| itch.io, SoundCloud, Eventbrite, Meetup, Foursquare Swarm | games, music, culture, food | OAuth | P2 · fase 11, tras confirmar condiciones | fuentes-de-datos.md |
+
+**Descartadas o condicionadas:**
+- TMDb se implementó y se descartó por ser de uso no comercial (PR rferrermontesinos/appinity-claude#4 cerrada).
+- Spotify, Last.fm, Trakt, IGDB, Uber Eats, TheFork, DICE, Resident Advisor y Podchaser requieren acuerdo comercial.
+- Gmail está en evaluación.
+- Las plataformas sin API de usuario (Netflix, Disney+, Prime Video, Movistar+, Filmin, Xbox, PlayStation, Epic, Glovo,
+  Just Eat, Apple Podcasts, Podimo…) no son viables.
 
 Antes de implementar cada fuente real se añadirá su ficha: documentación oficial, endpoints, scopes, aprobación,
 paginación, límites, permisos de almacenamiento y política de revocación.
@@ -80,4 +87,4 @@ paginación, límites, permisos de almacenamiento y política de revocación.
 | Clave | Tipo | Estado |
 |---|---|---|
 | `wikidata_snapshot` | Instantánea congelada de Wikidata (CC0) + imágenes de Wikimedia Commons con licencia libre | Implementado para la demo (`dataset = demo`). No llama a la red en tiempo de ejecución |
-| TMDb, MusicBrainz, Open Library, etc. como proveedores en vivo | — | Pendiente; se decidirá con cada fuente real |
+| Wikidata en vivo, MusicBrainz (núcleo CC0), TVmaze (CC BY-SA) | Licencias compatibles con uso comercial | Pendiente; ver fuentes-de-datos.md. TMDb, IMDb e IGDB requieren licencia |

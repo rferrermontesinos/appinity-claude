@@ -9,12 +9,66 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 1 | **Aceptado en dispositivo** (2026-10-08) | Entrega 2026-10-08 · fase 1 (rama `fase-1`, PR rferrermontesinos/appinity-claude#2, basada en `fase-0`) |
 | Aceptación de demo | **Hecha** | El usuario confirmó: «He probado la demo y funciona» |
 | 2 | **Validado con la cuenta real del usuario** (2026-10-08) | Entrega 2026-10-08 · fase 2 (rama `fase-2`, PR rferrermontesinos/appinity-claude#3, basada en `fase-1`) |
-| 3–4 | Pendiente | TMDb y Last.fm, en ese orden |
+| Revisión de fuentes | **Hecha** (2026-10-08) | Especificación 1.1 y docs/fuentes-de-datos.md (rama `especificacion-fuentes`, basada en `fase-2`). TMDb descartada: PR rferrermontesinos/appinity-claude#4 cerrada sin fusionar |
+| 3–4 | Pendiente | Google Data Portability: valoraciones y lugares (3); YouTube y YouTube Music (4) |
 | 5–7 | Pendiente | Afinidad, Top 50 y recomendador |
 | 8–10 | Pendiente | Home, Categories y social |
 | 11 | Pendiente | Fuentes adicionales viables, una por tarea |
 | 12 | Pendiente | Chat, Premium y notificaciones, por subentregas |
 | 13 | Pendiente | Preparación y prueba de beta |
+
+---
+
+## Revisión de fuentes · 2026-10-08
+
+Rama `especificacion-fuentes` (basada en `fase-2`).
+
+### Qué se ha hecho
+
+- **Vuelta a la fase 2.** Se descartó TMDb por sus condiciones no comerciales. La PR
+  rferrermontesinos/appinity-claude#4 está cerrada sin fusionar; la rama `fase-3` se conserva como referencia. La base
+  local no tenía datos ni token de TMDb.
+- **Revisión de más de 60 plataformas**, entre 6 y 13 por categoría. Incluye todas las propuestas por el usuario
+  (Netflix, Tripadvisor, DICE, Epic, Glovo, Uber Eats, Just Eat, Filmaffinity, Letterboxd, Spotify, Google, Maps,
+  Gmail, Google Podcasts, Disney+, Prime Video, Movistar+, Filmin, Stremio, Xbox, Resident Advisor, Podimo,
+  Apple Podcasts, TheFork) y las de la especificación inicial. Resultado en [fuentes-de-datos.md](fuentes-de-datos.md),
+  con veredicto, condiciones y enlaces.
+- **Especificación 1.1:**
+  - §9 rehecho;
+  - permisos solo en el registro (§14);
+  - licencia comercial también para el catálogo (§6);
+  - Trending con las fuentes nuevas (§13);
+  - política de Google (§17);
+  - nuevas fases 3 y 4 (§18).
+- **App:** la lista de fuentes «Próximamente» ya no anuncia TMDb ni Last.fm. Muestra Google (fases 3–4), Google Books,
+  Apple Music y Calendario (fase 11).
+
+### Comandos ejecutados y resultados (Windows 11, 2026-10-08)
+
+| Comando | Resultado |
+|---|---|
+| Consulta a la base local (conexiones, credenciales, observaciones, objetos e imágenes de TMDb) | 0 en todas: nada que borrar |
+| `pnpm lint` | 0 errores |
+| `pnpm typecheck` | OK (paquetes, tests y app móvil) |
+| `pnpm test` | **12 ficheros, 136 tests OK** (la base de la fase 2, con la expectativa de fuentes previstas actualizada) |
+
+### Bloqueos y decisiones pendientes del usuario
+
+- **Google Cloud (fase 3):** hace falta un proyecto de Google Cloud con la Data Portability API activada, una pantalla
+  de consentimiento en modo de pruebas y tu cuenta como usuario de prueba. Es gratuito y lo debe crear el titular; se
+  guiará paso a paso al empezar la fase.
+- **Producción:** verificación de Google y, si algún grupo es restringido, auditoría CASA anual (coste aproximado de
+  540 a 4.500 USD al año).
+- **Catálogo audiovisual:** decidir si se licencia un catálogo comercial (TMDb u otro) para tener pósters, o se acepta la
+  imagen de sustitución.
+- **Acuerdos comerciales** opcionales: Spotify (con escala), Last.fm, Trakt, IGDB, Uber Eats, TheFork, DICE, RA,
+  Podchaser.
+- **Gmail:** decidir si se evalúa (legal y coste) más adelante.
+
+### Siguiente paso
+
+Si se acepta la especificación 1.1: fase 3, Google Data Portability (valoraciones y lugares), empezando por su ficha y
+por un export real con la cuenta del usuario para fijar escalas y fechas.
 
 ---
 
@@ -104,7 +158,7 @@ sobre la cuenta real para conservar sus datos.
 
 ### Siguiente paso
 
-Fase 3 (TMDb) con `prompts/fase_03_tmdb.md`.
+Fase 3 (TMDb) con `prompts/fase_03_tmdb.md`. *(Superado: TMDb se descartó en la revisión de fuentes del 2026-10-08.)*
 
 ---
 

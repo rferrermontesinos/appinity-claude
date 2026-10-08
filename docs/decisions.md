@@ -289,3 +289,77 @@ final solo tenga que dar permisos una vez, al registrarse. Estado y plan:
 - **Pendiente de diseño (onboarding, §14 y fase 13):** la pantalla «Conecta tu mundo» del registro ofrecerá las fuentes
   disponibles; el usuario autoriza cada una una vez (consentimiento por proveedor) y no vuelve a ver pasos de sync. Se
   podrá revisar más adelante, como indicó el usuario.
+
+## Revisión de fuentes · 2026-10-08
+
+Detalle y evidencias en [fuentes-de-datos.md](fuentes-de-datos.md); requisitos en la especificación 1.1 (§9 y §14).
+
+### TMDb descartada
+
+La fase 3 (TMDb) se implementó en la rama `fase-3` (PR rferrermontesinos/appinity-claude#4) y se descartó antes de
+validarla con la cuenta real: las condiciones de TMDb solo permiten el uso gratuito no comercial, y APPINITY tendrá
+Premium. La PR se cerró sin fusionar y el trabajo continúa desde `fase-2`.
+
+La rama se conserva porque contiene piezas genéricas reutilizables para fuentes OAuth:
+- credenciales por usuario cifradas (AES-256-GCM, AAD = conexión);
+- `state` del callback en la ruta;
+- revocación en el proveedor al desconectar (`providerRevocation`);
+- renovación de contenido cacheado con caducidad.
+
+No había datos de TMDb en la base de datos local.
+
+### Criterio comercial para fuentes y catálogo
+
+Una fuente o un proveedor de catálogo solo se implementa si sus condiciones permiten el uso comercial de APPINITY sin
+acuerdo previo, o con el acuerdo firmado. Por este criterio:
+- **Last.fm** (antigua fase 4) también queda condicionada: su licencia es no comercial y lo comercial se negocia con
+  partners@last.fm.
+- **Spotify** queda bloqueada hasta tener escala: desde el 15/05/2025 el acceso ampliado es solo para empresas con
+  ≥ 250.000 usuarios activos al mes, y el modo desarrollo admite 5 usuarios.
+
+### Permisos solo en el registro
+
+Petición del usuario: el usuario final no introduce tokens ni da más permisos que los del registro. Se adopta como
+requisito (§9 y §14):
+- un consentimiento oficial por proveedor;
+- sin claves, códigos, nombres de usuario ni archivos;
+- syncs automáticos.
+
+Excepción declarada: la renovación que imponga el proveedor (Google Data Portability, como máximo cada 180 días), con
+un aviso de un toque y sin perder lo importado.
+
+### Google Data Portability como fuente principal (fases 3 y 4)
+
+Un solo consentimiento de Google da:
+- valoraciones explícitas (estrellas, pulgares, «visto») de películas, series, libros, música y videojuegos;
+- reseñas con estrellas y guardados de Maps;
+- actividad de YouTube y YouTube Music;
+- datos de Play y de reservas con Google.
+
+Cubre las ocho categorías y está disponible en España.
+
+Riesgos declarados:
+- disponible solo en la UE, Suiza y Reino Unido, y para mayores de 18 años;
+- verificación de Google anual y auditoría CASA si hay scopes restringidos (coste orientativo de 540 a 4.500 USD al año);
+- la política limita el uso aprobado a apps cuya función principal es trasladar datos; el encaje de APPINITY se
+  confirmará en la verificación;
+- la escala y las fechas de las valoraciones de la Búsqueda se verificarán con un export real.
+
+En desarrollo basta un proyecto de Google Cloud en modo de pruebas con usuarios de prueba.
+
+Orden: fase 3, valoraciones y lugares (explícitas); fase 4, YouTube y YouTube Music (frecuencia de escucha, en lugar
+de Last.fm).
+
+### Gmail en evaluación
+
+Sería la vía para pedidos, reservas y entradas de servicios sin API (Glovo, Just Eat, TheFork, DICE, RA) y para las
+compras de juegos de consola. Queda fuera del MVP hasta una evaluación legal y de coste:
+- permiso restringido con auditoría anual;
+- usos permitidos limitados;
+- es el permiso más invasivo para el usuario.
+
+### Catálogo audiovisual
+
+Sin TMDb, películas y series se apoyan en Wikidata (CC0), imágenes libres de Commons y TVmaze (CC BY-SA, con crédito).
+Muchas tarjetas de cine usarán la imagen de sustitución hasta decidir si se licencia un catálogo comercial (decisión de
+negocio pendiente).

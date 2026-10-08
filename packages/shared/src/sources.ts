@@ -15,19 +15,21 @@ export const FIXTURE_SOURCE_KEYS = [
 ] as const;
 export type FixtureSourceKey = (typeof FIXTURE_SOURCE_KEYS)[number];
 
-/** Fuentes reales previstas (§9). Ninguna está disponible hasta validarla en su fase. */
+/**
+ * Fuentes reales del MVP (§9, revisión 1.1 y docs/fuentes-de-datos.md). Ninguna está disponible hasta validarla en su
+ * fase. Las que exigen acuerdo comercial (Spotify, Last.fm, TMDb…) no figuran hasta firmarlo.
+ */
 export const PLANNED_SOURCE_KEYS = [
   'steam',
-  'tmdb',
-  'lastfm',
-  'google_activity',
-  'apple_music',
-  'soundcloud',
-  'plex',
+  'google_portability',
   'google_books',
-  'podchaser',
-  'eventbrite',
+  'apple_music',
   'device_calendar',
+  'itchio',
+  'soundcloud',
+  'eventbrite',
+  'meetup',
+  'swarm',
 ] as const;
 export type PlannedSourceKey = (typeof PLANNED_SOURCE_KEYS)[number];
 
