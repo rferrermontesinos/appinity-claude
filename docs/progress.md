@@ -8,7 +8,7 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 0 | **Aceptado en dispositivo** (2026-10-08) | Entrega 2026-10-08 · fase 0 (rama `fase-0`, PR rferrermontesinos/appinity-claude#1) |
 | 1 | **Aceptado en dispositivo** (2026-10-08) | Entrega 2026-10-08 · fase 1 (rama `fase-1`, PR rferrermontesinos/appinity-claude#2, basada en `fase-0`) |
 | Aceptación de demo | **Hecha** | El usuario confirmó: «He probado la demo y funciona» |
-| 2 | Implementado y comprobado automáticamente con respuestas simuladas. **Conexión real pendiente** (clave y prueba del usuario) | Entrega 2026-10-08 · fase 2 (rama `fase-2`, basada en `fase-1`) |
+| 2 | Implementado y comprobado automáticamente con respuestas simuladas. **Conexión real pendiente** (clave y prueba del usuario) | Entrega 2026-10-08 · fase 2 (rama `fase-2`, PR rferrermontesinos/appinity-claude#3, basada en `fase-1`) |
 | 3–4 | Pendiente | TMDb y Last.fm, en ese orden |
 | 5–7 | Pendiente | Afinidad, Top 50 y recomendador |
 | 8–10 | Pendiente | Home, Categories y social |
@@ -20,7 +20,7 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ## Entrega 2026-10-08 · fase 2 (Steam)
 
-Rama `fase-2` (basada en `fase-1`). Commit y PR: ver el historial de Git.
+Rama `fase-2` (basada en `fase-1`), commit `867cd6c`, PR rferrermontesinos/appinity-claude#3.
 
 ### Qué se ha hecho
 
