@@ -1,0 +1,45 @@
+# Servicios locales de APPINITY (implementación Claude).
+# Nombre de proyecto, contenedores, volúmenes y puertos propios para no interferir con
+# otras instalaciones locales de APPINITY. Solo escuchan en 127.0.0.1.
+name: appinity-claude
+
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    container_name: appinity-claude-postgres
+    environment:
+      POSTGRES_USER: appinity_claude
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-appinity_claude_dev}
+      POSTGRES_DB: appinity_claude
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5442}:5432"
+    volumes:
+      - appinity_claude_pg:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appinity_claude -d appinity_claude"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4.7-alpine
+    container_name: appinity-claude-redis
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6390}:6379"
+    volumes:
+      - appinity_claude_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+volumes:
+  appinity_claude_pg:
+    name: appinity_claude_pg
+  appinity_claude_redis:
+    name: appinity_claude_redis
