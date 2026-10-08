@@ -9,6 +9,7 @@ import {
 } from '@appinity/database';
 import type { AdapterRegistry } from '@appinity/integrations';
 import {
+  isSourceError,
   parseObservation,
   type NormalizedObservation,
   type ProfileSourceKey,
@@ -349,10 +350,18 @@ export async function runConnectionSync(deps: SyncDeps, runId: string): Promise<
     return await finish(outcome.partialErrors.length ? 'partial' : 'succeeded');
   } catch (error) {
     if (error instanceof ConnectionRevokedError) return finish('cancelled', error.message);
-    const message = (error as Error).message.slice(0, 500);
+    const message = describeError(error).slice(0, 500);
+    // Un error no reintentable (perfil privado, clave no válida…) deja la conexión en «error» hasta que el usuario
+    // actúe; un fallo transitorio la deja activa para que el reintento la recupere. La evidencia previa se conserva.
+    const needsUserAction = isSourceError(error) && !error.retryable;
     await db
       .update(userConnections)
-      .set({ lastSyncStatus: 'failed', lastError: message, updatedAt: sql`now()` })
+      .set({
+        lastSyncStatus: 'failed',
+        lastError: message,
+        ...(needsUserAction ? { status: 'error' as const } : {}),
+        updatedAt: sql`now()`,
+      })
       .where(eq(userConnections.id, conn.id));
     await finish('failed', message);
     throw error;

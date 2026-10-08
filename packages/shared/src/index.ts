@@ -5,3 +5,4 @@ export * from './sources.js';
 export * from './profile.js';
 export * from './api.js';
 export * from './queues.js';
+export * from './errors.js';

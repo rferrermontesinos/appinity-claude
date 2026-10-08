@@ -7,7 +7,13 @@ export const IMAGE_FETCH_USER_AGENT =
 
 const MAX_BYTES = 8 * 1024 * 1024;
 
-export type ImageCacheOutcome = 'cached' | 'already_cached' | 'failed' | 'missing';
+export type ImageCacheOutcome = 'cached' | 'already_cached' | 'failed' | 'missing' | 'not_cacheable';
+
+/**
+ * Orígenes cuya licencia permite guardar una copia. El arte de Steam (steam_cdn) y cualquier origen desconocido se
+ * conservan solo como referencia: la app los carga del origen y, si fallan, usa el fallback.
+ */
+export const CACHEABLE_IMAGE_SOURCES = new Set(['wikimedia_commons']);
 
 /**
  * Descarga la imagen de referencia y la guarda en el almacenamiento propio, cuando la licencia lo permite
@@ -22,6 +28,7 @@ export async function cacheCatalogImage(
 ): Promise<ImageCacheOutcome> {
   const [image] = await db.select().from(catalogImages).where(eq(catalogImages.id, imageId));
   if (!image) return 'missing';
+  if (!CACHEABLE_IMAGE_SOURCES.has(image.source)) return 'not_cacheable';
   if (image.cacheStatus === 'cached' && image.storageKey && (await storage.exists(image.storageKey))) {
     return 'already_cached';
   }

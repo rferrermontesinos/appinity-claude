@@ -1,0 +1,3 @@
+ALTER TABLE "users" ADD COLUMN "local_login_code_hash" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "user_connections_one_open_per_external_account" ON "user_connections" USING btree ("source_key","external_account_ref") WHERE "user_connections"."status" <> 'revoked' AND "user_connections"."external_account_ref" IS NOT NULL;--> statement-breakpoint
+ALTER TABLE "users" ADD CONSTRAINT "users_local_code_only_live" CHECK ("users"."local_login_code_hash" IS NULL OR "users"."dataset" = 'live');

@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import { I18nextProvider, useTranslation } from 'react-i18next';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -10,6 +11,8 @@ import { useSession } from '../src/state/session';
 import { usePalette } from '../src/theme';
 
 const i18n = initI18n();
+// Cierra la ventana de autenticación al volver del proveedor (necesario en web; inocuo en iOS/Android).
+WebBrowser.maybeCompleteAuthSession();
 
 function SessionGate() {
   const { hydrated, session, hydrate } = useSession();

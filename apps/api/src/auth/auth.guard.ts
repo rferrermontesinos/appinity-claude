@@ -2,7 +2,7 @@ import { type CanActivate, type ExecutionContext, Injectable, UnauthorizedExcept
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC } from '../common/public.decorator.js';
 import type { AuthedRequest } from './auth.types.js';
-import { DevAuthService } from './dev-auth.service.js';
+import { DevAuthService, localCodeFingerprint } from './dev-auth.service.js';
 import { UsersRepository } from './users.repository.js';
 
 /**
@@ -31,15 +31,21 @@ export class AuthGuard implements CanActivate {
     }
 
     let userId: string;
+    let fingerprint: string | undefined;
     try {
-      ({ userId } = await this.devAuth.verify(header.slice('Bearer '.length).trim()));
+      ({ userId, localCodeFingerprint: fingerprint } = await this.devAuth.verify(header.slice('Bearer '.length).trim()));
     } catch {
       throw new UnauthorizedException('Sesión no válida o caducada');
     }
 
     const user = await this.users.findActiveById(userId);
-    // La identidad de desarrollo nunca abre sesión con usuarios reales.
-    if (!user || user.dataset !== 'demo') throw new UnauthorizedException('Sesión no válida');
+    // La identidad de desarrollo solo vale para usuarios simulados o para cuentas locales reales creadas con
+    // `pnpm user:local` (con código vigente). Nunca para usuarios reales sin ese consentimiento local explícito.
+    const allowed =
+      user &&
+      (user.dataset === 'demo' ||
+        (user.localLoginCodeHash !== null && fingerprint === localCodeFingerprint(user.localLoginCodeHash)));
+    if (!user || !allowed) throw new UnauthorizedException('Sesión no válida');
 
     request.auth = { userId: user.id, dataset: user.dataset, kind: 'dev' };
     return true;

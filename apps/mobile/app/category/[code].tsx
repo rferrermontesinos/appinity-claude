@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { FlatList, Pressable, Text, View } from 'react-native';
 import { useCatalog } from '../../src/api/queries';
 import { CatalogImage } from '../../src/components/CatalogImage';
-import { DemoBanner, ErrorCard, Loading, Small } from '../../src/components/ui';
+import { ErrorCard, Loading, Small } from '../../src/components/ui';
+import { DataBanner } from '../../src/components/DataBanner';
 import { radius, spacing, usePalette } from '../../src/theme';
 
 function subtitle(item: CatalogItemDto): string | null {
@@ -34,7 +35,7 @@ export default function CategoryCatalogScreen() {
         onRefresh={() => void catalog.refetch()}
         ListHeaderComponent={
           <View style={{ gap: spacing.sm, marginBottom: spacing.sm }}>
-            <DemoBanner />
+            <DataBanner />
             <Small style={{ fontWeight: '700' }}>
               {t('categoriesScreen.catalogNotRecommendations')}
               {catalog.data ? ` · ${t('categoriesScreen.itemCount', { count: catalog.data.total })}` : ''}

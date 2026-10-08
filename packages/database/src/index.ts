@@ -5,3 +5,4 @@ export * from './env.js';
 export * from './migrate.js';
 export * from './reset.js';
 export * from './credentials.js';
+export * from './local-login.js';

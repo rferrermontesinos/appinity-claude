@@ -229,11 +229,11 @@ describe('sync de fuentes fixture', () => {
 });
 
 describe('registro de adapters', () => {
-  it('sin DEMO_MODE no hay fuentes fixture y las reales previstas no son conectables', () => {
+  it('sin DEMO_MODE no hay fuentes fixture y, sin configuración, ninguna real es conectable', () => {
     const registry = createAdapterRegistry({ demoMode: false });
     expect(registry.adapters()).toHaveLength(0);
     expect(registry.get('fixture_screen')).toBeUndefined();
-    expect(registry.manifests().every((m) => !m.connectable && m.availability === 'planned')).toBe(true);
+    expect(registry.manifests().every((m) => !m.connectable && ['planned', 'unconfigured'].includes(m.availability))).toBe(true);
     expect(registry.manifests().find((m) => m.key === 'steam')!.authentication).toBe('openid');
   });
 

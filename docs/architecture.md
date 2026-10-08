@@ -1,6 +1,6 @@
 # Arquitectura · APPINITY Claude
 
-Documento vivo. Describe lo implementado (fases 0 y 1) y marca lo pendiente. Requisitos:
+Documento vivo. Describe lo implementado (fases 0, 1 y 2) y marca lo pendiente. Requisitos:
 [APPINITY_Especificacion.md](APPINITY_Especificacion.md). Decisiones y parámetros: [decisions.md](decisions.md).
 
 ## Vista general
@@ -57,6 +57,7 @@ Migraciones en `packages/database/drizzle/` (SQL generado por drizzle-kit, revis
 | `0000_enable_postgis` | Extensiones `postgis` y `pgcrypto` |
 | `0001_identity` | `users` (con `dataset` demo/live), `user_profiles` (perfil público mínimo), `user_settings` (zona aproximada `geography`, radio 1–50 km, idioma, notificaciones, descubrimiento por contactos) |
 | `0002_catalog_evidence` | Catálogo, conexiones, consentimientos, credenciales, ejecuciones de sync, observaciones y perfiles |
+| `0003_local_accounts_external_unique` | `users.local_login_code_hash` (solo dataset live) e índice único de cuenta externa abierta por fuente (un SteamID, un usuario) |
 
 Tablas de la fase 1:
 
@@ -95,6 +96,25 @@ API (POST /v1/me/connections | /sync)
   ejecuciones pendientes. La API retira además de la cola los trabajos en espera. Con `purge`, borra las
   observaciones de esa conexión y recalcula los perfiles con las demás fuentes.
 
+## Steam (fase 2)
+
+```text
+App (Perfil → Sign in through Steam)
+  └─ POST /v1/me/connections {sourceKey:'steam', returnUrl}
+       └─ API: state de un solo uso en Redis (10 min) → URL OpenID de steamcommunity.com
+  └─ WebBrowser.openAuthSessionAsync(url) → el usuario inicia sesión EN STEAM
+  └─ Steam → GET /v1/connect/steam/callback?state=…&openid.*
+       └─ API: GETDEL state → verifySteamOpenId (incluye check_authentication) → conexión con SteamID
+          → sync completo en cola → 302 a returnUrl?result=connected
+Worker: GetPlayerSummaries + GetOwnedGames (clave del servidor) → mapper steam-v1 → pipeline común
+```
+
+- Programador horario en el worker (`schedule-syncs`) para fuentes reales con estrategia programada.
+- Errores de fuente (`SourceError`): reintentables (429, 5xx, red) o que requieren acción del usuario (clave, perfil
+  privado), que dejan la conexión en «error» con el mensaje y no se reintentan.
+- Cuenta local real: `pnpm user:local` → `POST /v1/dev/session {handle, code}`; el guard acepta usuarios `live` solo si
+  el token lleva la huella del código vigente.
+
 ## Resolución de entidades (§6)
 
 `EntityResolver.resolve(candidato, dataset)`:
@@ -131,10 +151,11 @@ Bloqueos `pg_advisory_xact_lock` por ID externo evitan duplicados con syncs conc
 | Ruta | Acceso | Descripción |
 |---|---|---|
 | `GET /health` | Pública | BD, PostGIS, Redis y latido del worker (200/503) |
-| `GET /v1/dev/users`, `POST /v1/dev/session` | Públicas solo con identidad de desarrollo | Usuarios de demo y emisión de JWT (limitada) |
+| `GET /v1/dev/users`, `POST /v1/dev/session` | Públicas solo con identidad de desarrollo | Usuarios de demo y emisión de JWT (limitada); la sesión de una cuenta local real exige su código |
 | `GET /v1/me`, `PATCH /v1/me/settings` | Sesión | Usuario, perfil mínimo y ajustes (Zod estricto, ubicación redondeada) |
 | `GET /v1/sources` | Sesión | Manifests: fixture (conectables solo por usuarios demo) y reales previstas (no conectables) |
-| `GET/POST /v1/me/connections` | Sesión | Lista y conecta; al conectar se encola un sync completo |
+| `GET/POST /v1/me/connections` | Sesión | Lista y conecta. Fuentes simuladas: conexión inmediata y sync en cola. Steam: devuelve la URL de OpenID (`ConnectStartDto`) |
+| `GET /v1/connect/:source/callback` | Pública, autorizada por `state` de un solo uso | Vuelta del proveedor: verifica, crea la conexión, encola el sync y redirige a la app |
 | `POST /v1/me/connections/:id/sync` | Sesión, propietario | Encola un sync `incremental` o `full` |
 | `GET /v1/me/connections/:id/runs` | Sesión, propietario | Últimas 20 ejecuciones |
 | `DELETE /v1/me/connections/:id?purge=` | Sesión, propietario | Desconecta y, opcionalmente, borra lo importado |
@@ -160,6 +181,6 @@ producción (vista web de desarrollo).
 
 ## Pendiente por fase
 
-Ver [progress.md](progress.md). Steam (2), TMDb (3), Last.fm (4), afinidad (5), Top 50 (6), recomendador y Trending
+Ver [progress.md](progress.md). TMDb (3), Last.fm (4), afinidad (5), Top 50 (6), recomendador y Trending
 (7), Home con carrusel (8), Categories con recomendaciones (9), People/Friends (10), adapters restantes (11), chat,
 Premium y push (12), autenticación de producción y beta (13).

@@ -6,7 +6,8 @@ import { FlatList, Pressable, ScrollView, Text, View } from 'react-native';
 import { useItemProfiles, type ProfileView } from '../src/api/queries';
 import { CatalogImage } from '../src/components/CatalogImage';
 import { Dimensions, Tag, scenarioKeys } from '../src/components/Dimensions';
-import { Badge, Body, Card, DemoBanner, ErrorCard, Loading, Small, Title } from '../src/components/ui';
+import { Badge, Body, Card, ErrorCard, Loading, Small, Title } from '../src/components/ui';
+import { DataBanner } from '../src/components/DataBanner';
 import { radius, spacing, usePalette } from '../src/theme';
 
 function FilterChip({ label, selected, color, onPress }: { label: string; selected: boolean; color: string; onPress: () => void }) {
@@ -97,7 +98,7 @@ export default function ModelScreen() {
         onRefresh={() => void profiles.refetch()}
         ListHeaderComponent={
           <View style={{ gap: spacing.md, marginBottom: spacing.xs }}>
-            <DemoBanner detailed />
+            <DataBanner detailed />
             <Body muted>{t('model.intro')}</Body>
             <Card>
               <Title style={{ fontSize: 15 }}>{t('model.legendTitle')}</Title>

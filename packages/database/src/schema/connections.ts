@@ -47,6 +47,10 @@ export const userConnections = pgTable(
     uniqueIndex('user_connections_one_open_per_source')
       .on(t.userId, t.sourceKey)
       .where(sql`${t.status} <> 'revoked'`),
+    // Una misma cuenta externa (p. ej. un SteamID) no puede estar vinculada a la vez a dos usuarios.
+    uniqueIndex('user_connections_one_open_per_external_account')
+      .on(t.sourceKey, t.externalAccountRef)
+      .where(sql`${t.status} <> 'revoked' AND ${t.externalAccountRef} IS NOT NULL`),
     index('user_connections_user_idx').on(t.userId),
     check('user_connections_status_valid', sql`${t.status} IN ('active', 'error', 'revoked')`),
     check('user_connections_revoked_at', sql`(${t.status} = 'revoked') = (${t.revokedAt} IS NOT NULL)`),
