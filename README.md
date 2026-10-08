@@ -179,7 +179,7 @@ guardan únicamente en la base de datos local.
 3. **Crea tu cuenta local real** (solo desarrollo):
 
    ```bash
-   pnpm user:local -- --handle tu_handle --name "Tu nombre" --country ES
+   pnpm user:local --handle tu_handle --name "Tu nombre" --country ES
    ```
 
    Muestra **una sola vez** un código como `ABCD-EFGH-JKLM`. Si lo pierdes, repite el comando: se genera otro y las
@@ -224,7 +224,7 @@ instrucción y conserva lo ya importado.
 | `pnpm db:migrate` | Aplica migraciones versionadas (Drizzle) |
 | `pnpm db:seed` | Seed determinista de la demo: usuarios, catálogo, conexiones fixture y syncs (solo `DEMO_MODE=true`) |
 | `pnpm db:reset` | Vacía la BD de desarrollo, migra y siembra (solo `DEMO_MODE=true`) |
-| `pnpm user:local -- --handle h --name "N"` | Crea o regenera una cuenta local real (dataset `live`) y muestra su código una vez |
+| `pnpm user:local --handle h --name "N"` | Crea o regenera una cuenta local real (dataset `live`) y muestra su código una vez |
 | `pnpm secret:set STEAM_WEB_API_KEY [--clipboard]` | Guarda la clave de Steam en `.env` sin mostrarla (escrita o desde el portapapeles) |
 | `pnpm api` / `pnpm worker` | API NestJS en `0.0.0.0:3100` / worker BullMQ (syncs, syncs programados cada hora y caché de imágenes) |
 | `pnpm dev` | Compilación en modo watch + API + worker |

@@ -2,14 +2,14 @@ import { parseArgs } from 'node:util';
 import { createDatabase, requireEnv } from '@appinity/database';
 import { createOrResetLocalUser } from '../local-users.js';
 
-// pnpm user:local -- --handle ricard --name "Ricard" [--country ES]
+// pnpm user:local --handle ricard --name "Ricard" [--country ES]
 // pnpm reenvía el separador «--» al script: se descarta antes de analizar las opciones.
 const { values } = parseArgs({
   args: process.argv.slice(2).filter((arg) => arg !== '--'),
   options: { handle: { type: 'string' }, name: { type: 'string' }, country: { type: 'string' } },
 });
 if (!values.handle || !values.name) {
-  console.error('Uso: pnpm user:local -- --handle <handle> --name "<nombre visible>" [--country ES]');
+  console.error('Uso: pnpm user:local --handle <handle> --name "<nombre visible>" [--country ES]');
   process.exit(1);
 }
 if (process.env.DEV_AUTH_ENABLED !== 'true' || process.env.DEMO_MODE !== 'true') {

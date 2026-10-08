@@ -54,7 +54,7 @@ Rama `fase-2` (basada en `fase-1`), commit `867cd6c`, PR rferrermontesinos/appin
 | `pnpm test` | **12 ficheros, 136 tests OK** (70 unitarios, 66 de integración). Nuevos: 17 unitarios de Steam (OpenID válido y manipulado, cliente con 429/5xx/403, biblioteca oculta frente a vacía, mapper, registro), 15 de integración del pipeline de Steam y 8 HTTP (cuenta local, inicio de conexión, callback, `state` de un solo uso, lista blanca de URL) |
 | `pnpm db:seed` | La demo sigue igual e idempotente |
 | `npx expo export --platform android --platform ios` | Bundles generados |
-| `pnpm user:local -- --handle test_local_smoke …` | Crea la cuenta y guarda solo el hash (cuenta de prueba borrada después) |
+| `pnpm user:local --handle test_local_smoke …` | Crea la cuenta y guarda solo el hash (cuenta de prueba borrada después) |
 | URL de OpenID contra Steam real | Steam acepta la petición y muestra su formulario «Iniciar sesión» con `return_to` en `192.168.1.16:3100` |
 
 ### Fallos detectados tras la entrega
@@ -66,7 +66,7 @@ Rama `fase-2` (basada en `fase-1`), commit `867cd6c`, PR rferrermontesinos/appin
 ### Pendiente del usuario (conexión real)
 
 1. Crear la clave en <https://steamcommunity.com/dev/apikey> y guardarla con `pnpm secret:set STEAM_WEB_API_KEY`.
-2. `pnpm user:local -- --handle … --name …` y entrar en la app con el código.
+2. `pnpm user:local --handle … --name …` y entrar en la app con el código.
 3. **Reiniciar `pnpm api` y `pnpm worker`**. Los que estaban en marcha desde la prueba de la demo tienen el código
    anterior cargado.
 4. Perfil → Steam → «Sign in through Steam», comprobar la importación, repetir el sync (sin duplicados), juegos con
