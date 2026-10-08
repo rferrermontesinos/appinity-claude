@@ -1,7 +1,12 @@
 # APPINITY
 ## Especificación del MVP · implementación independiente con Claude
 
-Versión 1.0 · 5 de octubre de 2026 · Documento de trabajo para una IA de programación
+Versión 1.1 · 8 de octubre de 2026 · Documento de trabajo para una IA de programación
+
+> **Revisión 1.1:** se rehízo §9 (fuentes de perfil) tras revisar más de 60 plataformas, con la regla de que el usuario
+> solo da permisos una vez, en el registro, y nunca introduce tokens. Afecta también a §5, §6, §13, §14, §15, §17 y §18.
+> El detalle y las evidencias están en [fuentes-de-datos.md](fuentes-de-datos.md). El resto de requisitos de la v1.0
+> (5 de octubre de 2026) no cambia.
 
 **Concepto central:** Descubre recomendaciones de tus almas gemelas y conoce a las personas que comparten tus gustos.
 
@@ -113,6 +118,12 @@ El modelo conserva tres dimensiones independientes desde el primer día:
 | Asistencia cultural confirmada | 1 | 1 | +1 por regla de producto |
 | Museo o restaurante visitado con evidencia suficiente | 1 | 1 | +1 por regla de producto |
 | Evento previsto en calendario | Aproximadamente 0,8 | Menor que 1 | NULL |
+| Pulgar arriba o abajo dado en Google a una película, serie, libro, disco o juego | 1 | Alta, sin ser total | Like o dislike explícito |
+| Película o serie marcada como vista en Google | 1 | 1 | NULL |
+| Artista o podcast seguido o suscrito | 1 | 0 | NULL |
+| Juego instalado o comprado en una tienda | 1 | 0 | NULL |
+| Reserva de restaurante | Alta | Menor que 1 sin confirmación de asistencia | NULL |
+| Pedido a domicilio entregado de un restaurante | 1 | 1 | NULL |
 
 Las inferencias de visitas y asistencia tienen menor prioridad que una valoración explícita. Una reserva, un ticket adquirido o una cita en calendario no prueban por sí mismos que hubo asistencia. Se conserva la diferencia entre intención, adquisición y asistencia confirmada.
 
@@ -172,6 +183,8 @@ export interface CatalogItem {
 ```
 
 La imagen es obligatoria en el DTO que consume el carrusel; el catálogo puede estar provisionalmente sin imagen durante la resolución, pero debe aportar el fallback antes de publicar la tarjeta. Se almacena la referencia de imagen en BD y, cuando las condiciones del proveedor lo permiten, el archivo en almacenamiento S3 compatible. No se exige copiar todas las imágenes si el proveedor limita el almacenamiento.
+
+Los proveedores de catálogo, igual que las fuentes de perfil, deben permitir el uso comercial y el almacenamiento que hace APPINITY según sus condiciones. La base es Wikidata (CC0) con imágenes libres de Wikimedia Commons; MusicBrainz (núcleo CC0) y TVmaze (CC BY-SA, con crédito) completan música y series. TMDb, los datasets de IMDb y el uso comercial de IGDB requieren licencia. Sin una licencia de catálogo audiovisual, muchas películas y series mostrarán la imagen de sustitución; es una decisión de negocio pendiente (ver [fuentes-de-datos.md](fuentes-de-datos.md#proveedores-de-catálogo-con-licencia-compatible)).
 
 Se contemplan recortes para formato de tarjeta, carga diferida, caché permitida, renovación de URLs caducadas y sustitución si falla el origen. Las fechas se almacenan con su precisión real: no se inventa un día si solo se conoce el año. Las fechas son necesarias para Trending.
 
@@ -276,31 +289,73 @@ El motor de afinidad y el recomendador solo dependen de CatalogItem, UserItemPro
 
 El enum de autenticación incorpora mecanismos adicionales al contrato inicial. Steam no debe modelarse automáticamente como OAuth: su documentación distingue la identificación web mediante OpenID y el acceso a la Web API mediante claves. La identificación de la cuenta no garantiza que su historial sea accesible [4, 5].
 
-## 9 Fuentes de perfil previstas
+## 9 Fuentes de perfil
 
-La tabla describe datos deseados y reglas de normalización, no disponibilidad garantizada. Antes de implementar cada fuente, crear una ficha con documentación oficial, endpoints, scopes, aprobación, paginación, límites, permisos de almacenamiento y política de revocación. Las capacidades del manifest deben reflejar únicamente lo comprobado.
+Revisión del 8 de octubre de 2026. El análisis completo por categoría, con veredicto, condiciones y enlaces a la documentación oficial, está en [fuentes-de-datos.md](fuentes-de-datos.md). Esta sección fija los requisitos.
 
-| Fuente | Categorías | Señales deseadas y tratamiento | Prioridad |
-|---|---|---|---|
-| Google Activity y Data Portability | Potencialmente las ocho | Reviews explícitas generan preferencia; guardados solo conocimiento. Validar datasets y scopes por producto | P0 estratégica |
-| Apple Music | music | Biblioteca, favoritos, recurrencia y heavy rotation; agregar por artista y comparar actividad dentro del usuario | P0 |
-| Last.fm | music | Scrobbles, artistas y loved tracks; frecuencia logarítmica y señales explícitas fuertes | P0 o P1 |
-| SoundCloud | music | Likes, playlists, artistas seguidos y reproducciones accesibles; confianza según evidencia | P1 |
-| TMDb | movies y series | Ratings, favoritos y listas disponibles; no suponer un historial de vistos inexistente | P0 |
-| Plex | movies y series | Progreso y completado accesibles; visto sin rating no implica gusto | P1 |
-| Steam | games | Propiedad, horas acumuladas y recientes; 0 horas no significa consumido | P0 |
-| Google Books | books | Bibliotecas y estados disponibles; leído sin rating mantiene preferencia NULL | P0 o P1 |
-| Podchaser | podcasts | Ratings, reviews y actividad accesible; agregar por podcast | P1 |
-| Eventbrite | culture | Pedidos y registros accesibles; ticket no equivale a asistencia confirmada | P1 |
-| Calendario iOS o Android | food y culture principalmente | Permiso nativo; evento previsto aporta conocimiento con incertidumbre, sin preferencia automática | P1 |
+**Requisitos para cualquier fuente real:**
 
-En música la frecuencia se transforma con log1p y/o percentiles del propio usuario; no se asigna la misma preferencia a 100 escuchas para todos. En Steam se propone min(1, log1p(hoursPlayed) / log1p(userP95Playtime)), con protección si el percentil es cero. La duración típica del juego y la confianza de esa inferencia deben documentarse.
+- **Permisos una sola vez.** Cada fuente se autoriza con el flujo oficial del proveedor (OAuth, OpenID o permiso nativo del sistema) durante el registro o, más tarde, desde Profile. El usuario nunca introduce tokens, claves, códigos, nombres de usuario ni archivos exportados, y no ve pasos de sincronización. La única excepción es la renovación que imponga el proveedor (Google Data Portability: como máximo cada 180 días). Se pide con un aviso de un toque, y si el usuario no renueva se conserva lo ya importado.
+- **Solo APIs oficiales y documentadas.** Nada de scraping, APIs privadas ni ingeniería inversa.
+- **Condiciones compatibles con el uso comercial de APPINITY** (incluido Premium). Una fuente que exija licencia comercial, acuerdo de partner o una escala mínima no se implementa hasta tener el acuerdo, aunque su API sea accesible. TMDb se implementó y se descartó por este motivo (decisions.md).
+- **Ficha previa.** Antes de implementar, se redacta una ficha con documentación oficial, endpoints, scopes, aprobación, paginación, límites, almacenamiento permitido y revocación. Las capacidades del manifest reflejan solo lo comprobado.
 
-Una escucha aislada puede confirmar consumo, pero no justifica por sí sola una preferencia positiva alta. Seguir un artista o un podcast tampoco demuestra haber escuchado toda su obra. Los loved tracks se agregan al artista manteniendo el origen y el alcance de la evidencia.
+**Fuentes del MVP**, en orden de desarrollo:
 
-Los adapters de Google y Apple Music son prioritarios para el producto, pero el orden de desarrollo comienza por Steam, después TMDb y Last.fm para comprobar tres clases de evidencia. No se programan once conexiones reales simultáneamente.
+| Fuente | Acceso | Categorías | Señales y tratamiento | Prioridad |
+|---|---|---|---|---|
+| Steam | OpenID; Web API con la clave del servidor | games | Propiedad y horas acumuladas; 0 horas no significa consumido | Implementada (fase 2) |
+| Google · valoraciones y lugares (Data Portability: `search_ugc.media.*`, `maps.reviews`, `maps.starred_places`, `saved.collections`) | Un consentimiento de Google con acceso temporal renovable | movies, series, books, music, games, food, culture | Estrellas → valoración explícita con su escala real. Pulgar → like o dislike explícito. «Visto» → consumido sin preferencia. Reseña de Maps 1–5 → valoración explícita con fecha (válida para Trending local). Guardado → conocido sin preferencia | P0 · fase 3 |
+| YouTube y YouTube Music (Data Portability: `myactivity.youtube`, `youtube.music`, `youtube.subscriptions`) | El mismo consentimiento de Google | music, podcasts | Escuchas agregadas por artista y por programa con log1p o percentiles del propio usuario. Biblioteca → guardado. Suscripción → conocido sin consumo | P0 · fase 4 |
+| Google Play y reservas con Google (Data Portability: `play.*`, `order_reserve.purchases_reservations`) | El mismo consentimiento de Google | games, movies, food, culture | Instalado o comprado → conocido sin consumo. Pedido entregado → consumido sin preferencia. Reserva → intención, no asistencia | P1 · fase 11 |
+| Google Books API | OAuth (scope `books`) | books | Leído → consumido con preferencia NULL. Favorito → like explícito. Por leer → conocido. Reseña con nota → valoración explícita | P1 · fase 11 |
+| Apple Music (MusicKit) | Autorización de Apple Music en el dispositivo | music | Biblioteca, love/dislike, escuchas recientes y heavy rotation, agregadas por artista y comparadas dentro del usuario | P1 · fase 11 |
+| Calendario iOS o Android | Permiso nativo | food y culture principalmente | Evento previsto → conocimiento con incertidumbre, sin preferencia automática | P1 · fase 11 |
+| itch.io, SoundCloud, Eventbrite, Meetup, Foursquare Swarm | OAuth | games, music, culture, food | Ver fuentes-de-datos.md. Cada una tras confirmar sus condiciones comerciales; un ticket no equivale a asistencia | P2 · fase 11 |
+| Deezer, TIDAL, Discogs, ListenBrainz | OAuth | music | Pendientes de confirmar condiciones y apertura de altas | P2 |
 
-Integraciones futuras previstas: Netflix, Disney+, Prime Video, Movistar+, Filmin, Stremio, Trakt si sus condiciones lo permiten, Spotify cuando exista una vía adecuada, Xbox, Epic, PlayStation, Discord si aporta actividad útil, DICE, Resident Advisor, Kultur, Ticketmaster, TheFork, Glovo, Just Eat, Uber Eats, Podimo, Apple Podcasts y Pódium. Ninguna se presenta como disponible hasta validarla.
+**Condicionadas a un acuerdo comercial** (no se implementan sin contrato firmado):
+
+- Spotify: modo desarrollo limitado a 5 usuarios; el acceso ampliado exige ser una empresa con ≥ 250.000 usuarios activos al mes.
+- Last.fm y TMDb: uso gratuito solo no comercial.
+- Trakt, IGDB, Uber Eats (API de consumidor en acceso anticipado), TheFork, DICE, Resident Advisor, Podchaser y Riot.
+
+**En evaluación, fuera del MVP:** Gmail.
+
+- Permitiría ver pedidos de Glovo, Uber Eats y Just Eat, reservas de TheFork, entradas de DICE, RA y Ticketmaster, y compras de juegos de consola.
+- Es un permiso restringido de Google: exige auditoría de seguridad anual.
+- Su encaje en los usos que Google permite para el correo es dudoso, y es el permiso más invasivo para el usuario.
+- Requiere una evaluación legal y de coste específica.
+
+**No viables hoy** (sin API de usuario, solo exportación manual, o exigen que el usuario introduzca un token):
+
+- Netflix, Disney+, Prime Video, Movistar+, Filmin y Stremio (solo vía Trakt).
+- Filmaffinity y Letterboxd (no concede acceso a proyectos de recomendación).
+- Plex y TVmaze.
+- Xbox, PlayStation, Nintendo, Epic, GOG y Discord (no expone actividad a terceros).
+- Glovo, Just Eat, Tripadvisor y Untappd.
+- Goodreads, StoryGraph, Hardcover, Kindle, Audible y Kobo.
+- Apple Podcasts, Podimo, iVoox, Pódium y Google Podcasts.
+- Ticketmaster (datos del comprador), Bandsintown y Songkick.
+
+Se reevalúan si publican una API oficial. «Kultur» no se ha podido identificar.
+
+**Cobertura y disponibilidad:**
+
+- Google Data Portability solo está disponible en la UE, Suiza y Reino Unido, y para mayores de 18 años. Fuera de esa zona, APPINITY depende del resto de fuentes.
+- Podcasts depende casi por completo de YouTube y YouTube Music, y libros, de Google. Mientras la cobertura sea baja se aplica §3: sin evidencia propia en una categoría, se recomienda mediante las almas gemelas de otras categorías y la afinidad de esa categoría es NULL.
+
+**Normalización:**
+
+- En música la frecuencia se transforma con log1p y/o percentiles del propio usuario; no se asigna la misma preferencia a 100 escuchas para todos.
+- En Steam se propone min(1, log1p(hoursPlayed) / log1p(userP95Playtime)), con protección si el percentil es cero. La duración típica del juego y la confianza de esa inferencia deben documentarse.
+- Las valoraciones de Google se normalizan con su escala real. En Maps (1–5) se propone (rating − 3) / 2. La escala de las estrellas de la Búsqueda se verifica con un export real antes de fijarla.
+- Los pulgares se tratan como like o dislike explícito, con una puntuación y confianza propuestas y documentadas.
+- Una misma valoración que llegue por dos vías no se cuenta dos veces.
+
+Una escucha aislada puede confirmar consumo, pero no justifica por sí sola una preferencia positiva alta. Seguir un artista o un podcast tampoco demuestra haber escuchado toda su obra. Los loved tracks y likes de canciones se agregan al artista manteniendo el origen y el alcance de la evidencia.
+
+**Orden de desarrollo:** Steam (hecho); después Google valoraciones y lugares; después YouTube y YouTube Music. Así se comprueban tres clases de evidencia: propiedad y horas, valoración explícita, y frecuencia de escucha. No se programan varias conexiones reales simultáneamente.
 
 ## 10 Base de datos y consolidación
 
@@ -383,6 +438,8 @@ Trending utiliza valoraciones altas del conjunto de usuarios de APPINITY ubicado
 
 Un voto es una valoración explícita importada de una fuente conectada. Propuesta inicial: preferenceScore >= 0.60 y preferenceConfidence >= 0.80. El umbral se ajusta a la escala normalizada. Asistencia inferida, horas jugadas y escuchas no se presentan como una votación explícita.
 
+Con las fuentes del MVP (§9), las reseñas de Google Maps aportan votos fechados para restaurantes y cultura. Para las categorías globales, Trending depende de que las valoraciones de la Búsqueda de Google incluyan fecha, algo que se comprobará con un export real. Si no la incluyen, esa categoría no tendrá Trending local hasta disponer de otra fuente con valoraciones fechadas; no se rellena con popularidad externa.
+
 Cada persona aporta como máximo una valoración consolidada por objeto. Se excluye al propio destinatario, cuentas no elegibles, evidencia eliminada y usuarios bloqueados. La afinidad no interviene en la selección de votantes ni en el peso del voto. Los datos de ubicación no se exponen individualmente.
 
 **Interpretación temporal propuesta para resolver objetos con y sin fecha de estreno:**
@@ -409,6 +466,13 @@ Si no hay votos locales suficientes, no se llama Trending a la popularidad globa
 ## 14 Cold start onboarding y sincronización
 
 Onboarding: pantalla de concepto y login Google, Apple o email; confirmación 18+ y aceptación de condiciones y privacidad; pantalla «Conecta tu mundo» con fuentes disponibles. El usuario elige una o varias y se ejecutan sus flujos secuencialmente. Debe completar al menos una conexión real para finalizar el onboarding de producción.
+
+**Permisos solo en el registro (requisito del producto):** en «Conecta tu mundo» cada fuente muestra qué se leerá y se autoriza una vez con el flujo oficial del proveedor.
+
+- Con login de Google, el consentimiento de Data Portability se pide en el mismo paso como autorización incremental. Cubre valoraciones, Maps, YouTube y Play según lo que el usuario marque.
+- En iPhone o con Apple Music, la autorización de MusicKit. El calendario, con el permiso nativo.
+- Después de ese paso no hay más acciones: los syncs son automáticos y la app solo pide algo si el proveedor obliga a renovar o si el usuario revocó el acceso. Nunca se piden tokens, claves, códigos, nombres de usuario ni archivos (§9).
+- Las fuentes se pueden añadir o quitar más tarde desde Profile con el mismo mecanismo.
 
 Las fuentes no disponibles se muestran como próximas o se omiten; nunca se simula un éxito OAuth. La versión de desarrollo puede arrancar con fixtures mediante DEMO_MODE claramente identificado y desactivado en producción.
 
@@ -452,8 +516,9 @@ appinity/
     integrations/
       profile/
         steam/
-        tmdb/
-        lastfm/
+        google-portability/
+        google-books/
+        apple-music/
     catalog/
     i18n/
   workers/
@@ -466,6 +531,7 @@ appinity/
     decisions.md
     progress.md
     integration-capabilities.md
+    fuentes-de-datos.md
   CLAUDE.md
 ```
 
@@ -489,6 +555,8 @@ Notificaciones por defecto: tres por semana. Opciones: diaria, tres por semana, 
 
 Requisitos: consentimiento separado por proveedor, scopes mínimos, revocación, eliminación de datos importados y cuenta, cifrado de credenciales, bloqueo y reporte, control de descubrimiento por contactos y minimización del tratamiento de datos. La evaluación de cumplimiento normativo requiere revisión específica; este documento define requisitos de implementación, no certifica cumplimiento legal.
 
+Los datos obtenidos de Google cumplen su política de datos de usuario: se usan solo para funciones visibles para el usuario, sin anuncios, venta ni transferencia a terceros. Además, la app debe pasar la verificación de Google, que se repite cada año, y la auditoría de seguridad (CASA) si pide scopes restringidos. Cada proveedor añade sus propias condiciones de almacenamiento y caducidad, que se recogen en su ficha.
+
 Los tokens OAuth de proveedores nunca se entregan al cliente móvil. Cuando una plataforma requiera un SDK o permiso nativo, se utiliza solo el material que ese flujo exige y se documenta la excepción técnica; las credenciales de servidor permanecen en el backend. El usuario inicia los flujos en páginas o SDKs oficiales, sin entregar contraseñas a APPINITY.
 
 Autorización por recurso en todas las APIs; secretos en variables seguras, no en Git; logs sin tokens, agenda, historial cultural completo ni ubicación precisa; validación de callbacks según el mecanismo; límites de acceso; validación de entradas y enlaces; separación de datos de demo y producción.
@@ -504,17 +572,17 @@ Cada fase produce código ejecutable, comprobaciones relevantes, instrucciones p
 | 0 | Monorepo, API, app móvil, BD, Redis, auth base, navegación e i18n | Instalación reproducible, API health, migración y app con cuatro pestañas |
 | 1 | Catálogo con imágenes, observaciones, consolidación y fixtures | Distingue conocido, consumido y gusto; resuelve IDs y muestra imágenes con fallback |
 | 2 | Steam como primer adapter | Fixture y flujo real validado: conectar, sync, normalizar, guardar, repetir sin duplicar |
-| 3 | TMDb | Importa ratings disponibles y normaliza escalas reales sin inventar un historial |
-| 4 | Last.fm y agregación musical | Agrega por artista y calibra señales dentro de cada usuario |
+| 3 | Google: valoraciones y lugares (Data Portability) | Una sola autorización de Google importa valoraciones, «vistos», reseñas y guardados de Maps; normaliza escalas reales; renovación sin perder datos; ningún token a cargo del usuario |
+| 4 | YouTube, YouTube Music y agregación musical | Agrega escuchas por artista y por programa y calibra señales dentro de cada usuario |
 | 5 | Afinidad direccional versionada | Pruebas con desacuerdo, NULL, historiales desiguales y múltiples categorías |
 | 6 | Ranking Top 50 | Excluye bloqueos y al propio usuario; orden estable y perfiles mínimos |
 | 7 | Recomendador y Trending actualizado | Mezcla 70/20/10 cuando hay datos; votos locales, año dinámico y razones reales |
 | 8 | Home con carrusel | Swipe, botones, Undo, NEW, persistencia del descarte y enlaces |
 | 9 | Categories | Ocho categorías; descartes de Home visibles aquí; cold start de categoría |
 | 10 | People y Friends | Perfil mínimo, solicitudes, contactos bajo permiso y bloqueo |
-| 11 | Resto de adapters viables | Cada uno aislado, documentado y con fixtures; otros quedan desactivados |
+| 11 | Resto de adapters viables (§9) | Google Play y reservas, Google Books, Apple Music, calendario y los P2, uno por tarea, cada uno aislado, documentado y con fixtures; las fuentes condicionadas esperan su acuerdo |
 | 12 | Chat, Premium y notificaciones | Flags, solicitudes, entitlements y frecuencias respetadas |
-| 13 | Preparación de beta | Flujo completo, revisión de permisos, builds y documentación operativa |
+| 13 | Preparación de beta | Flujo completo, revisión de permisos, verificación de Google (y auditoría de seguridad si procede), builds y documentación operativa |
 
 La secuencia conserva la arquitectura planteada y añade una salida explícita de beta. Auth de producción y la conexión mínima obligatoria deben estar terminadas antes de la beta, aunque al principio se pruebe con identidad de desarrollo.
 
@@ -538,6 +606,8 @@ Las versiones affinity_algorithm_version y recommendation_algorithm_version acom
 ## 20 Alcance de esta copia y decisiones propuestas
 
 Requisitos de producto congelados desde la especificación v1.0 del 5 de octubre de 2026. Esta copia adapta únicamente las instrucciones de ejecución a Claude, el nombre del archivo de instrucciones y las referencias finales. No contiene código ni entregas de la implementación de Codex. Construir desde cero en appinity-claude.
+
+La revisión 1.1 (8 de octubre de 2026) cambia, a petición del responsable del producto, la lista de fuentes (§9) y el requisito de permisos únicos en el registro (§14), con sus efectos en §5, §6, §13, §15, §17 y §18. Al comparar implementaciones, esta revisión sustituye a la tabla de fuentes y a las fases 3 y 4 de la v1.0.
 
 Mantener como propuestas, no como parámetros ya calibrados: fórmula de afinidad, umbrales de evidencia y positividad, mínimos de Trending, interpretación temporal de entidades permanentes, organización de las cuatro pestañas y precios de Premium. Registrar en docs/decisions.md los valores adoptados y su validación. No cambiar requisitos para conseguir una demo más vistosa.
 

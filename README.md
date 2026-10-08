@@ -5,8 +5,13 @@
 Implementación independiente de APPINITY construida desde cero a partir de
 [docs/APPINITY_Especificacion.md](docs/APPINITY_Especificacion.md). No reutiliza código de otras implementaciones.
 
-**Estado:** fases 0 y 1 aceptadas en el teléfono. Fase 2 (Steam) **validada con una cuenta real**
-([docs/progress.md](docs/progress.md)). Todavía **no** hay recomendador, afinidades ni almas gemelas.
+**Estado:**
+- Fases 0 y 1 aceptadas en el teléfono.
+- Fase 2 (Steam) **validada con una cuenta real**.
+- Fuentes revisadas: especificación 1.1 y [docs/fuentes-de-datos.md](docs/fuentes-de-datos.md). TMDb queda descartada
+  por ser de uso no comercial.
+- La siguiente fase es Google Data Portability ([docs/progress.md](docs/progress.md)).
+- Todavía **no** hay recomendador, afinidades ni almas gemelas.
 
 ## Qué es real y qué es simulado
 
@@ -19,7 +24,7 @@ Implementación independiente de APPINITY construida desde cero a partir de
 | Fuentes «Demo · …» | **Simuladas**: mismo contrato de adapter que las fuentes reales, sin OAuth ni proveedores |
 | Steam | **Real** (fase 2): OpenID + Steam Web API. Solo para cuentas reales; requiere `STEAM_WEB_API_KEY` en el servidor |
 | Cuenta local real (`pnpm user:local`) | **Real** (`dataset = live`), con identidad de desarrollo y código de un solo uso. No es autenticación de producción |
-| TMDb, Last.fm, Google, Apple Music | **Pendientes** (fases 3, 4 y 11). Se muestran como «Próximamente» |
+| Google (Búsqueda, Maps, YouTube, Play), Google Books, Apple Music, calendario | **Pendientes** (fases 3, 4 y 11). Se muestran como «Próximamente». TMDb, Last.fm y Spotify requieren acuerdo comercial |
 | Identidad | **De desarrollo** (JWT firmado por la API con `DEMO_MODE`). No es autenticación de producción |
 | Recomendaciones, afinidad, almas gemelas, Trending | **Pendientes** (fases 5–8). La app no muestra ninguna inventada |
 

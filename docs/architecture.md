@@ -181,6 +181,6 @@ producción (vista web de desarrollo).
 
 ## Pendiente por fase
 
-Ver [progress.md](progress.md). TMDb (3), Last.fm (4), afinidad (5), Top 50 (6), recomendador y Trending
+Ver [progress.md](progress.md). Google Data Portability: valoraciones y lugares (3), YouTube y YouTube Music (4), afinidad (5), Top 50 (6), recomendador y Trending
 (7), Home con carrusel (8), Categories con recomendaciones (9), People/Friends (10), adapters restantes (11), chat,
 Premium y push (12), autenticación de producción y beta (13).
