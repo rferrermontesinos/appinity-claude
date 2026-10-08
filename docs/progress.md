@@ -11,7 +11,7 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 2 | **Validado con la cuenta real del usuario** (2026-10-08) | Entrega 2026-10-08 · fase 2 (rama `fase-2`, PR rferrermontesinos/appinity-claude#3, basada en `fase-1`) |
 | Revisión de fuentes | **Hecha** (2026-10-08) | Especificación 1.1 y docs/fuentes-de-datos.md (rama `especificacion-fuentes`, PR rferrermontesinos/appinity-claude#5, basada en `fase-2`). TMDb descartada: PR rferrermontesinos/appinity-claude#4 cerrada sin fusionar |
 | Revisión de fuentes · decisiones | **Aceptada** (2026-10-09) | El usuario aceptó la especificación 1.1; de momento, imagen genérica (sin licencia de catálogo); Gmail se evaluará más adelante |
-| 3 | **Implementado y comprobado automáticamente**; pendiente de validar con la cuenta real | Entrega 2026-10-09 · fase 3 (rama `fase-3-google`, basada en `especificacion-fuentes`). Falta el proyecto de Google Cloud del usuario |
+| 3 | **Implementado y comprobado automáticamente**; pendiente de validar con la cuenta real | Entrega 2026-10-09 · fase 3 (rama `fase-3-google`, PR rferrermontesinos/appinity-claude#6, basada en `especificacion-fuentes`). Falta el proyecto de Google Cloud del usuario |
 | 4 | Pendiente | YouTube y YouTube Music (mismo consentimiento de Google) |
 | 5–7 | Pendiente | Afinidad, Top 50 y recomendador |
 | 8–10 | Pendiente | Home, Categories y social |
@@ -23,7 +23,7 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ## Entrega 2026-10-09 · fase 3 (Google Data Portability: valoraciones y lugares)
 
-Rama `fase-3-google` (basada en `especificacion-fuentes`).
+Rama `fase-3-google` (basada en `especificacion-fuentes`), commit `7870721`, PR rferrermontesinos/appinity-claude#6.
 
 ### Qué se ha hecho
 
