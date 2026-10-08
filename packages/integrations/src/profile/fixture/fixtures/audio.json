@@ -1,0 +1,59 @@
+{
+  "source": "fixture_audio",
+  "note": "Actividad SIMULADA. Artistas (MusicBrainz) y programas (Apple Podcasts) reales; escuchas, favoritos y episodios inventados. Solo los episodios de Serial llevan título real; los demás solo número.",
+  "users": [
+    {
+      "userId": "00000000-0000-4000-a000-000000000001",
+      "handle": "demo_laura",
+      "records": [
+        { "kind": "artist_playcount", "artist": { "name": "Rosalía", "mbid": "25f3abd9-63b5-471a-bd25-feb9672dfa11" }, "playcount": 412 },
+        { "kind": "artist_playcount", "artist": { "name": "Joan Manuel Serrat", "mbid": "64e96700-d880-452e-803d-e4d7628b0224" }, "playcount": 1 },
+        { "kind": "loved_track", "id": "lt-l-01", "artist": { "name": "Rosalía", "mbid": "25f3abd9-63b5-471a-bd25-feb9672dfa11" }, "track": { "name": "Malamente" }, "at": "2026-02-01T18:20:00Z" },
+        { "kind": "podcast_episode", "id": "ep-l-01", "show": { "name": "Serial", "appleId": "917918570" }, "episode": { "title": "The Alibi", "number": 1 }, "at": "2026-01-12T07:40:00Z" },
+        { "kind": "podcast_episode", "id": "ep-l-02", "show": { "name": "Serial", "appleId": "917918570" }, "episode": { "title": "The Breakup", "number": 2 }, "at": "2026-01-13T07:45:00Z" },
+        { "kind": "podcast_subscription", "show": { "name": "99% Invisible", "appleId": "394775318" }, "at": "2025-09-01T08:00:00Z" }
+      ]
+    },
+    {
+      "userId": "00000000-0000-4000-a000-000000000002",
+      "handle": "demo_alex",
+      "records": [
+        { "kind": "artist_playcount", "artist": { "name": "Daft Punk", "mbid": "056e4f3e-d505-4dad-8ec1-d04f521cbb56" }, "playcount": 800 },
+        { "kind": "artist_playcount", "artist": { "name": "Radiohead", "mbid": "a74b1b7f-71a5-4011-9441-d0b5e4122711" }, "playcount": 300 },
+        { "kind": "artist_playcount", "artist": { "name": "Arctic Monkeys", "mbid": "ada7a83c-e3e1-40f1-93f9-3e73dbc9298a" }, "playcount": 150 },
+        { "kind": "artist_playcount", "artist": { "name": "Björk", "mbid": "87c5dedd-371d-4a53-9f7f-80522fb7f3cb" }, "playcount": 40 },
+        { "kind": "artist_playcount", "artist": { "name": "C. Tangana", "mbid": "46d3689c-23e6-46f7-8ad6-c12f13ac9dea" }, "playcount": 2 },
+        { "kind": "loved_track", "id": "lt-a-01", "artist": { "name": "Daft Punk", "mbid": "056e4f3e-d505-4dad-8ec1-d04f521cbb56" }, "track": { "name": "Get Lucky" }, "at": "2025-12-24T16:00:00Z" },
+        { "kind": "loved_track", "id": "lt-a-02", "artist": { "name": "Daft Punk", "mbid": "056e4f3e-d505-4dad-8ec1-d04f521cbb56" }, "track": { "name": "One More Time" }, "at": "2026-03-02T19:00:00Z" }
+      ]
+    },
+    {
+      "userId": "00000000-0000-4000-a000-000000000005",
+      "handle": "demo_nuria",
+      "records": [
+        { "kind": "artist_playcount", "artist": { "name": "Vetusta Morla", "mbid": "b185451a-9edd-46df-8046-1db7e9594f5a" }, "playcount": 90 },
+        { "kind": "artist_playcount", "artist": { "name": "Love of Lesbian", "mbid": "31ab8f5f-b5d7-41a2-80ef-13084aaf0eab" }, "playcount": 60 },
+        { "kind": "artist_playcount", "artist": { "name": "Estopa", "mbid": "49fc7e46-5441-4b7e-996a-12dddf22a632" }, "playcount": 12 },
+        { "kind": "podcast_episode", "id": "ep-n-01", "show": { "name": "Serial", "appleId": "917918570" }, "episode": { "title": "The Alibi", "number": 1 }, "at": "2025-10-01T07:30:00Z" },
+        { "kind": "podcast_episode", "id": "ep-n-02", "show": { "name": "Serial", "appleId": "917918570" }, "episode": { "title": "The Breakup", "number": 2 }, "at": "2025-10-02T07:30:00Z" },
+        { "kind": "podcast_episode", "id": "ep-n-03", "show": { "name": "Serial", "appleId": "917918570" }, "episode": { "number": 3 }, "at": "2025-10-03T07:30:00Z" },
+        { "kind": "podcast_episode", "id": "ep-n-04", "show": { "name": "Serial", "appleId": "917918570" }, "episode": { "number": 4 }, "at": "2025-10-04T07:30:00Z" },
+        { "kind": "podcast_episode", "id": "ep-n-05", "show": { "name": "Serial", "appleId": "917918570" }, "episode": { "number": 5 }, "at": "2025-10-05T07:30:00Z" },
+        { "kind": "podcast_episode", "id": "ep-n-06", "show": { "name": "This American Life", "appleId": "201671138" }, "episode": { "number": 1 }, "at": "2026-02-01T08:00:00Z" },
+        { "kind": "podcast_episode", "id": "ep-n-07", "show": { "name": "This American Life", "appleId": "201671138" }, "episode": { "number": 2 }, "at": "2026-02-08T08:00:00Z" },
+        { "kind": "podcast_episode", "id": "ep-n-08", "show": { "name": "This American Life", "appleId": "201671138" }, "episode": { "number": 3 }, "at": "2026-02-15T08:00:00Z" },
+        { "kind": "podcast_episode", "id": "ep-n-09", "show": { "name": "Radiolab", "appleId": "152249110" }, "episode": { "number": 1 }, "at": "2026-03-01T08:00:00Z" },
+        { "kind": "podcast_episode", "id": "ep-n-10", "show": { "name": "Radiolab", "appleId": "152249110" }, "episode": { "number": 2 }, "at": "2026-03-08T08:00:00Z" },
+        { "kind": "podcast_episode", "id": "ep-n-11", "show": { "name": "Radiolab", "appleId": "152249110" }, "episode": { "number": 3 }, "at": "2026-03-15T08:00:00Z" },
+        { "kind": "podcast_episode", "id": "ep-n-12", "show": { "name": "Radiolab", "appleId": "152249110" }, "episode": { "number": 4 }, "at": "2026-03-22T08:00:00Z" },
+        { "kind": "podcast_episode", "id": "ep-n-13", "show": { "name": "Crims", "appleId": "1440040477" }, "episode": { "number": 1 }, "at": "2026-04-01T21:00:00Z" },
+        { "kind": "podcast_episode", "id": "ep-n-14", "show": { "name": "Crims", "appleId": "1440040477" }, "episode": { "number": 2 }, "at": "2026-04-02T21:00:00Z" },
+        { "kind": "podcast_episode", "id": "ep-n-15", "show": { "name": "Crims", "appleId": "1440040477" }, "episode": { "number": 3 }, "at": "2026-04-03T21:00:00Z" },
+        { "kind": "podcast_episode", "id": "ep-n-16", "show": { "name": "Crims", "appleId": "1440040477" }, "episode": { "number": 4 }, "at": "2026-04-04T21:00:00Z" },
+        { "kind": "podcast_episode", "id": "ep-n-17", "show": { "name": "Crims", "appleId": "1440040477" }, "episode": { "number": 5 }, "at": "2026-04-05T21:00:00Z" },
+        { "kind": "podcast_episode", "id": "ep-n-18", "show": { "name": "Crims", "appleId": "1440040477" }, "episode": { "number": 6 }, "at": "2026-04-06T21:00:00Z" },
+        { "kind": "podcast_subscription", "show": { "name": "The Daily", "appleId": "1200361736" }, "at": "2026-05-01T06:00:00Z" }
+      ]
+    }
+  ]
+}

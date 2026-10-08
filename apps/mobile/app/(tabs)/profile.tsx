@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, Switch, Text, View } from 'react-native';
 import { useMe, useUpdateSettings, type SettingsPatch } from '../../src/api/queries';
 import { Diagnostics } from '../../src/components/Diagnostics';
+import { SourcesCard } from '../../src/components/SourcesCard';
 import {
   Badge,
   Body,
@@ -178,10 +179,7 @@ export default function ProfileScreen() {
             <Small>{t('profile.devIdentityHelp')}</Small>
             <Button label={t('profile.switchUser')} variant="secondary" icon="account-switch" onPress={() => void clear()} />
           </Card>
-          <Card>
-            <Title style={{ fontSize: 16 }}>{t('profile.sources')}</Title>
-            <PendingNotice phase="1" text={t('profile.sourcesPending')} />
-          </Card>
+          <SourcesCard />
           <SettingsCard settings={me.data.settings} />
           <Card>
             <Title style={{ fontSize: 16 }}>{t('profile.subscription')}</Title>

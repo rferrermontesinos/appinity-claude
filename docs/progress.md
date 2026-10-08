@@ -5,9 +5,9 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 | Fase | Estado | Evidencia / siguiente paso |
 |---|---|---|
-| 0 | Implementado y comprobado automáticamente. Aceptación en dispositivo pendiente | Ver entrega 2026-10-08 · fase 0 |
-| 1 | Pendiente | Modelo de catálogo, observaciones, consolidación y fixtures |
-| Aceptación de demo | Pendiente | Usuario prueba instalación, API y teléfono tras 0–1 |
+| 0 | Implementado y comprobado automáticamente. Aceptación en dispositivo pendiente | Entrega 2026-10-08 · fase 0 (rama `fase-0`, PR rferrermontesinos/appinity-claude#1) |
+| 1 | Implementado y comprobado automáticamente. Aceptación en dispositivo pendiente | Entrega 2026-10-08 · fase 1 (rama `fase-1`) |
+| Aceptación de demo | **Pendiente (usuario)** | Recorrido de 16 pasos del README en el teléfono. No avanzar a Steam hasta confirmarlo |
 | 2–4 | Pendiente | Steam, TMDb y Last.fm, en ese orden |
 | 5–7 | Pendiente | Afinidad, Top 50 y recomendador |
 | 8–10 | Pendiente | Home, Categories y social |
@@ -17,9 +17,106 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-08 · fase 1
+
+Rama `fase-1` (basada en `fase-0`). Commit y PR: ver el historial de Git y la PR de `fase-1`.
+
+### Qué se ha hecho
+
+- **Catálogo canónico** (`catalog_items`, `catalog_external_ids` con espacio de nombres y unicidad por dataset,
+  `catalog_images` con licencia y autor) e instantánea real de Wikidata/Commons: 108 objetos (96 principales de las
+  ocho categorías, 4 ediciones, 8 temporadas) y 82 imágenes libres. Caché de imágenes en almacenamiento propio,
+  fallback SVG por categoría y fechas con su precisión real.
+- **Contrato de observaciones** con validación runtime (Zod) y constraints SQL equivalentes. Known, Consumed y
+  Preference independientes; NULL coherente.
+- **Resolución de entidades**: ID canónico → ID de proveedor → proveedor de catálogo → atributos exactos → creación.
+  Edición (ISBN) → obra. Nunca por título parecido. Bloqueos para evitar duplicados concurrentes.
+- **Consolidación v1** versionada (`consolidation-v1`) en `packages/algorithms`, sin dependencias de proveedores.
+- **Conexiones**: consentimiento por proveedor, ejecuciones de sync con contadores, cursores y errores parciales,
+  credenciales cifradas (AES-256-GCM, probado; sin uso todavía), desconexión con borrado opcional y recálculo.
+- **Pipeline de ingesta** (`runConnectionSync`) con paginación, idempotencia, instantáneas, bloqueo por conexión y
+  protección frente a escrituras tras la revocación. Worker BullMQ con colas `profile-sync` y `catalog-images`.
+- **Adapter fixture** con la estructura común de §8 y cinco fuentes simuladas (cine/series, diario, actividad y lugares,
+  juegos, música y podcasts) con fixtures deterministas para 5 usuarios (Sam sin datos).
+- **API**: `/v1/sources`, `/v1/me/connections` (+sync, runs, delete), `/v1/catalog/items`, `/v1/me/item-profiles`,
+  `/media/catalog/*`, `/static/fallback/*`.
+- **App**: gestión de fuentes en Perfil, catálogo por categoría con imágenes y fallback, «Modelo de datos (demo)» con
+  las tres dimensiones y etiquetas de casos, detalle con atribución de imagen, IDs externos y evidencias propias.
+- **Seed de demo completo** e idempotente (`pnpm db:seed`).
+
+### Casos del modelo cubiertos por los fixtures (y dónde verlos)
+
+| Caso | Usuario y objeto |
+|---|---|
+| Conocido sin consumo (watchlist, «quiero», guardado) | Laura: Dr. Strangelove, Don Quijote, Cal Boter, El juego del calamar |
+| Consumo sin valoración | Laura: Some Like It Hot, The Office, La Regenta, Big Buck Bunny |
+| Valoración positiva y negativa | Laura: Casablanca +0,78, Frankenstein −0,33, La noche de los muertos vivientes −0,56 |
+| Juego con cero horas | Laura y Àlex: Mindustry; Àlex: Stardew Valley |
+| Mismo objeto en tres fuentes | Laura: Casablanca (cine, diario y actividad), una entidad y un perfil |
+| Valoración negativa frente a asistencia | Laura: MACBA; Marta: MNAC |
+| Fechas ausentes y solo con año | Laura: Dr. Strangelove (sin fecha), La Regenta y Big Buck Bunny (año) |
+| Edición → obra | Laura: Orgullo y prejuicio (ISBN de una edición en español) |
+| Objeto sin imagen libre (fallback) | Robot Dreams, Stardew Valley, Baldur's Gate 3, Crims, Radiolab… |
+| Objeto desconocido para el catálogo | Àlex: Portal (appid 400) |
+| Escucha aislada sin preferencia | Laura: Joan Manuel Serrat (1 escucha) |
+| Episodios agregados por programa | Núria: Serial (5 episodios), Crims (6) |
+| Evento previsto sin asistencia | Laura: Palau de la Música; Marta: 31 Manga Barcelona |
+| Registro inválido (validación runtime) | Laura: `scr-l-10` (valoración 11) |
+| Usuario sin evidencia | Sam |
+
+### Comandos ejecutados y resultados (Windows 11, 2026-10-08)
+
+| Comando | Resultado |
+|---|---|
+| `pnpm install --frozen-lockfile` | OK |
+| `pnpm db:reset` y `pnpm db:seed` (repetido) | 6 usuarios, 108 objetos, 14 syncs. Segunda ejecución: 0 nuevos y 0 actualizados en todo; 109 objetos (108 + Portal), 82 observaciones, 74 perfiles, 14 conexiones |
+| `pnpm worker` (caché de imágenes) | 82/82 imágenes cacheadas (24 MB en `.data/media`) |
+| `pnpm lint` | 0 errores |
+| `pnpm typecheck` | OK |
+| `pnpm test` | **9 ficheros, 96 tests OK**: 53 unitarios (normalización, consolidación, mappers fixture, sync, registro, cifrado, i18n, categorías) y 43 de integración (pipeline completo, API de catálogo, conexiones y perfiles, auth) |
+| `npx expo install --check` | «Dependencies are up to date» |
+| `npx expo export --platform android --platform ios` | Bundles Hermes generados (Android 5,3 MB, iOS 5,1 MB) |
+| API por la IP de red (`curl` desde el PC) | Fuentes, conexiones, catálogo, perfiles, imágenes 200, fallback 200, path traversal 404, recursos ajenos 404 |
+| Flujo completo por la IP de red | Marta: desconectar y borrar (13 → 1 perfil), reconectar (sync del worker +13), resync completo (=13, sin duplicados) |
+| Vista web de desarrollo (navegador integrado, 375×812) | dev-login, Modelo (28 objetos de Laura), detalle de Casablanca, catálogo de juegos (11 imágenes 200 + 4 fallbacks), Perfil/fuentes, estado vacío de Sam en inglés |
+
+### Fallos detectados y corregidos durante la verificación
+
+- La segunda ejecución del seed marcaba 2 observaciones como actualizadas: la huella incluía el método de resolución.
+- Conectar dos veces una fuente devolvía 500 en lugar de 409 (Drizzle envuelve el error de PostgreSQL).
+- La app cerraba sesión al arrancar: una consulta sin token recibía 401 y borraba la sesión guardada (afectaba también
+  al móvil).
+- Precisión de fecha inventada en ediciones y temporadas de la instantánea («día» cuando solo había año).
+- Errores parciales mostrados como JSON en bruto; ahora son legibles.
+
+### Validación manual pendiente (usuario, en el teléfono)
+
+Recorrido de 16 pasos de la sección «Probar en el teléfono» del README. En particular: carga en Expo Go del SDK 57,
+API alcanzable desde el móvil, imágenes reales y fallback, las tres dimensiones en «Modelo de datos (demo)», sync
+repetido sin duplicados, desconectar y borrar, cambio de idioma y de ajustes.
+
+**No se ha probado en ningún dispositivo ni emulador**: el emulador del PC tiene Expo Go 55 y no se actualizó para no
+alterar la otra implementación.
+
+### Limitaciones de esta entrega
+
+- Todas las fuentes son simuladas; ninguna integración real está validada.
+- Sin recomendador, afinidad, almas gemelas, Trending ni carrusel (fases 5–8); Categories muestra catálogo, no
+  recomendaciones.
+- Los parámetros de normalización, consolidación y resolución son propuestas sin calibrar.
+- Las imágenes cacheadas no se redimensionan (algunas superan 1 MB).
+- No hay pruebas automatizadas de interfaz en dispositivo.
+- Identidad de desarrollo; sin autenticación de producción.
+
+### Siguiente paso
+
+Aceptación manual de la demo por el usuario. Después, fase 2 (Steam) con `prompts/fase_02_steam.md`.
+
+---
+
 ## Entrega 2026-10-08 · fase 0
 
-Rama `fase-0`. Commit y PR: ver el resumen de la entrega en el historial de Git.
+Rama `fase-0`, PR rferrermontesinos/appinity-claude#1.
 
 ### Qué se ha hecho
 

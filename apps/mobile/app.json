@@ -6,7 +6,11 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "dev.appinity.claude",
@@ -16,7 +20,9 @@
     },
     "android": {
       "package": "dev.appinity.claude",
-      "permissions": ["ACCESS_COARSE_LOCATION"]
+      "permissions": [
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -28,6 +34,9 @@
           "locationWhenInUsePermission": "APPINITY usa tu ubicación una sola vez para fijar una zona aproximada (restaurantes, cultura y comunidad local)."
         }
       ]
-    ]
+    ],
+    "web": {
+      "output": "single"
+    }
   }
 }

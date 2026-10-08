@@ -8,6 +8,7 @@
   "dependencies": {
     "@appinity/catalog": "workspace:*",
     "@appinity/database": "workspace:*",
+    "@appinity/ingestion": "workspace:*",
     "@appinity/integrations": "workspace:*",
     "@appinity/shared": "workspace:*",
     "@nestjs/common": "12.1.2",
@@ -15,6 +16,7 @@
     "@nestjs/platform-express": "12.1.2",
     "@nestjs/throttler": "6.7.1",
     "bullmq": "6.3.11",
+    "drizzle-orm": "0.45.3",
     "helmet": "8.3.0",
     "ioredis": "6.0.0",
     "jose": "6.2.12",
