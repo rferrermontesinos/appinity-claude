@@ -57,6 +57,12 @@ Rama `fase-2` (basada en `fase-1`), commit `867cd6c`, PR rferrermontesinos/appin
 | `pnpm user:local -- --handle test_local_smoke …` | Crea la cuenta y guarda solo el hash (cuenta de prueba borrada después) |
 | URL de OpenID contra Steam real | Steam acepta la petición y muestra su formulario «Iniciar sesión» con `return_to` en `192.168.1.16:3100` |
 
+### Fallos detectados tras la entrega
+
+- `pnpm secret:set` rechazaba una clave válida al pegarla en PowerShell: en modo «raw» el pegado puede llegar con
+  caracteres de control o marcadores de pegado. Corregido: se limpian, se muestra un `*` por carácter, el error indica
+  la longitud recibida (sin revelar el valor) y existe `--clipboard`. La clave nunca se guardó.
+
 ### Pendiente del usuario (conexión real)
 
 1. Crear la clave en <https://steamcommunity.com/dev/apikey> y guardarla con `pnpm secret:set STEAM_WEB_API_KEY`.

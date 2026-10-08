@@ -166,8 +166,16 @@ guardan únicamente en la base de datos local.
    pnpm secret:set STEAM_WEB_API_KEY
    ```
 
-   Pide el valor sin mostrarlo, comprueba que tiene 32 caracteres hexadecimales y lo escribe en `.env` (ignorado por
-   Git). Alternativa: abrir `.env` con un editor y completar `STEAM_WEB_API_KEY=`.
+   Pide el valor mostrando un `*` por carácter (nunca el valor), comprueba que tiene 32 caracteres hexadecimales y lo
+   escribe en `.env` (ignorado por Git). En PowerShell, pega con **clic derecho**; si no aparecen asteriscos, copia la
+   clave y usa el portapapeles:
+
+   ```bash
+   pnpm secret:set STEAM_WEB_API_KEY --clipboard
+   ```
+
+   Alternativa: abrir `.env` con un editor y completar `STEAM_WEB_API_KEY=`. No compartas la clave en chats ni
+   capturas: si se expone, anúlala en la página de Steam y crea otra.
 3. **Crea tu cuenta local real** (solo desarrollo):
 
    ```bash
@@ -217,7 +225,7 @@ instrucción y conserva lo ya importado.
 | `pnpm db:seed` | Seed determinista de la demo: usuarios, catálogo, conexiones fixture y syncs (solo `DEMO_MODE=true`) |
 | `pnpm db:reset` | Vacía la BD de desarrollo, migra y siembra (solo `DEMO_MODE=true`) |
 | `pnpm user:local -- --handle h --name "N"` | Crea o regenera una cuenta local real (dataset `live`) y muestra su código una vez |
-| `pnpm secret:set STEAM_WEB_API_KEY` | Guarda la clave de Steam en `.env` sin mostrarla |
+| `pnpm secret:set STEAM_WEB_API_KEY [--clipboard]` | Guarda la clave de Steam en `.env` sin mostrarla (escrita o desde el portapapeles) |
 | `pnpm api` / `pnpm worker` | API NestJS en `0.0.0.0:3100` / worker BullMQ (syncs, syncs programados cada hora y caché de imágenes) |
 | `pnpm dev` | Compilación en modo watch + API + worker |
 | `pnpm mobile` | Metro/Expo en el puerto 8091 |
