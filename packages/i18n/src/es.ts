@@ -53,6 +53,9 @@ export const es = {
     banner: 'DEMO · actividad de usuarios simulada',
     bannerDetail:
       'Los usuarios y su actividad son simulados (DEMO_MODE). Los objetos del catálogo y sus imágenes son reales (Wikidata y Wikimedia Commons).',
+    liveBanner: 'DATOS REALES · cuenta local de desarrollo',
+    liveBannerDetail:
+      'Lo que ves procede de tus fuentes reales conectadas (p. ej. Steam). Se guarda solo en la base de datos local de este PC. La sesión es de desarrollo, no de producción.',
   },
   home: {
     title: 'Inicio',
@@ -154,6 +157,15 @@ export const es = {
     confirmPurge:
       'Se eliminarán las evidencias importadas de esta fuente y se recalculará tu perfil con las demás fuentes.',
     reconnect: 'Volver a conectar',
+    connectSteam: 'Iniciar sesión con Steam',
+    steamHelp:
+      'Se abrirá Steam para que inicies sesión allí (APPINITY no ve tu contraseña). Solo se vincula tu SteamID; la biblioteca se lee con la Steam Web API.',
+    unconfigured: 'No disponible en este servidor: {{reason}}',
+    demoOnlyReal: 'Solo para cuentas reales. Entra con una cuenta local real para conectarla.',
+    connectedResult: 'Cuenta conectada. La primera sincronización está en marcha.',
+    errorResult: 'No se pudo conectar: {{message}}',
+    cancelledResult: 'Conexión cancelada.',
+    needsAction: 'Requiere tu acción',
     status: {
       active: 'Conectada',
       error: 'Con errores',
@@ -242,6 +254,12 @@ export const es = {
     title: 'Elige un usuario de demo',
     help: 'Estos usuarios son simulados. La API emite una sesión de desarrollo firmada; no hay contraseñas ni cuentas reales.',
     unavailable: 'La identidad de desarrollo no está disponible en esta API.',
+    localTitle: 'Cuenta local real',
+    localHelp:
+      'Para probar integraciones con tus propios datos (p. ej. Steam). Créala en el PC con «pnpm user:local», que muestra un código de un solo uso. Sigue siendo identidad de desarrollo, no autenticación de producción.',
+    handle: 'Usuario (handle)',
+    code: 'Código de acceso',
+    signIn: 'Entrar con la cuenta local',
   },
   diagnostics: {
     title: 'Conexión con la API',

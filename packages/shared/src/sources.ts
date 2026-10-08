@@ -54,7 +54,7 @@ export type SourceAuthentication =
 export type SyncStrategy = 'webhook' | 'incremental' | 'scheduled' | 'full-refresh';
 
 /** Estado de disponibilidad declarado en el manifest. */
-export type SourceAvailability = 'fixture' | 'planned' | 'available';
+export type SourceAvailability = 'fixture' | 'planned' | 'available' | 'unconfigured';
 
 export interface ProfileSourceManifest {
   key: ProfileSourceKey;
@@ -97,8 +97,18 @@ export type SourceCredentials = Record<string, string>;
 export interface ConnectContext {
   userId: string;
   locale?: string;
+  /** URL de vuelta (callback de la API) para flujos con redirección, con el `state` ya incluido. */
   redirectUri?: string;
+  /** Origen (realm) que el proveedor muestra al usuario al autorizar. */
+  realm?: string;
   params?: Record<string, string>;
+}
+
+/** Datos con los que el proveedor vuelve al callback de la API en un flujo con redirección. */
+export interface CompleteConnectContext {
+  userId: string;
+  redirectUri: string;
+  callbackParams: Record<string, string>;
 }
 
 export type AuthResult =
@@ -150,6 +160,8 @@ export interface ProfileSourceAdapter {
    */
   snapshotObservationKinds?: readonly string[];
   connect(context: ConnectContext): Promise<AuthResult>;
+  /** Ampliación: completa un flujo con redirección (OpenID/OAuth) verificando la respuesta del proveedor. */
+  completeConnect?(context: CompleteConnectContext): Promise<AuthResult>;
   refreshConnection?(connection: UserConnection): Promise<UserConnection>;
   sync(context: SyncContext): Promise<SyncBatch>;
   normalize(record: unknown, context: NormalizeContext): Promise<NormalizedObservation[]>;

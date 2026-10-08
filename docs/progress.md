@@ -5,15 +5,79 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 | Fase | Estado | Evidencia / siguiente paso |
 |---|---|---|
-| 0 | Implementado y comprobado automáticamente. Aceptación en dispositivo pendiente | Entrega 2026-10-08 · fase 0 (rama `fase-0`, PR rferrermontesinos/appinity-claude#1) |
-| 1 | Implementado y comprobado automáticamente. Aceptación en dispositivo pendiente | Entrega 2026-10-08 · fase 1 (rama `fase-1`, PR rferrermontesinos/appinity-claude#2, basada en `fase-0`) |
-| Aceptación de demo | **Pendiente (usuario)** | Recorrido de 16 pasos del README en el teléfono. No avanzar a Steam hasta confirmarlo |
-| 2–4 | Pendiente | Steam, TMDb y Last.fm, en ese orden |
+| 0 | **Aceptado en dispositivo** (2026-10-08) | Entrega 2026-10-08 · fase 0 (rama `fase-0`, PR rferrermontesinos/appinity-claude#1) |
+| 1 | **Aceptado en dispositivo** (2026-10-08) | Entrega 2026-10-08 · fase 1 (rama `fase-1`, PR rferrermontesinos/appinity-claude#2, basada en `fase-0`) |
+| Aceptación de demo | **Hecha** | El usuario confirmó: «He probado la demo y funciona» |
+| 2 | Implementado y comprobado automáticamente con respuestas simuladas. **Conexión real pendiente** (clave y prueba del usuario) | Entrega 2026-10-08 · fase 2 (rama `fase-2`, basada en `fase-1`) |
+| 3–4 | Pendiente | TMDb y Last.fm, en ese orden |
 | 5–7 | Pendiente | Afinidad, Top 50 y recomendador |
 | 8–10 | Pendiente | Home, Categories y social |
 | 11 | Pendiente | Fuentes adicionales viables, una por tarea |
 | 12 | Pendiente | Chat, Premium y notificaciones, por subentregas |
 | 13 | Pendiente | Preparación y prueba de beta |
+
+---
+
+## Entrega 2026-10-08 · fase 2 (Steam)
+
+Rama `fase-2` (basada en `fase-1`). Commit y PR: ver el historial de Git.
+
+### Qué se ha hecho
+
+- **Validación en documentación oficial** de la autenticación y el acceso de Steam (ficha completa en
+  [integration-capabilities.md](integration-capabilities.md#steam--fase-2)).
+- **Adapter `profile/steam`** con la estructura común: OpenID 2.0 (construcción de URL y verificación completa con
+  `check_authentication`), cliente de la Web API con reintentos y límites, sync de instantánea, mapper `steam-v1`,
+  esquemas Zod de las respuestas, constantes y fixtures simulados.
+- **Conexión con redirección**: `POST /v1/me/connections` devuelve la URL de Steam con un `state` de un solo uso;
+  `GET /v1/connect/steam/callback` verifica y crea la conexión, encola el sync y vuelve a la app (lista blanca de URL).
+- **Guardado y consolidación** con el pipeline común (resolución canónica por `steam:app`, observaciones idempotentes,
+  perfiles), **desconexión** que olvida el SteamID y, opcionalmente, borra lo importado.
+- **Errores**: perfiles o bibliotecas no visibles (mensaje accionable, conexión en «error», sin borrar evidencia), clave
+  no válida (sin reintentos), 429/5xx/red (reintentos con backoff y `Retry-After`), entradas corruptas (errores
+  parciales).
+- **Syncs programados** cada hora para fuentes reales (24 h por conexión, configurable).
+- **Cuenta local real** (`pnpm user:local`, migración `0003`) para usar datos propios con identidad de desarrollo, y
+  aviso «DATOS REALES» en la app.
+- **Credenciales sin chat**: `pnpm secret:set STEAM_WEB_API_KEY` (entrada oculta, solo a `.env`).
+- **App**: login de cuenta local, botón oficial «Sign in through Steam», navegador de autenticación con vuelta a la
+  app, estados «sin configurar», «solo cuentas reales» y «requiere tu acción», pista del SteamID.
+
+### Comandos ejecutados y resultados (Windows 11, 2026-10-08)
+
+| Comando | Resultado |
+|---|---|
+| `pnpm install --frozen-lockfile` | OK |
+| `pnpm db:migrate` | Migración `0003_local_accounts_external_unique` aplicada |
+| `pnpm lint` | 0 errores |
+| `pnpm typecheck` | OK |
+| `pnpm test` | **12 ficheros, 136 tests OK** (70 unitarios, 66 de integración). Nuevos: 17 unitarios de Steam (OpenID válido y manipulado, cliente con 429/5xx/403, biblioteca oculta frente a vacía, mapper, registro), 15 de integración del pipeline de Steam y 8 HTTP (cuenta local, inicio de conexión, callback, `state` de un solo uso, lista blanca de URL) |
+| `pnpm db:seed` | La demo sigue igual e idempotente |
+| `npx expo export --platform android --platform ios` | Bundles generados |
+| `pnpm user:local -- --handle test_local_smoke …` | Crea la cuenta y guarda solo el hash (cuenta de prueba borrada después) |
+| URL de OpenID contra Steam real | Steam acepta la petición y muestra su formulario «Iniciar sesión» con `return_to` en `192.168.1.16:3100` |
+
+### Pendiente del usuario (conexión real)
+
+1. Crear la clave en <https://steamcommunity.com/dev/apikey> y guardarla con `pnpm secret:set STEAM_WEB_API_KEY`.
+2. `pnpm user:local -- --handle … --name …` y entrar en la app con el código.
+3. **Reiniciar `pnpm api` y `pnpm worker`**. Los que estaban en marcha desde la prueba de la demo tienen el código
+   anterior cargado.
+4. Perfil → Steam → «Sign in through Steam», comprobar la importación, repetir el sync (sin duplicados), juegos con
+   0 h y desconectar.
+
+Mientras no se haga, la integración real de Steam **no está validada**: solo lo está con respuestas simuladas.
+
+### Limitaciones
+
+- Sin fechas de lanzamiento de Steam (la Web API no las da); necesarias para Trending (fase 7).
+- El arte de Steam es solo referencia; si el CDN no tiene cápsula 600×900, la app muestra el fallback.
+- La cuenta local real sigue siendo identidad de desarrollo. La autenticación de producción llega en la fase 13.
+- Calibración de horas → preferencia sin validar con datos reales.
+
+### Siguiente paso
+
+Prueba real del usuario con su cuenta de Steam. Después, fase 3 (TMDb) con `prompts/fase_03_tmdb.md`.
 
 ---
 

@@ -7,7 +7,7 @@ import type { AuthResult, ConnectContext, FixtureSourceKey } from '@appinity/sha
 export async function connectFixture(source: FixtureSourceKey, context: ConnectContext): Promise<AuthResult> {
   return {
     kind: 'connected',
-    externalAccountRef: `fixture:${source}:${context.userId.slice(-4)}`,
+    externalAccountRef: `fixture:${source}:${context.userId}`,
     scopes: ['fixture:read'],
   };
 }

@@ -32,6 +32,11 @@ export const users = pgTable(
     termsAcceptedAt: timestamp('terms_accepted_at', { withTimezone: true }),
     /** Descripción de la persona simulada (solo dataset demo). */
     demoNote: text('demo_note'),
+    /**
+     * Hash scrypt del código de acceso de una cuenta local real (dataset live) creada con `pnpm user:local`.
+     * Solo sirve para la identidad de desarrollo; no es autenticación de producción.
+     */
+    localLoginCodeHash: text('local_login_code_hash'),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
     ...timestamps,
   },
@@ -40,6 +45,7 @@ export const users = pgTable(
     check('users_dataset_valid', sql`${t.dataset} IN ('demo', 'live')`),
     check('users_status_valid', sql`${t.status} IN ('active', 'suspended', 'deleted')`),
     check('users_demo_note_only_demo', sql`${t.demoNote} IS NULL OR ${t.dataset} = 'demo'`),
+    check('users_local_code_only_live', sql`${t.localLoginCodeHash} IS NULL OR ${t.dataset} = 'live'`),
   ],
 );
 

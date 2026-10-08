@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Switch, Text, View } from 'react-native';
 import { useMe, useUpdateSettings, type SettingsPatch } from '../../src/api/queries';
+import { DataBanner } from '../../src/components/DataBanner';
 import { Diagnostics } from '../../src/components/Diagnostics';
 import { SourcesCard } from '../../src/components/SourcesCard';
 import {
@@ -11,7 +12,6 @@ import {
   Body,
   Button,
   Card,
-  DemoBanner,
   ErrorCard,
   Loading,
   PendingNotice,
@@ -163,7 +163,7 @@ export default function ProfileScreen() {
 
   return (
     <Screen refreshing={me.isRefetching} onRefresh={() => void me.refetch()}>
-      <DemoBanner />
+      <DataBanner />
       {me.isLoading ? <Loading /> : null}
       {me.isError ? <ErrorCard error={me.error} onRetry={() => void me.refetch()} /> : null}
       {me.data ? (

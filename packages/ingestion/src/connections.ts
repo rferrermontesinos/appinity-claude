@@ -8,7 +8,7 @@ import {
   type Database,
 } from '@appinity/database';
 import type { AdapterRegistry } from '@appinity/integrations';
-import type { ProfileSourceKey } from '@appinity/shared';
+import type { AuthResult, ProfileSourceKey } from '@appinity/shared';
 import { and, eq, inArray, ne, sql } from 'drizzle-orm';
 import { ConflictError, ForbiddenError, NotFoundError, UnavailableError } from './errors.js';
 import { recomputeProfiles } from './profiles.js';
@@ -16,32 +16,35 @@ import { recomputeProfiles } from './profiles.js';
 export type ConnectionRow = typeof userConnections.$inferSelect;
 
 /**
- * Conecta una fuente. Las fuentes simuladas solo se permiten a usuarios de demo y las reales solo a usuarios
- * reales. Registra el consentimiento separado por proveedor. Nunca simula un éxito OAuth: si el adapter pide
- * redirección o no está disponible, se informa.
+ * Comprueba que el usuario puede conectar la fuente: existe el adapter, coincide el dataset (fuentes simuladas solo
+ * para usuarios de demo, reales solo para usuarios reales) y no hay ya una conexión abierta.
  */
-export async function connectSource(
-  db: Database,
-  registry: AdapterRegistry,
-  userId: string,
-  sourceKey: string,
-): Promise<ConnectionRow> {
+async function assertCanConnect(db: Database, registry: AdapterRegistry, userId: string, sourceKey: string) {
   const adapter = registry.get(sourceKey);
-  if (!adapter) throw new UnavailableError(`La fuente ${sourceKey} no está disponible`);
+  if (!adapter) throw new UnavailableError(`La fuente ${sourceKey} no está disponible en este servidor`);
   const [user] = await db.select({ dataset: users.dataset }).from(users).where(eq(users.id, userId));
   if (!user) throw new NotFoundError('Usuario no encontrado');
   if (adapter.manifest.simulated !== (user.dataset === 'demo')) {
     throw new ForbiddenError(
       adapter.manifest.simulated
         ? 'Las fuentes simuladas solo pueden usarlas usuarios de demo'
-        : 'Los usuarios de demo no pueden conectar fuentes reales',
+        : 'Los usuarios de demo no pueden conectar fuentes reales: usa una cuenta local real (pnpm user:local)',
     );
   }
+  if (await findOpenConnection(db, userId, sourceKey)) throw new ConflictError('Esta fuente ya está conectada');
+  return adapter;
+}
 
-  const auth = await adapter.connect({ userId });
-  if (auth.kind === 'unavailable') throw new UnavailableError(auth.reason);
-  if (auth.kind === 'redirect') throw new UnavailableError('Esta fuente requiere un flujo de autorización que aún no está implementado');
-
+/** Registra consentimiento y conexión a partir de una autenticación ya verificada. */
+async function createConnection(
+  db: Database,
+  userId: string,
+  sourceKey: string,
+  auth: Extract<AuthResult, { kind: 'connected' }>,
+): Promise<ConnectionRow> {
+  if (auth.credentials) {
+    throw new UnavailableError('Esta fuente necesita guardar credenciales por usuario, algo que aún no está activado');
+  }
   try {
     return await db.transaction(async (tx) => {
       const [consent] = await tx
@@ -58,15 +61,72 @@ export async function connectSource(
           consentId: consent!.id,
         })
         .returning();
-      if (auth.credentials) {
-        throw new UnavailableError('El almacenamiento de credenciales reales se activa con la primera fuente real (fase 2)');
-      }
       return connection!;
     });
   } catch (error) {
-    if (isUniqueViolation(error)) throw new ConflictError('Esta fuente ya está conectada');
+    if (isUniqueViolation(error)) {
+      throw new ConflictError(
+        hasConstraint(error, 'user_connections_one_open_per_external_account')
+          ? 'Esta cuenta externa ya está vinculada a otro usuario de APPINITY'
+          : 'Esta fuente ya está conectada',
+      );
+    }
     throw error;
   }
+}
+
+export type ConnectStart =
+  | { kind: 'connected'; connection: ConnectionRow }
+  | { kind: 'redirect'; url: string };
+
+/**
+ * Inicia la conexión de una fuente. Las simuladas se conectan al momento; las reales con OpenID/OAuth devuelven la
+ * URL del proveedor. Nunca se simula un éxito de autenticación.
+ */
+export async function startConnect(
+  db: Database,
+  registry: AdapterRegistry,
+  userId: string,
+  sourceKey: string,
+  redirect: { redirectUri?: string; realm?: string } = {},
+): Promise<ConnectStart> {
+  const adapter = await assertCanConnect(db, registry, userId, sourceKey);
+  const auth = await adapter.connect({ userId, ...redirect });
+  if (auth.kind === 'unavailable') throw new UnavailableError(auth.reason);
+  if (auth.kind === 'redirect') return { kind: 'redirect', url: auth.url };
+  return { kind: 'connected', connection: await createConnection(db, userId, sourceKey, auth) };
+}
+
+/** Completa un flujo con redirección: el adapter verifica la respuesta del proveedor antes de crear la conexión. */
+export async function completeConnect(
+  db: Database,
+  registry: AdapterRegistry,
+  userId: string,
+  sourceKey: string,
+  context: { redirectUri: string; callbackParams: Record<string, string> },
+): Promise<ConnectionRow> {
+  const adapter = await assertCanConnect(db, registry, userId, sourceKey);
+  if (!adapter.completeConnect) throw new UnavailableError('Esta fuente no usa redirección');
+  const auth = await adapter.completeConnect({ userId, ...context });
+  if (auth.kind !== 'connected') throw new UnavailableError('El proveedor no confirmó la conexión');
+  return createConnection(db, userId, sourceKey, auth);
+}
+
+/** Atajo para fuentes sin redirección (simuladas, seed y tests). */
+export async function connectSource(
+  db: Database,
+  registry: AdapterRegistry,
+  userId: string,
+  sourceKey: string,
+): Promise<ConnectionRow> {
+  const result = await startConnect(db, registry, userId, sourceKey);
+  if (result.kind === 'redirect') throw new UnavailableError('Esta fuente requiere iniciar sesión en el proveedor');
+  return result.connection;
+}
+
+function hasConstraint(error: unknown, name: string): boolean {
+  const e = error as { constraint?: string; cause?: { constraint?: string } };
+  return e?.constraint === name || e?.cause?.constraint === name;
 }
 
 /**
@@ -93,7 +153,8 @@ export async function disconnectSource(
     if (connection.status !== 'revoked') {
       await tx
         .update(userConnections)
-        .set({ status: 'revoked', revokedAt: new Date(), syncCursor: null, updatedAt: sql`now()` })
+        // Minimización: al revocar se olvida también la cuenta externa vinculada (p. ej. el SteamID).
+        .set({ status: 'revoked', revokedAt: new Date(), syncCursor: null, externalAccountRef: null, updatedAt: sql`now()` })
         .where(eq(userConnections.id, connectionId));
       if (connection.consentId) {
         await tx.update(providerConsents).set({ revokedAt: new Date() }).where(eq(providerConsents.id, connection.consentId));

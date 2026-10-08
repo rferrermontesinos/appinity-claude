@@ -19,6 +19,12 @@ const envSchema = z
     PUBLIC_API_URL: z.union([z.literal(''), z.url()]).optional(),
     STORAGE_DIR: z.string().default('.data/media'),
     QUEUE_PREFIX: z.string().regex(/^[a-z0-9-]+$/).default('appinity-claude'),
+    STEAM_WEB_API_KEY: z
+      .string()
+      .optional()
+      .transform((v) => (v ? v.trim() : undefined))
+      .refine((v) => v === undefined || /^[0-9A-F]{32}$/i.test(v), 'STEAM_WEB_API_KEY debe tener 32 caracteres hexadecimales'),
+    SYNC_INTERVAL_HOURS: z.coerce.number().min(1).max(168).default(24),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === 'production' && (env.DEMO_MODE || env.DEV_AUTH_ENABLED)) {

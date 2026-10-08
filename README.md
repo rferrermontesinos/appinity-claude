@@ -5,8 +5,9 @@
 Implementación independiente de APPINITY construida desde cero a partir de
 [docs/APPINITY_Especificacion.md](docs/APPINITY_Especificacion.md). No reutiliza código de otras implementaciones.
 
-**Estado:** fases 0 y 1 implementadas y comprobadas automáticamente. **Falta la aceptación manual en el teléfono**
-([docs/progress.md](docs/progress.md)). Todavía **no** hay recomendador, afinidades, almas gemelas ni conexiones reales.
+**Estado:** fases 0 y 1 aceptadas en el teléfono. Fase 2 (Steam) implementada y comprobada automáticamente con
+respuestas simuladas; **la conexión con tu cuenta real de Steam está pendiente** de tu clave y tu prueba
+([docs/progress.md](docs/progress.md)). Todavía **no** hay recomendador, afinidades ni almas gemelas.
 
 ## Qué es real y qué es simulado
 
@@ -17,7 +18,9 @@ Implementación independiente de APPINITY construida desde cero a partir de
 | Usuarios de la demo (6, con «(demo)» en el nombre) | **Simulados** (`dataset = demo`) |
 | Actividad de esos usuarios (valoraciones, horas, escuchas, visitas…) | **Simulada**: archivos de fixtures del repositorio |
 | Fuentes «Demo · …» | **Simuladas**: mismo contrato de adapter que las fuentes reales, sin OAuth ni proveedores |
-| Steam, TMDb, Last.fm, Google, Apple Music | **Pendientes** (fases 2–4 y 11). Se muestran como «Próximamente» |
+| Steam | **Real** (fase 2): OpenID + Steam Web API. Solo para cuentas reales; requiere `STEAM_WEB_API_KEY` en el servidor |
+| Cuenta local real (`pnpm user:local`) | **Real** (`dataset = live`), con identidad de desarrollo y código de un solo uso. No es autenticación de producción |
+| TMDb, Last.fm, Google, Apple Music | **Pendientes** (fases 3, 4 y 11). Se muestran como «Próximamente» |
 | Identidad | **De desarrollo** (JWT firmado por la API con `DEMO_MODE`). No es autenticación de producción |
 | Recomendaciones, afinidad, almas gemelas, Trending | **Pendientes** (fases 5–8). La app no muestra ninguna inventada |
 
@@ -147,6 +150,51 @@ Expo Go, así que **no hace falta un development build**.
 
 Para volver al estado inicial de la demo: `pnpm db:seed`.
 
+## Conectar tu cuenta de Steam (datos reales)
+
+APPINITY identifica tu cuenta con **OpenID** (inicias sesión en la web de Steam; APPINITY nunca ve tu contraseña) y
+lee tu biblioteca y horas con la **Steam Web API** usando una clave que solo vive en el `.env` de tu PC. Los datos se
+guardan únicamente en la base de datos local.
+
+1. **Crea tu clave de la Steam Web API** en <https://steamcommunity.com/dev/apikey> con tu cuenta de Steam. Steam
+   pide un nombre de dominio: para uso local sirve `localhost`. Hay que aceptar los
+   [Terms of Use](https://steamcommunity.com/dev/apiterms). Steam puede exigir que la cuenta no sea «limitada»
+   (con alguna compra realizada).
+2. **Guárdala sin pegarla en ningún chat**, en tu terminal:
+
+   ```bash
+   pnpm secret:set STEAM_WEB_API_KEY
+   ```
+
+   Pide el valor sin mostrarlo, comprueba que tiene 32 caracteres hexadecimales y lo escribe en `.env` (ignorado por
+   Git). Alternativa: abrir `.env` con un editor y completar `STEAM_WEB_API_KEY=`.
+3. **Crea tu cuenta local real** (solo desarrollo):
+
+   ```bash
+   pnpm user:local -- --handle tu_handle --name "Tu nombre" --country ES
+   ```
+
+   Muestra **una sola vez** un código como `ABCD-EFGH-JKLM`. Si lo pierdes, repite el comando: se genera otro y las
+   sesiones anteriores dejan de valer.
+4. **Reinicia** `pnpm api` y `pnpm worker`. El worker debe decir `Steam activo (syncs cada 24 h)`.
+5. **En el teléfono**: Perfil → «Cambiar de usuario de demo» → abajo, **Cuenta local real** → handle y código.
+   Verás el aviso verde «DATOS REALES · cuenta local de desarrollo».
+6. Perfil → Fuentes → Steam → botón **Sign in through Steam**. Se abre Steam: inicia sesión (y confirma con Steam
+   Guard si te lo pide). Al terminar vuelve a la app con «Cuenta conectada».
+7. La primera sincronización se lanza sola. En unos segundos verás «Última ejecución: correcto · nuevas N» y tus
+   juegos en **Ver el modelo de datos** y en Categorías → Videojuegos.
+
+Comprobaciones esperadas:
+
+- Un juego comprado y nunca jugado: Conocido 1.00 · Consumido 0.00 · Preferencia «—».
+- Uno jugado menos de 2 h: Consumido 1.00 · Preferencia «—». Uno con muchas horas: preferencia positiva («conducta fuerte»).
+- **Sincronizar** otra vez: «nuevas 0 · actualizadas 0 · sin cambios N» (sin duplicados).
+- **Desconectar y borrar lo importado**: desaparecen tus juegos y se olvida el SteamID.
+
+Privacidad de Steam: con **tu propia clave**, Steam devuelve tu biblioteca aunque tu perfil sea privado. Para otras
+cuentas, «Mi perfil» y «Detalles de juegos» deben ser públicos; si no, la app muestra «Requiere tu acción» con la
+instrucción y conserva lo ya importado.
+
 ### Si el teléfono no alcanza la API
 
 - `localhost` en el teléfono es el propio teléfono: la URL debe usar la IP del PC. `pnpm setup` la escribe en
@@ -168,7 +216,9 @@ Para volver al estado inicial de la demo: `pnpm db:seed`.
 | `pnpm db:migrate` | Aplica migraciones versionadas (Drizzle) |
 | `pnpm db:seed` | Seed determinista de la demo: usuarios, catálogo, conexiones fixture y syncs (solo `DEMO_MODE=true`) |
 | `pnpm db:reset` | Vacía la BD de desarrollo, migra y siembra (solo `DEMO_MODE=true`) |
-| `pnpm api` / `pnpm worker` | API NestJS en `0.0.0.0:3100` / worker BullMQ (syncs y caché de imágenes) |
+| `pnpm user:local -- --handle h --name "N"` | Crea o regenera una cuenta local real (dataset `live`) y muestra su código una vez |
+| `pnpm secret:set STEAM_WEB_API_KEY` | Guarda la clave de Steam en `.env` sin mostrarla |
+| `pnpm api` / `pnpm worker` | API NestJS en `0.0.0.0:3100` / worker BullMQ (syncs, syncs programados cada hora y caché de imágenes) |
 | `pnpm dev` | Compilación en modo watch + API + worker |
 | `pnpm mobile` | Metro/Expo en el puerto 8091 |
 | `pnpm --filter @appinity/mobile web` | Vista web de desarrollo en el puerto 8092 (solo verificación; no sustituye al teléfono) |
@@ -191,7 +241,7 @@ packages/i18n        Textos es/en
 packages/algorithms  Normalización de escalas y consolidación v1 (sin dependencias de proveedores)
 packages/database    Esquema Drizzle, migraciones SQL, cliente, cifrado de credenciales
 packages/catalog     Instantánea Wikidata/Commons, resolución de entidades, imágenes, fallback, almacenamiento
-packages/integrations Registro de adapters y profile/fixture (manifest, auth, client, sync, mapper, schemas, constants, fixtures)
+packages/integrations Registro de adapters, profile/fixture y profile/steam (manifest, auth, client, sync, mapper, schemas, constants, fixtures)
 packages/ingestion   Pipeline de sync, conexiones, recálculo de perfiles, colas y seed de demo
 workers/sync-worker  Worker BullMQ: profile-sync, catalog-images y latido
 scripts/             setup, doctor y generador de la instantánea de catálogo
@@ -208,8 +258,11 @@ Más detalle en [docs/architecture.md](docs/architecture.md), [docs/decisions.md
 - Servicios Docker solo en `127.0.0.1`. La API escucha en `0.0.0.0:3100` para el teléfono de la red local.
 - Todas las rutas, salvo `/health`, la identidad de desarrollo, `/media/catalog/*` y `/static/fallback/*`, exigen
   sesión. El usuario sale del token y los recursos ajenos responden 404.
-- La identidad de desarrollo solo funciona con `DEMO_MODE=true`, fuera de producción y con usuarios
-  `dataset = demo`. La API se niega a arrancar con `NODE_ENV=production` y `DEMO_MODE` activo.
+- La identidad de desarrollo solo funciona con `DEMO_MODE=true` y fuera de producción, para usuarios `dataset = demo`
+  o para cuentas locales reales con su código vigente. La API se niega a arrancar con `NODE_ENV=production` y
+  `DEMO_MODE` activo.
+- Steam: la clave de la Web API solo está en el servidor; del usuario solo se guarda el SteamID mientras la conexión
+  está activa. Un SteamID no puede vincularse a dos usuarios a la vez. El arte de Steam se usa solo como referencia.
 - Los datos de la demo (`dataset = demo`) nunca se mezclan con datos reales: un usuario real no puede conectar
   fuentes simuladas y la resolución de objetos reales no reutiliza el catálogo de la demo.
 - La ubicación se guarda como zona aproximada (~1 km), sin historial.

@@ -3,22 +3,10 @@ import type { PlannedSourceKey, ProfileSourceManifest } from '@appinity/shared';
 const NONE = { known: false, consumed: false, explicitRating: false, implicitPreference: false, history: false, incrementalSync: false };
 
 /**
- * Fuentes reales previstas. Capacidades a false porque todavía no se ha verificado nada con su documentación
+ * Fuentes reales previstas (Steam ya está implementada: ver profile/steam). Capacidades a false porque todavía no se ha verificado nada con su documentación
  * oficial ni con una conexión real. No son conectables hasta su fase.
  */
 export const PLANNED_MANIFESTS: Array<ProfileSourceManifest & { plannedPhase: string }> = [
-  {
-    key: 'steam',
-    name: 'Steam',
-    categories: ['games'],
-    authentication: 'openid',
-    syncStrategy: 'scheduled',
-    capabilities: NONE,
-    availability: 'planned',
-    simulated: false,
-    description: 'Identificación con OpenID y datos con Web API key (por verificar). No es OAuth.',
-    plannedPhase: '2',
-  },
   {
     key: 'tmdb',
     name: 'TMDb',

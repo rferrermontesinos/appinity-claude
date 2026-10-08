@@ -5,6 +5,8 @@ export interface WorkerEnv {
   redisUrl: string;
   queuePrefix: string;
   storageDir: string;
+  steamApiKey?: string;
+  syncIntervalHours: number;
 }
 
 function required(name: string): string {
@@ -24,5 +26,7 @@ export function loadWorkerEnv(): WorkerEnv {
     redisUrl: required('REDIS_URL'),
     queuePrefix: process.env.QUEUE_PREFIX ?? 'appinity-claude',
     storageDir: process.env.STORAGE_DIR ?? '.data/media',
+    ...(process.env.STEAM_WEB_API_KEY?.trim() ? { steamApiKey: process.env.STEAM_WEB_API_KEY.trim() } : {}),
+    syncIntervalHours: Number(process.env.SYNC_INTERVAL_HOURS ?? 24) || 24,
   };
 }
