@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto';
 import type { EntityResolver, Tx } from '@appinity/catalog';
 import {
+  decryptCredentials,
+  sourceCredentials,
   sourceSyncRuns,
   userConnections,
   userItemObservations,
@@ -13,6 +15,7 @@ import {
   parseObservation,
   type NormalizedObservation,
   type ProfileSourceKey,
+  type SourceCredentials,
   type SyncCursor,
   type SyncPartialError,
 } from '@appinity/shared';
@@ -26,6 +29,8 @@ export interface SyncDeps {
   resolver: EntityResolver;
   pageSize?: number;
   now?: () => Date;
+  /** CREDENTIALS_ENCRYPTION_KEY: descifra en memoria las credenciales por usuario (p. ej. la sesión de TMDb). */
+  credentialsKey?: string;
 }
 
 export type SyncTrigger = 'user' | 'seed' | 'schedule' | 'connect';
@@ -199,6 +204,18 @@ export async function runConnectionSync(deps: SyncDeps, runId: string): Promise<
   const adapter = registry.get(conn.sourceKey);
   if (!adapter) return finish('failed', `La fuente ${conn.sourceKey} no está disponible en este entorno`);
 
+  // Credenciales por usuario: se descifran solo en memoria del worker y con la conexión como AAD.
+  let credentials: SourceCredentials | undefined;
+  const [stored] = await db.select().from(sourceCredentials).where(eq(sourceCredentials.connectionId, conn.id));
+  if (stored) {
+    if (!deps.credentialsKey) return finish('failed', 'Falta CREDENTIALS_ENCRYPTION_KEY en el worker: no se pueden leer las credenciales');
+    try {
+      credentials = decryptCredentials(stored.ciphertext, deps.credentialsKey, conn.id);
+    } catch {
+      return finish('failed', 'No se pudieron descifrar las credenciales (¿cambió CREDENTIALS_ENCRYPTION_KEY?): vuelve a conectar la fuente');
+    }
+  }
+
   // Un solo sync a la vez por conexión (bloqueo de sesión en una conexión dedicada del pool).
   const lockClient = await database.pool.connect();
   const lockKey = `sync:${conn.id}`;
@@ -232,6 +249,7 @@ export async function runConnectionSync(deps: SyncDeps, runId: string): Promise<
           cursor,
           watermarkAt: conn.watermarkAt?.toISOString() ?? null,
         },
+        ...(credentials ? { credentials } : {}),
         cursor,
         pageSize,
         now: now(),

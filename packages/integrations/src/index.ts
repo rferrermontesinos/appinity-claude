@@ -5,3 +5,8 @@ export { createFixtureAdapter, createFixtureAdapters, FIXTURE_MANIFESTS } from '
 export * as steam from './profile/steam/index.js';
 export { createSteamAdapter } from './profile/steam/index.js';
 export * as steamFixtures from './profile/steam/fixtures/responses.js';
+export * as tmdb from './profile/tmdb/index.js';
+export { createTmdbAdapter } from './profile/tmdb/index.js';
+export { TmdbCatalogProvider, tmdbDetailsToCatalogItem, TMDB_CATALOG_PROVIDER_KEY } from './catalog/tmdb.js';
+export { TMDB_NOTICE, TMDB_TERMS_URL } from './tmdb/constants.js';
+export * as tmdbFixtures from './profile/tmdb/fixtures/responses.js';

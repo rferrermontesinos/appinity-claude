@@ -17,6 +17,8 @@ export const RATING_SCALES = {
   oneToTen: { min: 1, max: 10, step: 1 },
   oneToFiveStars: { min: 1, max: 5, step: 1 },
   halfToFiveStars: { min: 0.5, max: 5, step: 0.5 },
+  /** TMDb: de 0,5 a 10 en pasos de 0,5. */
+  halfToTen: { min: 0.5, max: 10, step: 0.5 },
 } as const satisfies Record<string, RatingScale>;
 
 const round4 = (v: number) => Math.round(v * 10_000) / 10_000;

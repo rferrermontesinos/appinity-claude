@@ -99,9 +99,10 @@ describe('fuentes y conexiones', () => {
   it('las fuentes simuladas son conectables para usuarios de demo; las reales previstas no', async () => {
     const { body } = await call<SourceDto[]>('/v1/sources', 'demo_sam');
     expect(body.filter((s) => s.connectable).every((s) => s.simulated)).toBe(true);
-    // Sin STEAM_WEB_API_KEY en el entorno de test, Steam aparece sin configurar; TMDb sigue prevista.
+    // Sin STEAM_WEB_API_KEY ni TMDB_API_READ_TOKEN en el entorno de test, aparecen sin configurar; Last.fm sigue prevista.
     expect(body.find((s) => s.key === 'steam')).toMatchObject({ connectable: false, availability: 'unconfigured' });
-    expect(body.find((s) => s.key === 'tmdb')).toMatchObject({ connectable: false, availability: 'planned' });
+    expect(body.find((s) => s.key === 'tmdb')).toMatchObject({ connectable: false, availability: 'unconfigured' });
+    expect(body.find((s) => s.key === 'lastfm')).toMatchObject({ connectable: false, availability: 'planned' });
   });
 
   it('conectar una fuente crea un sync en cola; procesarlo importa observaciones', async () => {

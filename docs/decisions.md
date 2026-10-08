@@ -289,3 +289,70 @@ final solo tenga que dar permisos una vez, al registrarse. Estado y plan:
 - **Pendiente de diseño (onboarding, §14 y fase 13):** la pantalla «Conecta tu mundo» del registro ofrecerá las fuentes
   disponibles; el usuario autoriza cada una una vez (consentimiento por proveedor) y no vuelve a ver pasos de sync. Se
   podrá revisar más adelante, como indicó el usuario.
+
+## Fase 3 · 2026-10-08 (TMDb)
+
+Ficha y fuentes oficiales en [integration-capabilities.md](integration-capabilities.md#tmdb--fase-3).
+
+### Dos autenticaciones separadas
+
+- **Aplicación (catálogo):** `TMDB_API_READ_TOKEN`, el «API Read Access Token» de TMDb como `Bearer`. Lo configura una
+  vez quien opera el servidor (`pnpm secret:set TMDB_API_READ_TOKEN`), vive en `.env` y no llega al móvil. La API
+  rechaza al arrancar la «API Key» corta de 32 caracteres para evitar confundirlas.
+- **Usuario (sus listas):** sesión v3 por usuario (`session_id`), creada solo después de que el usuario apruebe el
+  acceso en themoviedb.org. Se guarda cifrada en `source_credentials` (AES-256-GCM con `CREDENTIALS_ENCRYPTION_KEY` y
+  el id de la conexión como AAD, en la misma transacción que la conexión) y solo se descifra en memoria del worker o
+  de la API al desconectar.
+- Se usa el flujo de **sesión v3** porque es el documentado con `redirect_to`, sus endpoints cubren las listas que se
+  importan y la revocación es una llamada. La autenticación de usuario v4 existe, pero no se ha evaluado en esta fase.
+- Código: el cliente HTTP (`integrations/src/tmdb/`) es común; el adapter de perfil y el proveedor de catálogo son
+  piezas distintas, y el motor no depende de ninguna.
+
+### Flujo de conexión
+
+- El `state` de un solo uso va **en la ruta** del callback (`/v1/connect/<fuente>/callback/<state>`) para todas las
+  fuentes: TMDb añade su propia query a `redirect_to`. La forma `?state=` se sigue aceptando. Steam funciona igual (su
+  `return_to` se compara entero).
+- El request token se guarda en Redis junto al `state` (`pending`), nunca va al cliente salvo dentro de la URL de
+  aprobación de TMDb, y en la vuelta se exige que coincida. `denied=true` cancela; un token no aprobado hace que TMDb
+  rechace la sesión.
+- Si la sesión ya creada no puede guardarse (cuenta de TMDb vinculada a otro usuario, falta la clave de cifrado), se
+  revoca en TMDb en el acto: no quedan sesiones huérfanas.
+
+### Normalización (`tmdb-v1`, propuesta sin calibrar)
+
+- **Valorada:** conocida 1, consumida 1 (solo se valora lo visto), `explicit_rating` lineal en la escala real
+  0,5–10 (`RATING_SCALES.halfToTen`): 0,5 → −1, 10 → +1, 5 → −0,05, 5,5 → +0,05; confianza 1. No se aplica la fórmula
+  de 1–10.
+- **Favorita:** conocida 1, consumida 0 (marcar favorito no prueba haberla visto), `explicit_like` +0,8 con confianza
+  0,9, igual que los pulgares de la demo.
+- **Pendiente (watchlist):** conocida 1, consumida 0, preferencia **NULL** (querer verla no es gustar).
+- Un mismo objeto puede estar valorado y en favoritos: son observaciones distintas y la consolidación da prioridad a la
+  valoración explícita.
+- TMDb no da fechas para estas listas: no se inventa `occurredAt`. No existe historial de «vistas» en la API: no se
+  deduce de nada.
+- No se importan listas personalizadas (no tienen semántica fija) ni valoraciones de episodios (otra granularidad).
+
+### Catálogo, imágenes y caducidad
+
+- `TmdbCatalogProvider` solo se usa con el dataset `live` (la demo no llama a la red) y resuelve **solo por ID** (TMDb
+  o IMDb respetando película/serie), nunca por título. Añade IMDb y Wikidata para que otra fuente encuentre el mismo
+  objeto. Un 404 de TMDb no rompe el sync: el objeto se crea desde la observación.
+- Pósters solo como referencia al CDN de TMDb, atribuidos y sin cachear (`CACHEABLE_IMAGE_SOURCES` sigue siendo solo
+  Wikimedia Commons). Logo y aviso de TMDB en la tarjeta «Créditos y fuentes de datos» del Perfil.
+- **Seis meses:** cada ficha lleva `providerCache.expiresAt` (+180 días). El trabajo diario `refresh-catalog` las
+  renueva (sobrescribe título, descripción, fecha e imagen) o, si TMDb ya no las tiene, retira descripción e imagen y
+  conserva el objeto con sus IDs, al que puede apuntar evidencia de usuarios.
+- Los objetos de la instantánea de Wikidata llevan IDs `tmdb:movie`/`tmdb:tv`: en desarrollo se reutilizan con su
+  imagen libre en lugar de pedir la ficha a TMDb.
+
+### Desconexión
+
+Se borran credenciales, cuenta y (si se pide) lo importado, y después se pide a TMDb que invalide la sesión. La API
+devuelve `providerRevocation` (`revoked`, `failed`, `not_applicable`) y la app lo muestra: si TMDb no lo confirma, en
+APPINITY ya no queda nada y el usuario puede revisarlo en su cuenta de TMDb.
+
+### Licencia
+
+El uso gratuito de la API de TMDb es **no comercial**. Antes de activar Premium (fase 12) o cualquier uso comercial
+hace falta un acuerdo con TMDb. Queda como bloqueo declarado.

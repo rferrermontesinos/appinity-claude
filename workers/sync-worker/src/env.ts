@@ -6,6 +6,10 @@ export interface WorkerEnv {
   queuePrefix: string;
   storageDir: string;
   steamApiKey?: string;
+  /** TMDb: token de la aplicación (catálogo y listas con la sesión de cada usuario). */
+  tmdbReadToken?: string;
+  /** Descifra en memoria las credenciales por usuario (p. ej. la sesión de TMDb). */
+  credentialsKey?: string;
   syncIntervalHours: number;
 }
 
@@ -27,6 +31,8 @@ export function loadWorkerEnv(): WorkerEnv {
     queuePrefix: process.env.QUEUE_PREFIX ?? 'appinity-claude',
     storageDir: process.env.STORAGE_DIR ?? '.data/media',
     ...(process.env.STEAM_WEB_API_KEY?.trim() ? { steamApiKey: process.env.STEAM_WEB_API_KEY.trim() } : {}),
+    ...(process.env.TMDB_API_READ_TOKEN?.trim() ? { tmdbReadToken: process.env.TMDB_API_READ_TOKEN.trim() } : {}),
+    ...(process.env.CREDENTIALS_ENCRYPTION_KEY?.trim() ? { credentialsKey: process.env.CREDENTIALS_ENCRYPTION_KEY.trim() } : {}),
     syncIntervalHours: Number(process.env.SYNC_INTERVAL_HOURS ?? 24) || 24,
   };
 }

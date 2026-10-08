@@ -24,6 +24,15 @@ const envSchema = z
       .optional()
       .transform((v) => (v ? v.trim() : undefined))
       .refine((v) => v === undefined || /^[0-9A-F]{32}$/i.test(v), 'STEAM_WEB_API_KEY debe tener 32 caracteres hexadecimales'),
+    /** «API Read Access Token» de TMDb (un JWT): autenticación de la APLICACIÓN, nunca del usuario. */
+    TMDB_API_READ_TOKEN: z
+      .string()
+      .optional()
+      .transform((v) => (v ? v.trim() : undefined))
+      .refine(
+        (v) => v === undefined || /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(v),
+        'TMDB_API_READ_TOKEN debe ser el «API Read Access Token» (empieza por eyJ), no la «API Key» corta',
+      ),
     SYNC_INTERVAL_HOURS: z.coerce.number().min(1).max(168).default(24),
   })
   .superRefine((env, ctx) => {

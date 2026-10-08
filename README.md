@@ -5,7 +5,8 @@
 Implementación independiente de APPINITY construida desde cero a partir de
 [docs/APPINITY_Especificacion.md](docs/APPINITY_Especificacion.md). No reutiliza código de otras implementaciones.
 
-**Estado:** fases 0 y 1 aceptadas en el teléfono. Fase 2 (Steam) **validada con una cuenta real**
+**Estado:** fases 0 y 1 aceptadas en el teléfono. Fase 2 (Steam) **validada con una cuenta real**. Fase 3 (TMDb)
+**implementada y probada con respuestas simuladas; pendiente de validar con tu cuenta**
 ([docs/progress.md](docs/progress.md)). Todavía **no** hay recomendador, afinidades ni almas gemelas.
 
 ## Qué es real y qué es simulado
@@ -18,8 +19,9 @@ Implementación independiente de APPINITY construida desde cero a partir de
 | Actividad de esos usuarios (valoraciones, horas, escuchas, visitas…) | **Simulada**: archivos de fixtures del repositorio |
 | Fuentes «Demo · …» | **Simuladas**: mismo contrato de adapter que las fuentes reales, sin OAuth ni proveedores |
 | Steam | **Real** (fase 2): OpenID + Steam Web API. Solo para cuentas reales; requiere `STEAM_WEB_API_KEY` en el servidor |
+| TMDb | **Real** (fase 3, pendiente de validar con una cuenta real): autorizas tu cuenta en themoviedb.org y se leen tus valoraciones, favoritos y pendientes. Solo para cuentas reales; requiere `TMDB_API_READ_TOKEN` en el servidor |
 | Cuenta local real (`pnpm user:local`) | **Real** (`dataset = live`), con identidad de desarrollo y código de un solo uso. No es autenticación de producción |
-| TMDb, Last.fm, Google, Apple Music | **Pendientes** (fases 3, 4 y 11). Se muestran como «Próximamente» |
+| Last.fm, Google, Apple Music | **Pendientes** (fases 4 y 11). Se muestran como «Próximamente» |
 | Identidad | **De desarrollo** (JWT firmado por la API con `DEMO_MODE`). No es autenticación de producción |
 | Recomendaciones, afinidad, almas gemelas, Trending | **Pendientes** (fases 5–8). La app no muestra ninguna inventada |
 
@@ -213,6 +215,70 @@ instrucción y conserva lo ya importado.
   proyecto no cambia la configuración del sistema.
 - `pnpm doctor` comprueba servicios, API local y API por cada IP de red.
 
+## Conectar tu cuenta de TMDb (datos reales)
+
+Hay **dos permisos distintos**:
+
+- **Token de la aplicación** (`TMDB_API_READ_TOKEN`): identifica a APPINITY ante TMDb. Se configura una vez en el
+  servidor (tu PC) y nunca llega al teléfono.
+- **Autorización de tu cuenta**: apruebas el acceso en themoviedb.org desde el teléfono. TMDb entrega una sesión que
+  APPINITY guarda **cifrada** en la base de datos local. Se usa solo para **leer** tus valoraciones, favoritos y
+  pendientes de películas y series; nunca escribe en tu cuenta.
+
+Pasos (en la terminal de comandos, PowerShell):
+
+1. Si no tienes cuenta, créala en <https://www.themoviedb.org/signup> y confirma el correo.
+2. Ve a <https://www.themoviedb.org/settings/api> y solicita una clave de API (tipo **Developer**, uso personal y no
+   comercial; como URL vale `http://localhost`). Acepta las condiciones.
+3. En esa página verás dos valores. Copia el **«API Read Access Token»** (largo, empieza por `eyJ`), **no** la
+   «API Key» corta de 32 caracteres.
+4. Guárdalo sin pegarlo en ningún chat:
+
+   ```bash
+   pnpm secret:set TMDB_API_READ_TOKEN --clipboard
+   ```
+
+   Salida esperada: `✔ TMDB_API_READ_TOKEN guardada en .env (… caracteres)`. Si copiaste la clave corta, te lo dice
+   y no guarda nada. Después copia cualquier otro texto para vaciar el portapapeles.
+5. **Reinicia la API y el worker** (cada uno en su terminal: `Ctrl+C` y vuelve a lanzarlo). Ambos compilan antes de
+   arrancar.
+
+   ```bash
+   pnpm api
+   ```
+
+   ```bash
+   pnpm worker
+   ```
+
+   El worker debe mostrar `· TMDb activo`. Si dice `TMDb sin configurar`, el token no está en `.env`.
+6. **Reinicia Metro** (`Ctrl+C` en su terminal) para cargar la nueva pantalla de créditos y vuelve a abrir la app en
+   Expo Go:
+
+   ```bash
+   pnpm mobile
+   ```
+
+7. En el teléfono, con tu **cuenta local real**: Perfil → Fuentes → TMDb → **Conectar**. Se abre themoviedb.org:
+   inicia sesión allí y pulsa **Aprobar**. Vuelves a la app con «Cuenta conectada» y la primera sincronización se
+   lanza sola.
+
+Comprobaciones esperadas:
+
+- Película **valorada**: Conocido 1.00 · Consumido 1.00 · Preferencia según tu nota (10 → +1,00; 0,5 → −1,00;
+  8,5 → +0,68), base «valoración explícita».
+- **Favorita** sin valorar: Consumido 0.00 · Preferencia +0,80, base «like explícito».
+- **Pendiente** (watchlist): Conocido 1.00 · Consumido 0.00 · Preferencia «—» (no es un rechazo).
+- Una película y una serie con el mismo número en TMDb aparecen como objetos distintos.
+- **Sincronizar** otra vez: «nuevas 0 · actualizadas 0 · sin cambios N».
+- Quita un favorito en TMDb y sincroniza: esa evidencia desaparece y el resto se mantiene.
+- **Desconectar**: la app indica que TMDb confirmó la revocación. Con **Desconectar y borrar lo importado** desaparecen
+  también tus películas y series.
+- Perfil → **Créditos y fuentes de datos**: logo y aviso de TMDB.
+
+Si revocas el acceso desde la web de TMDb, la conexión pasa a «Requiere tu acción · vuelve a conectar TMDb» y conserva
+lo ya importado; desconéctala y vuelve a conectarla.
+
 ## Comandos
 
 | Comando | Qué hace |
@@ -225,7 +291,8 @@ instrucción y conserva lo ya importado.
 | `pnpm db:reset` | Vacía la BD de desarrollo, migra y siembra (solo `DEMO_MODE=true`) |
 | `pnpm user:local --handle h --name "N"` | Crea o regenera una cuenta local real (dataset `live`) y muestra su código una vez |
 | `pnpm secret:set STEAM_WEB_API_KEY [--clipboard]` | Guarda la clave de Steam en `.env` sin mostrarla (escrita o desde el portapapeles) |
-| `pnpm api` / `pnpm worker` | API NestJS en `0.0.0.0:3100` / worker BullMQ (syncs, syncs programados cada hora y caché de imágenes) |
+| `pnpm secret:set TMDB_API_READ_TOKEN [--clipboard]` | Guarda el token de lectura de TMDb en `.env` sin mostrarlo |
+| `pnpm api` / `pnpm worker` | API NestJS en `0.0.0.0:3100` / worker BullMQ (syncs, syncs programados cada hora, caché de imágenes y renovación diaria del contenido de TMDb) |
 | `pnpm dev` | Compilación en modo watch + API + worker |
 | `pnpm mobile` | Metro/Expo en el puerto 8091 |
 | `pnpm --filter @appinity/mobile web` | Vista web de desarrollo en el puerto 8092 (solo verificación; no sustituye al teléfono) |
@@ -260,8 +327,9 @@ Más detalle en [docs/architecture.md](docs/architecture.md), [docs/decisions.md
 
 ## Seguridad y datos
 
-- Secretos solo en `.env` (ignorado por Git), generados por `pnpm setup`. Las credenciales de proveedores se cifrarán
-  con AES-256-GCM (implementado y probado; sin uso hasta la primera fuente real).
+- Secretos solo en `.env` (ignorado por Git), generados por `pnpm setup`. Las credenciales por usuario de los
+  proveedores (hoy, la sesión de TMDb) se guardan cifradas con AES-256-GCM (`CREDENTIALS_ENCRYPTION_KEY`, ligadas a
+  su conexión) y solo se descifran en memoria del servidor. Si cambias esa clave, hay que volver a conectar TMDb.
 - Servicios Docker solo en `127.0.0.1`. La API escucha en `0.0.0.0:3100` para el teléfono de la red local.
 - Todas las rutas, salvo `/health`, la identidad de desarrollo, `/media/catalog/*` y `/static/fallback/*`, exigen
   sesión. El usuario sale del token y los recursos ajenos responden 404.
@@ -270,6 +338,10 @@ Más detalle en [docs/architecture.md](docs/architecture.md), [docs/decisions.md
   `DEMO_MODE` activo.
 - Steam: la clave de la Web API solo está en el servidor; del usuario solo se guarda el SteamID mientras la conexión
   está activa. Un SteamID no puede vincularse a dos usuarios a la vez. El arte de Steam se usa solo como referencia.
+- TMDb: el token de la aplicación solo está en el servidor; la sesión del usuario se guarda cifrada, nunca aparece en
+  respuestas ni logs y se revoca en TMDb al desconectar. Los pósters son referencias al CDN de TMDb (no se copian) y
+  el contenido de TMDb se renueva o retira antes de 6 meses, como exigen sus condiciones. Uso solo no comercial hasta
+  firmar un acuerdo con TMDb.
 - Los datos de la demo (`dataset = demo`) nunca se mezclan con datos reales: un usuario real no puede conectar
   fuentes simuladas y la resolución de objetos reales no reutiliza el catálogo de la demo.
 - La ubicación se guarda como zona aproximada (~1 km), sin historial.

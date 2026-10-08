@@ -6,3 +6,4 @@ export * from './resolver.js';
 export * from './import-snapshot.js';
 export * from './image-cache.js';
 export * from './dto.js';
+export * from './provider-refresh.js';

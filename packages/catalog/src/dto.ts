@@ -19,9 +19,12 @@ export function formatEventDate(value: Date | null, precision: 'day' | 'instant'
   return precision === 'instant' ? value.toISOString() : value.toISOString().slice(0, 10);
 }
 
+/** Nombre visible de cada origen de imagen en la atribución. */
+const SOURCE_LABELS: Record<string, string> = { wikimedia_commons: 'Wikimedia Commons', steam_cdn: 'Steam', tmdb: 'TMDB' };
+
 /** Texto de atribución exigido por la licencia de la imagen. */
 export function imageAttribution(image: Pick<ImageRow, 'author' | 'license' | 'source'>): string | undefined {
-  const sourceLabel = image.source === 'wikimedia_commons' ? 'Wikimedia Commons' : image.source === 'steam_cdn' ? 'Steam' : image.source;
+  const sourceLabel = SOURCE_LABELS[image.source] ?? image.source;
   const parts = [image.author, image.license, sourceLabel]
     .filter((p): p is string => Boolean(p));
   return parts.length ? parts.join(' · ') : undefined;

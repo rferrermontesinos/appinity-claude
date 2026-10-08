@@ -9,12 +9,82 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 1 | **Aceptado en dispositivo** (2026-10-08) | Entrega 2026-10-08 · fase 1 (rama `fase-1`, PR rferrermontesinos/appinity-claude#2, basada en `fase-0`) |
 | Aceptación de demo | **Hecha** | El usuario confirmó: «He probado la demo y funciona» |
 | 2 | **Validado con la cuenta real del usuario** (2026-10-08) | Entrega 2026-10-08 · fase 2 (rama `fase-2`, PR rferrermontesinos/appinity-claude#3, basada en `fase-1`) |
-| 3–4 | Pendiente | TMDb y Last.fm, en ese orden |
+| 3 | **Implementado y comprobado automáticamente**; pendiente de validar con la cuenta real | Entrega 2026-10-08 · fase 3 (rama `fase-3`, basada en `fase-2`). Falta el token de TMDb del usuario |
+| 4 | Pendiente | Last.fm |
 | 5–7 | Pendiente | Afinidad, Top 50 y recomendador |
 | 8–10 | Pendiente | Home, Categories y social |
 | 11 | Pendiente | Fuentes adicionales viables, una por tarea |
 | 12 | Pendiente | Chat, Premium y notificaciones, por subentregas |
 | 13 | Pendiente | Preparación y prueba de beta |
+
+---
+
+## Entrega 2026-10-08 · fase 3 (TMDb)
+
+Rama `fase-3` (basada en `fase-2`).
+
+### Qué se ha hecho
+
+- **Validación en documentación y condiciones oficiales**: flujo de sesión v3, listas personales, escala 0,5–10,
+  ausencia de fechas e historial, límites, imágenes, atribución, caducidad de 6 meses y licencia no comercial (ficha en
+  [integration-capabilities.md](integration-capabilities.md#tmdb--fase-3)).
+- **Dos autenticaciones separadas**: token de la aplicación (`TMDB_API_READ_TOKEN`, servidor) y sesión de cada usuario
+  aprobada en themoviedb.org, guardada **cifrada** (primera fuente real que usa `source_credentials`).
+- **Adapter `profile/tmdb`** con la estructura común: autorización (request token en Redis con el `state`, comprobación
+  del token en la vuelta, sesión y cuenta), sync de las seis listas paginadas como instantánea, mapper `tmdb-v1`,
+  manifest y fixtures simulados. Cliente HTTP común en `integrations/src/tmdb/` con reintentos y límites.
+- **Normalización**: valorada = explícita en 0,5–10 y consumida; favorita = like sin consumo; pendiente = conocida sin
+  preferencia (NULL). Sin fechas inventadas ni historial de vistos.
+- **Proveedor de catálogo `TmdbCatalogProvider`** (solo `live`): ficha con IMDb y Wikidata para no duplicar objetos de
+  otras fuentes; `tmdb:movie` y `tmdb:tv` nunca se confunden; pósters como referencia con atribución.
+- **Condición de 6 meses**: caducidad por ficha y trabajo diario `refresh-catalog` que renueva o retira el contenido.
+- **Desconexión con revocación** en TMDb (`DELETE /3/authentication/session`) y `providerRevocation` en la respuesta;
+  sesiones huérfanas revocadas si la conexión no llega a guardarse.
+- **Callback con `state` en la ruta** para todas las fuentes (TMDb añade su propia query); `?state=` se sigue aceptando.
+- **App**: ayuda de conexión de TMDb, aviso de revocación al desconectar y tarjeta «Créditos y fuentes de datos» con el
+  logo y el aviso de TMDB en Perfil.
+- **`pnpm secret:set TMDB_API_READ_TOKEN`**: valida la forma del token y avisa si se pega la «API Key» corta.
+
+### Comandos ejecutados y resultados (Windows 11, 2026-10-08)
+
+| Comando | Resultado |
+|---|---|
+| `pnpm lint` | 0 errores |
+| `pnpm typecheck` | OK (paquetes, tests y app móvil) |
+| `pnpm test` | **15 ficheros, 180 tests OK** (92 unitarios, 88 de integración). Nuevos: 22 unitarios de TMDb (flujo de sesión, token denegado o ajeno, cliente con 429/5xx/401, sync paginado, escala, mapper, película frente a serie, catálogo, registro), 15 de integración del pipeline (cifrado y AAD, sesiones huérfanas, deduplicación por IMDb, idempotencia, cambios de lista, sesión revocada, caducidad de 6 meses, desconexión) y 7 HTTP (flujo completo con TMDb simulado, denegación, token ajeno, revocación, conexión ajena) |
+| `npx expo export --platform android --platform ios` | Bundles generados |
+| Vista web de desarrollo (8092, 375×812) | Perfil → «Créditos y fuentes de datos» con el logo SVG de TMDB y el aviso; sin errores de consola ni desbordamiento horizontal |
+| Llamadas sin token a la API real de TMDb (`token/new`, `account`, `rated/movies`, `movie/603`) | HTTP 401 `status_code 7`: coincide con el tratamiento «token de la aplicación no válido, no reintentable» |
+
+No hay cambios de esquema en esta fase (sin migraciones nuevas).
+
+### Validación pendiente (usuario, con su cuenta)
+
+Pasos en el README, «Conectar tu cuenta de TMDb». Resumen: crear el «API Read Access Token» en
+<https://www.themoviedb.org/settings/api>, guardarlo con `pnpm secret:set TMDB_API_READ_TOKEN --clipboard`, reiniciar
+`pnpm api`, `pnpm worker` y `pnpm mobile`, y conectar TMDb desde Perfil con la cuenta local real. Comprobar
+valoradas/favoritas/pendientes, repetir el sync (sin duplicados), quitar un favorito y desconectar.
+
+### Bloqueos y puntos declarados
+
+- **Credencial**: sin el token de TMDb del usuario no se puede validar la integración real. Las pruebas usan respuestas
+  simuladas con el formato documentado y no la validan.
+- **No documentado por TMDb**: los parámetros exactos con los que vuelve a `redirect_to`. El código no depende de
+  `approved` (TMDb solo crea la sesión si el token se aprobó) y se confirmará en la validación real. Igual con
+  `/3/account` sin id (hay alternativa con id).
+- **Licencia**: uso gratuito solo no comercial. Premium (fase 12) necesita antes un acuerdo con TMDb.
+
+### Limitaciones
+
+- TMDb no da fechas de valoración ni historial de vistos: estas evidencias no tienen `occurredAt`.
+- No se importan listas personalizadas ni valoraciones de episodios.
+- Los títulos se piden en `es-ES` al crear la ficha; la localización por usuario del catálogo queda pendiente.
+- Si cambia `CREDENTIALS_ENCRYPTION_KEY`, las sesiones guardadas no se pueden descifrar: hay que volver a conectar.
+- Parámetros de favoritos (0,8 / 0,9) sin calibrar con datos reales.
+
+### Siguiente paso
+
+Validar TMDb con la cuenta real del usuario. Después, fase 4 (Last.fm) con `prompts/fase_04_lastfm.md`.
 
 ---
 

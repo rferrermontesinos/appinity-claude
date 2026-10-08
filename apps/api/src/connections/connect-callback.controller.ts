@@ -15,9 +15,20 @@ function page(title: string, message: string, returnUrl?: string): string {
 <body><h1>${escapeHtml(title)}</h1><p>${escapeHtml(message)}</p>${link}</body></html>`;
 }
 
+/** Parámetros que el proveedor añade a la vuelta: OpenID (Steam) y el request token aprobado o denegado (TMDb). */
+function providerParams(query: Record<string, unknown>): Record<string, string> {
+  const params: Record<string, string> = {};
+  for (const [key, value] of Object.entries(query)) {
+    if (typeof value !== 'string' || value.length > 2048) continue;
+    if (key.startsWith('openid.') || ['request_token', 'approved', 'denied'].includes(key)) params[key] = value;
+  }
+  return params;
+}
+
 /**
  * Vuelta del proveedor (navegador del teléfono). Pública porque el navegador no lleva la sesión de la app: la
  * autoriza el `state` de un solo uso creado al iniciar la conexión. Redirige a la app con el resultado.
+ * El `state` va en la ruta (`/callback/:state`); la forma `?state=` se mantiene por compatibilidad.
  */
 @Controller('v1/connect')
 export class ConnectCallbackController {
@@ -26,22 +37,23 @@ export class ConnectCallbackController {
   constructor(private readonly connections: ConnectionsService) {}
 
   @Public()
-  @Get(':sourceKey/callback')
+  @Get([':sourceKey/callback', ':sourceKey/callback/:state'])
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   async callback(
     @Param('sourceKey') sourceKey: string,
+    @Param('state') pathState: string | undefined,
     @Query() query: Record<string, unknown>,
     @Res() res: Response,
   ): Promise<void> {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('Referrer-Policy', 'no-referrer');
-    const state = typeof query.state === 'string' ? query.state : '';
-    const params: Record<string, string> = {};
-    for (const [key, value] of Object.entries(query)) if (key.startsWith('openid.') && typeof value === 'string') params[key] = value;
+    const state = pathState ?? (typeof query.state === 'string' ? query.state : '');
+    const params = providerParams(query);
 
-    const returnUrl = state ? await this.connections.peekReturnUrl(state) : undefined;
+    const validState = /^[A-Za-z0-9_-]{20,64}$/.test(state);
+    const returnUrl = validState ? await this.connections.peekReturnUrl(state) : undefined;
     try {
-      if (!/^[A-Za-z0-9_-]{20,64}$/.test(state)) throw new Error('Solicitud de conexión no válida');
+      if (!validState) throw new Error('Solicitud de conexión no válida');
       const outcome = await this.connections.completeCallback(sourceKey, state, params);
       if (outcome.returnUrl) {
         res.redirect(302, withResult(outcome.returnUrl, { source: sourceKey, result: 'connected' }));

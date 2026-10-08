@@ -3,13 +3,22 @@
 // Uso (en TU terminal):
 //   pnpm secret:set STEAM_WEB_API_KEY              → pide el valor (se muestran asteriscos)
 //   pnpm secret:set STEAM_WEB_API_KEY --clipboard  → lo lee del portapapeles (copia la clave antes)
+//   pnpm secret:set TMDB_API_READ_TOKEN --clipboard → «API Read Access Token» de TMDb (empieza por eyJ)
 // Solo admite claves de la lista blanca; .env está ignorado por Git.
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { describeInvalid, sanitizeSecret } from './lib/secret-input.mjs';
 
 const ALLOWED = {
-  STEAM_WEB_API_KEY: { pattern: /^[0-9A-F]{32}$/i, description: '32 caracteres hexadecimales (0-9, A-F)' },
+  STEAM_WEB_API_KEY: { pattern: /^[0-9A-F]{32}$/i, description: '32 caracteres hexadecimales (0-9, A-F)', hexOnly: true },
+  TMDB_API_READ_TOKEN: {
+    pattern: /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/,
+    description: 'el «API Read Access Token» de TMDb: un texto largo que empieza por eyJ y contiene dos puntos',
+    hint: (value) =>
+      /^[0-9a-f]{32}$/i.test(value)
+        ? 'Parece la «API Key» corta de TMDb: copia en su lugar el «API Read Access Token» (el largo).'
+        : undefined,
+  },
 };
 
 const args = process.argv.slice(2).filter((a) => a !== '--');
@@ -83,14 +92,16 @@ function readHidden(prompt) {
   });
 }
 
-const { pattern, description } = ALLOWED[name];
+const { pattern, description, hexOnly = false, hint } = ALLOWED[name];
 const raw = fromClipboard
   ? readClipboard()
   : await readHidden(`Pega el valor de ${name} y pulsa Enter (verás un * por carácter, no el valor): `);
 const value = sanitizeSecret(raw);
 if (!pattern.test(value)) {
   console.error(`El valor no tiene el formato esperado para ${name}. No se ha guardado nada.`);
-  console.error(describeInvalid(value, description));
+  console.error(describeInvalid(value, description, { hexOnly }));
+  const extra = hint?.(value);
+  if (extra) console.error(extra);
   if (!fromClipboard) {
     console.error('Si al pegar no aparecieron asteriscos, prueba a pegar con clic derecho o usa:');
     console.error(`  pnpm secret:set ${name} --clipboard   (copia antes la clave al portapapeles)`);

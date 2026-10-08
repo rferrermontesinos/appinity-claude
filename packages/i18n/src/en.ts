@@ -149,7 +149,7 @@ export const en: TranslationResources = {
   sources: {
     title: 'Sources',
     help:
-      '"Demo" sources are simulated: they read fictitious activity from repository files, with no OAuth or real providers. Real sources arrive in their phases.',
+      '"Demo" sources are simulated: they read fictitious activity from repository files, with no OAuth or real providers. Real sources (Steam, TMDb) connect with your provider account; the rest arrive in their phases.',
     connect: 'Connect',
     sync: 'Sync',
     fullSync: 'Full resync',
@@ -161,6 +161,11 @@ export const en: TranslationResources = {
     connectSteam: 'Sign in through Steam',
     steamHelp:
       'Steam will open so you can sign in there (APPINITY never sees your password). Only your SteamID is linked; your library is read with the Steam Web API.',
+    tmdbHelp:
+      'themoviedb.org will open: sign in there and press "Approve". APPINITY only reads your movie and TV ratings, favorites and watchlist; it never writes to your account.',
+    revokedAtProvider: 'Disconnected. The provider confirmed that APPINITY access is revoked.',
+    revokeFailed:
+      'Disconnected in APPINITY and credentials deleted, but the provider did not confirm the revocation. You can check it in your provider account settings.',
     unconfigured: 'Not available on this server: {{reason}}',
     demoOnlyReal: 'Real accounts only. Sign in with a local real account to connect it.',
     connectedResult: 'Account connected. The first sync is running.',
@@ -196,6 +201,13 @@ export const en: TranslationResources = {
       fixture_play: 'Demo · Game library',
       fixture_audio: 'Demo · Music and podcasts',
     },
+  },
+  credits: {
+    title: 'Credits and data sources',
+    tmdb: 'Movies and TV: data and images from TMDB (The Movie Database).',
+    tmdbNoticeLabel: 'Notice required by TMDB:',
+    wikimedia: 'Demo catalog: Wikidata and Wikimedia Commons; every image shows its author and license.',
+    steam: 'Games: data from the Steam Web API and Steam store art, as reference only.',
   },
   categoriesScreen: {
     title: 'Categories',

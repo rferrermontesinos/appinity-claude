@@ -96,6 +96,20 @@ function ConnectionRow({
     for (const key of ['connections', 'profiles', 'profile', 'catalog']) await queryClient.invalidateQueries({ queryKey: [key] });
   }
 
+  /** Desconectar e informar de si el proveedor confirmó la revocación (TMDb borra la sesión en su lado). */
+  function startDisconnect(connectionId: string, purge: boolean) {
+    setNotice(null);
+    disconnect.mutate(
+      { connectionId, purge },
+      {
+        onSuccess: (result) => {
+          if (result.providerRevocation === 'revoked') setNotice({ text: t('sources.revokedAtProvider'), tone: 'ok' });
+          if (result.providerRevocation === 'failed') setNotice({ text: t('sources.revokeFailed'), tone: 'error' });
+        },
+      },
+    );
+  }
+
   const busy =
     connect.isPending || sync.isPending || disconnect.isPending || latest?.status === 'queued' || latest?.status === 'running';
   const lastSync = connection?.lastSyncAt ? new Date(connection.lastSyncAt).toLocaleString(i18n.language) : t('sources.never');
@@ -169,12 +183,15 @@ function ConnectionRow({
               </View>
             ) : null}
             {!active && source.connectable && source.key !== 'steam' ? (
-              <Button
-                label={connection ? t('sources.reconnect') : t('sources.connect')}
-                icon="link-variant"
-                onPress={() => void startConnect()}
-                loading={connect.isPending}
-              />
+              <View style={{ gap: spacing.xs }}>
+                <Button
+                  label={connection ? t('sources.reconnect') : t('sources.connect')}
+                  icon="link-variant"
+                  onPress={() => void startConnect()}
+                  loading={connect.isPending}
+                />
+                {source.key === 'tmdb' ? <Small>{t('sources.tmdbHelp')}</Small> : null}
+              </View>
             ) : null}
             {active ? (
               <>
@@ -201,7 +218,7 @@ function ConnectionRow({
                   icon="link-variant-off"
                   variant="secondary"
                   disabled={busy}
-                  onPress={() => disconnect.mutate({ connectionId: connection.id, purge: false })}
+                  onPress={() => startDisconnect(connection.id, false)}
                 />
               </>
             ) : null}
@@ -217,7 +234,7 @@ function ConnectionRow({
                     {
                       text: t('sources.disconnectPurge'),
                       style: 'destructive',
-                      onPress: () => disconnect.mutate({ connectionId: connection.id, purge: true }),
+                      onPress: () => startDisconnect(connection.id, true),
                     },
                   ])
                 }
@@ -231,7 +248,7 @@ function ConnectionRow({
 }
 
 /**
- * Gestión de fuentes: simuladas (solo usuarios de demo), reales disponibles (Steam, solo cuentas reales) y reales
+ * Gestión de fuentes: simuladas (solo usuarios de demo), reales disponibles (Steam y TMDb, solo cuentas reales) y reales
  * previstas o sin configurar (no conectables, con el motivo).
  */
 export function SourcesCard() {

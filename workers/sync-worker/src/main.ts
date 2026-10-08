@@ -1,7 +1,13 @@
-import { EntityResolver, LocalDiskStorage, WikidataSnapshotProvider, cacheCatalogImage } from '@appinity/catalog';
+import {
+  EntityResolver,
+  LocalDiskStorage,
+  WikidataSnapshotProvider,
+  cacheCatalogImage,
+  refreshExpiredProviderItems,
+} from '@appinity/catalog';
 import { createDatabase } from '@appinity/database';
 import { createProducerQueues, enqueueSync, runConnectionSync, scheduleDueSyncs } from '@appinity/ingestion';
-import { createAdapterRegistry } from '@appinity/integrations';
+import { TmdbCatalogProvider, createAdapterRegistry } from '@appinity/integrations';
 import {
   QUEUES,
   isSourceError,
@@ -22,9 +28,15 @@ const database = createDatabase(env.databaseUrl, { max: 6, applicationName: 'app
 const registry = createAdapterRegistry({
   demoMode: env.demoMode,
   ...(env.steamApiKey ? { steam: { apiKey: env.steamApiKey } } : {}),
+  ...(env.tmdbReadToken ? { tmdb: { readToken: env.tmdbReadToken } } : {}),
 });
 const producer = createProducerQueues(env.redisUrl, env.queuePrefix);
-const resolver = new EntityResolver(database.db, env.demoMode ? [new WikidataSnapshotProvider()] : []);
+// Catálogo TMDb solo para el dataset live (la demo no llama a la red).
+const tmdbCatalog = env.tmdbReadToken ? new TmdbCatalogProvider({ readToken: env.tmdbReadToken }) : null;
+const resolver = new EntityResolver(database.db, [
+  ...(env.demoMode ? [new WikidataSnapshotProvider()] : []),
+  ...(tmdbCatalog ? [tmdbCatalog] : []),
+]);
 const storage = new LocalDiskStorage(env.storageDir);
 
 const workers: Worker[] = [
@@ -38,6 +50,13 @@ const workers: Worker[] = [
         if (due.length) console.log(`[scheduler] ${due.length} sync(s) programado(s)`);
         return { scheduled: due.length };
       }
+      // Condiciones de TMDb: el contenido cacheado se renueva (o se retira) antes de 6 meses.
+      if (job.name === 'refresh-catalog') {
+        if (!tmdbCatalog) return { refreshed: 0 };
+        const result = await refreshExpiredProviderItems(database.db, resolver, tmdbCatalog);
+        if (result.refreshed || result.withdrawn || result.failed) console.log(`[catalog] TMDb renovado: ${JSON.stringify(result)}`);
+        return result;
+      }
       return { pong: `${job.data.requestedAt} → ${new Date().toISOString()}` };
     },
     { connection, prefix: env.queuePrefix, concurrency: 1 },
@@ -48,7 +67,10 @@ const workers: Worker[] = [
     async (job) => {
       let outcome;
       try {
-        outcome = await runConnectionSync({ database, registry, resolver }, job.data.runId);
+        outcome = await runConnectionSync(
+          { database, registry, resolver, ...(env.credentialsKey ? { credentialsKey: env.credentialsKey } : {}) },
+          job.data.runId,
+        );
       } catch (error) {
         // Perfil privado, clave no válida…: reintentar no sirve; el usuario debe actuar (mensaje en la app).
         if (isSourceError(error) && !error.retryable) throw new UnrecoverableError(error.message);
@@ -88,11 +110,14 @@ const heartbeat = setInterval(beat, 10_000);
 // Revisión horaria de syncs pendientes (idempotente: el programador se registra con un id fijo).
 const systemQueue = new Queue(QUEUES.system, { connection, prefix: env.queuePrefix });
 await systemQueue.upsertJobScheduler('schedule-syncs', { every: 60 * 60 * 1000 }, { name: 'schedule-syncs', data: { requestedAt: 'scheduler' } });
+await systemQueue.upsertJobScheduler('refresh-catalog', { every: 24 * 60 * 60 * 1000 }, { name: 'refresh-catalog', data: { requestedAt: 'scheduler' } });
 
 console.log(
   `Worker escuchando colas [${workers.map((w) => w.name).join(', ')}] con prefijo ${env.queuePrefix}` +
     (env.demoMode ? ' · DEMO_MODE: fuentes fixture activas' : '') +
-    (env.steamApiKey ? ` · Steam activo (syncs cada ${env.syncIntervalHours} h)` : ' · Steam sin configurar (falta STEAM_WEB_API_KEY)'),
+    (env.steamApiKey ? ` · Steam activo (syncs cada ${env.syncIntervalHours} h)` : ' · Steam sin configurar (falta STEAM_WEB_API_KEY)') +
+    (env.tmdbReadToken ? ' · TMDb activo' : ' · TMDb sin configurar (falta TMDB_API_READ_TOKEN)') +
+    (env.tmdbReadToken && !env.credentialsKey ? ' · AVISO: falta CREDENTIALS_ENCRYPTION_KEY' : ''),
 );
 
 let stopping = false;

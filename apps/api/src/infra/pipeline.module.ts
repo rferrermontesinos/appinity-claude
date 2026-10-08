@@ -2,13 +2,13 @@ import { Global, Inject, Module, type OnApplicationShutdown } from '@nestjs/comm
 import { EntityResolver, LocalDiskStorage, WikidataSnapshotProvider } from '@appinity/catalog';
 import type { DatabaseHandle } from '@appinity/database';
 import { createProducerQueues, type ProducerQueues } from '@appinity/ingestion';
-import { createAdapterRegistry } from '@appinity/integrations';
+import { TmdbCatalogProvider, createAdapterRegistry } from '@appinity/integrations';
 import { APP_ENV, type AppEnv } from '../config/env.js';
 import { ADAPTER_REGISTRY, DATABASE, ENTITY_RESOLVER, QUEUES, STORAGE } from './tokens.js';
 
 /**
  * Registro de adapters, resolver de entidades, colas BullMQ (lado productor) y almacenamiento de imágenes.
- * Las fuentes fixture y la instantánea de catálogo solo se cargan con DEMO_MODE.
+ * Las fuentes fixture y la instantánea de catálogo solo se cargan con DEMO_MODE; Steam y TMDb, con su configuración.
  */
 @Global()
 @Module({
@@ -17,13 +17,21 @@ import { ADAPTER_REGISTRY, DATABASE, ENTITY_RESOLVER, QUEUES, STORAGE } from './
       provide: ADAPTER_REGISTRY,
       inject: [APP_ENV],
       useFactory: (env: AppEnv) =>
-        createAdapterRegistry({ demoMode: env.DEMO_MODE, ...(env.STEAM_WEB_API_KEY ? { steam: { apiKey: env.STEAM_WEB_API_KEY } } : {}) }),
+        createAdapterRegistry({
+          demoMode: env.DEMO_MODE,
+          ...(env.STEAM_WEB_API_KEY ? { steam: { apiKey: env.STEAM_WEB_API_KEY } } : {}),
+          ...(env.TMDB_API_READ_TOKEN ? { tmdb: { readToken: env.TMDB_API_READ_TOKEN } } : {}),
+        }),
     },
     {
       provide: ENTITY_RESOLVER,
       inject: [APP_ENV, DATABASE],
       useFactory: (env: AppEnv, database: DatabaseHandle) =>
-        new EntityResolver(database.db, env.DEMO_MODE ? [new WikidataSnapshotProvider()] : []),
+        new EntityResolver(database.db, [
+          ...(env.DEMO_MODE ? [new WikidataSnapshotProvider()] : []),
+          // Solo dataset live: la demo nunca llama a TMDb.
+          ...(env.TMDB_API_READ_TOKEN ? [new TmdbCatalogProvider({ readToken: env.TMDB_API_READ_TOKEN })] : []),
+        ]),
     },
     {
       provide: QUEUES,

@@ -147,7 +147,7 @@ export const es = {
   sources: {
     title: 'Fuentes',
     help:
-      'Las fuentes «Demo» son simuladas: leen actividad ficticia de archivos del repositorio, sin OAuth ni proveedores reales. Las reales llegarán en sus fases.',
+      'Las fuentes «Demo» son simuladas: leen actividad ficticia de archivos del repositorio, sin OAuth ni proveedores reales. Las reales (Steam, TMDb) se conectan con tu cuenta del proveedor; las demás llegarán en sus fases.',
     connect: 'Conectar',
     sync: 'Sincronizar',
     fullSync: 'Resincronizar todo',
@@ -160,6 +160,11 @@ export const es = {
     connectSteam: 'Iniciar sesión con Steam',
     steamHelp:
       'Se abrirá Steam para que inicies sesión allí (APPINITY no ve tu contraseña). Solo se vincula tu SteamID; la biblioteca se lee con la Steam Web API.',
+    tmdbHelp:
+      'Se abrirá themoviedb.org: inicia sesión allí y pulsa «Aprobar». APPINITY solo lee tus valoraciones, favoritos y pendientes de películas y series; nunca escribe en tu cuenta.',
+    revokedAtProvider: 'Desconectada. El proveedor confirmó que el acceso de APPINITY queda revocado.',
+    revokeFailed:
+      'Desconectada en APPINITY y credenciales borradas, pero el proveedor no confirmó la revocación. Puedes revisarlo en los ajustes de tu cuenta del proveedor.',
     unconfigured: 'No disponible en este servidor: {{reason}}',
     demoOnlyReal: 'Solo para cuentas reales. Entra con una cuenta local real para conectarla.',
     connectedResult: 'Cuenta conectada. La primera sincronización está en marcha.',
@@ -195,6 +200,13 @@ export const es = {
       fixture_play: 'Demo · Biblioteca de juegos',
       fixture_audio: 'Demo · Música y podcasts',
     },
+  },
+  credits: {
+    title: 'Créditos y fuentes de datos',
+    tmdb: 'Películas y series: datos e imágenes de TMDB (The Movie Database).',
+    tmdbNoticeLabel: 'Aviso exigido por TMDB:',
+    wikimedia: 'Catálogo de la demo: Wikidata y Wikimedia Commons; cada imagen muestra su autor y licencia.',
+    steam: 'Juegos: datos de la Steam Web API y arte de la tienda de Steam, solo como referencia.',
   },
   categoriesScreen: {
     title: 'Categorías',

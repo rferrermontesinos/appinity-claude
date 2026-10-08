@@ -79,7 +79,17 @@ export type ConnectStartDto =
   | { kind: 'connected'; connection: ConnectionDto; run: SyncRunDto }
   | { kind: 'redirect'; authorizationUrl: string; expiresAt: string };
 
-export type SyncRunStatus = 'queued' | 'running' | 'succeeded' | 'partial' | 'failed' | 'cancelled';
+/**
+ * Resultado de desconectar. `providerRevocation`: si el proveedor confirmó que invalidó el acceso (p. ej. la sesión
+ * de TMDb), si no lo confirmó (en APPINITY ya está borrado) o si no había nada que revocar (Steam, simuladas).
+ */
+export interface DisconnectResultDto {
+  purgedObservations: number;
+  affectedItems: number;
+  providerRevocation: 'revoked' | 'failed' | 'not_applicable';
+}
+
+export type SyncRunStatus ='queued' | 'running' | 'succeeded' | 'partial' | 'failed' | 'cancelled';
 
 export interface ConnectionDto {
   id: string;

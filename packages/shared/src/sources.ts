@@ -109,11 +109,13 @@ export interface CompleteConnectContext {
   userId: string;
   redirectUri: string;
   callbackParams: Record<string, string>;
+  pending?: Record<string, string>;
 }
 
 export type AuthResult =
   | { kind: 'connected'; externalAccountRef?: string; credentials?: SourceCredentials; scopes: string[] }
-  | { kind: 'redirect'; url: string; state: string }
+  /** `pending`: datos que la API guarda con el `state` hasta el callback (p. ej. el request token de TMDb). */
+  | { kind: 'redirect'; url: string; state: string; pending?: Record<string, string> }
   | { kind: 'unavailable'; reason: string };
 
 export interface SyncContext {
@@ -165,7 +167,8 @@ export interface ProfileSourceAdapter {
   refreshConnection?(connection: UserConnection): Promise<UserConnection>;
   sync(context: SyncContext): Promise<SyncBatch>;
   normalize(record: unknown, context: NormalizeContext): Promise<NormalizedObservation[]>;
-  disconnect(connection: UserConnection): Promise<void>;
+  /** Revoca el acceso en el proveedor cuando existe (p. ej. borrar la sesión de TMDb). */
+  disconnect(connection: UserConnection, credentials?: SourceCredentials): Promise<void>;
 }
 
 export interface CatalogSearch {
@@ -239,6 +242,8 @@ export interface TrendingContext {
  */
 export interface CatalogProvider {
   key: string;
+  /** Ampliación: datasets en los que se usa (p. ej. solo `live` para no llamar a la red en la demo). */
+  datasets?: ReadonlyArray<'demo' | 'live'>;
   search(query: CatalogSearch): Promise<ProviderCatalogItem[]>;
   getItem(externalId: string): Promise<ProviderCatalogItem>;
   resolve(candidate: ExternalItemCandidate): Promise<CatalogMatch | null>;

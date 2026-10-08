@@ -27,12 +27,16 @@ interface PendingConnect {
   sourceKey: string;
   redirectUri: string;
   returnUrl?: string;
+  /** Datos del flujo del proveedor (p. ej. el request token de TMDb). Solo en Redis, nunca van al cliente. */
+  provider?: Record<string, string>;
 }
 
 /** Pista de la cuenta externa sin exponerla entera (p. ej. «SteamID …4821»). */
 function accountHint(sourceKey: string, ref: string | null): string | null {
   if (!ref || sourceKey.startsWith('fixture_')) return null;
-  return sourceKey === 'steam' ? `SteamID …${ref.slice(-4)}` : `…${ref.slice(-4)}`;
+  if (sourceKey === 'steam') return `SteamID …${ref.slice(-4)}`;
+  if (sourceKey === 'tmdb') return `Cuenta TMDb …${ref.slice(-4)}`;
+  return `…${ref.slice(-4)}`;
 }
 
 type RunRow = typeof sourceSyncRuns.$inferSelect;
@@ -111,10 +115,21 @@ export class ConnectionsService {
    */
   async connect(userId: string, sourceKey: string, baseUrl: string, returnUrl: string | undefined): Promise<ConnectStartDto> {
     const state = randomBytes(24).toString('base64url');
-    const redirectUri = `${baseUrl}/v1/connect/${sourceKey}/callback?state=${state}`;
-    const result = await startConnect(this.database.db, this.registry, userId, sourceKey, { redirectUri, realm: `${baseUrl}/` });
+    // El state va en la ruta: algunos proveedores (TMDb) añaden su propia query a la URL de vuelta.
+    const redirectUri = `${baseUrl}/v1/connect/${sourceKey}/callback/${state}`;
+    const result = await startConnect(this.database.db, this.registry, userId, sourceKey, {
+      redirectUri,
+      realm: `${baseUrl}/`,
+      ...this.credentialsOption(),
+    });
     if (result.kind === 'redirect') {
-      const pending: PendingConnect = { userId, sourceKey, redirectUri, ...(returnUrl ? { returnUrl } : {}) };
+      const pending: PendingConnect = {
+        userId,
+        sourceKey,
+        redirectUri,
+        ...(returnUrl ? { returnUrl } : {}),
+        ...(result.pending ? { provider: result.pending } : {}),
+      };
       await this.redis.set(this.stateKey(state), JSON.stringify(pending), 'EX', CONNECT_STATE_TTL_SECONDS);
       return {
         kind: 'redirect',
@@ -123,6 +138,10 @@ export class ConnectionsService {
       };
     }
     return this.afterConnected(userId, result.connection.id);
+  }
+
+  private credentialsOption(): { credentialsKey?: string } {
+    return this.env.CREDENTIALS_ENCRYPTION_KEY ? { credentialsKey: this.env.CREDENTIALS_ENCRYPTION_KEY } : {};
   }
 
   private stateKey(state: string): string {
@@ -151,6 +170,8 @@ export class ConnectionsService {
     const connection = await completeConnect(this.database.db, this.registry, pending.userId, sourceKey, {
       redirectUri: pending.redirectUri,
       callbackParams,
+      ...(pending.provider ? { pending: pending.provider } : {}),
+      ...this.credentialsOption(),
     });
     return { ...(pending.returnUrl ? { returnUrl: pending.returnUrl } : {}), result: await this.afterConnected(pending.userId, connection.id) };
   }
@@ -211,7 +232,10 @@ export class ConnectionsService {
           inArray(sourceSyncRuns.status, ['queued']),
         ),
       );
-    const result = await disconnectSource(this.database.db, this.registry, userId, connectionId, { purge });
+    const result = await disconnectSource(this.database.db, this.registry, userId, connectionId, {
+      purge,
+      ...this.credentialsOption(),
+    });
     // Detener los trabajos que aún esperan en la cola (los que ya corren se cancelan al comprobar el estado).
     await Promise.allSettled(pending.map((p) => this.queues.profileSync.remove(p.id)));
     return result;
