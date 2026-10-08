@@ -8,7 +8,7 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 0 | **Aceptado en dispositivo** (2026-10-08) | Entrega 2026-10-08 · fase 0 (rama `fase-0`, PR rferrermontesinos/appinity-claude#1) |
 | 1 | **Aceptado en dispositivo** (2026-10-08) | Entrega 2026-10-08 · fase 1 (rama `fase-1`, PR rferrermontesinos/appinity-claude#2, basada en `fase-0`) |
 | Aceptación de demo | **Hecha** | El usuario confirmó: «He probado la demo y funciona» |
-| 2 | Implementado y comprobado automáticamente con respuestas simuladas. **Conexión real pendiente** (clave y prueba del usuario) | Entrega 2026-10-08 · fase 2 (rama `fase-2`, PR rferrermontesinos/appinity-claude#3, basada en `fase-1`) |
+| 2 | **Validado con la cuenta real del usuario** (2026-10-08) | Entrega 2026-10-08 · fase 2 (rama `fase-2`, PR rferrermontesinos/appinity-claude#3, basada en `fase-1`) |
 | 3–4 | Pendiente | TMDb y Last.fm, en ese orden |
 | 5–7 | Pendiente | Afinidad, Top 50 y recomendador |
 | 8–10 | Pendiente | Home, Categories y social |
@@ -63,7 +63,27 @@ Rama `fase-2` (basada en `fase-1`), commit `867cd6c`, PR rferrermontesinos/appin
   caracteres de control o marcadores de pegado. Corregido: se limpian, se muestra un `*` por carácter, el error indica
   la longitud recibida (sin revelar el valor) y existe `--clipboard`. La clave nunca se guardó.
 
-### Pendiente del usuario (conexión real)
+### Validación con la cuenta real (2026-10-08)
+
+El usuario creó su clave, la guardó con `pnpm secret:set`, creó su cuenta local y conectó Steam desde el teléfono
+(«Sign in through Steam»). Comprobado en la base de datos (solo totales):
+
+| Comprobación | Resultado |
+|---|---|
+| Conexión | `active`, SteamID guardado, sin errores |
+| Primer sync (al conectar, automático) | `succeeded`: 11 juegos recibidos, 11 evidencias nuevas, 11 objetos creados (dataset `live`), 0 errores parciales |
+| Segundo sync (encolado como el botón «Sincronizar») | `succeeded`: **0 nuevas, 0 actualizadas, 11 sin cambios**, 0 borradas: sin duplicados |
+| Claves idempotentes | 11 evidencias = 11 claves distintas |
+| Modelo | 9 juegos con preferencia inferida (0,23–1,00, media 0,58); 2 jugados menos de 2 h, consumidos y sin preferencia; todas con fecha de última partida |
+| Juegos con 0 h | La biblioteca real no tiene ninguno: la regla queda probada con fixtures, no con datos reales |
+| Imágenes | 11 referencias al CDN de Steam (ninguno coincide con la instantánea de Wikidata); no se cachean |
+
+### Observación de producto del usuario
+
+«La sincronización debería hacerse automáticamente y sin tantos pasos, solo dando permisos al inicio, en el registro.
+Se puede cambiar más adelante.» Registrado en [decisions.md](decisions.md#onboarding-y-sincronización-automática-observación-del-usuario).
+
+### Pasos que hizo el usuario (solo desarrollo)
 
 1. Crear la clave en <https://steamcommunity.com/dev/apikey> y guardarla con `pnpm secret:set STEAM_WEB_API_KEY`.
 2. `pnpm user:local --handle … --name …` y entrar en la app con el código.
@@ -72,7 +92,8 @@ Rama `fase-2` (basada en `fase-1`), commit `867cd6c`, PR rferrermontesinos/appin
 4. Perfil → Steam → «Sign in through Steam», comprobar la importación, repetir el sync (sin duplicados), juegos con
    0 h y desconectar.
 
-Mientras no se haga, la integración real de Steam **no está validada**: solo lo está con respuestas simuladas.
+Hechos el 2026-10-08. La desconexión con borrado está probada en integración con usuarios simulados; no se ejecutó
+sobre la cuenta real para conservar sus datos.
 
 ### Limitaciones
 
@@ -83,7 +104,7 @@ Mientras no se haga, la integración real de Steam **no está validada**: solo l
 
 ### Siguiente paso
 
-Prueba real del usuario con su cuenta de Steam. Después, fase 3 (TMDb) con `prompts/fase_03_tmdb.md`.
+Fase 3 (TMDb) con `prompts/fase_03_tmdb.md`.
 
 ---
 

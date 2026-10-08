@@ -275,3 +275,17 @@ La demo de las fases 0 y 1 fue aceptada en el teléfono por el usuario el 2026-1
 
 `pnpm secret:set STEAM_WEB_API_KEY` pide el valor en la terminal sin mostrarlo, valida el formato (32 caracteres
 hexadecimales) y lo escribe en `.env`. Alternativa: editar `.env` a mano.
+
+### Onboarding y sincronización automática (observación del usuario)
+
+Tras validar Steam con su cuenta (2026-10-08), el usuario pidió que la sincronización sea automática y que el usuario
+final solo tenga que dar permisos una vez, al registrarse. Estado y plan:
+
+- **Ya es automático:** el primer sync se lanza solo al conectar y después el worker sincroniza cada 24 h
+  (`SYNC_INTERVAL_HOURS`). El botón «Sincronizar» es opcional.
+- **Los pasos extra de la prueba eran de desarrollo y no existirán para el usuario final:** la clave de la Web API la
+  configura una sola vez quien opera el servidor (no el usuario); la cuenta local y su código se sustituyen por la
+  autenticación de producción (fase 13); arrancar servidores no es un paso de producto.
+- **Pendiente de diseño (onboarding, §14 y fase 13):** la pantalla «Conecta tu mundo» del registro ofrecerá las fuentes
+  disponibles; el usuario autoriza cada una una vez (consentimiento por proveedor) y no vuelve a ver pasos de sync. Se
+  podrá revisar más adelante, como indicó el usuario.

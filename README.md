@@ -5,8 +5,7 @@
 Implementación independiente de APPINITY construida desde cero a partir de
 [docs/APPINITY_Especificacion.md](docs/APPINITY_Especificacion.md). No reutiliza código de otras implementaciones.
 
-**Estado:** fases 0 y 1 aceptadas en el teléfono. Fase 2 (Steam) implementada y comprobada automáticamente con
-respuestas simuladas; **la conexión con tu cuenta real de Steam está pendiente** de tu clave y tu prueba
+**Estado:** fases 0 y 1 aceptadas en el teléfono. Fase 2 (Steam) **validada con una cuenta real**
 ([docs/progress.md](docs/progress.md)). Todavía **no** hay recomendador, afinidades ni almas gemelas.
 
 ## Qué es real y qué es simulado
