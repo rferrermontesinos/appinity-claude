@@ -1,0 +1,35 @@
+{
+  "source": "fixture_diary",
+  "note": "Actividad SIMULADA. Títulos, IMDb, ISBN y Open Library son reales (instantánea de Wikidata); entradas, estrellas y fechas son inventadas. Algunas fechas solo tienen año a propósito.",
+  "users": [
+    {
+      "userId": "00000000-0000-4000-a000-000000000001",
+      "handle": "demo_laura",
+      "records": [
+        { "entryId": "d-l-08", "kind": "film", "ref": { "imdb": "tt0034583", "title": "Casablanca", "year": 1942 }, "status": "rated", "stars": 3.5, "date": "2024-11-20" },
+        { "entryId": "d-l-01", "kind": "film", "ref": { "imdb": "tt0034583", "title": "Casablanca", "year": 1942 }, "status": "rated", "stars": 4.5, "date": "2026-03-15" },
+        { "entryId": "d-l-02", "kind": "film", "ref": { "imdb": "tt1254207", "title": "Big Buck Bunny", "year": 2008 }, "status": "logged", "date": "2024" },
+        { "entryId": "d-l-03", "kind": "book", "ref": { "isbn13": "9788420676340", "title": "Orgullo y prejuicio", "author": "Jane Austen" }, "status": "rated", "stars": 5, "date": "2025-08-10" },
+        { "entryId": "d-l-04", "kind": "book", "ref": { "openlibrary": "OL503666W", "title": "Don Quijote de la Mancha" }, "status": "want", "date": null },
+        { "entryId": "d-l-05", "_nota": "Sin identificadores: se resuelve por título exacto + año + autor.", "kind": "book", "ref": { "title": "La Regenta", "year": 1884, "author": "Leopoldo Alas «Clarín»" }, "status": "logged", "date": "2019" },
+        { "entryId": "d-l-06", "kind": "book", "ref": { "isbn13": "9780141439471", "title": "Frankenstein", "author": "Mary Shelley" }, "status": "rated", "stars": 2, "date": "2026-06-03" },
+        { "entryId": "d-l-07", "kind": "book", "ref": { "openlibrary": "OL8476949W", "title": "La sombra del viento" }, "status": "want", "date": null }
+      ]
+    },
+    {
+      "userId": "00000000-0000-4000-a000-000000000003",
+      "handle": "demo_marta",
+      "records": [
+        { "entryId": "d-m-01", "kind": "book", "ref": { "openlibrary": "OL274505W", "title": "Cien años de soledad" }, "status": "rated", "stars": 5, "date": "2018" }
+      ]
+    },
+    {
+      "userId": "00000000-0000-4000-a000-000000000004",
+      "handle": "demo_jordi",
+      "records": [
+        { "entryId": "d-j-01", "kind": "book", "ref": { "openlibrary": "OL21501229W", "title": "Moby Dick" }, "status": "rated", "stars": 4, "date": "2025-10-05" },
+        { "entryId": "d-j-02", "kind": "book", "ref": { "isbn13": "9780241341469", "title": "The Great Gatsby" }, "status": "rated", "stars": 3.5, "date": "2023" }
+      ]
+    }
+  ]
+}

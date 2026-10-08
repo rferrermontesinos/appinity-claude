@@ -5,15 +5,21 @@
 Implementación independiente de APPINITY construida desde cero a partir de
 [docs/APPINITY_Especificacion.md](docs/APPINITY_Especificacion.md). No reutiliza código de otras implementaciones.
 
-**Estado:** fase 0 (monorepo, servicios, API, auth de desarrollo, app con cuatro pestañas, i18n).
-Detalle en [docs/progress.md](docs/progress.md). Todavía **no** hay recomendador, afinidades ni conexiones reales.
+**Estado:** fases 0 y 1 implementadas y comprobadas automáticamente. **Falta la aceptación manual en el teléfono**
+([docs/progress.md](docs/progress.md)). Todavía **no** hay recomendador, afinidades, almas gemelas ni conexiones reales.
 
-| Qué | Estado |
+## Qué es real y qué es simulado
+
+| Elemento | Naturaleza |
 |---|---|
-| Usuarios de la demo | **Simulados** (`dataset = demo`, nombres con «(demo)») |
-| Identidad | **De desarrollo** (JWT firmado por la API con `DEMO_MODE`). No es la autenticación de producción |
-| Fuentes externas (Steam, TMDb, Last.fm…) | **Pendientes** (fases 2–4 y 11) |
-| Recomendaciones y afinidad | **Pendientes** (fases 5–8). La app no muestra ninguna inventada |
+| Objetos del catálogo (108: 96 principales de las ocho categorías, 4 ediciones de libros y 8 temporadas; restaurantes y cultura de Barcelona, Girona y Figueres) | **Reales**: instantánea congelada de Wikidata (CC0) |
+| Imágenes (82 objetos con imagen libre) | **Reales**: Wikimedia Commons, con autor y licencia. Los 14 objetos principales sin imagen libre usan la imagen de sustitución de su categoría; ediciones y temporadas reutilizan la de su obra o serie |
+| Usuarios de la demo (6, con «(demo)» en el nombre) | **Simulados** (`dataset = demo`) |
+| Actividad de esos usuarios (valoraciones, horas, escuchas, visitas…) | **Simulada**: archivos de fixtures del repositorio |
+| Fuentes «Demo · …» | **Simuladas**: mismo contrato de adapter que las fuentes reales, sin OAuth ni proveedores |
+| Steam, TMDb, Last.fm, Google, Apple Music | **Pendientes** (fases 2–4 y 11). Se muestran como «Próximamente» |
+| Identidad | **De desarrollo** (JWT firmado por la API con `DEMO_MODE`). No es autenticación de producción |
+| Recomendaciones, afinidad, almas gemelas, Trending | **Pendientes** (fases 5–8). La app no muestra ninguna inventada |
 
 ## Requisitos
 
@@ -22,11 +28,11 @@ Comprobado en Windows 11 con:
 - Node.js 24 (probado 24.21.0) y pnpm 11 (probado 11.19.0; `corepack enable` o `npm i -g pnpm@11`)
 - Docker Desktop con Docker Compose v2 (probado Docker 29.8, Compose 5.5)
 - Git
-- Teléfono con **Expo Go** actualizado (SDK 57) en la misma red que el PC
+- Teléfono con **Expo Go para el SDK 57** (Android 57.0.9 / iOS 57.0.9) en la misma red que el PC
 
-## Puesta en marcha (PC)
+## Puesta en marcha en el PC
 
-Desde la carpeta del repositorio:
+Ejecuta cada comando desde la carpeta del repositorio.
 
 ```bash
 pnpm install --frozen-lockfile
@@ -36,32 +42,42 @@ pnpm install --frozen-lockfile
 pnpm setup
 ```
 
-Crea `.env` con secretos aleatorios (no se sube a Git) y `apps/mobile/.env` con la URL de la API
-vista desde el teléfono (por ejemplo `http://192.168.1.16:3100`). Si detecta otra IP, fuerza la tuya:
-`pnpm setup --ip 192.168.1.16`.
+Crea `.env` con secretos aleatorios (ignorado por Git) y `apps/mobile/.env` con la URL de la API vista desde el
+teléfono (en este PC, `http://192.168.1.16:3100`). Si detecta una IP equivocada: `pnpm setup --ip <IP-del-PC>`.
 
 ```bash
 pnpm services:up
 ```
 
-Levanta PostgreSQL 17 + PostGIS 3.5 (`127.0.0.1:5442`) y Redis 7.4 (`127.0.0.1:6390`) en el proyecto
-Docker `appinity-claude`, con volúmenes propios (`appinity_claude_pg`, `appinity_claude_redis`).
-Resultado esperado: `Container appinity-claude-postgres Healthy` y `Container appinity-claude-redis Healthy`.
+Resultado esperado: `Container appinity-claude-postgres Healthy` y `Container appinity-claude-redis Healthy`
+(PostgreSQL 17 + PostGIS 3.5 en `127.0.0.1:5442`, Redis 7.4 en `127.0.0.1:6390`, proyecto Docker `appinity-claude`).
 
 ```bash
 pnpm db:migrate
 ```
 
-Resultado esperado: `✔ Migraciones aplicadas (… ms) en appinity_claude`. Puede repetirse: es idempotente.
+Resultado esperado: `✔ Migraciones aplicadas (… ms) en appinity_claude`. Es idempotente.
 
 ```bash
 pnpm db:seed
 ```
 
-Resultado esperado: `✔ Usuarios simulados: 6 (dataset demo)`. Repetirlo deja exactamente el mismo estado
-(restablece también los ajustes de los usuarios de demo).
+Resultado esperado (primera vez):
 
-Arranca API y worker (cada uno en su terminal, o juntos con `pnpm dev`):
+```text
+✔ Usuarios simulados: 6 (dataset demo)
+✔ Catálogo real (instantánea Wikidata/Commons): 108 objetos, 108 nuevos
+  · demo_laura  fixture_screen    partial   nuevas 9, … · 1 error(es) parcial(es)
+  · demo_laura  fixture_diary     succeeded nuevas 8, …
+  … (14 syncs)
+✔ 82 imágenes en cola para cachear (las procesa pnpm worker)
+```
+
+El error parcial de Laura es **intencionado**: un registro con valoración 11 en una escala 1–10 demuestra la
+validación en runtime sin detener el resto del sync. Repetir `pnpm db:seed` da `0 nuevos` y
+`nuevas 0, actualizadas 0, sin cambios N` en todos los syncs: no hay duplicados.
+
+Arranca API y worker, cada uno en su terminal:
 
 ```bash
 pnpm api
@@ -71,54 +87,75 @@ pnpm api
 pnpm worker
 ```
 
-Comprueba:
+Con el worker arrancado, las 82 imágenes se descargan una vez de Wikimedia Commons (unos 20 s, 24 MB en `.data/media`)
+y a partir de ahí el teléfono las recibe de la API por la red local.
+
+Comprueba el estado:
 
 ```bash
 pnpm doctor
 ```
 
-Resultado esperado: servicios `healthy`, `http://127.0.0.1:3100/health → ok` y la IP de tu red
-(`192.168.1.16`) marcada como «API accesible».
+Resultado esperado: servicios `healthy`, `http://127.0.0.1:3100/health → ok` con database, postgis, redis y worker
+en OK, y `192.168.1.16 … → API accesible`.
 
-## Probar en el teléfono (Expo Go)
+## Probar en el teléfono con Expo Go
 
-1. Instala **Expo Go** desde Google Play (Android) o App Store (iPhone) y actualízalo: el proyecto usa
-   Expo SDK 57. Todas las dependencias nativas (Reanimated, Gesture Handler, SecureStore, Location, Image)
-   están incluidas en Expo Go, así que **no hace falta un development build**.
-2. Teléfono y PC en la misma red. Un PC por Ethernet y un móvil por Wi-Fi conectados al mismo router sirven,
-   salvo que el router aísle clientes o el móvil esté en una red de invitados.
-3. Antes de abrir la app, abre en el **navegador del teléfono** `http://192.168.1.16:3100/health`
-   (usa tu IP). Debe mostrar un JSON con `"status":"ok"`. Si no carga, revisa el apartado de red.
-4. Arranca Metro:
+Todas las dependencias nativas (Reanimated, Gesture Handler, SecureStore, Location, Image, WebBrowser) están en
+Expo Go, así que **no hace falta un development build**.
+
+1. **Expo Go del SDK 57.**
+   - Android: instala o actualiza Expo Go desde Google Play. Si tienes otra versión instalada para otro proyecto
+     (el emulador de este PC tiene Expo Go 55.0.7), ten en cuenta que Expo Go solo abre un SDK; puedes descargar
+     la versión exacta desde [expo.dev/go](https://expo.dev/go).
+   - iPhone: Expo Go de la App Store ya soporta el SDK 57. **Desde septiembre de 2026 exige iniciar sesión**
+     con la misma cuenta de Expo (gratuita) en el teléfono (avatar arriba a la derecha) y en el PC
+     (`npx expo login`). Android no lo exige.
+2. **Misma red.** PC por Ethernet y móvil por Wi-Fi conectados al mismo router sirven, salvo aislamiento de
+   clientes o red de invitados.
+3. **Comprueba la red antes de abrir la app.** En el navegador del teléfono abre `http://192.168.1.16:3100/health`.
+   Debe verse un JSON con `"status":"ok"`.
+4. **Arranca Metro** (en otra terminal):
 
    ```bash
    pnpm mobile
    ```
 
-   Usa el puerto 8091 (no el 8081 por defecto, para no chocar con otros proyectos).
-5. Escanea el QR con Expo Go (Android) o con la cámara (iPhone). Si el QR no aparece en la terminal,
-   en Expo Go escribe la URL manual `exp://192.168.1.16:8091`.
-6. Recorrido esperado:
-   - Pantalla **Elige un usuario de demo** con seis usuarios simulados y el aviso «DEMO · actividad de
-     usuarios simulada». Abajo, la tarjeta **Conexión con la API** debe indicar «Conectada».
-   - Al elegir un usuario, aparecen las cuatro pestañas **Inicio, Categorías, Personas, Perfil**.
-   - **Inicio** explica que el carrusel aún no existe (no hay recomendaciones inventadas).
-   - **Categorías** muestra las ocho categorías con icono, color y alcance (local o global).
-   - **Personas** indica que almas gemelas y amigos están pendientes (sin porcentajes).
-   - **Perfil**: identidad de desarrollo, idioma (Español/English cambia toda la interfaz), zona
-     (manual o «Usar mi ubicación aproximada (una vez)»), radio 1–50 km, «Permitir que mis contactos me
-     encuentren», frecuencia de notificaciones y el diagnóstico de conexión.
-   - «Cambiar de usuario de demo» vuelve a la pantalla inicial.
+   Usa el puerto 8091 para no chocar con otros proyectos. Escanea el QR con Expo Go (Android) o con la cámara
+   (iPhone). Si no aparece el QR, en Expo Go introduce `exp://192.168.1.16:8091`.
+
+### Recorrido de aceptación
+
+| # | Dónde | Qué hacer | Resultado esperado |
+|---|---|---|---|
+| 1 | Pantalla inicial | Mirar la tarjeta **Conexión con la API** | «Conectada», con Base de datos, PostGIS, Redis y Worker en OK |
+| 2 | Pantalla inicial | Elegir **Laura (demo)** | Aparecen las pestañas **Inicio, Categorías, Personas, Perfil** |
+| 3 | Inicio | Leer las tarjetas | «APPINITY está aprendiendo tus gustos», aviso de que el carrusel llega en las fases 7–8 y «28 objetos con evidencia» |
+| 4 | Inicio → **Ver el modelo de datos de la demo** | Revisar las filas | Cada fila muestra Conocido, Consumido y Preferencia por separado. «—» = sin evidencia (NULL) |
+| 5 | Modelo → Videojuegos | Mirar **Mindustry** | Conocido 1.00 · Consumido 0.00 · Preferencia «—», etiqueta «Comprado, 0 horas» |
+| 6 | Modelo → Películas | **Dr. Strangelove** y **Some Like It Hot** | Watchlist: consumido 0.00 y «—»; visto sin nota: consumido 1.00 y «—» |
+| 7 | Modelo → Películas → **Casablanca** | Abrir el detalle | 3 fuentes y 4 evidencias en un solo objeto, preferencia +0.78; el like de menor prioridad aparece como ignorado y una valoración antigua como sustituida |
+| 8 | Modelo → Cultura → **MACBA** | Abrir el detalle | Preferencia −0.50: la reseña negativa prevalece sobre la asistencia +1 |
+| 9 | Modelo → Libros | **Orgullo y prejuicio** y **La Regenta** | La edición con ISBN cuenta para la obra; La Regenta se resolvió sin IDs y su fecha tiene «precisión: year» |
+| 10 | Categorías → cualquier categoría | Ver la cuadrícula | Imágenes reales; los objetos sin imagen libre (p. ej. Stardew Valley, Robot Dreams, Crims) muestran la imagen de sustitución de su categoría, no una foto inventada |
+| 11 | Detalle de un objeto con imagen | Sección **Imagen** | Licencia (y autor si existe) con enlace a Wikimedia Commons |
+| 12 | Perfil → Fuentes | **Resincronizar todo** en una fuente | La última ejecución pasa a «correcto · nuevas 0 · actualizadas 0 · sin cambios N» |
+| 13 | Perfil → Fuentes | **Desconectar y borrar lo importado** en «Demo · Actividad y lugares» y volver a **Conectar** | Las evidencias de esa fuente desaparecen del modelo (Casablanca baja a 2 fuentes) y vuelven al reconectar |
+| 14 | Perfil → Ajustes | Cambiar idioma, zona, radio, contactos y notificaciones | Se guardan en la API; el idioma cambia toda la interfaz |
+| 15 | Perfil | **Cambiar de usuario de demo** → **Sam (demo)** | Modelo vacío («Este usuario no tiene evidencias…»): falta de datos, no ceros |
+| 16 | Personas | Leer | Almas gemelas y amigos pendientes, sin porcentajes |
+
+Para volver al estado inicial de la demo: `pnpm db:seed`.
 
 ### Si el teléfono no alcanza la API
 
-- `localhost` en el teléfono es el propio teléfono: la URL debe usar la IP del PC (`pnpm setup` la escribe
-  en `apps/mobile/.env`; tras cambiarla, reinicia Metro con `pnpm --filter @appinity/mobile start:clear`).
-- Si `apps/mobile/.env` no existe, la app usa la IP de Metro con el puerto 3100 (se ve en Perfil → Diagnóstico).
-- Firewall de Windows: en este PC ya existe una regla de entrada «Node.js JavaScript Runtime» que permite
-  `node.exe` en el perfil **Público**, que es el que tiene la red Ethernet. Si Windows vuelve a preguntar,
-  permite el acceso. Si sigue sin funcionar, crea como administrador una regla de entrada TCP para los puertos
-  3100 y 8091 limitada a tu red. Esta implementación no cambia la configuración del sistema.
+- `localhost` en el teléfono es el propio teléfono: la URL debe usar la IP del PC. `pnpm setup` la escribe en
+  `apps/mobile/.env`; si la cambias, reinicia Metro con `pnpm --filter @appinity/mobile start:clear`.
+- Sin `apps/mobile/.env`, la app usa la IP de Metro con el puerto 3100 (se ve en Perfil → Diagnóstico).
+- Firewall de Windows: en este PC existe una regla de entrada «Node.js JavaScript Runtime» que permite `node.exe`
+  en el perfil **Público**, que es el de la red Ethernet. Si Windows vuelve a preguntar, permite el acceso. Si aun así
+  falla, crea como administrador una regla de entrada TCP para los puertos 3100 y 8091 limitada a tu red. Este
+  proyecto no cambia la configuración del sistema.
 - `pnpm doctor` comprueba servicios, API local y API por cada IP de red.
 
 ## Comandos
@@ -129,41 +166,52 @@ Resultado esperado: servicios `healthy`, `http://127.0.0.1:3100/health → ok` y
 | `pnpm services:up` / `services:down` | Arranca o para PostgreSQL+PostGIS y Redis (Docker) |
 | `pnpm build` | Compila todos los paquetes TypeScript (`tsc -b`) |
 | `pnpm db:migrate` | Aplica migraciones versionadas (Drizzle) |
-| `pnpm db:seed` | Seed determinista de la demo (solo `DEMO_MODE=true`, nunca en producción) |
+| `pnpm db:seed` | Seed determinista de la demo: usuarios, catálogo, conexiones fixture y syncs (solo `DEMO_MODE=true`) |
 | `pnpm db:reset` | Vacía la BD de desarrollo, migra y siembra (solo `DEMO_MODE=true`) |
-| `pnpm api` / `pnpm worker` | API NestJS en `0.0.0.0:3100` / worker BullMQ |
+| `pnpm api` / `pnpm worker` | API NestJS en `0.0.0.0:3100` / worker BullMQ (syncs y caché de imágenes) |
 | `pnpm dev` | Compilación en modo watch + API + worker |
 | `pnpm mobile` | Metro/Expo en el puerto 8091 |
+| `pnpm --filter @appinity/mobile web` | Vista web de desarrollo en el puerto 8092 (solo verificación; no sustituye al teléfono) |
 | `pnpm doctor` | Diagnóstico de servicios y red |
 | `pnpm lint` | ESLint (incluye la regla que impide importar proveedores en `packages/algorithms`) |
 | `pnpm typecheck` | `tsc` de paquetes, tests y app móvil |
-| `pnpm test` | Compila y ejecuta tests unitarios e integración (requiere `pnpm services:up`) |
+| `pnpm test` | Compila y ejecuta los tests unitarios y de integración (requiere `pnpm services:up`) |
+| `pnpm fixtures:catalog` | Regenera la instantánea de catálogo desde Wikidata/Commons (requiere red; tarea manual) |
 
-Los tests de integración usan la base de datos `appinity_claude_test` (creada por el contenedor) y la vacían
-en cada ejecución. Nunca tocan `appinity_claude`.
+Los tests de integración usan la base de datos `appinity_claude_test` y la vacían en cada ejecución. Nunca tocan
+`appinity_claude`.
 
 ## Estructura
 
 ```text
-apps/api            API NestJS (health, identidad de desarrollo, /v1/me)
-apps/mobile         Expo SDK 57 + Expo Router (cuatro pestañas), TanStack Query, Zustand, i18next
-packages/shared     Categorías, contratos (observaciones, adapters, catálogo) y DTOs, con validación Zod
-packages/i18n       Textos es/en fuera del código
-packages/database   Esquema Drizzle, migraciones SQL, cliente PostgreSQL/PostGIS
-packages/ingestion  Seed de demo (y, en fase 1, el pipeline de sync)
-packages/algorithms, catalog, integrations   Estructura creada; contenido en la fase 1
-workers/sync-worker Worker BullMQ (en fase 0: latido y cola system)
-docs/               Especificación, arquitectura, decisiones, progreso, capacidades de integración
+apps/api             API NestJS: health, identidad de desarrollo, /v1/me, fuentes, conexiones, catálogo, perfiles, imágenes
+apps/mobile          Expo SDK 57 + Expo Router: cuatro pestañas, demo del modelo, catálogo, detalle, fuentes, ajustes
+packages/shared      Categorías, contratos (NormalizedObservation, ProfileSourceAdapter, CatalogProvider), DTOs, Zod
+packages/i18n        Textos es/en
+packages/algorithms  Normalización de escalas y consolidación v1 (sin dependencias de proveedores)
+packages/database    Esquema Drizzle, migraciones SQL, cliente, cifrado de credenciales
+packages/catalog     Instantánea Wikidata/Commons, resolución de entidades, imágenes, fallback, almacenamiento
+packages/integrations Registro de adapters y profile/fixture (manifest, auth, client, sync, mapper, schemas, constants, fixtures)
+packages/ingestion   Pipeline de sync, conexiones, recálculo de perfiles, colas y seed de demo
+workers/sync-worker  Worker BullMQ: profile-sync, catalog-images y latido
+scripts/             setup, doctor y generador de la instantánea de catálogo
+docs/                Especificación, arquitectura, decisiones, progreso, capacidades de integración
 ```
 
-Más detalle en [docs/architecture.md](docs/architecture.md) y [docs/decisions.md](docs/decisions.md).
+Más detalle en [docs/architecture.md](docs/architecture.md), [docs/decisions.md](docs/decisions.md) y
+[docs/integration-capabilities.md](docs/integration-capabilities.md).
 
 ## Seguridad y datos
 
-- Secretos solo en `.env` (ignorado por Git). `pnpm setup` los genera aleatoriamente.
+- Secretos solo en `.env` (ignorado por Git), generados por `pnpm setup`. Las credenciales de proveedores se cifrarán
+  con AES-256-GCM (implementado y probado; sin uso hasta la primera fuente real).
 - Servicios Docker solo en `127.0.0.1`. La API escucha en `0.0.0.0:3100` para el teléfono de la red local.
-- Todas las rutas salvo `/health` y la identidad de desarrollo exigen sesión. El usuario sale del token,
-  nunca de la URL.
-- La identidad de desarrollo solo funciona con `DEMO_MODE=true` y fuera de producción, y solo con usuarios
+- Todas las rutas, salvo `/health`, la identidad de desarrollo, `/media/catalog/*` y `/static/fallback/*`, exigen
+  sesión. El usuario sale del token y los recursos ajenos responden 404.
+- La identidad de desarrollo solo funciona con `DEMO_MODE=true`, fuera de producción y con usuarios
   `dataset = demo`. La API se niega a arrancar con `NODE_ENV=production` y `DEMO_MODE` activo.
-- La ubicación se guarda como zona aproximada (coordenadas redondeadas a ~1 km), sin historial.
+- Los datos de la demo (`dataset = demo`) nunca se mezclan con datos reales: un usuario real no puede conectar
+  fuentes simuladas y la resolución de objetos reales no reutiliza el catálogo de la demo.
+- La ubicación se guarda como zona aproximada (~1 km), sin historial.
+- Fuentes de los requisitos de Expo Go: [Login now required for running projects in Expo Go](https://expo.dev/changelog/expo-go-57-login),
+  [Expo Go sign-in required](https://docs.expo.dev/troubleshooting/expo-go-sign-in-required/), [Expo changelog](https://expo.dev/changelog).

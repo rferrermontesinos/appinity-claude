@@ -1,2 +1,2 @@
-// Fase 1: normalización de escalas y consolidación de evidencias (ver docs/progress.md).
-export {};
+export * from './normalization.js';
+export * from './consolidation.js';

@@ -12,6 +12,7 @@
     "@appinity/integrations": "workspace:*",
     "@appinity/shared": "workspace:*",
     "bullmq": "6.3.11",
+    "drizzle-orm": "0.45.3",
     "ioredis": "6.0.0"
   }
 }

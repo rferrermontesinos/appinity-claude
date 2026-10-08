@@ -1,98 +1,165 @@
 # Arquitectura · APPINITY Claude
 
-Documento vivo. Describe lo implementado y marca lo pendiente. Requisitos: [APPINITY_Especificacion.md](APPINITY_Especificacion.md).
+Documento vivo. Describe lo implementado (fases 0 y 1) y marca lo pendiente. Requisitos:
+[APPINITY_Especificacion.md](APPINITY_Especificacion.md). Decisiones y parámetros: [decisions.md](decisions.md).
 
 ## Vista general
 
 ```text
- Teléfono (Expo Go)                PC de desarrollo
- ┌──────────────────────┐   HTTP   ┌──────────────────────────────┐
- │ apps/mobile          │ ───────▶ │ apps/api (NestJS, :3100)     │
- │ Expo Router · 4 tabs │  LAN IP  │  guard global + auth dev     │
- │ TanStack Query       │          │  /health /v1/me /v1/dev      │
- │ Zustand + SecureStore│          └──────┬───────────────┬───────┘
- └──────────────────────┘                 │ Drizzle (pg)  │ ioredis / BullMQ
-                                          ▼               ▼
+ Teléfono (Expo Go, SDK 57)              PC de desarrollo
+ ┌────────────────────────┐   HTTP   ┌──────────────────────────────────────┐
+ │ apps/mobile            │ ───────▶ │ apps/api (NestJS 12, :3100)          │
+ │ Expo Router · 4 tabs   │  LAN IP  │ guard global · auth de desarrollo    │
+ │ demo del modelo        │          │ /v1/me /v1/sources /v1/me/connections│
+ │ TanStack Query/Zustand │ ◀─────── │ /v1/catalog /v1/me/item-profiles     │
+ └────────────────────────┘ imágenes │ /media/catalog/* /static/fallback/*  │
+                                     └──────┬──────────────┬────────────────┘
+                                            │ Drizzle      │ BullMQ (productor)
+                                            ▼              ▼
                               PostgreSQL 17 + PostGIS   Redis 7.4
-                              (:5442, appinity_claude)  (:6390)
-                                          ▲               ▲
-                                          │               │
-                                   workers/sync-worker (BullMQ)
+                                            ▲              │
+                                            │              ▼
+                                     workers/sync-worker (BullMQ)
+                                     · profile-sync → pipeline de ingesta
+                                     · catalog-images → caché en .data/media
 ```
 
-Servicios locales en Docker Compose (proyecto `appinity-claude`). Docker Compose es una propuesta de
-desarrollo, no el hosting final.
+Servicios locales en Docker Compose (proyecto `appinity-claude`). Docker Compose es una propuesta de desarrollo,
+no el hosting final.
 
 ## Monorepo
 
-pnpm workspaces (`nodeLinker: hoisted`), TypeScript 6.0 con project references (`tsc -b`), ESM en todos los
-paquetes Node. La app móvil la empaqueta Metro (Expo SDK 57) y consume `@appinity/shared` e `@appinity/i18n`
-compilados.
+pnpm workspaces (`nodeLinker: hoisted`), TypeScript 6.0 con project references (`tsc -b`) y ESM en todos los
+paquetes Node. La app móvil la empaqueta Metro y consume `@appinity/shared` e `@appinity/i18n` compilados.
 
 | Paquete | Responsabilidad | Depende de |
 |---|---|---|
-| `@appinity/shared` | Categorías, contratos (`NormalizedObservation`, `ProfileSourceAdapter`, `CatalogProvider`, `CatalogItem`), DTOs de API, esquemas Zod de validación runtime, nombres de colas | zod |
+| `@appinity/shared` | Categorías, contratos (`NormalizedObservation`, `ProfileSourceAdapter`, `CatalogProvider`, `CatalogItem`, `UserItemProfile`), DTOs, validación Zod, nombres de colas | zod |
 | `@appinity/i18n` | Textos es/en con las mismas claves (comprobado por test) | — |
-| `@appinity/algorithms` | Reglas puras y versionadas (normalización de escalas, consolidación; afinidad en fase 5). Prohibido importar proveedores, BD o colas (regla ESLint) | shared |
-| `@appinity/database` | Esquema Drizzle, migraciones SQL versionadas, cliente pg, reset/migrate | shared, algorithms |
-| `@appinity/catalog` | Proveedores de catálogo, resolución de entidades, imágenes (fase 1) | shared, database |
-| `@appinity/integrations` | Adapters `profile/<fuente>` y registro por clave (fase 1) | shared, algorithms |
-| `@appinity/ingestion` | Pipeline de sync y seed de demo | todos los anteriores |
-| `@appinity/api` | API HTTP | shared, database, catalog, integrations |
+| `@appinity/algorithms` | Normalización de escalas, percentiles, señales conductuales y consolidación v1. Puro y versionado; ESLint prohíbe importar proveedores, BD o colas | shared |
+| `@appinity/database` | Esquema Drizzle, migraciones SQL, cliente pg, migrate/reset, cifrado de credenciales | shared, algorithms |
+| `@appinity/catalog` | Proveedor de la instantánea Wikidata/Commons, `EntityResolver`, importación, caché de imágenes, almacenamiento, fallback, DTO | shared, database |
+| `@appinity/integrations` | Registro de adapters y `profile/fixture/` (estructura común de §8) | shared, algorithms, zod |
+| `@appinity/ingestion` | `runConnectionSync`, conexiones/desconexión, recálculo de perfiles, colas, seed de demo | todos los anteriores |
+| `@appinity/api` | API HTTP | shared, database, catalog, integrations, ingestion |
 | `@appinity/sync-worker` | Worker BullMQ | shared, database, catalog, integrations, ingestion |
 | `@appinity/mobile` | App Expo | shared, i18n |
 
-## API (fase 0)
+El motor y la consolidación (`algorithms`) solo conocen datos normalizados. Los proveedores viven en
+`integrations` (perfil) y `catalog` (catálogo), separados entre sí.
+
+## Modelo de datos
+
+Migraciones en `packages/database/drizzle/` (SQL generado por drizzle-kit, revisado y versionado):
+
+| Migración | Contenido |
+|---|---|
+| `0000_enable_postgis` | Extensiones `postgis` y `pgcrypto` |
+| `0001_identity` | `users` (con `dataset` demo/live), `user_profiles` (perfil público mínimo), `user_settings` (zona aproximada `geography`, radio 1–50 km, idioma, notificaciones, descubrimiento por contactos) |
+| `0002_catalog_evidence` | Catálogo, conexiones, consentimientos, credenciales, ejecuciones de sync, observaciones y perfiles |
+
+Tablas de la fase 1:
+
+| Tabla | Clave / constraints principales |
+|---|---|
+| `catalog_items` | `dataset`, `category` (8), `item_type`, `title` y `normalized_title`, `release_date` + `release_date_precision` (día/mes/año, ambos NULL o ambos no), eventos con precisión, `parent_item_id` (edición → obra, temporada → serie; sin autorreferencia), `latitude/longitude` + `location geography` generada con GiST, enlaces, metadatos, `created_via` |
+| `catalog_external_ids` | Único por `(dataset, provider, id_type, external_id)`: `tmdb:movie:289` ≠ `tmdb:tv:289`. Guarda quién aportó el ID |
+| `catalog_images` | Una imagen principal por objeto: URL de referencia https, `storage_key` si está cacheada, autor, licencia, URL de licencia y página de descripción, `cache_status` (reference/cached/failed) |
+| `provider_consents` | Consentimiento por proveedor: scopes, versión y revocación |
+| `user_connections` | Una conexión no revocada por usuario y fuente (índice único parcial); cursor JSON, watermark, último estado; `revoked_at` coherente con el estado |
+| `source_credentials` | Texto cifrado AES-256-GCM vinculado a la conexión (sin uso hasta la primera fuente real) |
+| `source_sync_runs` | Disparador, modo (incremental/full), estado, contadores (insertadas, actualizadas, sin cambios, borradas, objetos creados), errores parciales y cursores antes/después |
+| `user_item_observations` | Evidencia normalizada. **Clave idempotente `(connection_id, source_record_id, observation_kind)`**. Rangos 0–1 y −1..+1, `consumed ≤ known`, preferencia/confianza/base NULL a la vez, `occurred_at` y precisión juntos, huella de contenido, `synced_at` separado de `occurred_at` |
+| `user_item_profiles` | Una fila por usuario y objeto (PK compuesta): tres dimensiones, base ganadora, número de evidencias y fuentes, conflicto, notas de consolidación, primera y última actividad, versión |
+
+## Pipeline de ingesta (§14)
+
+```text
+API (POST /v1/me/connections | /sync)
+  └─▶ source_sync_runs (queued) ─▶ BullMQ profile-sync (jobId = runId, 3 intentos, backoff exponencial)
+        └─▶ worker: runConnectionSync(runId)
+              1. bloqueo de sesión por conexión (pg_try_advisory_lock)
+              2. adapter.sync(cursor, pageSize) → SyncBatch (registros, cursor, watermark, errores, instantánea, stats)
+              3. adapter.normalize(registro) → NormalizedObservation[] → validación Zod en runtime
+                 (registro inválido = error parcial, el sync continúa)
+              4. EntityResolver.resolve(candidato, dataset) → objeto canónico (edición → obra)
+              5. transacción por lote: comprueba que la conexión sigue activa (FOR SHARE) y escribe
+                 insert / update / unchanged según la huella de contenido
+              6. instantánea completa sin errores: borra la evidencia de tipos de instantánea que ya no aparece
+              7. recalcula los perfiles afectados (consolidación v1) y avanza el cursor solo si todo fue bien
+```
+
+- Un fallo no avanza el cursor ni borra evidencia anterior. La ejecución queda `failed` y BullMQ reintenta.
+- Una desconexión durante el sync bloquea la escritura del lote siguiente y la ejecución termina `cancelled`.
+- Desconectar (`disconnectSource`) revoca la conexión y el consentimiento, borra credenciales y cancela las
+  ejecuciones pendientes. La API retira además de la cola los trabajos en espera. Con `purge`, borra las
+  observaciones de esa conexión y recalcula los perfiles con las demás fuentes.
+
+## Resolución de entidades (§6)
+
+`EntityResolver.resolve(candidato, dataset)`:
+
+1. IDs del candidato en `catalog_external_ids` del mismo dataset, primero los canónicos (Wikidata, IMDb,
+   MusicBrainz, Open Library, ISBN, Freebase) y después los de proveedor (TMDb, Steam, Apple Podcasts…) y el ID
+   propio de la fuente (`<fuente>:item:<sourceId>`).
+2. Proveedores de catálogo (`CatalogProvider.resolve`): en la demo, la instantánea Wikidata/Commons, por IDs y,
+   en último término, por atributos exactos.
+3. Atributos exactos en el catálogo: título normalizado igual + categoría + tipo + año (o ubicación a ≤150 m),
+   y autor compatible si se conoce. Solo si hay un único candidato.
+4. Creación a partir del candidato (`created_via = source:<fuente>`), sin imagen inventada: la tarjeta usa el
+   fallback.
+
+Después se añaden al objeto los IDs que aún no tenía. Un ID que pertenece a otro objeto no se mueve y queda anotado.
+Bloqueos `pg_advisory_xact_lock` por ID externo evitan duplicados con syncs concurrentes. Las ediciones
+(`book_edition`) atribuyen la evidencia a su obra.
+
+## Catálogo e imágenes
+
+- **Instantánea** `packages/catalog/data/wikidata-snapshot.json`: 108 objetos reales: 96 principales (15 restaurantes,
+  13 películas, 8 series, 12 artistas, 14 juegos, 11 libros, 11 lugares y eventos culturales, 12 podcasts), 4 ediciones
+  y 8 temporadas generados por `scripts/fixtures/build-catalog-snapshot.mjs` desde
+  `catalog-selection.json`. Metadatos de Wikidata (CC0) y fechas con su precisión real. 82 objetos con imagen de Commons. Solo se aceptan licencias libres (dominio público, CC0, CC BY/BY-SA, GFDL, GPL), con autor, licencia y página de
+  descripción.
+- **Caché**: `catalog-images` descarga cada imagen una vez (User-Agent identificado, máx. 8 MB, solo tipos de
+  imagen, 4/s) y la guarda en `LocalDiskStorage` (`STORAGE_DIR`, interfaz `ObjectStorage` sustituible por S3).
+- **DTO**: la URL es la del archivo cacheado (`/media/catalog/...`) o, si aún no está, la de Commons. Sin imagen
+  propia se usa la del padre (temporada → serie) o el **fallback de la categoría** (`/static/fallback/<cat>.svg`,
+  diseño propio). La app muestra el fallback también si la carga falla.
+
+## API (fases 0 y 1)
 
 | Ruta | Acceso | Descripción |
 |---|---|---|
-| `GET /health` | Pública | BD, PostGIS, Redis y latido del worker. 200 si BD/PostGIS/Redis responden, 503 si no |
-| `GET /v1/dev/users` | Pública solo con identidad de desarrollo | Lista usuarios `dataset = demo`. 404 si está desactivada |
-| `POST /v1/dev/session` | Pública solo con identidad de desarrollo, limitada (20/min) | Emite JWT HS256 (12 h) para un usuario de demo |
-| `GET /v1/me` | Sesión | Usuario, perfil mínimo y ajustes propios |
-| `PATCH /v1/me/settings` | Sesión | Idioma, zona horaria, radio 1–50 km, zona aproximada, descubrimiento por contactos, frecuencia de notificaciones (validación Zod estricta) |
+| `GET /health` | Pública | BD, PostGIS, Redis y latido del worker (200/503) |
+| `GET /v1/dev/users`, `POST /v1/dev/session` | Públicas solo con identidad de desarrollo | Usuarios de demo y emisión de JWT (limitada) |
+| `GET /v1/me`, `PATCH /v1/me/settings` | Sesión | Usuario, perfil mínimo y ajustes (Zod estricto, ubicación redondeada) |
+| `GET /v1/sources` | Sesión | Manifests: fixture (conectables solo por usuarios demo) y reales previstas (no conectables) |
+| `GET/POST /v1/me/connections` | Sesión | Lista y conecta; al conectar se encola un sync completo |
+| `POST /v1/me/connections/:id/sync` | Sesión, propietario | Encola un sync `incremental` o `full` |
+| `GET /v1/me/connections/:id/runs` | Sesión, propietario | Últimas 20 ejecuciones |
+| `DELETE /v1/me/connections/:id?purge=` | Sesión, propietario | Desconecta y, opcionalmente, borra lo importado |
+| `GET /v1/catalog/items`, `GET /v1/catalog/items/:id` | Sesión | Catálogo del dataset del usuario (no son recomendaciones) |
+| `GET /v1/me/item-profiles[/:itemId]` | Sesión | Perfil consolidado y evidencias **propias** |
+| `GET /media/catalog/*`, `GET /static/fallback/:cat.svg` | Públicas | Imágenes del catálogo (sin datos personales; claves validadas) |
 
-Autorización:
+Autorización: `AuthGuard` global, `userId` siempre de la sesión y filtros por usuario en cada consulta. Un recurso
+ajeno responde 404. Errores de dominio → 404/409/403/422 (`DomainErrorsFilter`). CORS solo para `localhost` fuera de
+producción (vista web de desarrollo).
 
-- `AuthGuard` global: toda ruta sin `@Public()` exige `Authorization: Bearer <token>`, verifica firma,
-  emisor, audiencia y caducidad, y que el usuario siga activo y sea de `dataset = demo`.
-- El `userId` sale siempre de la sesión. Las rutas `/v1/me/*` no aceptan identificadores de otros usuarios.
-- `ThrottlerGuard` global (300 peticiones/min por IP) y límite específico en la emisión de sesiones.
-- `helmet`, cuerpo JSON máximo de 100 kB, sin `x-powered-by`.
-- La configuración se valida al arrancar (Zod). Con `NODE_ENV=production` no puede activarse `DEMO_MODE` ni
-  la identidad de desarrollo.
+## App móvil
 
-## Base de datos (fase 0)
-
-Migraciones en `packages/database/drizzle/` (SQL versionado generado por drizzle-kit y revisado):
-
-- `0000_enable_postgis`: extensiones `postgis` y `pgcrypto`.
-- `0001_identity`: `users`, `user_profiles`, `user_settings`.
-
-`users.dataset` separa los usuarios simulados (`demo`) de los reales (`live`). `user_settings` guarda una zona
-aproximada (latitud/longitud redondeadas a 2 decimales, origen `manual` o `device`) y una columna generada
-`geography(Point,4326)` con índice GiST para distancias en metros (`ST_DWithin`). Las constraints validan radio
-1–50, idioma, coherencia de la ubicación y frecuencia de notificaciones.
-
-## App móvil (fase 0)
-
-- Expo Router con `(tabs)`: Inicio, Categorías, Personas, Perfil, más la pantalla `dev-login`.
-- `SessionGate` redirige a `dev-login` sin sesión. El token se guarda con `expo-secure-store`.
-- URL de la API: `EXPO_PUBLIC_API_URL`, si no la IP de Metro + `:3100`, y solo como último recurso `localhost`.
-  Visible en Perfil → Diagnóstico.
-- i18next con recursos de `@appinity/i18n`. El idioma inicial es el del sistema y después manda el ajuste
-  `locale` del usuario.
-- Reanimated (animación de entrada en Inicio) y Gesture Handler (`GestureHandlerRootView`) activos y compatibles
-  con Expo Go.
-
-## Worker (fase 0)
-
-`workers/sync-worker` conecta a Redis (`maxRetriesPerRequest: null`, prefijo `appinity-claude`), atiende la
-cola `system` y escribe un latido cada 10 s que `/health` muestra. Las colas `profile-sync` y `catalog-images`
-llegan en la fase 1.
+- Rutas: `(tabs)/index` (Inicio), `(tabs)/categories`, `(tabs)/people`, `(tabs)/profile`, `dev-login`, `model`
+  (demo del modelo), `category/[code]` (catálogo), `item/[id]` (detalle con evidencias).
+- `SessionGate` redirige a `dev-login` sin sesión. Las consultas autenticadas esperan a recuperar la sesión, y la
+  sesión solo se borra si la API rechaza un token enviado.
+- `CatalogImage` (expo-image) con fallback de categoría ante errores. `Dimensions` muestra Known, Consumed y
+  Preference por separado, con «—» para NULL. `SourcesCard` conecta, sincroniza (incremental o completo),
+  desconecta y borra, y consulta el estado de la ejecución cada 1,5 s mientras está en cola o en curso.
+- Vista web (`pnpm --filter @appinity/mobile web`, puerto 8092) solo para verificación durante el desarrollo; usa
+  `localStorage` en lugar de SecureStore.
 
 ## Pendiente por fase
 
-Ver [progress.md](progress.md). Catálogo, observaciones y consolidación (fase 1); adapters reales (2–4, 11);
-afinidad, Top 50 y recomendador (5–7); Home, Categories y People completos (8–10); chat, Premium y push (12);
-autenticación de producción y beta (13).
+Ver [progress.md](progress.md). Steam (2), TMDb (3), Last.fm (4), afinidad (5), Top 50 (6), recomendador y Trending
+(7), Home con carrusel (8), Categories con recomendaciones (9), People/Friends (10), adapters restantes (11), chat,
+Premium y push (12), autenticación de producción y beta (13).

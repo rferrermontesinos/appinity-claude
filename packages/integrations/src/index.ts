@@ -1,2 +1,4 @@
-// Fase 1: contrato de adapters, registro y fuente fixture (ver docs/progress.md).
-export {};
+export * from './registry.js';
+export * from './planned.js';
+export * as fixture from './profile/fixture/index.js';
+export { createFixtureAdapter, createFixtureAdapters, FIXTURE_MANIFESTS } from './profile/fixture/index.js';

@@ -1,5 +1,5 @@
 import type { Category } from './categories.js';
-import type { CatalogImage, CatalogItem } from './catalog.js';
+import type { CatalogImage, CatalogItem, ExternalIdRef } from './catalog.js';
 import type { ExternalItemAttributes, NormalizedObservation } from './observation.js';
 
 /**
@@ -144,6 +144,11 @@ export interface NormalizeContext {
 
 export interface ProfileSourceAdapter {
   manifest: ProfileSourceManifest;
+  /**
+   * Ampliación: tipos de observación que forman una instantánea completa (biblioteca, recuento de escuchas).
+   * Tras un sync completo, las evidencias de esos tipos que ya no aparecen se eliminan.
+   */
+  snapshotObservationKinds?: readonly string[];
   connect(context: ConnectContext): Promise<AuthResult>;
   refreshConnection?(connection: UserConnection): Promise<UserConnection>;
   sync(context: SyncContext): Promise<SyncBatch>;
@@ -171,8 +176,40 @@ export interface ExternalItemCandidate {
 
 export type MatchMethod = 'canonical_id' | 'provider_id' | 'attributes';
 
+/** Imagen tal como la entrega un proveedor de catálogo, con su licencia y autoría. */
+export interface ProviderImage {
+  url: string;
+  originalUrl?: string;
+  source: string;
+  sourceImageId?: string;
+  width?: number;
+  height?: number;
+  mime?: string;
+  alt: string;
+  author?: string;
+  license?: string;
+  licenseUrl?: string;
+  attributionRequired?: boolean;
+  descriptionUrl?: string;
+  restrictions?: string;
+}
+
+/**
+ * Objeto devuelto por un proveedor de catálogo. Puede llegar sin imagen durante la resolución (§6): el
+ * fallback de la categoría se aplica al publicar el DTO, nunca se fabrica una foto.
+ */
+export interface ProviderCatalogItem extends Omit<CatalogItem, 'primaryImage' | 'externalIds' | 'parentItemId'> {
+  /** Identificador del objeto en el proveedor (p. ej. QID de Wikidata). */
+  id: string;
+  primaryImage: ProviderImage | null;
+  externalIds: ExternalIdRef[];
+  /** Identificador en el proveedor del objeto padre (obra de una edición, serie de una temporada). */
+  parentId?: string;
+  eventDatePrecision?: 'day' | 'instant';
+}
+
 export interface CatalogMatch {
-  item: CatalogItem;
+  item: ProviderCatalogItem;
   matchedBy: MatchMethod;
   /** Confianza documentada del método de resolución (0–1). */
   confidence: number;
@@ -184,11 +221,14 @@ export interface TrendingContext {
   timeZone: string;
 }
 
-/** Proveedor de catálogo (§8): identifica objetos y aporta metadatos e imágenes. */
+/**
+ * Proveedor de catálogo (§8): identifica objetos y aporta metadatos e imágenes. Ampliación: devuelve
+ * `ProviderCatalogItem` (imagen opcional y IDs con espacio de nombres) en lugar de `CatalogItem`.
+ */
 export interface CatalogProvider {
   key: string;
-  search(query: CatalogSearch): Promise<CatalogItem[]>;
-  getItem(externalId: string): Promise<CatalogItem>;
+  search(query: CatalogSearch): Promise<ProviderCatalogItem[]>;
+  getItem(externalId: string): Promise<ProviderCatalogItem>;
   resolve(candidate: ExternalItemCandidate): Promise<CatalogMatch | null>;
-  getTrending?(context: TrendingContext): Promise<CatalogItem[]>;
+  getTrending?(context: TrendingContext): Promise<ProviderCatalogItem[]>;
 }

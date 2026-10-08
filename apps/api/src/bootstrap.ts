@@ -16,6 +16,10 @@ export async function createApp(env: AppEnv, options: { logger?: boolean } = {})
   app.set('trust proxy', false);
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.useBodyParser('json', { limit: '100kb' });
+  // CORS solo para la verificación web en desarrollo (localhost). La app móvil no lo necesita.
+  if (env.NODE_ENV !== 'production') {
+    app.enableCors({ origin: [/^http:\/\/localhost:\d+$/, /^http:\/\/127\.0\.0\.1:\d+$/], credentials: false });
+  }
   app.enableShutdownHooks();
   return app;
 }

@@ -4,6 +4,16 @@
     "rootDir": "src",
     "outDir": "dist"
   },
-  "include": ["src"],
-  "references": [{ "path": "../shared" }, { "path": "../algorithms" }]
+  "include": [
+    "src",
+    "src/**/*.json"
+  ],
+  "references": [
+    {
+      "path": "../shared"
+    },
+    {
+      "path": "../algorithms"
+    }
+  ]
 }

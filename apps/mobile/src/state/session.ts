@@ -1,5 +1,5 @@
-import * as SecureStore from 'expo-secure-store';
 import { create } from 'zustand';
+import { secureStorage } from './secure-storage';
 
 const TOKEN_KEY = 'appinity.devSession';
 
@@ -26,21 +26,21 @@ export const useSession = create<SessionState>((set) => ({
   session: null,
   async hydrate() {
     try {
-      const raw = await SecureStore.getItemAsync(TOKEN_KEY);
+      const raw = await secureStorage.get(TOKEN_KEY);
       const parsed = raw ? (JSON.parse(raw) as StoredSession) : null;
       const valid = parsed && new Date(parsed.expiresAt).getTime() > Date.now() + 60_000 ? parsed : null;
-      if (!valid && raw) await SecureStore.deleteItemAsync(TOKEN_KEY);
+      if (!valid && raw) await secureStorage.remove(TOKEN_KEY);
       set({ session: valid, hydrated: true });
     } catch {
       set({ session: null, hydrated: true });
     }
   },
   async setSession(session) {
-    await SecureStore.setItemAsync(TOKEN_KEY, JSON.stringify(session));
+    await secureStorage.set(TOKEN_KEY, JSON.stringify(session));
     set({ session });
   },
   async clear() {
-    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    await secureStorage.remove(TOKEN_KEY);
     set({ session: null });
   },
 }));

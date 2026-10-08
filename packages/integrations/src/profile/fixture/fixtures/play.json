@@ -1,0 +1,30 @@
+{
+  "source": "fixture_play",
+  "note": "Bibliotecas SIMULADAS (instantáneas). Juegos y appid reales; minutos jugados inventados. Incluye juegos con 0 minutos y un appid real que no está en la instantánea de catálogo (Portal, 400).",
+  "users": [
+    {
+      "userId": "00000000-0000-4000-a000-000000000001",
+      "handle": "demo_laura",
+      "records": [
+        { "appid": 1127400, "name": "Mindustry", "playtime_forever": 0, "rtime_last_played": 0 },
+        { "appid": 504230, "name": "Celeste", "playtime_forever": 1260, "playtime_2weeks": 95, "rtime_last_played": 1785571200 },
+        { "appid": 367520, "name": "Hollow Knight", "playtime_forever": 45, "rtime_last_played": 1771113600 }
+      ]
+    },
+    {
+      "userId": "00000000-0000-4000-a000-000000000002",
+      "handle": "demo_alex",
+      "records": [
+        { "appid": 1127400, "name": "Mindustry", "playtime_forever": 0, "rtime_last_played": 0 },
+        { "appid": 413150, "name": "Stardew Valley", "playtime_forever": 0, "rtime_last_played": 0 },
+        { "appid": 599390, "name": "The Battle for Wesnoth", "playtime_forever": 600, "rtime_last_played": 1767225600 },
+        { "appid": 220, "name": "Half-Life 2", "playtime_forever": 3000, "rtime_last_played": 1752364800 },
+        { "appid": 620, "name": "Portal 2", "playtime_forever": 900, "rtime_last_played": 1760313600 },
+        { "appid": 1145360, "name": "Hades", "playtime_forever": 4200, "playtime_2weeks": 310, "rtime_last_played": 1788912000 },
+        { "appid": 1245620, "name": "ELDEN RING", "playtime_forever": 120, "rtime_last_played": 1780272000 },
+        { "appid": 400, "name": "Portal", "playtime_forever": 360, "rtime_last_played": 1735689600 },
+        { "appid": 730, "name": "Counter-Strike 2", "playtime_forever": 30000, "playtime_2weeks": 600, "rtime_last_played": 1789257600 }
+      ]
+    }
+  ]
+}
