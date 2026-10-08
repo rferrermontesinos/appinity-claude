@@ -10,12 +10,103 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | Aceptación de demo | **Hecha** | El usuario confirmó: «He probado la demo y funciona» |
 | 2 | **Validado con la cuenta real del usuario** (2026-10-08) | Entrega 2026-10-08 · fase 2 (rama `fase-2`, PR rferrermontesinos/appinity-claude#3, basada en `fase-1`) |
 | Revisión de fuentes | **Hecha** (2026-10-08) | Especificación 1.1 y docs/fuentes-de-datos.md (rama `especificacion-fuentes`, PR rferrermontesinos/appinity-claude#5, basada en `fase-2`). TMDb descartada: PR rferrermontesinos/appinity-claude#4 cerrada sin fusionar |
-| 3–4 | Pendiente | Google Data Portability: valoraciones y lugares (3); YouTube y YouTube Music (4) |
+| Revisión de fuentes · decisiones | **Aceptada** (2026-10-09) | El usuario aceptó la especificación 1.1; de momento, imagen genérica (sin licencia de catálogo); Gmail se evaluará más adelante |
+| 3 | **Implementado y comprobado automáticamente**; pendiente de validar con la cuenta real | Entrega 2026-10-09 · fase 3 (rama `fase-3-google`, basada en `especificacion-fuentes`). Falta el proyecto de Google Cloud del usuario |
+| 4 | Pendiente | YouTube y YouTube Music (mismo consentimiento de Google) |
 | 5–7 | Pendiente | Afinidad, Top 50 y recomendador |
 | 8–10 | Pendiente | Home, Categories y social |
 | 11 | Pendiente | Fuentes adicionales viables, una por tarea |
 | 12 | Pendiente | Chat, Premium y notificaciones, por subentregas |
 | 13 | Pendiente | Preparación y prueba de beta |
+
+---
+
+## Entrega 2026-10-09 · fase 3 (Google Data Portability: valoraciones y lugares)
+
+Rama `fase-3-google` (basada en `especificacion-fuentes`).
+
+### Qué se ha hecho
+
+- **Ficha verificada** en la documentación oficial (ver integration-capabilities.md). Cuatro condiciones cambiaron el
+  diseño:
+  - el proyecto necesita cuenta de facturación;
+  - los scopes no se combinan con openid/email, así que no hay identidad de cuenta;
+  - los datos no traen identificadores ni categorías;
+  - en modo de pruebas, Google solo vuelve a `localhost` y el permiso dura 7 días.
+- **Adapter `profile/google-portability`:**
+  - OAuth con PKCE y solo los 5 grupos que se importan;
+  - un export por grupo, con el id del trabajo guardado cifrado antes de esperar;
+  - lectura tolerante de los ZIP (GeoJSON y JSON documentados) sin guardar el texto de las reseñas;
+  - mapper `google-portability-v1`, reintento de exports fallidos y límites de 24 h y de acceso único.
+- **Identificación de catálogo:** `OsmPlaceIdentifier` (OpenStreetMap, lugares clasificados por etiquetas) y
+  `WikidataWorkIdentifier` (obras por etiqueta exacta y tipo). Lo ambiguo no se importa y se informa.
+- **Pipeline:** exports aplazados sin gastar reintentos (`pending` + `moveToDelayed`), estado cifrado durante el sync
+  (`saveState`), instantánea por grupo (`snapshotKinds`) y errores parciales no bloqueantes.
+- **Renovación** del permiso sobre la misma conexión, sin perder lo importado.
+- **Piezas genéricas recuperadas de `fase-3`** (TMDb descartada):
+  - credenciales por usuario cifradas;
+  - `state` en el callback;
+  - revocación en el proveedor (`providerRevocation`) y de sesiones huérfanas.
+- **App:**
+  - ayuda de conexión de Google;
+  - aviso para conectar desde la vista web del PC en desarrollo;
+  - botón «Renovar permiso»;
+  - aviso de revocación;
+  - tarjeta «Créditos y fuentes de datos» con la atribución de OpenStreetMap.
+- **Configuración:** `pnpm secret:set GOOGLE_OAUTH_CLIENT_ID|GOOGLE_OAUTH_CLIENT_SECRET`, variables en `.env.example` y
+  `fflate` 0.8.3 para leer los ZIP.
+
+### Comandos ejecutados y resultados (Windows 11, 2026-10-09)
+
+| Comando | Resultado |
+|---|---|
+| `pnpm lint` | 0 errores |
+| `pnpm typecheck` | OK (paquetes, tests y app móvil) |
+| `pnpm test` | **15 ficheros, 173 tests OK** (93 unitarios, 80 de integración). Nuevos: 23 unitarios de Google (OAuth, archivo, máquina de estados, mapper, OSM y Wikidata, casos reales de OSM), 10 de integración (aplazamiento, evidencia, instantánea por grupo, renovación, revocación) y 4 HTTP (flujo con `state` y `code`, cancelación, revocación) |
+| `npx expo export --platform android --platform ios` | Bundles generados |
+| Vista web de desarrollo (8092, 375×812) | Perfil → «Créditos y fuentes de datos» con OpenStreetMap; sin errores de consola |
+| Identificadores contra los servicios reales (OpenStreetMap y Wikidata) | Museu Picasso, Can Culleretes y Sagrada Família (basílica, por contención) identificados; Breaking Bad, Casablanca, Moana, Radiohead, OK Computer → Radiohead, Hades y Cien años de soledad identificados. Detectado y corregido: la consulta a Overpass se truncaba en zonas densas y los monumentos patrimoniales no se clasificaban |
+| Endpoints reales de Google sin credenciales | `initiate`, `accessType:check` y `authorization:reset` → 401; `token` con un cliente falso → `invalid_client`. Coincide con el tratamiento del cliente |
+
+### Validación pendiente (usuario, con su cuenta)
+
+Guía paso a paso en el README, «Conectar tu cuenta de Google»:
+1. Crear el proyecto de Google Cloud, con cuenta de facturación, la API habilitada, el consentimiento en pruebas con tu
+   Gmail y los 5 scopes, y un cliente web con la URI de redirección.
+2. Guardar el ID y el secreto con `pnpm secret:set`.
+3. Reiniciar `pnpm api` y `pnpm worker`.
+4. Conectar desde la vista web del PC.
+
+Al terminar el export, las líneas `[google] export …` del worker muestran la estructura real del archivo, sin datos
+personales. Con ellas se confirma o corrige el formato documentado (escala de las estrellas de la Búsqueda, presencia
+de fechas y de identificadores).
+
+### Bloqueos y puntos declarados
+
+- **Cuenta de facturación de Google Cloud:** obligatoria para activar la API, aunque esta no tenga coste publicado.
+  Decisión del usuario.
+- **Formato real del export:** sin ver un export real, el mapper sigue el formato documentado. Por confirmar: escala de
+  «Review Star Rating», si la Búsqueda trae algún identificador, y el formato de `google_maps_url`.
+- **Producción:**
+  - verificación de Google (anual);
+  - auditoría CASA si algún grupo es restringido;
+  - encaje de APPINITY en el caso de uso aprobado de Data Portability;
+  - URL de vuelta HTTPS;
+  - instancia propia o de pago de Overpass.
+- **Sin identidad de cuenta:** no se puede impedir que dos usuarios vinculen la misma cuenta de Google. Riesgo bajo; la
+  autenticación de producción (fase 13) puede mitigarlo con el login de Google.
+
+### Limitaciones
+
+- En desarrollo el permiso caduca a los 7 días: hay que renovarlo desde la vista web del PC.
+- Las confianzas de identificación y los parámetros del mapper están sin calibrar.
+- Sin imagen propia: las tarjetas usan el fallback de su categoría salvo que el objeto exista en la instantánea de
+  Wikidata (decisión del usuario).
+- `saved.collections` (colecciones de la Búsqueda) no se importa todavía: no trae coordenadas ni tipo.
+
+### Siguiente paso
+
+Validar con la cuenta real (README). Después, fase 4: YouTube y YouTube Music con el mismo consentimiento.
 
 ---
 

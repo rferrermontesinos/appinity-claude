@@ -10,7 +10,8 @@ Implementación independiente de APPINITY construida desde cero a partir de
 - Fase 2 (Steam) **validada con una cuenta real**.
 - Fuentes revisadas: especificación 1.1 y [docs/fuentes-de-datos.md](docs/fuentes-de-datos.md). TMDb queda descartada
   por ser de uso no comercial.
-- La siguiente fase es Google Data Portability ([docs/progress.md](docs/progress.md)).
+- Fase 3 (Google Data Portability: valoraciones y lugares) **implementada y probada con un Google simulado**. Falta
+  validarla con tu cuenta ([docs/progress.md](docs/progress.md)).
 - Todavía **no** hay recomendador, afinidades ni almas gemelas.
 
 ## Qué es real y qué es simulado
@@ -24,7 +25,8 @@ Implementación independiente de APPINITY construida desde cero a partir de
 | Fuentes «Demo · …» | **Simuladas**: mismo contrato de adapter que las fuentes reales, sin OAuth ni proveedores |
 | Steam | **Real** (fase 2): OpenID + Steam Web API. Solo para cuentas reales; requiere `STEAM_WEB_API_KEY` en el servidor |
 | Cuenta local real (`pnpm user:local`) | **Real** (`dataset = live`), con identidad de desarrollo y código de un solo uso. No es autenticación de producción |
-| Google (Búsqueda, Maps, YouTube, Play), Google Books, Apple Music, calendario | **Pendientes** (fases 3, 4 y 11). Se muestran como «Próximamente». TMDb, Last.fm y Spotify requieren acuerdo comercial |
+| Google · valoraciones y lugares | **Real** (fase 3, pendiente de validar con una cuenta real): reseñas y sitios guardados de Maps, valoraciones y «vistos» de la Búsqueda. Lugares identificados con OpenStreetMap y obras con Wikidata. Requiere el cliente OAuth en el servidor |
+| YouTube y YouTube Music, Google Books, Apple Music, calendario | **Pendientes** (fases 4 y 11). Se muestran como «Próximamente». TMDb, Last.fm y Spotify requieren acuerdo comercial |
 | Identidad | **De desarrollo** (JWT firmado por la API con `DEMO_MODE`). No es autenticación de producción |
 | Recomendaciones, afinidad, almas gemelas, Trending | **Pendientes** (fases 5–8). La app no muestra ninguna inventada |
 
@@ -218,6 +220,104 @@ instrucción y conserva lo ya importado.
   proyecto no cambia la configuración del sistema.
 - `pnpm doctor` comprueba servicios, API local y API por cada IP de red.
 
+## Conectar tu cuenta de Google (datos reales)
+
+Con **una sola autorización** de Google, APPINITY importa:
+- tus reseñas y sitios guardados de **Maps** (restaurantes y lugares culturales);
+- lo que valoras o marcas como visto en la **Búsqueda** (películas, series, libros, música y juegos).
+
+Solo lee; nunca escribe en tu cuenta. Disponible en la UE, Suiza y Reino Unido.
+
+Cada objeto se identifica en el catálogo: lugares con OpenStreetMap, obras con Wikidata. Lo que no se puede identificar
+con seguridad no se importa, y la app lo indica.
+
+**Antes de empezar, dos condiciones de Google (solo en desarrollo):**
+- El proyecto de Google Cloud necesita una **cuenta de facturación** con una tarjeta. La Data Portability API no tiene
+  coste publicado (su ficha indica 0), pero Google exige la cuenta para activarla. Es decisión tuya; APPINITY no contrata
+  nada.
+- Con la app en modo de pruebas, Google **solo puede volver a `localhost`** y el permiso **dura 7 días**. Por eso la
+  conexión se hace desde la vista web del PC, y cada semana habrá que pulsar «Renovar permiso» (se conserva lo
+  importado). En producción ambas cosas desaparecen.
+
+### 1. Proyecto de Google Cloud (en el navegador del PC)
+
+1. Entra en <https://console.cloud.google.com/> con tu cuenta de Google y crea un proyecto, por ejemplo
+   `appinity-claude-dev`.
+2. **Facturación** → vincula una cuenta de facturación al proyecto (si no tienes, Google te pedirá crearla).
+3. **APIs y servicios → Biblioteca** → busca **Data Portability API** → **Habilitar**.
+4. **Google Auth Platform** (pantalla de consentimiento):
+   - **Información de la marca:** nombre `APPINITY (desarrollo)` y tu correo de asistencia.
+   - **Público:** tipo **Externo**, estado **Prueba**. En **Usuarios de prueba**, añade tu Gmail.
+   - **Acceso a los datos → Añadir o quitar permisos:** añade estos cinco (puedes pegarlos en «Añadir manualmente»):
+
+     ```text
+     https://www.googleapis.com/auth/dataportability.maps.reviews
+     https://www.googleapis.com/auth/dataportability.maps.starred_places
+     https://www.googleapis.com/auth/dataportability.search_ugc.media.reviews_and_stars
+     https://www.googleapis.com/auth/dataportability.search_ugc.media.thumbs
+     https://www.googleapis.com/auth/dataportability.search_ugc.media.watched
+     ```
+
+5. **Clientes → Crear cliente** → tipo **Aplicación web**. En **URIs de redirección autorizados** pon exactamente
+   `http://localhost:3100/v1/connect/google_portability/callback`. Crea el cliente y deja abierta la ventana con el
+   **ID de cliente** y el **secreto**.
+
+### 2. Guardar el cliente en el servidor (terminal de comandos, PowerShell)
+
+1. Copia el **ID de cliente** (termina en `.apps.googleusercontent.com`) y ejecuta:
+
+   ```bash
+   pnpm secret:set GOOGLE_OAUTH_CLIENT_ID --clipboard
+   ```
+
+2. Copia el **secreto** (empieza por `GOCSPX-`) y ejecuta:
+
+   ```bash
+   pnpm secret:set GOOGLE_OAUTH_CLIENT_SECRET --clipboard
+   ```
+
+   Cada uno responde `✔ … guardada en .env`. Después copia cualquier otro texto para vaciar el portapapeles.
+3. Reinicia la API y el worker, cada uno en su terminal (`Ctrl+C` y de nuevo):
+
+   ```bash
+   pnpm api
+   ```
+
+   ```bash
+   pnpm worker
+   ```
+
+   El worker debe mostrar `· Google activo`.
+
+### 3. Conectar desde la vista web del PC
+
+1. En una terminal libre:
+
+   ```bash
+   pnpm --filter @appinity/mobile web
+   ```
+
+2. Abre <http://localhost:8092> en el navegador del PC y entra con tu **cuenta local real** (handle y código).
+3. Perfil → Fuentes → **Google** → **Conectar**. En la ventana de Google:
+   - Si avisa de que la app no está verificada, pulsa **Continuar** (es tu propia app en pruebas).
+   - Marca los datos y elige **180 días** (en pruebas serán 7 de todos modos).
+   - Pulsa **Permitir**.
+4. Vuelves a la app con «Cuenta conectada». Google tarda de segundos a minutos en preparar el export. Mientras tanto
+   el worker muestra `esperando al proveedor, nueva consulta en 60 s` y la ejecución aparece en cola.
+5. Al terminar, el worker escribe una línea `[google] export …` por grupo, con la **estructura** del archivo (archivos,
+   número de registros, nombres de campo, patrones de URL; **sin datos personales**). Después aparece la línea
+   `[sync] … partial|succeeded (+N …)`.
+6. En el teléfono, Perfil → Fuentes → Google muestra la conexión, y **Ver el modelo de datos** muestra lo importado.
+
+Comprobaciones esperadas:
+- Una **reseña de Maps** de 5 estrellas: Preferencia +1,00 (valoración explícita). Una de 2 estrellas: −0,50.
+- Un **sitio guardado**: Conocido sin Consumido ni Preferencia.
+- Un **pulgar arriba** en la Búsqueda: like explícito +0,80 (atenuado si la identificación fue dudosa).
+- Una película **marcada como vista**: Consumida sin Preferencia.
+- «N de M … no se pudieron identificar con seguridad»: esos registros no se importan.
+- **Sincronizar** antes de 24 h no repite el export: «nuevas 0».
+- **Desconectar** revoca el permiso en Google; la app lo confirma.
+
 ## Comandos
 
 | Comando | Qué hace |
@@ -230,7 +330,8 @@ instrucción y conserva lo ya importado.
 | `pnpm db:reset` | Vacía la BD de desarrollo, migra y siembra (solo `DEMO_MODE=true`) |
 | `pnpm user:local --handle h --name "N"` | Crea o regenera una cuenta local real (dataset `live`) y muestra su código una vez |
 | `pnpm secret:set STEAM_WEB_API_KEY [--clipboard]` | Guarda la clave de Steam en `.env` sin mostrarla (escrita o desde el portapapeles) |
-| `pnpm api` / `pnpm worker` | API NestJS en `0.0.0.0:3100` / worker BullMQ (syncs, syncs programados cada hora y caché de imágenes) |
+| `pnpm secret:set GOOGLE_OAUTH_CLIENT_ID --clipboard` y `pnpm secret:set GOOGLE_OAUTH_CLIENT_SECRET --clipboard` | Guardan el cliente OAuth de Google en `.env` sin mostrarlo |
+| `pnpm api` / `pnpm worker` | API NestJS en `0.0.0.0:3100` / worker BullMQ (syncs, syncs programados cada hora, exports de Google aplazados y caché de imágenes) |
 | `pnpm dev` | Compilación en modo watch + API + worker |
 | `pnpm mobile` | Metro/Expo en el puerto 8091 |
 | `pnpm --filter @appinity/mobile web` | Vista web de desarrollo en el puerto 8092 (solo verificación; no sustituye al teléfono) |
@@ -275,6 +376,15 @@ Más detalle en [docs/architecture.md](docs/architecture.md), [docs/decisions.md
   `DEMO_MODE` activo.
 - Steam: la clave de la Web API solo está en el servidor; del usuario solo se guarda el SteamID mientras la conexión
   está activa. Un SteamID no puede vincularse a dos usuarios a la vez. El arte de Steam se usa solo como referencia.
+- Google:
+  - El cliente OAuth solo está en el servidor.
+  - El refresh token del usuario se guarda **cifrado** (AES-256-GCM, ligado a su conexión) y nunca llega al móvil ni a
+    los logs.
+  - Se piden solo los 5 grupos de datos que se importan.
+  - No se guarda el texto de las reseñas.
+  - Al desconectar se revoca el permiso en Google.
+  - El worker solo registra la estructura de los exports, nunca su contenido.
+  - Los lugares se identifican con OpenStreetMap (atribución ODbL en «Créditos») y las obras con Wikidata (CC0).
 - Los datos de la demo (`dataset = demo`) nunca se mezclan con datos reales: un usuario real no puede conectar
   fuentes simuladas y la resolución de objetos reales no reutiliza el catálogo de la demo.
 - La ubicación se guarda como zona aproximada (~1 km), sin historial.

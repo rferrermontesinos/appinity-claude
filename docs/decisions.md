@@ -363,3 +363,101 @@ compras de juegos de consola. Queda fuera del MVP hasta una evaluación legal y 
 Sin TMDb, películas y series se apoyan en Wikidata (CC0), imágenes libres de Commons y TVmaze (CC BY-SA, con crédito).
 Muchas tarjetas de cine usarán la imagen de sustitución hasta decidir si se licencia un catálogo comercial (decisión de
 negocio pendiente).
+
+**Decisión del usuario (2026-10-09):** de momento, imagen genérica (sin licencia de catálogo audiovisual). Gmail se
+evaluará más adelante.
+
+## Fase 3 · 2026-10-09 (Google Data Portability: valoraciones y lugares)
+
+Ficha en [integration-capabilities.md](integration-capabilities.md#google-data-portability--fase-3-valoraciones-y-lugares).
+
+### Condiciones de Google que cambian el diseño
+
+- **Sin identidad de la cuenta.** Los scopes de Data Portability no se pueden mezclar con openid ni email, así que la
+  conexión no guarda cuenta externa (no se puede impedir que dos usuarios vinculen la misma cuenta de Google).
+- **Sin identificadores en los datos.** La Búsqueda solo da el texto buscado («Moana») y Maps no da la categoría del
+  lugar: cada registro se **identifica** en el catálogo antes de crear evidencia (ver abajo).
+- **Cuenta de facturación obligatoria** en el proyecto de Google Cloud, aunque la API no tenga precio publicado. Es una
+  decisión del titular; la app no contrata nada.
+- **Desarrollo:**
+  - Google solo admite URLs de vuelta `http` con `localhost`. El consentimiento se hace desde la vista web del PC, y en
+    el teléfono la app lo explica en vez de abrir un flujo que no volvería.
+  - En modo Testing el permiso dura 7 días; después la conexión pide «Renovar permiso».
+  - En producción, la URL de vuelta será el dominio HTTPS de la API y la duración, la que elija el usuario (hasta
+    180 días).
+- **Scopes mínimos:** solo los 5 grupos que se importan. `saved.collections` y YouTube quedan para la fase 4.
+
+### Exports asíncronos
+
+- Un export por grupo, como recomienda Google.
+- El id del trabajo se guarda **cifrado antes de esperar**: un acceso único no se puede repetir y un trabajo perdido no
+  se recupera.
+- Mientras Google prepara el archivo, el sync devuelve `pending`. El runner deja la ejecución en cola y el worker la
+  reprograma con `moveToDelayed` (1 min, 5 min, 15 min, 1 h según lo transcurrido; Google recomienda 5–60 min) sin
+  gastar reintentos. Pasados 7 días se abandona.
+- Contratos nuevos (ampliación compatible): `SyncContext.saveState`, `SyncBatch.pending`, `SyncBatch.snapshotKinds` y
+  `SyncPartialError.blocking`.
+- **Instantánea por grupo:** solo se retira evidencia de los grupos exportados en ese sync. Si un grupo no toca (24 h)
+  o era de acceso único, su evidencia se conserva.
+- Riesgo aceptado: el export se marca como hecho al descargarlo; si después fallara la escritura en la base de datos,
+  con acceso único no podría repetirse hasta renovar.
+
+### Identificación (propuesta, confianzas sin calibrar)
+
+- **Lugares → OpenStreetMap (Overpass).** Elementos a ≤ 100 m de las coordenadas exportadas, clasificados por
+  etiquetas:
+  - restaurante, bar, café… → food;
+  - museo, galería, teatro, cine, monumento patrimonial… → culture.
+
+  Coincidencia de nombre:
+  - idéntico tras normalizar: 0,95;
+  - sin palabras genéricas («Restaurante Can Culleretes» = «Can Culleretes»): 0,85;
+  - nombre de Google contenido como frase en el de OSM, con al menos dos palabras y candidato único: 0,75;
+  - si hay varios candidatos por contención, solo el único con Wikidata: 0,7.
+
+  Categorías distintas entre candidatos → no se identifica. Se guardan `osm:<tipo>` y, si existe, `wikidata:entity`.
+  OSM es ODbL: atribución en «Créditos y fuentes de datos». La instancia pública admite unas 10.000 consultas al día por
+  aplicación; para producción, instancia propia o de pago.
+- **Obras → Wikidata (CC0).** Etiqueta o alias idéntico al título buscado, en español e inglés, y tipo (P31) reconocido
+  (película, serie, videojuego, libro, grupo o persona músico).
+  - Candidato único: 0,8.
+  - Si hay varios, solo el que tenga al menos el doble de enlaces a Wikipedias que el siguiente: 0,65.
+  - Un disco o canción se atribuye a su único intérprete (× 0,9).
+- **Lo ambiguo no se importa.** Se informa con un error parcial no bloqueante, como «12 de 40 … no se pudieron
+  identificar con seguridad». Nunca se fusiona por un título parecido (§6).
+- La confianza de la identificación **multiplica** las de conocido, consumido y preferencia. Así una identificación
+  dudosa pesa menos y no oculta el objeto en Home (umbral 0,8).
+- Comprobación en vivo (2026-10-09):
+  - OSM identificó Museu Picasso (0,95), Can Culleretes (0,95) y la Basílica de la Sagrada Família (0,7, por
+    contención); las estaciones de metro homónimas se descartan.
+  - Wikidata identificó Breaking Bad, Casablanca, Moana (película de 2016), Radiohead, OK Computer → Radiohead, Hades y
+    Cien años de soledad.
+
+### Normalización (`google-portability-v1`, propuesta sin calibrar)
+
+| Registro | Conocido | Consumido | Preferencia |
+|---|---|---|---|
+| Reseña de Maps con estrellas | id | id | (r − 3) / 2, `explicit_rating`, confianza id |
+| Reseña de Maps sin estrellas | id | id | NULL |
+| Sitio guardado en Maps | id | 0 | NULL |
+| Estrellas en la Búsqueda | id | id | (r − 3) / 2, `explicit_rating` (escala 1–5 por confirmar con un export real) |
+| Pulgar arriba / abajo | id | 0,7 × id | ±0,8, `explicit_like`, confianza 0,9 × id |
+| Marcada como vista | id | id | NULL |
+
+`id` = confianza de la identificación. `occurredAt` es la fecha del registro («Updated» o «Published»; en Maps, `date`),
+de modo que las reseñas de Maps aportan votos fechados para Trending local. El texto de las reseñas no se guarda.
+
+### Renovación sin perder datos
+
+Las fuentes con `supportsRenewal` (Google) admiten una nueva autorización sobre una conexión abierta. Se sustituyen las
+credenciales cifradas, se actualizan los scopes del consentimiento, se reactiva la conexión y se conserva la evidencia.
+El siguiente sync la actualiza como instantánea.
+
+### Piezas genéricas recuperadas de la rama fase-3 (TMDb)
+
+- Credenciales por usuario cifradas en la conexión.
+- `state` en la ruta del callback; también se admite `?state=`, que es la forma que usa Google.
+- Revocación en el proveedor con `providerRevocation`.
+- Revocación de credenciales huérfanas.
+- `pending` del flujo en Redis.
+- `datasets` en los proveedores de catálogo.

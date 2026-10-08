@@ -1,7 +1,7 @@
 import { EntityResolver, LocalDiskStorage, WikidataSnapshotProvider, cacheCatalogImage } from '@appinity/catalog';
 import { createDatabase } from '@appinity/database';
 import { createProducerQueues, enqueueSync, runConnectionSync, scheduleDueSyncs } from '@appinity/ingestion';
-import { createAdapterRegistry } from '@appinity/integrations';
+import { createAdapterRegistry, createCatalogIdentifier } from '@appinity/integrations';
 import {
   QUEUES,
   isSourceError,
@@ -10,7 +10,7 @@ import {
   type PingJob,
   type ProfileSyncJob,
 } from '@appinity/shared';
-import { Queue, UnrecoverableError, Worker } from 'bullmq';
+import { DelayedError, Queue, UnrecoverableError, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { loadWorkerEnv } from './env.js';
 
@@ -22,6 +22,17 @@ const database = createDatabase(env.databaseUrl, { max: 6, applicationName: 'app
 const registry = createAdapterRegistry({
   demoMode: env.demoMode,
   ...(env.steamApiKey ? { steam: { apiKey: env.steamApiKey } } : {}),
+  ...(env.google
+    ? {
+        google: {
+          ...env.google,
+          // Lugares con OpenStreetMap y obras con Wikidata (licencias de uso comercial).
+          identifier: createCatalogIdentifier({ userAgent: env.catalogUserAgent }),
+          // Estructura del export SIN datos personales: sirve para contrastar el formato real con el documentado.
+          onArchiveSummary: (summary) => console.log(`[google] export ${summary.group}: ${JSON.stringify({ ...summary, group: undefined })}`),
+        },
+      }
+    : {}),
 });
 const producer = createProducerQueues(env.redisUrl, env.queuePrefix);
 const resolver = new EntityResolver(database.db, env.demoMode ? [new WikidataSnapshotProvider()] : []);
@@ -45,14 +56,24 @@ const workers: Worker[] = [
   // Syncs de fuentes de perfil. El bloqueo por conexión vive en PostgreSQL (runConnectionSync).
   new Worker<ProfileSyncJob>(
     QUEUES.profileSync,
-    async (job) => {
+    async (job, token) => {
       let outcome;
       try {
-        outcome = await runConnectionSync({ database, registry, resolver }, job.data.runId);
+        outcome = await runConnectionSync(
+          { database, registry, resolver, ...(env.credentialsKey ? { credentialsKey: env.credentialsKey } : {}) },
+          job.data.runId,
+        );
       } catch (error) {
         // Perfil privado, clave no válida…: reintentar no sirve; el usuario debe actuar (mensaje en la app).
         if (isSourceError(error) && !error.retryable) throw new UnrecoverableError(error.message);
         throw error;
+      }
+      // El proveedor aún prepara los datos (export de Google): el mismo trabajo vuelve más tarde, sin gastar reintentos.
+      if (outcome.status === 'deferred') {
+        const delay = outcome.retryAfterMs ?? 60_000;
+        console.log(`[sync] ${job.data.connectionId} run ${job.data.runId}: esperando al proveedor, nueva consulta en ${Math.round(delay / 1000)} s`);
+        await job.moveToDelayed(Date.now() + delay, token);
+        throw new DelayedError();
       }
       console.log(
         `[sync] ${job.data.connectionId} run ${job.data.runId}: ${outcome.status} ` +
@@ -92,7 +113,9 @@ await systemQueue.upsertJobScheduler('schedule-syncs', { every: 60 * 60 * 1000 }
 console.log(
   `Worker escuchando colas [${workers.map((w) => w.name).join(', ')}] con prefijo ${env.queuePrefix}` +
     (env.demoMode ? ' · DEMO_MODE: fuentes fixture activas' : '') +
-    (env.steamApiKey ? ` · Steam activo (syncs cada ${env.syncIntervalHours} h)` : ' · Steam sin configurar (falta STEAM_WEB_API_KEY)'),
+    (env.steamApiKey ? ` · Steam activo (syncs cada ${env.syncIntervalHours} h)` : ' · Steam sin configurar (falta STEAM_WEB_API_KEY)') +
+    (env.google ? ' · Google activo' : ' · Google sin configurar (falta el cliente OAuth)') +
+    (env.google && !env.credentialsKey ? ' · AVISO: falta CREDENTIALS_ENCRYPTION_KEY' : ''),
 );
 
 let stopping = false;

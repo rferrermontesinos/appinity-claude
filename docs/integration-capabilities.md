@@ -58,6 +58,44 @@ paginación, instantáneas, agregación) y `packages/ingestion/test/pipeline.int
 | Usuarios | Solo usuarios reales (`dataset = live`). En desarrollo, una «cuenta local real» (`pnpm user:local`) |
 | Tests | `packages/integrations/test/steam.test.ts` (OpenID, cliente, límites, perfiles privados, mapper) y `packages/ingestion/test/steam.int.test.ts` (pipeline completo con usuarios simulados `test_steam_*` y SteamID simulados fuera del rango de cuentas reales) |
 
+## Google Data Portability · fase 3 (valoraciones y lugares)
+
+**Estado:** implementado y probado con un Google simulado (formatos de la documentación oficial). Los identificadores de
+catálogo se probaron **en vivo** contra OpenStreetMap y Wikidata. **La conexión con una cuenta real está pendiente** de
+que el usuario cree el proyecto de Google Cloud y autorice su cuenta; tampoco se ha visto aún un export real. No se
+considera validada hasta entonces.
+
+### Ficha (verificada el 2026-10-09)
+
+| Aspecto | Comprobado en la documentación oficial |
+|---|---|
+| Proyecto | Proyecto de Google Cloud con **cuenta de facturación activa** (requisito de la guía de configuración) y la Data Portability API habilitada. La API no tiene precio publicado: su ficha del Marketplace indica 0 y la DMA obliga a ofrecerla gratis ([setup](https://developers.google.com/data-portability/user-guide/setup)) |
+| Autorización | OAuth 2.0 de servidor web. Los scopes `https://www.googleapis.com/auth/dataportability.<grupo>` **no se pueden mezclar** con otros (ni openid ni email) y no se usa `include_granted_scopes` ([configurar OAuth](https://developers.google.com/data-portability/user-guide/configure-oauth)). No hay, por tanto, identidad de la cuenta en la conexión |
+| Duración | El usuario elige: una vez, 30 o 180 días (`refresh_token_expires_in`). En modo **Testing**, 7 días siempre; la renovación solo existe con el cliente en producción ([acceso temporal](https://developers.google.com/data-portability/user-guide/time-based)) |
+| Exports | `POST /v1/portabilityArchive:initiate {resources}` → `archiveJobId`; `GET /v1/archiveJobs/{id}/portabilityArchiveState` → `IN_PROGRESS`, `COMPLETE` (URLs firmadas que caducan a las 6 h; datos 14 días), `FAILED` o `CANCELLED`; `:retry` (3 veces); revisar cada 5–60 min; máximo 7 días ([métodos](https://developers.google.com/data-portability/user-guide/methods)) |
+| Límites | Acceso temporal: un export por grupo cada 24 h (429 `RESOURCE_EXHAUSTED_TIME_BASED`). Acceso único: uno solo (`RESOURCE_EXHAUSTED_ONE_TIME`). Google recomienda un export por grupo |
+| Revocación | `POST /v1/authorization:reset` revoca todos los permisos de Data Portability concedidos a la app; además se revoca el refresh token |
+| Datos de la fase 3 | `maps.reviews` y `maps.starred_places` (GeoJSON: nombre, dirección, país, coordenadas, enlace, fecha; reseñas con estrellas 1–5). `search_ugc.media.reviews_and_stars`, `.thumbs` y `.watched` (JSON con «Search Query», «Published», «Updated», «Review Star Rating» en texto y «Thumbs Rating») ([Maps](https://developers.google.com/data-portability/schema-reference/local_actions), [Búsqueda](https://developers.google.com/data-portability/schema-reference/search_ugc)) |
+| Lo que NO trae | Ningún identificador ni tipo de objeto en la Búsqueda (solo el texto buscado), ni la categoría del lugar en Maps. Por eso hace falta identificar cada registro (ver Implementación) |
+| Países | UE, Suiza y Reino Unido; mayores de 18 años |
+| Política | Uso aprobado: apps cuya función principal es trasladar datos de Google; uso limitado a funciones visibles para el usuario. Scopes restringidos → auditoría CASA. Pendiente de confirmar en la verificación ([política](https://developers.google.com/data-portability/policy)) |
+
+### Implementación
+
+| Pieza | Detalle |
+|---|---|
+| Adapter | `packages/integrations/src/profile/google-portability/` (`constants`, `client`, `auth`, `archive`, `sync`, `mapper`, `schemas`, `manifest`, `fixtures`) |
+| Conexión | Un consentimiento de Google con solo los 5 grupos que se importan (scopes mínimos), `access_type=offline`, `prompt=consent` y PKCE (el verificador viaja con el `state` en Redis). En la vuelta se comprueba qué grupos concedió de verdad el usuario y qué tipo de acceso eligió |
+| Desarrollo | Google solo admite URLs de vuelta `http` con `localhost`: el consentimiento se hace desde la vista web del PC (`pnpm --filter @appinity/mobile web`). En el teléfono, la app lo explica en vez de abrir un flujo que no volvería. En producción, la URL de vuelta será el dominio HTTPS de la API |
+| Datos guardados | Refresh token, grupos concedidos y estado de los exports, **cifrados** (AES-256-GCM, AAD = conexión). Sin cuenta externa. Nunca se guarda el texto de las reseñas |
+| Sync | Un export por grupo. El id del trabajo se guarda cifrado **antes** de esperar. Mientras Google lo prepara, la ejecución se **aplaza** (el worker la reprograma con el ritmo recomendado, sin gastar reintentos). Al completarse se descargan y leen los ZIP y se retira solo la evidencia de los grupos exportados en ese sync |
+| Identificación | Lugares: OpenStreetMap (Overpass), elementos con nombre a ≤ 100 m clasificados por etiquetas (restaurante, museo, teatro, monumento…). Nombre idéntico 0,95; sin palabras genéricas 0,85; contenido en el de OSM 0,75 (0,7 si hay que elegir el único notable). Obras: Wikidata, etiqueta o alias idéntico y tipo reconocido; único 0,8, dominante en enlaces a Wikipedias 0,65; un disco se atribuye a su artista. Lo ambiguo **no** se importa y se informa sin bloquear la instantánea |
+| Normalización (`google-portability-v1`) | Estrellas 1–5: (r − 3) / 2. Pulgar: ±0,8, confianza 0,9, consumo 0,7. «Visto»: consumido sin preferencia. Guardado: conocido sin consumo. La confianza de la identificación multiplica las confianzas. Fecha del registro como `occurredAt` |
+| Renovación | «Renovar permiso» reutiliza la conexión: sustituye las credenciales y conserva lo importado |
+| Desconexión | Borra credenciales y (si se pide) lo importado; después `authorization:reset` y revocación del token. La app muestra si Google lo confirmó |
+| Estructura del export | El worker registra, por grupo, archivos, número de registros, claves y patrones de URL, **sin datos personales**, para contrastar el formato real con el documentado |
+| Tests | `packages/integrations/test/google-portability.test.ts` (OAuth, archivo, máquina de estados, mapper, OSM y Wikidata simulados, casos reales de OSM), `packages/ingestion/test/google.int.test.ts` (pipeline, aplazamiento, instantánea por grupo, renovación, revocación) y `apps/api/test/google-local.int.test.ts` (flujo HTTP) |
+
 ## Fuentes reales previstas
 
 Revisión del 2026-10-08: análisis de más de 60 plataformas en [fuentes-de-datos.md](fuentes-de-datos.md). Se muestran
@@ -66,7 +104,7 @@ hasta verificarlas con una conexión real.
 
 | Fuente | Categorías | Autenticación | Estado | Evidencia |
 |---|---|---|---|---|
-| Google Data Portability (Búsqueda, Maps, YouTube, YouTube Music, Play, reservas) | las ocho | OAuth de Google, acceso temporal renovable | Pendiente · fases 3 y 4 | Documentación oficial revisada; falta la ficha y un export real |
+| Google Data Portability · YouTube y YouTube Music | music, podcasts | OAuth de Google (mismo consentimiento) | Pendiente · fase 4 | Documentación oficial revisada |
 | Google Books API | books | OAuth (scope `books`) | Pendiente · fase 11 | Documentación oficial revisada |
 | Apple Music (MusicKit) | music | Autorización en el dispositivo | Pendiente · fase 11 | Documentación revisada; condiciones de MusicKit por confirmar |
 | Calendario del dispositivo | food, culture | Permiso nativo | Pendiente · fase 11 | — |
@@ -87,4 +125,6 @@ paginación, límites, permisos de almacenamiento y política de revocación.
 | Clave | Tipo | Estado |
 |---|---|---|
 | `wikidata_snapshot` | Instantánea congelada de Wikidata (CC0) + imágenes de Wikimedia Commons con licencia libre | Implementado para la demo (`dataset = demo`). No llama a la red en tiempo de ejecución |
-| Wikidata en vivo, MusicBrainz (núcleo CC0), TVmaze (CC BY-SA) | Licencias compatibles con uso comercial | Pendiente; ver fuentes-de-datos.md. TMDb, IMDb e IGDB requieren licencia |
+| `OsmPlaceIdentifier` | OpenStreetMap vía Overpass (ODbL, uso comercial con atribución «© OpenStreetMap contributors») | Implementado (fase 3): identifica y clasifica lugares de Maps. Instancia pública para desarrollo; en producción, instancia propia o proveedor |
+| `WikidataWorkIdentifier` | API de Wikidata (CC0) | Implementado (fase 3): identifica obras valoradas en la Búsqueda |
+| MusicBrainz (núcleo CC0), TVmaze (CC BY-SA) | Licencias compatibles con uso comercial | Pendiente; ver fuentes-de-datos.md. TMDb, IMDb e IGDB requieren licencia |
