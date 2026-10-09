@@ -81,6 +81,24 @@ Al terminar el export, las líneas `[google] export …` del worker muestran la 
 personales. Con ellas se confirma o corrige el formato documentado (escala de las estrellas de la Búsqueda, presencia
 de fechas y de identificadores).
 
+### Primer export real (2026-10-09, cuenta del usuario)
+
+El usuario creó el proyecto de Google Cloud y conectó su cuenta desde la vista web del PC. El primer intento dio
+`Error 403: access_denied` porque la cuenta no estaba en la lista de usuarios de prueba; se resolvió añadiéndola, y la
+solución está documentada en el README.
+
+Resumen de estructura de `maps.reviews`, sin datos personales:
+- Archivos: `Portability/Maps (your places)/Reviews.json` (59.841 bytes) y `Portability/archive_browser.json`
+  (índice del archivo, sin registros).
+- 75 reseñas leídas y 7 descartadas por datos incompletos.
+- Claves: `Comment`, `date`, `five_star_rating_published`, `google_maps_url`, `location`, `questions`,
+  `review_text_published`. Coinciden con la documentación, salvo `Comment`, que no figura en ella.
+- **Diferencia con la documentación:** los enlaces de Maps no usan `?cid=` sino `/maps/place//data=…`. Se añadió la
+  lectura del CID del lugar en ese formato (`!1s0x…:0x<CID>`), que pasa a ser el id del registro y un identificador
+  `google_maps:cid` del objeto. Al resumen se añadieron los motivos de descarte y un patrón de URL más detallado (sigue
+  sin datos).
+- Pendiente: los resúmenes de los demás grupos y el resultado del sync.
+
 ### Bloqueos y puntos declarados
 
 - **Cuenta de facturación de Google Cloud:** obligatoria para activar la API, aunque esta no tenga coste publicado.

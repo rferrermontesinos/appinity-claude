@@ -11,6 +11,8 @@ export interface ArchiveSummary {
   files: Array<{ path: string; bytes: number }>;
   records: number;
   skipped: number;
+  /** Motivo de cada registro descartado (p. ej. `sin_coordenadas`). */
+  skippedReasons: Record<string, number>;
   keys: string[];
   enumValues: Record<string, string[]>;
   urlPatterns: string[];
@@ -38,15 +40,45 @@ export function parseStars(value: unknown): number | null {
   return word ? STAR_WORDS[word[1]!]! : null;
 }
 
-/** Patrón de una URL sin datos: host y ruta con los dígitos y parámetros enmascarados. */
+/**
+ * Patrón de una URL sin datos: se conserva la estructura (`/maps/place//data=!#m#!#s0x…:0x…`) y se enmascaran los
+ * identificadores hexadecimales, los números, los textos largos y los valores de los parámetros.
+ */
 export function urlPattern(url: string): string {
   try {
     const u = new URL(url);
     const params = [...u.searchParams.keys()].sort().map((k) => `${k}=…`).join('&');
-    return `${u.host}${u.pathname.replace(/\d+/g, '#').replace(/[^/]{24,}/g, '…')}${params ? `?${params}` : ''}`;
+    const path = decodeURIComponent(u.pathname)
+      .replace(/0x[0-9a-f]+/gi, '')
+      .replace(/[A-Za-z0-9_-]{16,}/g, '…')
+      .replace(/\d+/g, '#')
+      .replace(//g, '0x…');
+    return `${u.host}${path}${params ? `?${params}` : ''}`;
   } catch {
     return 'url-no-válida';
   }
+}
+
+/**
+ * Identificadores de Google de un lugar a partir de su enlace de Maps. Formatos vistos:
+ * - `…?cid=<decimal>` (ejemplo de la documentación);
+ * - `/maps/place//data=!4m2!3m1!1s0x<hex>:0x<hex>` (export real, 2026-10-09): el segundo número hexadecimal es el CID
+ *   del lugar (conocimiento de la comunidad, por confirmar con Google);
+ * - `place_id:<id>` o `query_place_id=<id>` (Place ID).
+ */
+export function googlePlaceIds(url: string | undefined): { cid?: string; placeId?: string } {
+  if (!url) return {};
+  let decoded = url;
+  try {
+    decoded = decodeURIComponent(url);
+  } catch {
+    // Se usa tal cual.
+  }
+  const cidParam = /[?&]cid=(\d{5,})/.exec(decoded)?.[1];
+  const featureHex = /!1s0x[0-9a-f]+:0x([0-9a-f]+)/i.exec(decoded)?.[1];
+  const cid = cidParam ?? (featureHex && /[1-9a-f]/i.test(featureHex) ? BigInt(`0x${featureHex}`).toString() : undefined);
+  const placeId = /(?:place_id:|query_place_id=)([A-Za-z0-9_-]{10,})/.exec(decoded)?.[1];
+  return { ...(cid ? { cid } : {}), ...(placeId ? { placeId } : {}) };
 }
 
 /** Recorre el JSON y devuelve los objetos que contienen alguna de las claves indicadas. */
@@ -66,7 +98,7 @@ function collectObjects(root: unknown, anyOf: string[]): Array<Record<string, un
 }
 
 /** Lugar de Maps (GeoJSON documentado; se admite también el envoltorio `properties` de Takeout). */
-function toPlace(feature: Record<string, unknown>): ExportedPlace | null {
+function toPlace(feature: Record<string, unknown>): ExportedPlace | 'sin_nombre' | 'sin_coordenadas' {
   const props = (feature.properties as Record<string, unknown> | undefined) ?? feature;
   const rawLocation = pick(props, 'location');
   const location = (Array.isArray(rawLocation) ? rawLocation[0] : rawLocation) as Record<string, unknown> | undefined;
@@ -74,7 +106,8 @@ function toPlace(feature: Record<string, unknown>): ExportedPlace | null {
   const geometry = (feature.geometry ?? pick(props, 'geometry')) as { coordinates?: unknown } | undefined;
   const coords = Array.isArray(geometry?.coordinates) ? geometry!.coordinates : [];
   const [longitude, latitude] = coords.map(Number);
-  if (!name || !Number.isFinite(latitude) || !Number.isFinite(longitude) || (latitude === 0 && longitude === 0)) return null;
+  if (!name) return 'sin_nombre';
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || (latitude === 0 && longitude === 0)) return 'sin_coordenadas';
   const address = str(location && pick(location, 'address'));
   const countryCode = str(location && pick(location, 'country_code', 'countrycode'));
   const mapsUrl = str(pick(props, 'google_maps_url', 'googlemapsurl', 'url'));
@@ -96,12 +129,20 @@ function isoDate(value: unknown): string | undefined {
 }
 
 /** Extrae los registros de un grupo a partir de los archivos JSON del export. */
-export function extractRecords(group: ResourceGroup, jsonFiles: unknown[]): { records: ExportRecord[]; skipped: number; enums: Record<string, Set<string>>; keys: Set<string>; urls: Set<string> } {
+export function extractRecords(
+  group: ResourceGroup,
+  jsonFiles: unknown[],
+): { records: ExportRecord[]; skipped: number; skippedReasons: Record<string, number>; enums: Record<string, Set<string>>; keys: Set<string>; urls: Set<string> } {
   const records: ExportRecord[] = [];
   const enums: Record<string, Set<string>> = {};
   const keys = new Set<string>();
   const urls = new Set<string>();
+  const skippedReasons: Record<string, number> = {};
   let skipped = 0;
+  const skip = (reason: string) => {
+    skipped++;
+    skippedReasons[reason] = (skippedReasons[reason] ?? 0) + 1;
+  };
   const noteEnum = (field: string, value: unknown) => {
     const text = str(value);
     if (text && text.length <= 40) (enums[field] ??= new Set()).add(text);
@@ -114,8 +155,8 @@ export function extractRecords(group: ResourceGroup, jsonFiles: unknown[]): { re
         const props = (feature.properties as Record<string, unknown> | undefined) ?? feature;
         Object.keys(props).forEach((k) => keys.add(k));
         const place = toPlace(feature);
-        if (!place) {
-          skipped++;
+        if (typeof place === 'string') {
+          skip(place);
           continue;
         }
         if (place.mapsUrl) urls.add(place.mapsUrl);
@@ -141,7 +182,7 @@ export function extractRecords(group: ResourceGroup, jsonFiles: unknown[]): { re
         Object.keys(obj).forEach((k) => keys.add(k));
         const query = str(pick(obj, 'Search Query'));
         if (!query) {
-          skipped++;
+          skip('sin_titulo');
           continue;
         }
         const date = isoDate(pick(obj, 'Updated')) ?? isoDate(pick(obj, 'Published'));
@@ -161,7 +202,7 @@ export function extractRecords(group: ResourceGroup, jsonFiles: unknown[]): { re
       }
     }
   }
-  return { records, skipped, enums, keys, urls };
+  return { records, skipped, skippedReasons, enums, keys, urls };
 }
 
 /** Descomprime un archivo ZIP del export y devuelve sus JSON (los demás archivos solo cuentan en el resumen). */
@@ -182,7 +223,7 @@ export function readArchive(group: ResourceGroup, zips: Uint8Array[]): { records
       }
     }
   }
-  const { records, skipped, enums, keys, urls } = extractRecords(group, json);
+  const { records, skipped, skippedReasons, enums, keys, urls } = extractRecords(group, json);
   return {
     records,
     summary: {
@@ -190,6 +231,7 @@ export function readArchive(group: ResourceGroup, zips: Uint8Array[]): { records
       files,
       records: records.length,
       skipped,
+      skippedReasons,
       keys: [...keys].sort(),
       enumValues: Object.fromEntries(Object.entries(enums).map(([k, v]) => [k, [...v].sort()])),
       urlPatterns: [...new Set([...urls].map(urlPattern))].sort().slice(0, 10),

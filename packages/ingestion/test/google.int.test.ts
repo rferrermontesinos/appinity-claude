@@ -162,7 +162,7 @@ describe('sync de Google', () => {
     expect(await runConnectionSync(deps(), id)).toMatchObject({ status: 'deferred' });
     const outcome = await runConnectionSync(deps(), id);
     expect(outcome).toMatchObject({ observationsDeleted: 1, observationsInserted: 0, observationsUnchanged: 7 });
-    const left = await database.db.select().from(userItemObservations).where(eq(userItemObservations.sourceRecordId, 'place:cid:2222222222222222222'));
+    const left = await database.db.select().from(userItemObservations).where(eq(userItemObservations.sourceRecordId, 'place:cid:2222162186422964967'));
     expect(left).toHaveLength(0);
   });
 

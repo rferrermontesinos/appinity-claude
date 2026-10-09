@@ -35,7 +35,8 @@ export function defaultExports(): Record<Group, Record<string, unknown>> {
             type: 'Feature',
             geometry: { type: 'Point', coordinates: [2.17402, 41.38128] },
             date: '2026-07-02T14:00:00Z',
-            google_maps_url: 'https://maps.google.com/?cid=2222222222222222222',
+            // Formato visto en un export real (2026-10-09): /maps/place//data=…!1s0x<hex>:0x<CID en hex>.
+            google_maps_url: 'https://www.google.com/maps/place//data=!4m2!3m1!1s0x12a4a2f7a1b2c3d4:0x1ed6b4bc2b0bd2e7',
             location: [{ name: 'Restaurante Can Culleretes', address: 'Carrer d’en Quintana, 5, Barcelona', country_code: 'ES' }],
             five_star_rating_published: 2,
           },

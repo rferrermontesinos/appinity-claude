@@ -77,6 +77,7 @@ considera validada hasta entonces.
 | Revocación | `POST /v1/authorization:reset` revoca todos los permisos de Data Portability concedidos a la app; además se revoca el refresh token |
 | Datos de la fase 3 | `maps.reviews` y `maps.starred_places` (GeoJSON: nombre, dirección, país, coordenadas, enlace, fecha; reseñas con estrellas 1–5). `search_ugc.media.reviews_and_stars`, `.thumbs` y `.watched` (JSON con «Search Query», «Published», «Updated», «Review Star Rating» en texto y «Thumbs Rating») ([Maps](https://developers.google.com/data-portability/schema-reference/local_actions), [Búsqueda](https://developers.google.com/data-portability/schema-reference/search_ugc)) |
 | Lo que NO trae | Ningún identificador ni tipo de objeto en la Búsqueda (solo el texto buscado), ni la categoría del lugar en Maps. Por eso hace falta identificar cada registro (ver Implementación) |
+| Export real (2026-10-09) | `maps.reviews`: `Reviews.json` + `archive_browser.json` (índice). Claves documentadas, más `Comment`. Los enlaces de Maps tienen la forma `/maps/place//data=!4m2!3m1!1s0x<hex>:0x<hex>`, no `?cid=`; el segundo número es el CID del lugar (conocimiento de la comunidad, por confirmar) |
 | Países | UE, Suiza y Reino Unido; mayores de 18 años |
 | Política | Uso aprobado: apps cuya función principal es trasladar datos de Google; uso limitado a funciones visibles para el usuario. Scopes restringidos → auditoría CASA. Pendiente de confirmar en la verificación ([política](https://developers.google.com/data-portability/policy)) |
 

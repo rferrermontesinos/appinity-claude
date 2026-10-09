@@ -8,6 +8,7 @@ import {
   THUMB_CONSUMED,
   THUMB_SCORE,
 } from './constants.js';
+import { googlePlaceIds } from './archive.js';
 import type { GoogleRecord } from './schemas.js';
 
 const round4 = (v: number) => Math.round(v * 10_000) / 10_000;
@@ -26,6 +27,8 @@ export function mapGoogleRecord(raw: unknown, context: NormalizeContext): Normal
   const { recordId, record, identified } = raw as GoogleRecord;
   const id = identified.confidence;
   const kind = OBSERVATION_KIND[record.group];
+  // El CID de Google identifica el mismo lugar entre usuarios aunque OSM no lo tenga (o cambie su elemento).
+  const cid = record.group === 'maps.reviews' || record.group === 'maps.starred_places' ? googlePlaceIds(record.place.mapsUrl).cid : undefined;
   const base = {
     userId: context.userId,
     source: 'google_portability' as const,
@@ -37,7 +40,7 @@ export function mapGoogleRecord(raw: unknown, context: NormalizeContext): Normal
       sourceId: recordId,
       itemType: identified.itemType,
       title: identified.title,
-      canonicalIds: identified.canonicalIds,
+      canonicalIds: { ...identified.canonicalIds, ...(cid ? { 'google_maps:cid': cid } : {}) },
       ...(identified.releaseYear || identified.location
         ? {
             attributes: {

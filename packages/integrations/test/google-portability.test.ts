@@ -3,7 +3,7 @@ import { strToU8, zipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
 import { classifyOsmTags, pickPlace, OsmPlaceIdentifier } from '../src/catalog/osm-places.js';
 import { WikidataWorkIdentifier } from '../src/catalog/wikidata-works.js';
-import { parseStars, readArchive, urlPattern } from '../src/profile/google-portability/archive.js';
+import { googlePlaceIds, parseStars, readArchive, urlPattern } from '../src/profile/google-portability/archive.js';
 import { completePortabilityConnect, startPortabilityConnect } from '../src/profile/google-portability/auth.js';
 import { GooglePortabilityClient } from '../src/profile/google-portability/client.js';
 import { PHASE3_RESOURCE_GROUPS } from '../src/profile/google-portability/constants.js';
@@ -109,7 +109,12 @@ describe('archivo exportado', () => {
     expect(records).toHaveLength(3);
     expect(records[0]).toMatchObject({ group: 'maps.reviews', rating: 5, hasText: true, place: { name: 'Museu Picasso', latitude: 41.38522, longitude: 2.18101, countryCode: 'ES' } });
     expect(JSON.stringify(records)).not.toContain('NO debe guardarse');
-    expect(summary).toMatchObject({ records: 3, skipped: 1, files: [{ path: 'Portability/Maps (your places)/Reviews.json' }] });
+    expect(summary).toMatchObject({
+      records: 3,
+      skipped: 1,
+      skippedReasons: { sin_coordenadas: 1 },
+      files: [{ path: 'Portability/Maps (your places)/Reviews.json' }],
+    });
   });
 
   it('admite el envoltorio properties de Takeout para los sitios guardados', () => {
@@ -133,9 +138,22 @@ describe('archivo exportado', () => {
   it('el resumen de estructura no contiene datos personales', () => {
     const { summary } = readArchive('maps.reviews', [zipOf(defaultExports()['maps.reviews']!)]);
     const text = JSON.stringify(summary);
-    expect(text).not.toMatch(/Picasso|Culleretes|1111111111/);
-    expect(summary.urlPatterns).toEqual(['maps.google.com/?cid=…']);
+    expect(text).not.toMatch(/Picasso|Culleretes|1111111111|1ed6b4bc|12a4a2f7/);
+    expect(summary.urlPatterns).toEqual(['maps.google.com/?cid=…', 'www.google.com/maps/place//data=!#m#!#m#!#s0x…:0x…']);
     expect(summary.enumValues).toEqual({});
+  });
+
+  it('obtiene el CID de Google del enlace de Maps en sus distintos formatos', () => {
+    expect(googlePlaceIds('https://www.google.com/maps/place//data=!4m2!3m1!1s0x12a4a2f7a1b2c3d4:0x1ed6b4bc2b0bd2e7')).toEqual({ cid: '2222162186422964967' });
+    expect(googlePlaceIds('https://maps.google.com/?cid=1111111111111111111')).toEqual({ cid: '1111111111111111111' });
+    expect(googlePlaceIds('https://www.google.com/maps/search/?api=1&query=x&query_place_id=ChIJabcdefghijklmnop')).toEqual({ placeId: 'ChIJabcdefghijklmnop' });
+    expect(googlePlaceIds('https://www.google.com/maps/place//data=!4m2!3m1!1s0x0:0x0')).toEqual({});
+    expect(googlePlaceIds(undefined)).toEqual({});
+    // El registro usa el CID y la observación lo añade como identificador del lugar.
+    const record = { group: 'maps.reviews' as const, place: { name: 'Can Culleretes', latitude: 41.38, longitude: 2.17, mapsUrl: 'https://www.google.com/maps/place//data=!4m2!3m1!1s0x12a4a2f7a1b2c3d4:0x1ed6b4bc2b0bd2e7' }, rating: 4, hasText: false };
+    expect(recordIdOf(record)).toBe('place:cid:2222162186422964967');
+    const [o] = mapGoogleRecord({ recordId: recordIdOf(record), record, identified: FAKE_IDENTIFICATIONS['Restaurante Can Culleretes']! }, ctx);
+    expect(o!.externalItem.canonicalIds).toEqual({ 'osm:node': '1000000001', 'google_maps:cid': '2222162186422964967' });
   });
 
   it('interpreta las estrellas escritas o numéricas y rechaza lo demás', () => {

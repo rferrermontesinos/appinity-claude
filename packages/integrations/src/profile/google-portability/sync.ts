@@ -1,5 +1,5 @@
 import { normalizeTitle, SourceError, type EntityIdentifier, type SyncBatch, type SyncContext, type SyncPartialError } from '@appinity/shared';
-import { readArchive, type ArchiveSummary } from './archive.js';
+import { googlePlaceIds, readArchive, type ArchiveSummary } from './archive.js';
 import { ExportLimitError, type GooglePortabilityClient } from './client.js';
 import {
   EXPORT_MAX_RETRIES,
@@ -54,10 +54,10 @@ const writeState = (state: PortabilityState) => ({
 /** Identificador estable del registro (no depende de la identificación, que puede mejorar con el tiempo). */
 export function recordIdOf(record: ExportRecord): string {
   if (record.group === 'maps.reviews' || record.group === 'maps.starred_places') {
-    const cid = record.place.mapsUrl ? new URL(record.place.mapsUrl, 'https://maps.google.com').searchParams.get('cid') : null;
-    return cid && /^\d+$/.test(cid)
-      ? `place:cid:${cid}`
-      : `place:${record.place.latitude.toFixed(5)},${record.place.longitude.toFixed(5)}:${normalizeTitle(record.place.name)}`;
+    const { cid, placeId } = googlePlaceIds(record.place.mapsUrl);
+    if (cid) return `place:cid:${cid}`;
+    if (placeId) return `place:pid:${placeId}`;
+    return `place:${record.place.latitude.toFixed(5)},${record.place.longitude.toFixed(5)}:${normalizeTitle(record.place.name)}`;
   }
   return `work:${normalizeTitle(record.query)}`;
 }
