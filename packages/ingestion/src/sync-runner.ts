@@ -42,6 +42,8 @@ export interface SyncOutcome {
   /** `deferred`: el proveedor aún prepara los datos; el worker vuelve a intentarlo pasado `retryAfterMs`. */
   status: 'succeeded' | 'partial' | 'failed' | 'cancelled' | 'skipped' | 'deferred';
   retryAfterMs?: number;
+  /** Motivo de la espera (p. ej. «Google está preparando la exportación»). */
+  deferReason?: string;
   recordsReceived: number;
   observationsInserted: number;
   observationsUpdated: number;
@@ -279,6 +281,7 @@ export async function runConnectionSync(deps: SyncDeps, runId: string): Promise<
           .where(eq(sourceSyncRuns.id, runId));
         outcome.status = 'deferred';
         outcome.retryAfterMs = batch.pending.retryAfterMs;
+        outcome.deferReason = batch.pending.reason;
         return outcome;
       }
       outcome.recordsReceived += batch.records.length;

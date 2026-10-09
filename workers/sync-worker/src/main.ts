@@ -71,7 +71,9 @@ const workers: Worker[] = [
       // El proveedor aún prepara los datos (export de Google): el mismo trabajo vuelve más tarde, sin gastar reintentos.
       if (outcome.status === 'deferred') {
         const delay = outcome.retryAfterMs ?? 60_000;
-        console.log(`[sync] ${job.data.connectionId} run ${job.data.runId}: esperando al proveedor, nueva consulta en ${Math.round(delay / 1000)} s`);
+        console.log(
+          `[sync] ${job.data.connectionId} run ${job.data.runId}: en espera (${outcome.deferReason ?? 'proveedor'}), nueva consulta en ${Math.round(delay / 1000)} s`,
+        );
         await job.moveToDelayed(Date.now() + delay, token);
         throw new DelayedError();
       }

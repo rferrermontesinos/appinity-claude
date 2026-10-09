@@ -1,7 +1,7 @@
-import { parseObservation, type SourceCredentials, type SyncContext } from '@appinity/shared';
+import { parseObservation, SourceError, type SourceCredentials, type SyncContext } from '@appinity/shared';
 import { strToU8, zipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
-import { classifyOsmTags, pickPlace, OsmPlaceIdentifier } from '../src/catalog/osm-places.js';
+import { classifyOsmTags, pickPlace, slotWaitMs, OsmPlaceIdentifier } from '../src/catalog/osm-places.js';
 import { WikidataWorkIdentifier } from '../src/catalog/wikidata-works.js';
 import { googlePlaceIds, parseStars, readArchive, urlPattern } from '../src/profile/google-portability/archive.js';
 import { completePortabilityConnect, startPortabilityConnect } from '../src/profile/google-portability/auth.js';
@@ -214,6 +214,26 @@ describe('sync de Google', () => {
     expect(second.snapshotKinds).toContain('search_watched');
   });
 
+  it('si el catálogo (OSM o Wikidata) no responde, el sync se aplaza sin perder los exports', async () => {
+    const { google, client } = setup();
+    const done = await connect(google, client);
+    const failing = {
+      identifyPlace: async () => {
+        throw new SourceError('unavailable', 'OpenStreetMap (Overpass) no responde; se reintentará', true);
+      },
+      identifyWork: async () => null,
+    };
+    const context = syncContext({ ...done.credentials! });
+    const deferred = await syncPortability(client, context, { identifier: failing });
+    expect(deferred.pending).toMatchObject({ retryAfterMs: 600_000, reason: expect.stringMatching(/Overpass/) });
+    // Los trabajos siguen guardados: el siguiente intento vuelve a descargar los mismos exports.
+    expect(Object.keys(JSON.parse(context.credentials!.jobs!))).toHaveLength(5);
+    const { identifier } = createFakeIdentifier();
+    const resumed = await syncPortability(client, context, { identifier });
+    expect(resumed.records).toHaveLength(8);
+    expect(google.calls.filter((c) => c.endsWith(':initiate'))).toHaveLength(5);
+  });
+
   it('un permiso caducado o revocado pide renovar (no reintentable)', async () => {
     const { google, client } = setup();
     const done = await connect(google, client);
@@ -328,6 +348,30 @@ describe('identificación en el catálogo', () => {
     expect(pickPlace(place, [element(1, { name: 'Can Pep', shop: 'hardware' })])).toBeNull();
     expect(pickPlace(place, [element(1, { name: 'Can Pep', amenity: 'restaurant' }), element(2, { name: 'Can Pep', tourism: 'museum' })])).toBeNull();
     expect(classifyOsmTags({ amenity: 'cinema' })).toEqual({ category: 'culture', itemType: 'venue' });
+  });
+
+  it('OSM: ante un 429 espera al hueco libre que indica /api/status y espacia las consultas', async () => {
+    const calls: string[] = [];
+    const slept: number[] = [];
+    let first = true;
+    const fetchImpl = (async (input: string | URL | Request) => {
+      const url = String(input instanceof Request ? input.url : input);
+      calls.push(url.endsWith('/status') ? 'status' : 'query');
+      if (url.endsWith('/status')) {
+        return new Response('Rate limit: 4\n0 slots available now.\nSlot available after: 2026-10-09T09:19:51Z, in 24 seconds.\nSlot available after: 2026-10-09T09:19:54Z, in 27 seconds.\n');
+      }
+      if (first) {
+        first = false;
+        return new Response('rate limited', { status: 429 });
+      }
+      return new Response(JSON.stringify({ elements: [element(7, { name: 'Museu Picasso', tourism: 'museum' })] }));
+    }) as typeof fetch;
+    const osm = new OsmPlaceIdentifier({ userAgent: 'x', fetchImpl, sleep: async (ms) => void slept.push(ms), minIntervalMs: 0 });
+    await expect(osm.identifyPlace({ name: 'Museu Picasso', latitude: 41.3852, longitude: 2.181 })).resolves.toMatchObject({ category: 'culture' });
+    expect(calls).toEqual(['query', 'status', 'query']);
+    expect(slept).toContain(25_000);
+    expect(slotWaitMs('Rate limit: 4\n2 slots available now.\n')).toBe(1_000);
+    expect(slotWaitMs('ilegible')).toBe(30_000);
   });
 
   it('OSM: consulta Overpass con User-Agent y cachea el resultado', async () => {

@@ -99,6 +99,20 @@ Resumen de estructura de `maps.reviews`, sin datos personales:
   sin datos).
 - Pendiente: los resúmenes de los demás grupos y el resultado del sync.
 
+**Incidencia durante la identificación.** La primera ejecución falló con «OpenStreetMap (Overpass) no responde». No fue
+por el Ctrl+C accidental del usuario, que ocurrió después, sino por el ritmo de consultas:
+- La instancia pública da 4 huecos por IP y cada consulta bloquea el suyo unos 25 s (comprobado en `/api/status`).
+- El identificador consultaba cada 1,1 s, agotó los huecos y se rindió tras tres 429.
+
+Corregido:
+- Ante un 429, el identificador lee `/api/status`, espera al siguiente hueco y pasa a un ritmo sostenible (una consulta
+  cada 6,5 s).
+- Si OSM o Wikidata siguen sin responder, el sync se **aplaza 10 minutos** en vez de fallar. Los exports de Google
+  siguen disponibles 14 días y lo ya identificado queda en la caché del worker.
+- El worker indica el motivo de cada espera.
+
+Con este ritmo, identificar 75 lugares tarda unos 8 minutos la primera vez.
+
 ### Bloqueos y puntos declarados
 
 - **Cuenta de facturación de Google Cloud:** obligatoria para activar la API, aunque esta no tenga coste publicado.

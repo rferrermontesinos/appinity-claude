@@ -1,4 +1,12 @@
-import { normalizeTitle, SourceError, type EntityIdentifier, type SyncBatch, type SyncContext, type SyncPartialError } from '@appinity/shared';
+import {
+  isSourceError,
+  normalizeTitle,
+  SourceError,
+  type EntityIdentifier,
+  type SyncBatch,
+  type SyncContext,
+  type SyncPartialError,
+} from '@appinity/shared';
 import { googlePlaceIds, readArchive, type ArchiveSummary } from './archive.js';
 import { ExportLimitError, type GooglePortabilityClient } from './client.js';
 import {
@@ -19,6 +27,9 @@ export interface PortabilityState {
   jobs: Partial<Record<ResourceGroup, { id: string; initiatedAt: string; retries: number }>>;
   exportedAt: Partial<Record<ResourceGroup, string>>;
 }
+
+/** Espera ante un catálogo (OSM, Wikidata) saturado o caído. */
+const IDENTIFIER_RETRY_MS = 10 * 60_000;
 
 const GROUP_LABEL: Record<ResourceGroup, string> = {
   'maps.reviews': 'reseñas de Maps',
@@ -170,15 +181,32 @@ export async function syncPortability(
         invalid++;
         continue;
       }
-      const identified =
-        record.group === 'maps.reviews' || record.group === 'maps.starred_places'
-          ? await options.identifier.identifyPlace({
-              name: record.place.name,
-              latitude: record.place.latitude,
-              longitude: record.place.longitude,
-              ...(record.place.countryCode ? { countryCode: record.place.countryCode } : {}),
-            })
-          : await options.identifier.identifyWork({ title: record.query, languages: ['es', 'en'] });
+      let identified;
+      try {
+        identified =
+          record.group === 'maps.reviews' || record.group === 'maps.starred_places'
+            ? await options.identifier.identifyPlace({
+                name: record.place.name,
+                latitude: record.place.latitude,
+                longitude: record.place.longitude,
+                ...(record.place.countryCode ? { countryCode: record.place.countryCode } : {}),
+              })
+            : await options.identifier.identifyWork({ title: record.query, languages: ['es', 'en'] });
+      } catch (error) {
+        // OSM o Wikidata saturados: no se pierde nada (los exports siguen guardados 14 días y lo ya identificado queda en
+        // la caché del worker); el sync se aplaza en vez de fallar.
+        if (isSourceError(error) && error.retryable) {
+          return {
+            records: [],
+            cursor: null,
+            hasMore: false,
+            partialErrors: [],
+            snapshotComplete: false,
+            pending: { retryAfterMs: IDENTIFIER_RETRY_MS, reason: `${error.message} (identificación de catálogo)` },
+          };
+        }
+        throw error;
+      }
       if (!identified) {
         unidentified++;
         continue;

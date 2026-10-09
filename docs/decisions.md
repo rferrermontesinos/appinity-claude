@@ -423,6 +423,13 @@ Ficha en [integration-capabilities.md](integration-capabilities.md#google-data-p
   - Candidato único: 0,8.
   - Si hay varios, solo el que tenga al menos el doble de enlaces a Wikipedias que el siguiente: 0,65.
   - Un disco o canción se atribuye a su único intérprete (× 0,9).
+- **Ritmo con Overpass** (comprobado el 2026-10-09 en `/api/status`): 4 huecos por IP; cada consulta bloquea el suyo
+  unos 25 s.
+  - Se empieza a 1,1 s entre consultas.
+  - Ante un 429 se espera al hueco que indica `/api/status` y se pasa a 6,5 s entre consultas.
+  - Si OSM o Wikidata no responden, el sync se aplaza 10 min, no falla.
+
+  Para producción hará falta una instancia propia o de pago.
 - **Lo ambiguo no se importa.** Se informa con un error parcial no bloqueante, como «12 de 40 … no se pudieron
   identificar con seguridad». Nunca se fusiona por un título parecido (§6).
 - La confianza de la identificación **multiplica** las de conocido, consumido y preferencia. Así una identificación

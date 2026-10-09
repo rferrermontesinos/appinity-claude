@@ -14,6 +14,8 @@ import { z } from 'zod';
 export const OVERPASS_DEFAULT_URL = 'https://overpass-api.de/api/interpreter';
 const RADIUS_M = 100;
 const MIN_INTERVAL_MS = 1_100;
+/** Tras un 429, ~4 consultas cada 25 s (cada consulta bloquea su hueco unos 25 s en la instancia pública). */
+const RATE_LIMITED_INTERVAL_MS = 6_500;
 
 const overpassSchema = z.object({
   elements: z.array(
@@ -96,11 +98,15 @@ export class OsmPlaceIdentifier {
   private readonly fetchImpl: typeof fetch;
   private readonly sleep: (ms: number) => Promise<void>;
   private readonly cache = new Map<string, IdentifiedEntity | null>();
+  private readonly endpoint: string;
   private lastRequest = 0;
+  private interval: number;
 
   constructor(private readonly options: OsmPlaceIdentifierOptions) {
     this.fetchImpl = options.fetchImpl ?? fetch;
     this.sleep = options.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
+    this.endpoint = options.endpoint ?? OVERPASS_DEFAULT_URL;
+    this.interval = options.minIntervalMs ?? MIN_INTERVAL_MS;
   }
 
   async identifyPlace(place: { name: string; latitude: number; longitude: number; countryCode?: string }): Promise<IdentifiedEntity | null> {
@@ -113,27 +119,37 @@ export class OsmPlaceIdentifier {
     return result;
   }
 
+  /**
+   * Overpass reparte «huecos» por IP (4 en la instancia pública, comprobado el 2026-10-09) y cada consulta bloquea el
+   * suyo unos segundos tras terminar. Ante un 429 se consulta `/api/status` y se espera al siguiente hueco libre; desde
+   * ese momento se espacian más las consultas. Solo se abandona (error reintentable) si sigue sin haber hueco.
+   */
   private async query(lat: number, lon: number): Promise<OsmElement[]> {
-    const wait = this.lastRequest + (this.options.minIntervalMs ?? MIN_INTERVAL_MS) - Date.now();
+    const wait = this.lastRequest + this.interval - Date.now();
     if (wait > 0) await this.sleep(wait);
     const body = new URLSearchParams({ data: overpassQuery(lat, lon) });
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let attempt = 0; attempt < 8; attempt++) {
       this.lastRequest = Date.now();
       let response: Response;
       try {
-        response = await this.fetchImpl(this.options.endpoint ?? OVERPASS_DEFAULT_URL, {
+        response = await this.fetchImpl(this.endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': this.options.userAgent },
           body,
           signal: AbortSignal.timeout(30_000),
         });
       } catch {
-        await this.sleep(2_000 * 2 ** attempt);
+        await this.sleep(2_000 * 2 ** Math.min(attempt, 4));
         continue;
       }
-      // La wiki de Overpass pide pausar 30 s tras un 429; los 5xx se reintentan con espera creciente.
-      if (response.status === 429 || response.status === 504 || response.status >= 500) {
-        await this.sleep(response.status === 429 ? 30_000 : 5_000 * 2 ** attempt);
+      if (response.status === 429) {
+        // Ritmo sostenible a partir de ahora: ~4 consultas cada 25 s.
+        this.interval = Math.max(this.interval, RATE_LIMITED_INTERVAL_MS);
+        await this.sleep(await this.waitForSlot());
+        continue;
+      }
+      if (response.status === 504 || response.status >= 500) {
+        await this.sleep(5_000 * 2 ** Math.min(attempt, 3));
         continue;
       }
       if (!response.ok) throw new SourceError('bad_response', `OpenStreetMap (Overpass) respondió HTTP ${response.status}`, false);
@@ -143,6 +159,26 @@ export class OsmPlaceIdentifier {
     }
     throw new SourceError('unavailable', 'OpenStreetMap (Overpass) no responde; se reintentará', true);
   }
+
+  /** Milisegundos hasta el siguiente hueco libre según `/api/status` (30 s si no se puede leer, como pide su wiki). */
+  private async waitForSlot(): Promise<number> {
+    try {
+      const response = await this.fetchImpl(this.endpoint.replace(/\/interpreter$/, '/status'), {
+        headers: { 'User-Agent': this.options.userAgent },
+        signal: AbortSignal.timeout(15_000),
+      });
+      return slotWaitMs(await response.text());
+    } catch {
+      return 30_000;
+    }
+  }
+}
+
+/** Interpreta `/api/status` de Overpass: 1 s si hay huecos libres; si no, lo que falte para el primero (máx. 2 min). */
+export function slotWaitMs(status: string): number {
+  if (/^([1-9]\d*) slots? available now/m.test(status)) return 1_000;
+  const waits = [...status.matchAll(/in (\d+) seconds?/g)].map((m) => Number(m[1]));
+  return waits.length ? Math.min(Math.min(...waits) + 1, 120) * 1000 : 30_000;
 }
 
 /** Elige el elemento OSM que corresponde al lugar exportado, o null si no hay una coincidencia inequívoca. */
