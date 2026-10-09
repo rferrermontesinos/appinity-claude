@@ -113,6 +113,30 @@ Corregido:
 
 Con este ritmo, identificar 75 lugares tarda unos 8 minutos la primera vez.
 
+**Segunda incidencia: 20 minutos sin mensajes.** El ritmo anterior no bastó. Medido el 2026-10-09 en `/api/status`:
+- Cada consulta bloquea su hueco **unos 60 s** aunque dure 5 s.
+- El balanceador alterna dos servidores, con 4 y 2 huecos, así que `/api/status` puede indicar huecos libres que el
+  otro servidor no tiene.
+- En horas de carga, la mitad de las consultas devuelven 504 (servidor ocupado).
+
+El worker identificaba los lugares de uno en uno y sin mostrar progreso. Además, Ctrl+C no lo detenía: cerraba `pnpm`,
+pero el proceso de Node seguía en segundo plano esperando a que terminara el sync.
+
+Corregido:
+- **Consultas por lotes.** Una consulta para hasta 25 lugares; un separador `make sep i=<n>` entre los resultados de
+  cada lugar permite repartirlos. Medido: 25 lugares en 26 s con una sola consulta; 75 lugares, en unas 3.
+- **Reintentos.** Ante un 429 o 504 se reintenta tras 15 s, 30 s, 60 s y después cada 2 min (más si `/api/status` lo
+  pide). Se repite también una respuesta incompleta (`runtime error` o separadores ausentes). Tras ~10 minutos sin
+  respuesta, el sync se aplaza.
+- **Progreso en el worker.** Por ejemplo, `[google] maps.reviews: 25/75 lugares consultados`,
+  `[catálogo] OpenStreetMap ocupado (HTTP 504); reintento 1/7 en 15 s` y `… 68 de 75 identificados`.
+- **Ctrl+C** deja de pedir trabajos, devuelve el sync en curso a la cola (se retoma al arrancar) y sale en unos
+  segundos. Un segundo Ctrl+C sale de inmediato.
+
+Prueba real con lugares públicos: Sagrada Família, Museu Picasso y Museo del Prado identificados en una sola consulta
+(11 s). Casa Batlló y el Mercado de San Miguel no se identifican por cómo están etiquetados en OSM; se revisará con el
+resultado del export real.
+
 ### Bloqueos y puntos declarados
 
 - **Cuenta de facturación de Google Cloud:** obligatoria para activar la API, aunque esta no tenga coste publicado.

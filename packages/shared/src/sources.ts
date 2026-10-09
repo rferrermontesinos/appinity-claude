@@ -222,13 +222,17 @@ export interface IdentifiedEntity {
  * inequívoca: nunca se elige un objeto por un título parecido.
  */
 export interface EntityIdentifier {
-  identifyPlace(place: {
-    name: string;
-    latitude: number;
-    longitude: number;
-    countryCode?: string;
-  }): Promise<IdentifiedEntity | null>;
+  identifyPlace(place: PlaceToIdentify): Promise<IdentifiedEntity | null>;
+  /** Varios lugares a la vez (el proveedor agrupa las consultas); mismo orden que la entrada. */
+  identifyPlaces(places: PlaceToIdentify[], onProgress?: (done: number, total: number) => void): Promise<(IdentifiedEntity | null)[]>;
   identifyWork(work: { title: string; languages?: string[] }): Promise<IdentifiedEntity | null>;
+}
+
+export interface PlaceToIdentify {
+  name: string;
+  latitude: number;
+  longitude: number;
+  countryCode?: string;
 }
 
 export interface CatalogSearch {

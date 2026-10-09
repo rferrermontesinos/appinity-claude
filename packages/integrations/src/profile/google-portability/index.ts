@@ -21,6 +21,7 @@ export interface GooglePortabilityAdapterOptions extends GoogleClientOptions {
   /** Identificación de lugares y obras en el catálogo (solo la necesita el worker). */
   identifier?: EntityIdentifier;
   onArchiveSummary?: (summary: ArchiveSummary) => void;
+  onProgress?: (message: string) => void;
 }
 
 /**
@@ -42,6 +43,7 @@ export function createGooglePortabilityAdapter(options: GooglePortabilityAdapter
       return syncPortability(client, context, {
         identifier: options.identifier,
         ...(options.onArchiveSummary ? { onArchiveSummary: options.onArchiveSummary } : {}),
+        ...(options.onProgress ? { onProgress: options.onProgress } : {}),
       });
     },
     normalize: async (record, context) => mapGoogleRecord(record, context),

@@ -3,6 +3,7 @@ import {
   normalizeTitle,
   SourceError,
   type EntityIdentifier,
+  type IdentifiedEntity,
   type SyncBatch,
   type SyncContext,
   type SyncPartialError,
@@ -76,6 +77,8 @@ export function recordIdOf(record: ExportRecord): string {
 export interface PortabilitySyncOptions {
   identifier: EntityIdentifier;
   onArchiveSummary?: (summary: ArchiveSummary) => void;
+  /** Progreso de la identificación (sin datos personales: grupo y recuentos). */
+  onProgress?: (message: string) => void;
 }
 
 /**
@@ -174,45 +177,31 @@ export async function syncPortability(
     for (const url of urls) zips.push(await client.download(url));
     const { records: exported, summary } = readArchive(group, zips);
     options.onArchiveSummary?.(summary);
-    let unidentified = 0;
-    let invalid = summary.skipped;
-    for (const record of exported) {
-      if (!isMappable(record)) {
-        invalid++;
-        continue;
+    const mappable = exported.filter(isMappable);
+    const invalid = summary.skipped + exported.length - mappable.length;
+    let identified: Array<IdentifiedEntity | null>;
+    try {
+      identified = await identifyAll(group, mappable, options);
+    } catch (error) {
+      // OSM o Wikidata saturados: no se pierde nada (los exports siguen guardados 14 días y lo ya identificado queda en
+      // la caché del worker); el sync se aplaza en vez de fallar.
+      if (isSourceError(error) && error.retryable) {
+        return {
+          records: [],
+          cursor: null,
+          hasMore: false,
+          partialErrors: [],
+          snapshotComplete: false,
+          pending: { retryAfterMs: IDENTIFIER_RETRY_MS, reason: `${error.message} (identificación de catálogo)` },
+        };
       }
-      let identified;
-      try {
-        identified =
-          record.group === 'maps.reviews' || record.group === 'maps.starred_places'
-            ? await options.identifier.identifyPlace({
-                name: record.place.name,
-                latitude: record.place.latitude,
-                longitude: record.place.longitude,
-                ...(record.place.countryCode ? { countryCode: record.place.countryCode } : {}),
-              })
-            : await options.identifier.identifyWork({ title: record.query, languages: ['es', 'en'] });
-      } catch (error) {
-        // OSM o Wikidata saturados: no se pierde nada (los exports siguen guardados 14 días y lo ya identificado queda en
-        // la caché del worker); el sync se aplaza en vez de fallar.
-        if (isSourceError(error) && error.retryable) {
-          return {
-            records: [],
-            cursor: null,
-            hasMore: false,
-            partialErrors: [],
-            snapshotComplete: false,
-            pending: { retryAfterMs: IDENTIFIER_RETRY_MS, reason: `${error.message} (identificación de catálogo)` },
-          };
-        }
-        throw error;
-      }
-      if (!identified) {
-        unidentified++;
-        continue;
-      }
-      records.push({ recordId: recordIdOf(record), record, identified });
+      throw error;
     }
+    mappable.forEach((record, i) => {
+      if (identified[i]) records.push({ recordId: recordIdOf(record), record, identified: identified[i]! });
+    });
+    const unidentified = identified.filter((x) => !x).length;
+    options.onProgress?.(`${group}: ${mappable.length - unidentified} de ${mappable.length} identificados`);
     stats[`${OBSERVATION_KIND[group]}_exported`] = exported.length;
     stats[`${OBSERVATION_KIND[group]}_unidentified`] = unidentified;
     if (unidentified) {
@@ -247,6 +236,35 @@ export async function syncPortability(
     snapshotKinds: [...completed.keys()].map((g) => OBSERVATION_KIND[g]),
     stats,
   };
+}
+
+type PlaceRecord = Extract<ExportRecord, { place: unknown }>;
+const isPlaceRecord = (record: ExportRecord): record is PlaceRecord => 'place' in record;
+
+/** Identifica los registros de un grupo: lugares en bloque (OSM agrupa las consultas) y obras una a una (Wikidata). */
+async function identifyAll(group: ResourceGroup, records: ExportRecord[], options: PortabilitySyncOptions): Promise<Array<IdentifiedEntity | null>> {
+  const progress = options.onProgress;
+  if (!records.length) return [];
+  const places = records.filter(isPlaceRecord);
+  if (places.length === records.length) {
+    progress?.(`${group}: identificando ${places.length} lugares con OpenStreetMap`);
+    return options.identifier.identifyPlaces(
+      places.map(({ place }) => ({
+        name: place.name,
+        latitude: place.latitude,
+        longitude: place.longitude,
+        ...(place.countryCode ? { countryCode: place.countryCode } : {}),
+      })),
+      (done, total) => progress?.(`${group}: ${done}/${total} lugares consultados`),
+    );
+  }
+  progress?.(`${group}: identificando ${records.length} títulos con Wikidata`);
+  const results: Array<IdentifiedEntity | null> = [];
+  for (const record of records) {
+    results.push('query' in record ? await options.identifier.identifyWork({ title: record.query, languages: ['es', 'en'] }) : null);
+    if (results.length % 25 === 0 && results.length < records.length) progress?.(`${group}: ${results.length}/${records.length} títulos consultados`);
+  }
+  return results;
 }
 
 /** Registros con la información mínima para crear evidencia. */

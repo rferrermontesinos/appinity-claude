@@ -124,13 +124,15 @@ export const FAKE_IDENTIFICATIONS: Record<string, IdentifiedEntity> = {
 
 export function createFakeIdentifier(identifications: Record<string, IdentifiedEntity> = FAKE_IDENTIFICATIONS) {
   const calls: string[] = [];
+  const identifyPlace = async (place: { name: string }) => {
+    calls.push(`place:${place.name}`);
+    return identifications[place.name] ?? null;
+  };
   return {
     calls,
     identifier: {
-      identifyPlace: async (place: { name: string }) => {
-        calls.push(`place:${place.name}`);
-        return identifications[place.name] ?? null;
-      },
+      identifyPlace,
+      identifyPlaces: async (places: Array<{ name: string }>) => Promise.all(places.map(identifyPlace)),
       identifyWork: async (work: { title: string }) => {
         calls.push(`work:${work.title}`);
         return identifications[work.title] ?? null;

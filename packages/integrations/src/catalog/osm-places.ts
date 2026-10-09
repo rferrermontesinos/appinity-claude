@@ -1,4 +1,4 @@
-import { SourceError, normalizeTitle, type Category, type IdentifiedEntity } from '@appinity/shared';
+import { SourceError, normalizeTitle, type Category, type IdentifiedEntity, type PlaceToIdentify } from '@appinity/shared';
 import { z } from 'zod';
 
 /**
@@ -14,22 +14,27 @@ import { z } from 'zod';
 export const OVERPASS_DEFAULT_URL = 'https://overpass-api.de/api/interpreter';
 const RADIUS_M = 100;
 const MIN_INTERVAL_MS = 1_100;
-/** Tras un 429, ~4 consultas cada 25 s (cada consulta bloquea su hueco unos 25 s en la instancia pública). */
-const RATE_LIMITED_INTERVAL_MS = 6_500;
+/**
+ * Lugares por consulta. Cada consulta bloquea un hueco de la IP ~60 s aunque dure 5 s (instancia pública, medido el
+ * 2026-10-09), así que se agrupan: 25 lugares tardan ~26 s en una sola consulta.
+ */
+export const OVERPASS_BATCH_SIZE = 25;
+const MAX_ATTEMPTS = 8;
+/** Espera entre reintentos ante 429/504: 15 s, 30 s, 60 s y después 2 min. */
+const retryDelayMs = (attempt: number) => Math.min(15_000 * 2 ** attempt, 120_000);
 
-const overpassSchema = z.object({
-  elements: z.array(
-    z.object({
-      type: z.enum(['node', 'way', 'relation']),
-      id: z.number(),
-      lat: z.number().optional(),
-      lon: z.number().optional(),
-      center: z.object({ lat: z.number(), lon: z.number() }).optional(),
-      tags: z.record(z.string(), z.string()).optional(),
-    }),
-  ),
+const elementSchema = z.object({
+  // node/way/relation, o «sep»: separador creado con `make` entre los resultados de cada lugar del lote.
+  type: z.string(),
+  id: z.number(),
+  lat: z.number().optional(),
+  lon: z.number().optional(),
+  center: z.object({ lat: z.number(), lon: z.number() }).optional(),
+  tags: z.record(z.string(), z.string()).optional(),
 });
-type OsmElement = z.infer<typeof overpassSchema>['elements'][number];
+const overpassSchema = z.object({ elements: z.array(elementSchema), remark: z.string().optional() });
+type OsmElement = z.infer<typeof elementSchema> & { type: 'node' | 'way' | 'relation' };
+const isOsmElement = (el: z.infer<typeof elementSchema>): el is OsmElement => ['node', 'way', 'relation'].includes(el.type);
 
 const FOOD_AMENITIES = new Set(['restaurant', 'cafe', 'bar', 'pub', 'fast_food', 'food_court', 'ice_cream', 'biergarten']);
 const CULTURE_AMENITIES = new Set(['theatre', 'cinema', 'arts_centre', 'concert_hall', 'planetarium']);
@@ -59,16 +64,40 @@ export function classifyOsmTags(tags: Record<string, string>): { category: Categ
   return null;
 }
 
-/** Consulta Overpass acotada a restaurantes y lugares culturales (sin límite de resultados que trunque la búsqueda). */
-export function overpassQuery(lat: number, lon: number): string {
-  const around = `(around:${RADIUS_M},${lat},${lon})["name"]`;
-  return [
-    '[out:json][timeout:25];(',
-    `nwr${around}["amenity"~"^(${[...FOOD_AMENITIES, ...CULTURE_AMENITIES, 'place_of_worship'].join('|')})$"];`,
-    `nwr${around}["tourism"~"^(${[...CULTURE_TOURISM, 'attraction'].join('|')})$"];`,
-    `nwr${around}["historic"];`,
-    ');out tags center;',
-  ].join('');
+/**
+ * Una consulta Overpass para varios lugares: por cada uno, restaurantes y lugares culturales con nombre a ≤ 100 m (sin
+ * límite de resultados que trunque la búsqueda), precedidos de un separador `make sep i=<n>` para repartirlos después.
+ */
+export function overpassBatchQuery(points: Array<{ latitude: number; longitude: number }>): string {
+  const amenities = [...FOOD_AMENITIES, ...CULTURE_AMENITIES, 'place_of_worship'].join('|');
+  const tourism = [...CULTURE_TOURISM, 'attraction'].join('|');
+  const parts = points.map(({ latitude, longitude }, i) => {
+    const around = `(around:${RADIUS_M},${latitude},${longitude})["name"]`;
+    return [
+      `(nwr${around}["amenity"~"^(${amenities})$"];`,
+      `nwr${around}["tourism"~"^(${tourism})$"];`,
+      `nwr${around}["historic"];)->.p;`,
+      `make sep i=${i};out;.p out tags center;`,
+    ].join('');
+  });
+  return `[out:json][timeout:${60 + 10 * points.length}];${parts.join('')}`;
+}
+
+/** Reparte los elementos de una respuesta por lote entre sus lugares; null si faltan separadores. */
+export function splitBatch(elements: Array<z.infer<typeof elementSchema>>, size: number): OsmElement[][] | null {
+  const groups: OsmElement[][] = Array.from({ length: size }, () => []);
+  const seen = new Set<number>();
+  let current = -1;
+  for (const el of elements) {
+    if (el.type === 'sep') {
+      current = Number(el.tags?.i);
+      if (!Number.isInteger(current) || current < 0 || current >= size) return null;
+      seen.add(current);
+    } else if (current >= 0 && isOsmElement(el)) {
+      groups[current]!.push(el);
+    }
+  }
+  return seen.size === size ? groups : null;
 }
 
 function names(tags: Record<string, string>): string[] {
@@ -92,43 +121,69 @@ export interface OsmPlaceIdentifierOptions {
   sleep?: (ms: number) => Promise<void>;
   /** Intervalo mínimo entre consultas (cortesía con la instancia pública). */
   minIntervalMs?: number;
+  /** Lugares por consulta (por defecto OVERPASS_BATCH_SIZE). */
+  batchSize?: number;
+  /** Avisos de espera (servidor saturado), para que el worker muestre que sigue trabajando. */
+  log?: (message: string) => void;
 }
+
+const cacheKey = (place: PlaceToIdentify) => `${place.latitude.toFixed(5)},${place.longitude.toFixed(5)}:${normalizeTitle(place.name)}`;
 
 export class OsmPlaceIdentifier {
   private readonly fetchImpl: typeof fetch;
   private readonly sleep: (ms: number) => Promise<void>;
   private readonly cache = new Map<string, IdentifiedEntity | null>();
   private readonly endpoint: string;
+  private readonly interval: number;
+  private readonly batchSize: number;
   private lastRequest = 0;
-  private interval: number;
 
   constructor(private readonly options: OsmPlaceIdentifierOptions) {
     this.fetchImpl = options.fetchImpl ?? fetch;
     this.sleep = options.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
     this.endpoint = options.endpoint ?? OVERPASS_DEFAULT_URL;
     this.interval = options.minIntervalMs ?? MIN_INTERVAL_MS;
+    this.batchSize = options.batchSize ?? OVERPASS_BATCH_SIZE;
   }
 
-  async identifyPlace(place: { name: string; latitude: number; longitude: number; countryCode?: string }): Promise<IdentifiedEntity | null> {
-    const key = `${place.latitude.toFixed(5)},${place.longitude.toFixed(5)}:${normalizeTitle(place.name)}`;
-    if (this.cache.has(key)) return this.cache.get(key)!;
-    const elements = await this.query(place.latitude, place.longitude);
-    const result = pickPlace(place, elements);
-    if (this.cache.size > 5_000) this.cache.clear();
-    this.cache.set(key, result);
-    return result;
+  async identifyPlace(place: PlaceToIdentify): Promise<IdentifiedEntity | null> {
+    return (await this.identifyPlaces([place]))[0]!;
+  }
+
+  /** Identifica en lotes de `batchSize` lugares por consulta; lo ya consultado sale de la caché. */
+  async identifyPlaces(places: PlaceToIdentify[], onProgress?: (done: number, total: number) => void): Promise<(IdentifiedEntity | null)[]> {
+    const pending = new Map<string, PlaceToIdentify>();
+    for (const place of places) if (!this.cache.has(cacheKey(place))) pending.set(cacheKey(place), place);
+    const queue = [...pending.values()];
+    let done = places.filter((place) => !pending.has(cacheKey(place))).length;
+    for (let start = 0; start < queue.length; start += this.batchSize) {
+      const batch = queue.slice(start, start + this.batchSize);
+      const results = await this.queryBatch(batch);
+      if (this.cache.size > 5_000) this.cache.clear();
+      batch.forEach((place, i) => this.cache.set(cacheKey(place), pickPlace(place, results[i]!)));
+      const batchKeys = new Set(batch.map(cacheKey));
+      done += places.filter((p) => batchKeys.has(cacheKey(p))).length;
+      onProgress?.(done, places.length);
+    }
+    return places.map((place) => this.cache.get(cacheKey(place)) ?? null);
   }
 
   /**
-   * Overpass reparte «huecos» por IP (4 en la instancia pública, comprobado el 2026-10-09) y cada consulta bloquea el
-   * suyo unos segundos tras terminar. Ante un 429 se consulta `/api/status` y se espera al siguiente hueco libre; desde
-   * ese momento se espacian más las consultas. Solo se abandona (error reintentable) si sigue sin haber hueco.
+   * Overpass reparte «huecos» por IP (2 o 4 según el servidor al que envíe el balanceador, comprobado el 2026-10-09) y
+   * responde 429 si no hay ninguno libre, o 504 si está saturado. Se reintenta con esperas crecientes (o lo que indique
+   * `/api/status`, si es más) y solo se abandona, con un error reintentable, tras ~10 minutos sin respuesta.
    */
-  private async query(lat: number, lon: number): Promise<OsmElement[]> {
+  private async queryBatch(batch: PlaceToIdentify[]): Promise<OsmElement[][]> {
     const wait = this.lastRequest + this.interval - Date.now();
     if (wait > 0) await this.sleep(wait);
-    const body = new URLSearchParams({ data: overpassQuery(lat, lon) });
-    for (let attempt = 0; attempt < 8; attempt++) {
+    const body = new URLSearchParams({ data: overpassBatchQuery(batch) });
+    let problem = '';
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      if (attempt > 0) {
+        const delay = problem === 'HTTP 429' ? Math.max(retryDelayMs(attempt - 1), await this.waitForSlot()) : retryDelayMs(attempt - 1);
+        this.options.log?.(`OpenStreetMap ocupado (${problem}); reintento ${attempt}/${MAX_ATTEMPTS - 1} en ${Math.round(delay / 1000)} s`);
+        await this.sleep(delay);
+      }
       this.lastRequest = Date.now();
       let response: Response;
       try {
@@ -136,26 +191,22 @@ export class OsmPlaceIdentifier {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': this.options.userAgent },
           body,
-          signal: AbortSignal.timeout(30_000),
+          signal: AbortSignal.timeout(90_000 + 10_000 * batch.length),
         });
-      } catch {
-        await this.sleep(2_000 * 2 ** Math.min(attempt, 4));
+      } catch (error) {
+        problem = (error as Error).name === 'TimeoutError' ? 'sin respuesta' : 'error de red';
         continue;
       }
-      if (response.status === 429) {
-        // Ritmo sostenible a partir de ahora: ~4 consultas cada 25 s.
-        this.interval = Math.max(this.interval, RATE_LIMITED_INTERVAL_MS);
-        await this.sleep(await this.waitForSlot());
-        continue;
-      }
-      if (response.status === 504 || response.status >= 500) {
-        await this.sleep(5_000 * 2 ** Math.min(attempt, 3));
+      if (response.status === 429 || response.status >= 500) {
+        problem = `HTTP ${response.status}`;
         continue;
       }
       if (!response.ok) throw new SourceError('bad_response', `OpenStreetMap (Overpass) respondió HTTP ${response.status}`, false);
-      const parsed = overpassSchema.safeParse(await response.json());
-      if (!parsed.success) throw new SourceError('bad_response', 'Respuesta inesperada de OpenStreetMap (Overpass)', false);
-      return parsed.data.elements;
+      const parsed = overpassSchema.safeParse(await response.json().catch(() => null));
+      // «runtime error» (consulta cortada por tiempo o memoria) o separadores incompletos: respuesta parcial, se repite.
+      const groups = parsed.success && !/runtime error/i.test(parsed.data.remark ?? '') ? splitBatch(parsed.data.elements, batch.length) : null;
+      if (groups) return groups;
+      problem = 'respuesta incompleta';
     }
     throw new SourceError('unavailable', 'OpenStreetMap (Overpass) no responde; se reintentará', true);
   }

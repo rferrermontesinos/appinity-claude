@@ -126,6 +126,6 @@ paginación, límites, permisos de almacenamiento y política de revocación.
 | Clave | Tipo | Estado |
 |---|---|---|
 | `wikidata_snapshot` | Instantánea congelada de Wikidata (CC0) + imágenes de Wikimedia Commons con licencia libre | Implementado para la demo (`dataset = demo`). No llama a la red en tiempo de ejecución |
-| `OsmPlaceIdentifier` | OpenStreetMap vía Overpass (ODbL, uso comercial con atribución «© OpenStreetMap contributors») | Implementado (fase 3): identifica y clasifica lugares de Maps. Instancia pública para desarrollo; en producción, instancia propia o proveedor |
+| `OsmPlaceIdentifier` | OpenStreetMap vía Overpass (ODbL, uso comercial con atribución «© OpenStreetMap contributors») | Implementado (fase 3): identifica y clasifica lugares de Maps en lotes de 25 por consulta (la instancia pública bloquea cada hueco ~60 s por consulta). Instancia pública para desarrollo; en producción, instancia propia o proveedor |
 | `WikidataWorkIdentifier` | API de Wikidata (CC0) | Implementado (fase 3): identifica obras valoradas en la Búsqueda |
 | MusicBrainz (núcleo CC0), TVmaze (CC BY-SA) | Licencias compatibles con uso comercial | Pendiente; ver fuentes-de-datos.md. TMDb, IMDb e IGDB requieren licencia |

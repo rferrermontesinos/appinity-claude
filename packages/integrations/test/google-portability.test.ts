@@ -217,15 +217,15 @@ describe('sync de Google', () => {
   it('si el catálogo (OSM o Wikidata) no responde, el sync se aplaza sin perder los exports', async () => {
     const { google, client } = setup();
     const done = await connect(google, client);
-    const failing = {
-      identifyPlace: async () => {
-        throw new SourceError('unavailable', 'OpenStreetMap (Overpass) no responde; se reintentará', true);
-      },
-      identifyWork: async () => null,
+    const unavailable = async (): Promise<never> => {
+      throw new SourceError('unavailable', 'OpenStreetMap (Overpass) no responde; se reintentará', true);
     };
+    const failing = { identifyPlace: unavailable, identifyPlaces: unavailable, identifyWork: async () => null };
     const context = syncContext({ ...done.credentials! });
-    const deferred = await syncPortability(client, context, { identifier: failing });
+    const progress: string[] = [];
+    const deferred = await syncPortability(client, context, { identifier: failing, onProgress: (m) => progress.push(m) });
     expect(deferred.pending).toMatchObject({ retryAfterMs: 600_000, reason: expect.stringMatching(/Overpass/) });
+    expect(progress).toContainEqual(expect.stringMatching(/^maps\.reviews: identificando \d+ lugares con OpenStreetMap$/));
     // Los trabajos siguen guardados: el siguiente intento vuelve a descargar los mismos exports.
     expect(Object.keys(JSON.parse(context.credentials!.jobs!))).toHaveLength(5);
     const { identifier } = createFakeIdentifier();
@@ -350,35 +350,67 @@ describe('identificación en el catálogo', () => {
     expect(classifyOsmTags({ amenity: 'cinema' })).toEqual({ category: 'culture', itemType: 'venue' });
   });
 
-  it('OSM: ante un 429 espera al hueco libre que indica /api/status y espacia las consultas', async () => {
+  /** Respuesta de Overpass a una consulta por lotes: separador `make sep` antes de los elementos de cada lugar. */
+  const batchResponse = (groups: Array<Array<ReturnType<typeof element>>>) =>
+    new Response(JSON.stringify({ elements: groups.flatMap((els, i) => [{ type: 'sep', id: i + 1, tags: { i: String(i) } }, ...els]) }));
+  const museum = () => element(7, { name: 'Museu Picasso', tourism: 'museum' });
+
+  it('OSM: ante un 429 espera al hueco libre que indica /api/status; ante un 504, espera creciente', async () => {
     const calls: string[] = [];
     const slept: number[] = [];
-    let first = true;
+    const logs: string[] = [];
+    const replies = [429, 504];
     const fetchImpl = (async (input: string | URL | Request) => {
       const url = String(input instanceof Request ? input.url : input);
       calls.push(url.endsWith('/status') ? 'status' : 'query');
       if (url.endsWith('/status')) {
         return new Response('Rate limit: 4\n0 slots available now.\nSlot available after: 2026-10-09T09:19:51Z, in 24 seconds.\nSlot available after: 2026-10-09T09:19:54Z, in 27 seconds.\n');
       }
-      if (first) {
-        first = false;
-        return new Response('rate limited', { status: 429 });
-      }
-      return new Response(JSON.stringify({ elements: [element(7, { name: 'Museu Picasso', tourism: 'museum' })] }));
+      const status = replies.shift();
+      return status ? new Response('ocupado', { status }) : batchResponse([[museum()]]);
     }) as typeof fetch;
-    const osm = new OsmPlaceIdentifier({ userAgent: 'x', fetchImpl, sleep: async (ms) => void slept.push(ms), minIntervalMs: 0 });
+    const osm = new OsmPlaceIdentifier({ userAgent: 'x', fetchImpl, sleep: async (ms) => void slept.push(ms), minIntervalMs: 0, log: (m) => logs.push(m) });
     await expect(osm.identifyPlace({ name: 'Museu Picasso', latitude: 41.3852, longitude: 2.181 })).resolves.toMatchObject({ category: 'culture' });
-    expect(calls).toEqual(['query', 'status', 'query']);
-    expect(slept).toContain(25_000);
+    expect(calls).toEqual(['query', 'status', 'query', 'query']);
+    // 429: lo que pide /api/status (25 s) si supera la espera base (15 s); 504: espera base del 2.º reintento (30 s).
+    expect(slept).toEqual([25_000, 30_000]);
+    expect(logs).toEqual([expect.stringContaining('HTTP 429'), expect.stringContaining('HTTP 504')]);
     expect(slotWaitMs('Rate limit: 4\n2 slots available now.\n')).toBe(1_000);
     expect(slotWaitMs('ilegible')).toBe(30_000);
+  });
+
+  it('OSM: agrupa los lugares en lotes, reparte por separador y repite una respuesta incompleta', async () => {
+    const bodies: string[] = [];
+    let truncated = true;
+    const fetchImpl = (async (_url: string | URL | Request, init?: RequestInit) => {
+      const query = new URLSearchParams(String(init?.body)).get('data')!;
+      bodies.push(query);
+      const size = query.match(/make sep/g)!.length;
+      // Cada lugar i del lote solo tiene cerca el museo «Museo i»; la primera respuesta llega sin el último separador.
+      const offset = bodies.length > 2 ? 3 : 0;
+      const groups = Array.from({ length: size }, (_, i) => [element(100 + i, { name: `Museo ${offset + i}`, tourism: 'museum' })]);
+      if (truncated) {
+        truncated = false;
+        return batchResponse(groups.slice(0, -1));
+      }
+      return batchResponse(groups);
+    }) as typeof fetch;
+    const progress: string[] = [];
+    const osm = new OsmPlaceIdentifier({ userAgent: 'x', fetchImpl, sleep: noSleep, minIntervalMs: 0, batchSize: 3 });
+    const places = Array.from({ length: 5 }, (_, i) => ({ name: `Museo ${i}`, latitude: 41.38 + i / 1000, longitude: 2.18 }));
+    const results = await osm.identifyPlaces([...places, places[0]!], (done, total) => progress.push(`${done}/${total}`));
+    // 2 lotes (3 + 2 lugares; el repetido sale de la caché) y un reintento del primero por faltar un separador.
+    expect(bodies).toHaveLength(3);
+    expect(bodies[0]).toContain('around:100,41.38,2.18');
+    expect(results.map((r) => r?.canonicalIds['osm:node'])).toEqual(['100', '101', '102', '100', '101', '100']);
+    expect(progress).toEqual(['4/6', '6/6']);
   });
 
   it('OSM: consulta Overpass con User-Agent y cachea el resultado', async () => {
     const calls: Array<{ ua: string | null; body: string }> = [];
     const fetchImpl = (async (_url: string | URL | Request, init?: RequestInit) => {
       calls.push({ ua: new Headers(init?.headers).get('user-agent'), body: String(init?.body) });
-      return new Response(JSON.stringify({ elements: [element(7, { name: 'Museu Picasso', tourism: 'museum' })] }), { status: 200 });
+      return batchResponse([[museum()]]);
     }) as typeof fetch;
     const osm = new OsmPlaceIdentifier({ userAgent: 'APPINITY-test', fetchImpl, sleep: noSleep, minIntervalMs: 0 });
     const place = { name: 'Museu Picasso', latitude: 41.3852, longitude: 2.181 };

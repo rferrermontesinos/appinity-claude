@@ -10,7 +10,7 @@ import {
   type PingJob,
   type ProfileSyncJob,
 } from '@appinity/shared';
-import { DelayedError, Queue, UnrecoverableError, Worker } from 'bullmq';
+import { DelayedError, Queue, UnrecoverableError, Worker, type Job } from 'bullmq';
 import { Redis } from 'ioredis';
 import { loadWorkerEnv } from './env.js';
 
@@ -27,9 +27,10 @@ const registry = createAdapterRegistry({
         google: {
           ...env.google,
           // Lugares con OpenStreetMap y obras con Wikidata (licencias de uso comercial).
-          identifier: createCatalogIdentifier({ userAgent: env.catalogUserAgent }),
+          identifier: createCatalogIdentifier({ userAgent: env.catalogUserAgent, log: (message) => console.log(`[catálogo] ${message}`) }),
           // Estructura del export SIN datos personales: sirve para contrastar el formato real con el documentado.
           onArchiveSummary: (summary) => console.log(`[google] export ${summary.group}: ${JSON.stringify({ ...summary, group: undefined })}`),
+          onProgress: (message) => console.log(`[google] ${message}`),
         },
       }
     : {}),
@@ -37,6 +38,8 @@ const registry = createAdapterRegistry({
 const producer = createProducerQueues(env.redisUrl, env.queuePrefix);
 const resolver = new EntityResolver(database.db, env.demoMode ? [new WikidataSnapshotProvider()] : []);
 const storage = new LocalDiskStorage(env.storageDir);
+/** Syncs en curso: al cerrar el worker se devuelven a la cola en vez de esperar a que terminen (pueden tardar minutos). */
+const activeSyncs = new Map<string, { job: Job<ProfileSyncJob>; token: string | undefined }>();
 
 const workers: Worker[] = [
   new Worker<PingJob, unknown>(
@@ -58,6 +61,7 @@ const workers: Worker[] = [
     QUEUES.profileSync,
     async (job, token) => {
       let outcome;
+      activeSyncs.set(job.id!, { job, token });
       try {
         outcome = await runConnectionSync(
           { database, registry, resolver, ...(env.credentialsKey ? { credentialsKey: env.credentialsKey } : {}) },
@@ -67,6 +71,8 @@ const workers: Worker[] = [
         // Perfil privado, clave no válida…: reintentar no sirve; el usuario debe actuar (mensaje en la app).
         if (isSourceError(error) && !error.retryable) throw new UnrecoverableError(error.message);
         throw error;
+      } finally {
+        activeSyncs.delete(job.id!);
       }
       // El proveedor aún prepara los datos (export de Google): el mismo trabajo vuelve más tarde, sin gastar reintentos.
       if (outcome.status === 'deferred') {
@@ -122,11 +128,24 @@ console.log(
 
 let stopping = false;
 async function shutdown(signal: string): Promise<void> {
-  if (stopping) return;
+  if (stopping) {
+    console.log(`${signal}: salida inmediata`);
+    process.exit(1);
+  }
   stopping = true;
   console.log(`${signal}: cerrando worker…`);
   clearInterval(heartbeat);
-  await Promise.allSettled(workers.map((w) => w.close()));
+  // No se espera a los syncs en curso (identificar en catálogos puede llevar minutos y el proceso quedaría vivo tras
+  // cerrar pnpm): se dejan de pedir trabajos y los activos vuelven a la cola; el próximo arranque los retoma (son
+  // idempotentes y el bloqueo por conexión de PostgreSQL se libera al salir).
+  await Promise.allSettled(workers.map((w) => w.pause(true)));
+  for (const { job, token } of activeSyncs.values()) {
+    await job
+      .moveToWait(token)
+      .then(() => console.log(`[sync] run ${job.data.runId}: devuelto a la cola, se retomará al arrancar el worker`))
+      .catch((error: Error) => console.error(`[sync] run ${job.data.runId}: no se pudo devolver a la cola (${error.message})`));
+  }
+  await Promise.race([Promise.allSettled(workers.map((w) => w.close(true))), new Promise((r) => setTimeout(r, 5_000))]);
   await Promise.allSettled([systemQueue.close(), producer.close()]);
   await Promise.allSettled([connection.quit(), heartbeatClient.quit(), database.close()]);
   process.exit(0);
