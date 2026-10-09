@@ -1,4 +1,11 @@
-import { SourceError, normalizeTitle, type Category, type IdentifiedEntity, type PlaceToIdentify } from '@appinity/shared';
+import {
+  SourceError,
+  normalizeTitle,
+  type Category,
+  type IdentifiedEntity,
+  type PlaceIdentification,
+  type PlaceToIdentify,
+} from '@appinity/shared';
 import { z } from 'zod';
 
 /**
@@ -9,7 +16,8 @@ import { z } from 'zod';
  *
  * Regla de identificación: elementos con nombre a ≤ 100 m de las coordenadas exportadas por Google cuyo nombre
  * normalizado coincide EXACTAMENTE (o tras quitar palabras genéricas como «restaurante» o «museo»). Si hay varias
- * coincidencias de categorías distintas, no se identifica.
+ * coincidencias de categorías distintas, no se identifica. Se consultan también los demás comercios y servicios con
+ * nombre: si el que mejor coincide es, p. ej., un hotel, el lugar queda fuera de las categorías de APPINITY.
  */
 export const OVERPASS_DEFAULT_URL = 'https://overpass-api.de/api/interpreter';
 const RADIUS_M = 100;
@@ -41,7 +49,10 @@ const CULTURE_AMENITIES = new Set(['theatre', 'cinema', 'arts_centre', 'concert_
 const CULTURE_TOURISM = new Set(['museum', 'gallery']);
 const CULTURE_HISTORIC = new Set(['castle', 'monument', 'archaeological_site']);
 
-/** Palabras genéricas que Google y OSM ponen o quitan del nombre («Restaurante Can Pep» ↔ «Can Pep»). */
+/**
+ * Palabras genéricas que Google y OSM ponen o quitan del nombre («Restaurante Can Pep» ↔ «Can Pep»). Sin partículas
+ * como «de»: «Museu de la Sagrada Família» coincidiría con «Sagrada Família» por delante de la basílica.
+ */
 const GENERIC_WORDS = new Set([
   'restaurante', 'restaurant', 'bar', 'cafe', 'cafeteria', 'taberna', 'tasca', 'pizzeria', 'museo', 'museu', 'museum',
   'teatro', 'teatre', 'theatre', 'cine', 'cinema', 'cines', 'galeria', 'gallery', 'el', 'la', 'los', 'las', 'les', 'l', 'the',
@@ -58,28 +69,43 @@ export function classifyOsmTags(tags: Record<string, string>): { category: Categ
   if (tags.tourism && CULTURE_TOURISM.has(tags.tourism)) return { category: 'culture', itemType: 'museum' };
   if (tags.amenity && CULTURE_AMENITIES.has(tags.amenity)) return { category: 'culture', itemType: 'venue' };
   if (tags.historic && CULTURE_HISTORIC.has(tags.historic)) return { category: 'culture', itemType: 'venue' };
-  // Monumentos visitables: atracción o templo con valor histórico o patrimonial (p. ej. la Sagrada Família).
+  // Monumentos visitables: atracción, obra o templo con valor histórico o patrimonial (Sagrada Família, Casa Batlló).
   const landmark = Boolean(tags.historic || tags.heritage);
-  if (landmark && (tags.tourism === 'attraction' || tags.amenity === 'place_of_worship')) return { category: 'culture', itemType: 'venue' };
+  if (landmark && (tags.tourism === 'attraction' || tags.tourism === 'artwork' || tags.amenity === 'place_of_worship')) {
+    return { category: 'culture', itemType: 'venue' };
+  }
   return null;
 }
 
+/** Claves de OSM que se consultan: las de las categorías de APPINITY y las que permiten decir qué es lo demás. */
+const POI_KEYS = ['amenity', 'shop', 'tourism', 'leisure', 'historic', 'heritage', 'craft', 'office', 'club', 'healthcare'];
+
+/** Etiqueta genérica (sin datos personales) de un lugar fuera de las categorías de APPINITY. */
+export function osmScope(tags: Record<string, string>): string {
+  if (tags.tourism && ['hotel', 'hostel', 'motel', 'guest_house', 'apartment', 'camp_site', 'chalet'].includes(tags.tourism)) return 'alojamiento';
+  if (tags.shop) return 'tienda';
+  if (tags.amenity === 'marketplace') return 'mercado';
+  if (tags.amenity === 'nightclub') return 'ocio nocturno';
+  if (tags.leisure === 'park' || tags.leisure === 'garden') return 'parque';
+  if (tags.leisure) return 'ocio y deporte';
+  if (tags.tourism) return 'atracción';
+  if (tags.historic || tags.heritage) return 'patrimonio';
+  if (tags.healthcare || ['hospital', 'clinic', 'pharmacy', 'dentist', 'doctors'].includes(tags.amenity ?? '')) return 'salud';
+  if (tags.office || tags.craft) return 'empresa';
+  if (tags.amenity) return 'servicio';
+  return 'otro';
+}
+
 /**
- * Una consulta Overpass para varios lugares: por cada uno, restaurantes y lugares culturales con nombre a ≤ 100 m (sin
- * límite de resultados que trunque la búsqueda), precedidos de un separador `make sep i=<n>` para repartirlos después.
+ * Una consulta Overpass para varios lugares: por cada uno, los elementos con nombre a ≤ 100 m que tengan alguna de las
+ * claves POI_KEYS (sin límite de resultados que trunque la búsqueda; una sola búsqueda por lugar, más rápida que tres
+ * filtradas: 15 s frente a 23 s para 25 lugares), precedidos de un separador `make sep i=<n>` para repartirlos después.
  */
 export function overpassBatchQuery(points: Array<{ latitude: number; longitude: number }>): string {
-  const amenities = [...FOOD_AMENITIES, ...CULTURE_AMENITIES, 'place_of_worship'].join('|');
-  const tourism = [...CULTURE_TOURISM, 'attraction'].join('|');
-  const parts = points.map(({ latitude, longitude }, i) => {
-    const around = `(around:${RADIUS_M},${latitude},${longitude})["name"]`;
-    return [
-      `(nwr${around}["amenity"~"^(${amenities})$"];`,
-      `nwr${around}["tourism"~"^(${tourism})$"];`,
-      `nwr${around}["historic"];)->.p;`,
-      `make sep i=${i};out;.p out tags center;`,
-    ].join('');
-  });
+  const parts = points.map(
+    ({ latitude, longitude }, i) =>
+      `nwr(around:${RADIUS_M},${latitude},${longitude})["name"][~"^(${POI_KEYS.join('|')})$"~"."]->.p;make sep i=${i};out;.p out tags center;`,
+  );
   return `[out:json][timeout:${60 + 10 * points.length}];${parts.join('')}`;
 }
 
@@ -132,7 +158,7 @@ const cacheKey = (place: PlaceToIdentify) => `${place.latitude.toFixed(5)},${pla
 export class OsmPlaceIdentifier {
   private readonly fetchImpl: typeof fetch;
   private readonly sleep: (ms: number) => Promise<void>;
-  private readonly cache = new Map<string, IdentifiedEntity | null>();
+  private readonly cache = new Map<string, PlaceIdentification>();
   private readonly endpoint: string;
   private readonly interval: number;
   private readonly batchSize: number;
@@ -147,25 +173,32 @@ export class OsmPlaceIdentifier {
   }
 
   async identifyPlace(place: PlaceToIdentify): Promise<IdentifiedEntity | null> {
-    return (await this.identifyPlaces([place]))[0]!;
+    return (await this.identifyPlaces([place]))[0]!.entity;
   }
 
   /** Identifica en lotes de `batchSize` lugares por consulta; lo ya consultado sale de la caché. */
-  async identifyPlaces(places: PlaceToIdentify[], onProgress?: (done: number, total: number) => void): Promise<(IdentifiedEntity | null)[]> {
-    const pending = new Map<string, PlaceToIdentify>();
-    for (const place of places) if (!this.cache.has(cacheKey(place))) pending.set(cacheKey(place), place);
-    const queue = [...pending.values()];
-    let done = places.filter((place) => !pending.has(cacheKey(place))).length;
+  async identifyPlaces(places: PlaceToIdentify[], onProgress?: (done: number, total: number) => void): Promise<PlaceIdentification[]> {
+    const found = new Map<string, PlaceIdentification>();
+    for (const place of places) {
+      const cached = this.cache.get(cacheKey(place));
+      if (cached) found.set(cacheKey(place), cached);
+    }
+    const queue = [...new Map(places.filter((p) => !found.has(cacheKey(p))).map((p) => [cacheKey(p), p])).values()];
+    let done = places.length - places.filter((p) => !found.has(cacheKey(p))).length;
     for (let start = 0; start < queue.length; start += this.batchSize) {
       const batch = queue.slice(start, start + this.batchSize);
       const results = await this.queryBatch(batch);
       if (this.cache.size > 5_000) this.cache.clear();
-      batch.forEach((place, i) => this.cache.set(cacheKey(place), pickPlace(place, results[i]!)));
+      batch.forEach((place, i) => {
+        const match = matchPlace(place, results[i]!);
+        found.set(cacheKey(place), match);
+        this.cache.set(cacheKey(place), match);
+      });
       const batchKeys = new Set(batch.map(cacheKey));
       done += places.filter((p) => batchKeys.has(cacheKey(p))).length;
       onProgress?.(done, places.length);
     }
-    return places.map((place) => this.cache.get(cacheKey(place)) ?? null);
+    return places.map((place) => found.get(cacheKey(place))!);
   }
 
   /**
@@ -233,21 +266,29 @@ export function slotWaitMs(status: string): number {
 }
 
 /** Elige el elemento OSM que corresponde al lugar exportado, o null si no hay una coincidencia inequívoca. */
-export function pickPlace(
-  place: { name: string; latitude: number; longitude: number; countryCode?: string },
-  elements: OsmElement[],
-): IdentifiedEntity | null {
+export function pickPlace(place: PlaceToIdentify, elements: OsmElement[]): IdentifiedEntity | null {
+  return matchPlace(place, elements).entity;
+}
+
+/**
+ * Como `pickPlace`, con el motivo si no se identifica:
+ * - `out_of_scope`: lo que mejor coincide no es un restaurante ni un lugar cultural (un hotel, una tienda…). Se prefiere
+ *   no importar a etiquetar un hotel como restaurante, aunque otro elemento coincida peor.
+ * - `ambiguous`: varias coincidencias de categorías distintas, o varias solo por contención sin una notable.
+ * - `no_match`: ningún elemento con ese nombre a ≤ 100 m.
+ */
+export function matchPlace(place: PlaceToIdentify, elements: OsmElement[]): PlaceIdentification {
   const exact = normalizeTitle(place.name);
   const stripped = stripGeneric(place.name);
   const origin = { lat: place.latitude, lon: place.longitude };
   /** El nombre de Google aparece completo, como frase, dentro del de OSM («Sagrada Família» ⊂ «Basílica de la Sagrada Família»). */
   const contains = (n: string) => exact.split(' ').length >= 2 && ` ${normalizeTitle(n)} `.includes(` ${exact} `);
-  const candidates = elements
+  const matches = elements
     .map((el) => {
       const tags = el.tags ?? {};
-      const kind = classifyOsmTags(tags);
       const at = el.lat !== undefined && el.lon !== undefined ? { lat: el.lat, lon: el.lon } : el.center;
-      if (!kind || !at) return null;
+      // Solo comercios, servicios y lugares (lo que pide la consulta): una estación o una calle homónimas no cuentan.
+      if (!at || !POI_KEYS.some((k) => tags[k])) return null;
       const elementNames = names(tags);
       const tier = elementNames.some((n) => normalizeTitle(n) === exact)
         ? 3
@@ -257,23 +298,27 @@ export function pickPlace(
             ? 1
             : 0;
       if (!tier) return null;
-      return { el, tags, kind, at, tier, distance: distanceM(origin, at) };
+      return { el, tags, kind: classifyOsmTags(tags), at, tier, distance: distanceM(origin, at) };
     })
     .filter((c): c is NonNullable<typeof c> => c !== null);
-  if (!candidates.length) return null;
-  const topTier = Math.max(...candidates.map((c) => c.tier));
-  let best = candidates.filter((c) => c.tier === topTier);
-  if (new Set(best.map((c) => c.kind.category)).size > 1) return null;
+  if (!matches.length) return { entity: null, reason: 'no_match' };
+  const topTier = Math.max(...matches.map((c) => c.tier));
+  const top = matches.filter((c) => c.tier === topTier);
+  // A igual coincidencia, cuenta el elemento de las categorías de APPINITY (un restaurante y su edificio con el mismo nombre).
+  const candidates = top.flatMap((c) => (c.kind ? [{ ...c, kind: c.kind }] : []));
+  if (!candidates.length) return { entity: null, reason: 'out_of_scope', scope: osmScope(top[0]!.tags) };
+  if (new Set(candidates.map((c) => c.kind.category)).size > 1) return { entity: null, reason: 'ambiguous' };
+  let best = candidates;
   if (topTier === 1 && best.length > 1) {
     // Solo por contención: se acepta el único candidato notable (con Wikidata); si no, es ambiguo.
     best = best.filter((c) => c.tags.wikidata);
-    if (best.length !== 1) return null;
+    if (best.length !== 1) return { entity: null, reason: 'ambiguous' };
   }
   const chosen = best.sort((a, b) => a.distance - b.distance)[0]!;
   const wikidata = chosen.tags.wikidata && /^Q\d+$/.test(chosen.tags.wikidata) ? chosen.tags.wikidata : undefined;
-  const confidence = topTier === 3 ? 0.95 : topTier === 2 ? 0.85 : candidates.filter((c) => c.tier === 1).length === 1 ? 0.75 : 0.7;
+  const confidence = topTier === 3 ? 0.95 : topTier === 2 ? 0.85 : candidates.length === 1 ? 0.75 : 0.7;
   const method = topTier === 3 ? 'osm_exact_name_100m' : topTier === 2 ? 'osm_name_sin_genericos_100m' : 'osm_nombre_contenido_100m';
-  return {
+  const entity: IdentifiedEntity = {
     category: chosen.kind.category,
     itemType: chosen.kind.itemType,
     title: place.name,
@@ -290,4 +335,5 @@ export function pickPlace(
     confidence,
     method,
   };
+  return { entity };
 }

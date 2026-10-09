@@ -13,6 +13,11 @@ export interface ArchiveSummary {
   skipped: number;
   /** Motivo de cada registro descartado (p. ej. `sin_coordenadas`). */
   skippedReasons: Record<string, number>;
+  /**
+   * Forma de los lugares descartados: claves presentes (sin valores) y si hay coordenadas, p. ej.
+   * `Comment,date,google_maps_url,location{} coords:0,0`. Sirve para saber por qué faltan datos.
+   */
+  skippedShapes: Record<string, number>;
   keys: string[];
   enumValues: Record<string, string[]>;
   urlPatterns: string[];
@@ -121,6 +126,22 @@ function toPlace(feature: Record<string, unknown>): ExportedPlace | 'sin_nombre'
   };
 }
 
+/** Forma de un lugar sin valores: claves de sus propiedades y de `location`, y estado de las coordenadas. */
+function placeShape(feature: Record<string, unknown>): string {
+  const props = (feature.properties as Record<string, unknown> | undefined) ?? feature;
+  const keys = Object.keys(props)
+    .sort()
+    .map((k) => {
+      const value = props[k];
+      const inner = Array.isArray(value) ? value[0] : value;
+      return norm(k) === 'location' && inner && typeof inner === 'object' ? `${k}{${Object.keys(inner).sort().join(',')}}` : k;
+    });
+  const geometry = (feature.geometry ?? pick(props, 'geometry')) as { coordinates?: unknown } | undefined;
+  const coords = Array.isArray(geometry?.coordinates) ? geometry!.coordinates.map(Number) : [];
+  const state = coords.length < 2 || coords.some((n) => !Number.isFinite(n)) ? 'none' : coords[0] === 0 && coords[1] === 0 ? '0,0' : 'ok';
+  return `${keys.join(',')} coords:${state}`;
+}
+
 function isoDate(value: unknown): string | undefined {
   const text = str(value);
   if (!text) return undefined;
@@ -132,12 +153,21 @@ function isoDate(value: unknown): string | undefined {
 export function extractRecords(
   group: ResourceGroup,
   jsonFiles: unknown[],
-): { records: ExportRecord[]; skipped: number; skippedReasons: Record<string, number>; enums: Record<string, Set<string>>; keys: Set<string>; urls: Set<string> } {
+): {
+  records: ExportRecord[];
+  skipped: number;
+  skippedReasons: Record<string, number>;
+  skippedShapes: Record<string, number>;
+  enums: Record<string, Set<string>>;
+  keys: Set<string>;
+  urls: Set<string>;
+} {
   const records: ExportRecord[] = [];
   const enums: Record<string, Set<string>> = {};
   const keys = new Set<string>();
   const urls = new Set<string>();
   const skippedReasons: Record<string, number> = {};
+  const skippedShapes: Record<string, number> = {};
   let skipped = 0;
   const skip = (reason: string) => {
     skipped++;
@@ -157,6 +187,8 @@ export function extractRecords(
         const place = toPlace(feature);
         if (typeof place === 'string') {
           skip(place);
+          const shape = placeShape(feature);
+          skippedShapes[shape] = (skippedShapes[shape] ?? 0) + 1;
           continue;
         }
         if (place.mapsUrl) urls.add(place.mapsUrl);
@@ -202,7 +234,7 @@ export function extractRecords(
       }
     }
   }
-  return { records, skipped, skippedReasons, enums, keys, urls };
+  return { records, skipped, skippedReasons, skippedShapes, enums, keys, urls };
 }
 
 /** Descomprime un archivo ZIP del export y devuelve sus JSON (los demás archivos solo cuentan en el resumen). */
@@ -223,7 +255,7 @@ export function readArchive(group: ResourceGroup, zips: Uint8Array[]): { records
       }
     }
   }
-  const { records, skipped, skippedReasons, enums, keys, urls } = extractRecords(group, json);
+  const { records, skipped, skippedReasons, skippedShapes, enums, keys, urls } = extractRecords(group, json);
   return {
     records,
     summary: {
@@ -232,6 +264,7 @@ export function readArchive(group: ResourceGroup, zips: Uint8Array[]): { records
       records: records.length,
       skipped,
       skippedReasons,
+      skippedShapes,
       keys: [...keys].sort(),
       enumValues: Object.fromEntries(Object.entries(enums).map(([k, v]) => [k, [...v].sort()])),
       urlPatterns: [...new Set([...urls].map(urlPattern))].sort().slice(0, 10),

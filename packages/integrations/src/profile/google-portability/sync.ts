@@ -3,7 +3,7 @@ import {
   normalizeTitle,
   SourceError,
   type EntityIdentifier,
-  type IdentifiedEntity,
+  type PlaceIdentification,
   type SyncBatch,
   type SyncContext,
   type SyncPartialError,
@@ -179,7 +179,7 @@ export async function syncPortability(
     options.onArchiveSummary?.(summary);
     const mappable = exported.filter(isMappable);
     const invalid = summary.skipped + exported.length - mappable.length;
-    let identified: Array<IdentifiedEntity | null>;
+    let identified: PlaceIdentification[];
     try {
       identified = await identifyAll(group, mappable, options);
     } catch (error) {
@@ -198,16 +198,20 @@ export async function syncPortability(
       throw error;
     }
     mappable.forEach((record, i) => {
-      if (identified[i]) records.push({ recordId: recordIdOf(record), record, identified: identified[i]! });
+      const entity = identified[i]!.entity;
+      if (entity) records.push({ recordId: recordIdOf(record), record, identified: entity });
     });
-    const unidentified = identified.filter((x) => !x).length;
-    options.onProgress?.(`${group}: ${mappable.length - unidentified} de ${mappable.length} identificados`);
-    stats[`${OBSERVATION_KIND[group]}_exported`] = exported.length;
-    stats[`${OBSERVATION_KIND[group]}_unidentified`] = unidentified;
-    if (unidentified) {
+    const outcome = summarizeIdentification(identified);
+    options.onProgress?.(`${group}: ${outcome.identified} de ${mappable.length} identificados${outcome.detail}`);
+    const kind = OBSERVATION_KIND[group];
+    stats[`${kind}_exported`] = exported.length;
+    stats[`${kind}_unidentified`] = outcome.noMatch + outcome.ambiguous;
+    stats[`${kind}_out_of_scope`] = outcome.outOfScope;
+    const notImported = mappable.length - outcome.identified;
+    if (notImported) {
       partialErrors.push({
         code: 'unidentified',
-        message: `${unidentified} de ${exported.length} ${GROUP_LABEL[group]} no se pudieron identificar con seguridad y no se importan`,
+        message: `${notImported} de ${exported.length} ${GROUP_LABEL[group]} no se importan: ${outcome.message}`,
         blocking: false,
       });
     }
@@ -241,8 +245,37 @@ export async function syncPortability(
 type PlaceRecord = Extract<ExportRecord, { place: unknown }>;
 const isPlaceRecord = (record: ExportRecord): record is PlaceRecord => 'place' in record;
 
+/**
+ * Recuento de la identificación de un grupo, sin nombres: para el aviso al usuario (lo que APPINITY no usa frente a lo
+ * que no se pudo identificar) y para el log del worker (desglose por tipo de lugar).
+ */
+export function summarizeIdentification(results: PlaceIdentification[]) {
+  const scopes = new Map<string, number>();
+  let identified = 0;
+  let noMatch = 0;
+  let ambiguous = 0;
+  for (const result of results) {
+    if (result.entity) identified++;
+    else if (result.reason === 'out_of_scope') scopes.set(result.scope, (scopes.get(result.scope) ?? 0) + 1);
+    else if (result.reason === 'ambiguous') ambiguous++;
+    else noMatch++;
+  }
+  const outOfScope = [...scopes.values()].reduce((a, b) => a + b, 0);
+  const ranked = [...scopes].sort((a, b) => b[1] - a[1]);
+  const parts = [
+    ...(outOfScope ? [`${outOfScope} son de lugares fuera de las categorías de APPINITY (${ranked.slice(0, 3).map(([s]) => s).join(', ')}${ranked.length > 3 ? '…' : ''})`] : []),
+    ...(noMatch + ambiguous ? [`${noMatch + ambiguous} no se pudieron identificar con seguridad`] : []),
+  ];
+  const detail = [
+    ...(outOfScope ? [`fuera de categoría ${outOfScope} (${ranked.map(([s, n]) => `${s} ${n}`).join(', ')})`] : []),
+    ...(noMatch ? [`sin coincidencia en el catálogo ${noMatch}`] : []),
+    ...(ambiguous ? [`ambiguos ${ambiguous}`] : []),
+  ];
+  return { identified, outOfScope, noMatch, ambiguous, message: parts.join(' y '), detail: detail.length ? ` · ${detail.join(' · ')}` : '' };
+}
+
 /** Identifica los registros de un grupo: lugares en bloque (OSM agrupa las consultas) y obras una a una (Wikidata). */
-async function identifyAll(group: ResourceGroup, records: ExportRecord[], options: PortabilitySyncOptions): Promise<Array<IdentifiedEntity | null>> {
+async function identifyAll(group: ResourceGroup, records: ExportRecord[], options: PortabilitySyncOptions): Promise<PlaceIdentification[]> {
   const progress = options.onProgress;
   if (!records.length) return [];
   const places = records.filter(isPlaceRecord);
@@ -259,9 +292,10 @@ async function identifyAll(group: ResourceGroup, records: ExportRecord[], option
     );
   }
   progress?.(`${group}: identificando ${records.length} títulos con Wikidata`);
-  const results: Array<IdentifiedEntity | null> = [];
+  const results: PlaceIdentification[] = [];
   for (const record of records) {
-    results.push('query' in record ? await options.identifier.identifyWork({ title: record.query, languages: ['es', 'en'] }) : null);
+    const entity = 'query' in record ? await options.identifier.identifyWork({ title: record.query, languages: ['es', 'en'] }) : null;
+    results.push(entity ? { entity } : { entity: null, reason: 'no_match' });
     if (results.length % 25 === 0 && results.length < records.length) progress?.(`${group}: ${results.length}/${records.length} títulos consultados`);
   }
   return results;

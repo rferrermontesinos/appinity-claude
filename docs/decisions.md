@@ -440,6 +440,17 @@ Ficha en [integration-capabilities.md](integration-capabilities.md#google-data-p
   esperar a que terminen. Los syncs son idempotentes y el bloqueo por conexión se libera al salir.
 - **Lo ambiguo no se importa.** Se informa con un error parcial no bloqueante, como «12 de 40 … no se pudieron
   identificar con seguridad». Nunca se fusiona por un título parecido (§6).
+- **Lo que APPINITY no usa se explica aparte** (tras el primer sync real: 20 de 75 reseñas identificadas). La consulta a
+  Overpass trae todos los lugares con nombre y alguna clave de comercio o servicio (`amenity`, `shop`, `tourism`,
+  `leisure`, `historic`, `heritage`, `craft`, `office`, `club`, `healthcare`), no solo restaurantes y cultura.
+  - Si lo que mejor coincide no es de APPINITY, la reseña queda **fuera de categoría**, con una etiqueta genérica
+    (alojamiento, tienda, mercado, parque…), aunque un restaurante coincida peor. A igual coincidencia gana el
+    elemento de APPINITY (un restaurante y su edificio protegido con el mismo nombre).
+  - Los elementos sin esas claves (estaciones, calles) se ignoran aunque se llamen igual.
+  - El aviso separa «fuera de las categorías de APPINITY» de «no se pudieron identificar con seguridad». El worker
+    muestra el desglose por etiqueta, sin nombres.
+  - Monumentos: se añade `tourism=artwork` con `historic`/`heritage` (Casa Batlló).
+  - Se descartó ignorar partículas («de», «del»): hacía que «Museu de la Sagrada Família» ganara a la basílica.
 - La confianza de la identificación **multiplica** las de conocido, consumido y preferencia. Así una identificación
   dudosa pesa menos y no oculta el objeto en Home (umbral 0,8).
 - Comprobación en vivo (2026-10-09):

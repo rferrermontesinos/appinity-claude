@@ -3,7 +3,7 @@
  * acceso y reset) con exports ZIP generados al vuelo. Los formatos siguen la documentación oficial (2026-10-09); los
  * datos de usuario son inventados. Los lugares y títulos son reales y públicos.
  */
-import type { IdentifiedEntity } from '@appinity/shared';
+import type { IdentifiedEntity, PlaceIdentification } from '@appinity/shared';
 import { createHash } from 'node:crypto';
 import { strToU8, zipSync } from 'fflate';
 
@@ -132,7 +132,13 @@ export function createFakeIdentifier(identifications: Record<string, IdentifiedE
     calls,
     identifier: {
       identifyPlace,
-      identifyPlaces: async (places: Array<{ name: string }>) => Promise.all(places.map(identifyPlace)),
+      identifyPlaces: async (places: Array<{ name: string }>) =>
+        Promise.all(
+          places.map(async (place): Promise<PlaceIdentification> => {
+            const entity = await identifyPlace(place);
+            return entity ? { entity } : { entity: null, reason: 'no_match' };
+          }),
+        ),
       identifyWork: async (work: { title: string }) => {
         calls.push(`work:${work.title}`);
         return identifications[work.title] ?? null;

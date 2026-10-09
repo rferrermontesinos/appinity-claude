@@ -11,7 +11,7 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 2 | **Validado con la cuenta real del usuario** (2026-10-08) | Entrega 2026-10-08 · fase 2 (rama `fase-2`, PR rferrermontesinos/appinity-claude#3, basada en `fase-1`) |
 | Revisión de fuentes | **Hecha** (2026-10-08) | Especificación 1.1 y docs/fuentes-de-datos.md (rama `especificacion-fuentes`, PR rferrermontesinos/appinity-claude#5, basada en `fase-2`). TMDb descartada: PR rferrermontesinos/appinity-claude#4 cerrada sin fusionar |
 | Revisión de fuentes · decisiones | **Aceptada** (2026-10-09) | El usuario aceptó la especificación 1.1; de momento, imagen genérica (sin licencia de catálogo); Gmail se evaluará más adelante |
-| 3 | **Implementado y comprobado automáticamente**; pendiente de validar con la cuenta real | Entrega 2026-10-09 · fase 3 (rama `fase-3-google`, PR rferrermontesinos/appinity-claude#6, basada en `especificacion-fuentes`). Falta el proyecto de Google Cloud del usuario |
+| 3 | **Sincronizado con la cuenta real del usuario** (2026-10-09); pendiente de revisar la identificación con el siguiente export y de la aceptación en la app | Entrega 2026-10-09 · fase 3 (rama `fase-3-google`, PR rferrermontesinos/appinity-claude#6, basada en `especificacion-fuentes`). Primer sync: 21 evidencias (20 reseñas y 1 sitio guardado) |
 | 4 | Pendiente | YouTube y YouTube Music (mismo consentimiento de Google) |
 | 5–7 | Pendiente | Afinidad, Top 50 y recomendador |
 | 8–10 | Pendiente | Home, Categories y social |
@@ -97,7 +97,9 @@ Resumen de estructura de `maps.reviews`, sin datos personales:
   lectura del CID del lugar en ese formato (`!1s0x…:0x<CID>`), que pasa a ser el id del registro y un identificador
   `google_maps:cid` del objeto. Al resumen se añadieron los motivos de descarte y un patrón de URL más detallado (sigue
   sin datos).
-- Pendiente: los resúmenes de los demás grupos y el resultado del sync.
+- Resto de grupos: `maps.starred_places` (`Saved Places.json`, 1 sitio leído y 1 descartado, enlaces `?cid=`).
+  Los tres grupos de la Búsqueda llegan **vacíos** (solo `archive_browser.json`): la cuenta no tiene valoraciones en
+  la Búsqueda. Su formato real sigue sin comprobarse.
 
 **Incidencia durante la identificación.** La primera ejecución falló con «OpenStreetMap (Overpass) no responde». No fue
 por el Ctrl+C accidental del usuario, que ocurrió después, sino por el ritmo de consultas:
@@ -137,12 +139,55 @@ Prueba real con lugares públicos: Sagrada Família, Museu Picasso y Museo del P
 (11 s). Casa Batlló y el Mercado de San Miguel no se identifican por cómo están etiquetados en OSM; se revisará con el
 resultado del export real.
 
+### Resultado del primer sync (2026-10-09)
+
+`partial (+21 ~0 =0 -0, 3 errores parciales)`. Lo importado, sin nombres:
+- 20 reseñas: 18 restaurantes y 2 lugares culturales; 16 con nombre idéntico (confianza 0,95) y 4 sin palabras
+  genéricas (0,85).
+- Las estrellas se convierten como se esperaba: 5 → +1, 4 → +0,5, 3 → 0, 2 → −0,5. Conocido y consumido = confianza
+  de la identificación.
+- El sitio guardado es un lugar cultural: conocido 0,95, consumido 0 y preferencia NULL.
+- Avisos: 55 de 75 reseñas sin identificar, 7 reseñas y 1 sitio guardado con datos incompletos (sin nombre).
+
+**Identificación revisada.** El 27 % de reseñas identificadas obligaba a distinguir lo que APPINITY no usa (hoteles,
+tiendas, parques) de lo que falla. Cambios:
+- La consulta trae todos los lugares con nombre y alguna clave de comercio o servicio (`amenity`, `shop`,
+  `tourism`, `leisure`…), con una búsqueda por lugar en vez de tres. Es más rápida: 15 s frente a 23 s para 25
+  lugares.
+- Cada lugar no identificado tiene un motivo:
+  - **fuera de categoría**, con una etiqueta genérica: alojamiento, tienda, mercado, parque…;
+  - **sin coincidencia**;
+  - **ambiguo**.
+
+  El aviso de la app lo separa: «N son de lugares fuera de las categorías de APPINITY (…) y M no se pudieron
+  identificar con seguridad». El worker muestra el desglose.
+- Si lo que mejor coincide es de otra categoría (p. ej. un hotel), no se importa, aunque otro elemento coincida peor:
+  se prefiere perder una reseña a etiquetar un hotel como restaurante.
+- Casa Batlló (`historic=heritage` + `tourism=artwork`) se clasifica ya como lugar cultural.
+- El resumen del export incluye la forma de los registros descartados (`skippedShapes`: solo claves y estado de las
+  coordenadas), para saber por qué 7 reseñas llegan sin nombre.
+
+Prueba real con 8 lugares públicos en una consulta (6 s):
+- Identificados: Sagrada Família, Museu Picasso, Museo del Prado, Casa Batlló y Can Culleretes.
+- Fuera de categoría: el Mercado de San Miguel (mercado) y El Corte Inglés (tienda).
+- Sin coincidencia: el Hotel Arts, que en OSM se llama «Hotel Arts» y no «Hotel Arts Barcelona».
+
+Se descartó ignorar partículas como «de»: hacía que «Museu de la Sagrada Família» ganara a la basílica.
+
+Los cambios se aplican en el siguiente export. Google permite uno por grupo cada 24 h: desde el 2026-10-10 hacia las
+12:20 (hora local), con el sync diario automático o con «Sincronizar».
+
+Comprobaciones tras los cambios: `pnpm lint` 0 errores, `pnpm typecheck` OK y `pnpm test` con 15 ficheros y
+**181 tests OK**. Nuevos: lotes, separadores y reintentos de Overpass, motivos de no identificación, casos reales de
+etiquetado y resumen sin nombres.
+
 ### Bloqueos y puntos declarados
 
 - **Cuenta de facturación de Google Cloud:** obligatoria para activar la API, aunque esta no tenga coste publicado.
   Decisión del usuario.
-- **Formato real del export:** sin ver un export real, el mapper sigue el formato documentado. Por confirmar: escala de
-  «Review Star Rating», si la Búsqueda trae algún identificador, y el formato de `google_maps_url`.
+- **Formato real del export:** confirmado para Maps (reseñas y sitios guardados). Los grupos de la Búsqueda llegaron
+  vacíos en la cuenta del usuario: la escala de «Review Star Rating», los pulgares y la presencia de identificadores
+  siguen sin comprobarse con datos reales.
 - **Producción:**
   - verificación de Google (anual);
   - auditoría CASA si algún grupo es restringido;
@@ -162,7 +207,10 @@ resultado del export real.
 
 ### Siguiente paso
 
-Validar con la cuenta real (README). Después, fase 4: YouTube y YouTube Music con el mismo consentimiento.
+1. Con el siguiente export (desde el 2026-10-10), revisar el desglose de motivos del worker y `skippedShapes`, y
+   ajustar la identificación si procede.
+2. Aceptación del usuario en la app.
+3. Fase 4: YouTube y YouTube Music con el mismo consentimiento.
 
 ---
 

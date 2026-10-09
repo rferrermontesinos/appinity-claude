@@ -1,7 +1,7 @@
 import { parseObservation, SourceError, type SourceCredentials, type SyncContext } from '@appinity/shared';
 import { strToU8, zipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
-import { classifyOsmTags, pickPlace, slotWaitMs, OsmPlaceIdentifier } from '../src/catalog/osm-places.js';
+import { classifyOsmTags, matchPlace, osmScope, overpassBatchQuery, pickPlace, slotWaitMs, OsmPlaceIdentifier } from '../src/catalog/osm-places.js';
 import { WikidataWorkIdentifier } from '../src/catalog/wikidata-works.js';
 import { googlePlaceIds, parseStars, readArchive, urlPattern } from '../src/profile/google-portability/archive.js';
 import { completePortabilityConnect, startPortabilityConnect } from '../src/profile/google-portability/auth.js';
@@ -16,7 +16,7 @@ import {
 } from '../src/profile/google-portability/fixtures/fake-google.js';
 import { mapGoogleRecord } from '../src/profile/google-portability/mapper.js';
 import type { GoogleRecord } from '../src/profile/google-portability/schemas.js';
-import { recordIdOf, syncPortability } from '../src/profile/google-portability/sync.js';
+import { recordIdOf, summarizeIdentification, syncPortability } from '../src/profile/google-portability/sync.js';
 import { createAdapterRegistry } from '../src/registry.js';
 
 const USER = '10000000-0000-4000-a000-0000000000cc';
@@ -113,6 +113,8 @@ describe('archivo exportado', () => {
       records: 3,
       skipped: 1,
       skippedReasons: { sin_coordenadas: 1 },
+      // Solo nombres de claves y el estado de las coordenadas, nunca valores.
+      skippedShapes: { 'geometry,location{name},type coords:0,0': 1 },
       files: [{ path: 'Portability/Maps (your places)/Reviews.json' }],
     });
   });
@@ -326,7 +328,7 @@ describe('identificación en el catálogo', () => {
     // Caso real (OSM, 2026-10-09): la basílica es un monumento patrimonial; las estaciones homónimas no se clasifican.
     const basilica = { type: 'relation' as const, id: 9194723, center: { lat: 41.4036, lon: 2.1744 }, tags: { name: 'Basílica de la Sagrada Família', amenity: 'place_of_worship', tourism: 'attraction', historic: 'church', heritage: '1', wikidata: 'Q48435' } };
     const museum = element(4553142274, { name: 'Museu de la Sagrada Família', tourism: 'museum' }, 41.4037, 2.1745);
-    const metro = element(462295964, { name: 'Sagrada Família', wikidata: 'Q2548808' });
+    const metro = element(462295964, { name: 'Sagrada Família', railway: 'station', station: 'subway', wikidata: 'Q2548808' });
     expect(pickPlace(place, [basilica, museum, metro])).toMatchObject({
       category: 'culture',
       itemType: 'venue',
@@ -348,6 +350,58 @@ describe('identificación en el catálogo', () => {
     expect(pickPlace(place, [element(1, { name: 'Can Pep', shop: 'hardware' })])).toBeNull();
     expect(pickPlace(place, [element(1, { name: 'Can Pep', amenity: 'restaurant' }), element(2, { name: 'Can Pep', tourism: 'museum' })])).toBeNull();
     expect(classifyOsmTags({ amenity: 'cinema' })).toEqual({ category: 'culture', itemType: 'venue' });
+  });
+
+  it('OSM: casos reales de etiquetado (Casa Batlló, Mercado de San Miguel)', () => {
+    // Casa Batlló: historic=heritage + tourism=artwork (consultado el 2026-10-09).
+    const batllo = element(9427554, { name: 'Casa Batlló', historic: 'heritage', heritage: '1', tourism: 'artwork', building: 'apartments', wikidata: 'Q461371' });
+    expect(pickPlace({ name: 'Casa Batlló', latitude: 41.3917, longitude: 2.1649 }, [{ ...batllo, type: 'relation' as const }])).toMatchObject({
+      category: 'culture',
+      canonicalIds: { 'osm:relation': '9427554', 'wikidata:entity': 'Q461371' },
+    });
+    // Mercado de San Miguel: el mercado (amenity=marketplace) coincide exacto y no es de APPINITY: fuera de categoría.
+    // El puesto de comidas «Mercado San Miguel» no coincide (sin el «de»), y tampoco ganaría a la coincidencia exacta.
+    const market = element(4518846, { name: 'Mercado de San Miguel', amenity: 'marketplace', tourism: 'attraction' });
+    const foodCourt = element(4185576491, { name: 'Mercado San Miguel', amenity: 'food_court' });
+    const place = { name: 'Mercado de San Miguel', latitude: 40.4154, longitude: -3.7089 };
+    expect(matchPlace(place, [market, foodCourt])).toEqual({ entity: null, reason: 'out_of_scope', scope: 'mercado' });
+    expect(matchPlace(place, [foodCourt])).toEqual({ entity: null, reason: 'no_match' });
+  });
+
+  it('OSM: distingue lo que APPINITY no usa de lo que no se identifica', () => {
+    const at = { latitude: 41.38, longitude: 2.17 };
+    const hotel = element(1, { name: 'Hotel Miramar', tourism: 'hotel' });
+    expect(matchPlace({ name: 'Hotel Miramar', ...at }, [hotel])).toEqual({ entity: null, reason: 'out_of_scope', scope: 'alojamiento' });
+    expect(matchPlace({ name: 'Zapatería Pepe', ...at }, [element(2, { name: 'Zapatería Pepe', shop: 'shoes' })])).toMatchObject({ scope: 'tienda' });
+    // A igual coincidencia gana el elemento de APPINITY (el restaurante y su edificio protegido con el mismo nombre).
+    const building = element(3, { name: 'Can Pep', heritage: '2' });
+    const restaurant = element(4, { name: 'Can Pep', amenity: 'restaurant' });
+    expect(matchPlace({ name: 'Can Pep', ...at }, [building, restaurant])).toMatchObject({ entity: { category: 'food' } });
+    expect(matchPlace({ name: 'Can Pep', ...at }, [hotel])).toEqual({ entity: null, reason: 'no_match' });
+    expect(matchPlace({ name: 'Can Pep', ...at }, [restaurant, element(5, { name: 'Can Pep', tourism: 'museum' })])).toEqual({ entity: null, reason: 'ambiguous' });
+    expect(osmScope({ leisure: 'park' })).toBe('parque');
+  });
+
+  it('resume la identificación sin nombres: aviso para el usuario y desglose para el worker', () => {
+    const entity = { category: 'food' as const, itemType: 'restaurant', title: 'x', canonicalIds: {}, confidence: 0.95, method: 'm' };
+    const summary = summarizeIdentification([
+      { entity },
+      { entity: null, reason: 'out_of_scope', scope: 'alojamiento' },
+      { entity: null, reason: 'out_of_scope', scope: 'alojamiento' },
+      { entity: null, reason: 'out_of_scope', scope: 'tienda' },
+      { entity: null, reason: 'no_match' },
+      { entity: null, reason: 'ambiguous' },
+    ]);
+    expect(summary).toMatchObject({ identified: 1, outOfScope: 3, noMatch: 1, ambiguous: 1 });
+    expect(summary.message).toBe('3 son de lugares fuera de las categorías de APPINITY (alojamiento, tienda) y 2 no se pudieron identificar con seguridad');
+    expect(summary.detail).toBe(' · fuera de categoría 3 (alojamiento 2, tienda 1) · sin coincidencia en el catálogo 1 · ambiguos 1');
+  });
+
+  it('OSM: la consulta por lotes trae todo lugar con nombre y clave de comercio o servicio, con su separador', () => {
+    const query = overpassBatchQuery([{ latitude: 41.38, longitude: 2.17 }, { latitude: 40.41, longitude: -3.7 }]);
+    expect(query).toContain('nwr(around:100,41.38,2.17)["name"][~"^(amenity|shop|tourism|leisure|historic|heritage|craft|office|club|healthcare)$"~"."]->.p;make sep i=0;');
+    expect(query).toContain('make sep i=1;out;.p out tags center;');
+    expect(query.startsWith('[out:json][timeout:80];')).toBe(true);
   });
 
   /** Respuesta de Overpass a una consulta por lotes: separador `make sep` antes de los elementos de cada lugar. */
@@ -402,7 +456,7 @@ describe('identificación en el catálogo', () => {
     // 2 lotes (3 + 2 lugares; el repetido sale de la caché) y un reintento del primero por faltar un separador.
     expect(bodies).toHaveLength(3);
     expect(bodies[0]).toContain('around:100,41.38,2.18');
-    expect(results.map((r) => r?.canonicalIds['osm:node'])).toEqual(['100', '101', '102', '100', '101', '100']);
+    expect(results.map((r) => r.entity?.canonicalIds['osm:node'])).toEqual(['100', '101', '102', '100', '101', '100']);
     expect(progress).toEqual(['4/6', '6/6']);
   });
 

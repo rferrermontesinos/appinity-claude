@@ -224,9 +224,18 @@ export interface IdentifiedEntity {
 export interface EntityIdentifier {
   identifyPlace(place: PlaceToIdentify): Promise<IdentifiedEntity | null>;
   /** Varios lugares a la vez (el proveedor agrupa las consultas); mismo orden que la entrada. */
-  identifyPlaces(places: PlaceToIdentify[], onProgress?: (done: number, total: number) => void): Promise<(IdentifiedEntity | null)[]>;
+  identifyPlaces(places: PlaceToIdentify[], onProgress?: (done: number, total: number) => void): Promise<PlaceIdentification[]>;
   identifyWork(work: { title: string; languages?: string[] }): Promise<IdentifiedEntity | null>;
 }
+
+/**
+ * Resultado de identificar un lugar. Si no se identifica, el motivo distingue lo que APPINITY no usa (un hotel, una
+ * tienda) de lo que no se pudo identificar con seguridad. `scope` es una etiqueta genérica («alojamiento», «tienda»).
+ */
+export type PlaceIdentification =
+  | { entity: IdentifiedEntity }
+  | { entity: null; reason: 'no_match' | 'ambiguous' }
+  | { entity: null; reason: 'out_of_scope'; scope: string };
 
 export interface PlaceToIdentify {
   name: string;
