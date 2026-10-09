@@ -318,6 +318,15 @@ Comprobaciones esperadas:
 - **Sincronizar** antes de 24 h no repite el export: «nuevas 0».
 - **Desconectar** revoca el permiso en Google; la app lo confirma.
 
+### Si Google muestra un error
+
+| Mensaje de Google | Causa | Solución |
+|---|---|---|
+| «APPINITY (desarrollo) no ha completado el proceso de verificación… solo pueden acceder los testers aprobados» · `Error 403: access_denied` | La cuenta con la que entras no está en la lista de usuarios de prueba | Google Auth Platform → **Público** → **Usuarios de prueba** → **Añadir usuarios** → el Gmail exacto con el que entras → **Guardar**. Al autorizar, elige esa misma cuenta en el selector de Google |
+| `Error 400: redirect_uri_mismatch` | La URI del cliente no coincide | En el cliente web, la URI autorizada debe ser exactamente `http://localhost:3100/v1/connect/google_portability/callback` |
+| `invalid_client` o «The OAuth client was not found» | ID o secreto mal guardados | Repite `pnpm secret:set GOOGLE_OAUTH_CLIENT_ID --clipboard` y `… GOOGLE_OAUTH_CLIENT_SECRET --clipboard` y reinicia `pnpm api` y `pnpm worker` |
+| La cuenta es de empresa o de un centro educativo | Su administrador puede bloquear apps no verificadas | Usa una cuenta personal de Gmail (mayor de 18 años) |
+
 ## Comandos
 
 | Comando | Qué hace |
