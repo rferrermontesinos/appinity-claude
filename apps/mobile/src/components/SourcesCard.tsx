@@ -6,7 +6,7 @@ import * as WebBrowser from 'expo-web-browser';
 import type { TFunction } from 'i18next';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Pressable, View } from 'react-native';
+import { Alert, Platform, Pressable, View } from 'react-native';
 import { useConnect, useConnections, useDisconnect, useMe, useRuns, useSources, useSync, type SourceView } from '../api/queries';
 import { radius, spacing, usePalette } from '../theme';
 import { Badge, Body, Button, Card, ErrorCard, Loading, Small, Title } from './ui';
@@ -84,6 +84,11 @@ function ConnectionRow({
     const returnUrl = Linking.createURL('profile');
     const result = await connect.mutateAsync({ sourceKey: source.key, returnUrl }).catch(() => null);
     if (result?.kind === 'redirect') {
+      // En desarrollo Google solo puede volver a localhost: el teléfono no llegaría a la API.
+      if (result.localOnly && Platform.OS !== 'web') {
+        setNotice({ text: t('sources.localOnlyNotice'), tone: 'error' });
+        return;
+      }
       const auth = await WebBrowser.openAuthSessionAsync(result.authorizationUrl, returnUrl);
       if (auth.type === 'success') {
         const params = Linking.parse(auth.url).queryParams ?? {};
@@ -94,6 +99,20 @@ function ConnectionRow({
       }
     }
     for (const key of ['connections', 'profiles', 'profile', 'catalog']) await queryClient.invalidateQueries({ queryKey: [key] });
+  }
+
+  /** Desconectar e informar de si el proveedor confirmó la revocación (Google revoca el permiso en su lado). */
+  function startDisconnect(connectionId: string, purge: boolean) {
+    setNotice(null);
+    disconnect.mutate(
+      { connectionId, purge },
+      {
+        onSuccess: (result) => {
+          if (result.providerRevocation === 'revoked') setNotice({ text: t('sources.revokedAtProvider'), tone: 'ok' });
+          if (result.providerRevocation === 'failed') setNotice({ text: t('sources.revokeFailed'), tone: 'error' });
+        },
+      },
+    );
   }
 
   const busy =
@@ -169,11 +188,23 @@ function ConnectionRow({
               </View>
             ) : null}
             {!active && source.connectable && source.key !== 'steam' ? (
+              <View style={{ gap: spacing.xs }}>
+                <Button
+                  label={connection ? t('sources.reconnect') : t('sources.connect')}
+                  icon="link-variant"
+                  onPress={() => void startConnect()}
+                  loading={connect.isPending}
+                />
+                {source.key === 'google_portability' ? <Small>{t('sources.googleHelp')}</Small> : null}
+              </View>
+            ) : null}
+            {active && source.supportsRenewal && source.connectable ? (
               <Button
-                label={connection ? t('sources.reconnect') : t('sources.connect')}
-                icon="link-variant"
+                label={t('sources.renew')}
+                icon="refresh"
+                variant={connection.status === 'error' ? 'primary' : 'secondary'}
+                disabled={busy}
                 onPress={() => void startConnect()}
-                loading={connect.isPending}
               />
             ) : null}
             {active ? (
@@ -201,7 +232,7 @@ function ConnectionRow({
                   icon="link-variant-off"
                   variant="secondary"
                   disabled={busy}
-                  onPress={() => disconnect.mutate({ connectionId: connection.id, purge: false })}
+                  onPress={() => startDisconnect(connection.id, false)}
                 />
               </>
             ) : null}
@@ -217,7 +248,7 @@ function ConnectionRow({
                     {
                       text: t('sources.disconnectPurge'),
                       style: 'destructive',
-                      onPress: () => disconnect.mutate({ connectionId: connection.id, purge: true }),
+                      onPress: () => startDisconnect(connection.id, true),
                     },
                   ])
                 }

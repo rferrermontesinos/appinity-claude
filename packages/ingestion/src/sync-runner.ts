@@ -1,6 +1,9 @@
 import { createHash } from 'node:crypto';
 import type { EntityResolver, Tx } from '@appinity/catalog';
 import {
+  decryptCredentials,
+  encryptCredentials,
+  sourceCredentials,
   sourceSyncRuns,
   userConnections,
   userItemObservations,
@@ -13,6 +16,7 @@ import {
   parseObservation,
   type NormalizedObservation,
   type ProfileSourceKey,
+  type SourceCredentials,
   type SyncCursor,
   type SyncPartialError,
 } from '@appinity/shared';
@@ -26,6 +30,8 @@ export interface SyncDeps {
   resolver: EntityResolver;
   pageSize?: number;
   now?: () => Date;
+  /** CREDENTIALS_ENCRYPTION_KEY: descifra en memoria las credenciales por usuario (p. ej. el token de refresco de Google). */
+  credentialsKey?: string;
 }
 
 export type SyncTrigger = 'user' | 'seed' | 'schedule' | 'connect';
@@ -33,7 +39,11 @@ export type SyncMode = 'incremental' | 'full';
 
 export interface SyncOutcome {
   runId: string;
-  status: 'succeeded' | 'partial' | 'failed' | 'cancelled' | 'skipped';
+  /** `deferred`: el proveedor aún prepara los datos; el worker vuelve a intentarlo pasado `retryAfterMs`. */
+  status: 'succeeded' | 'partial' | 'failed' | 'cancelled' | 'skipped' | 'deferred';
+  retryAfterMs?: number;
+  /** Motivo de la espera (p. ej. «Google está preparando la exportación»). */
+  deferReason?: string;
   recordsReceived: number;
   observationsInserted: number;
   observationsUpdated: number;
@@ -173,7 +183,7 @@ export async function runConnectionSync(deps: SyncDeps, runId: string): Promise<
     .from(userConnections)
     .innerJoin(users, eq(users.id, userConnections.userId))
     .where(eq(userConnections.id, run.connectionId));
-  const finish = async (status: SyncOutcome['status'], errorMessage?: string) => {
+  const finish = async (status: Exclude<SyncOutcome['status'], 'deferred'>, errorMessage?: string) => {
     outcome.status = status;
     if (errorMessage) outcome.errorMessage = errorMessage;
     await db
@@ -199,6 +209,29 @@ export async function runConnectionSync(deps: SyncDeps, runId: string): Promise<
   const adapter = registry.get(conn.sourceKey);
   if (!adapter) return finish('failed', `La fuente ${conn.sourceKey} no está disponible en este entorno`);
 
+  // Credenciales por usuario: se descifran solo en memoria del worker y con la conexión como AAD.
+  let credentials: SourceCredentials | undefined;
+  const [stored] = await db.select().from(sourceCredentials).where(eq(sourceCredentials.connectionId, conn.id));
+  if (stored) {
+    if (!deps.credentialsKey) return finish('failed', 'Falta CREDENTIALS_ENCRYPTION_KEY en el worker: no se pueden leer las credenciales');
+    try {
+      credentials = decryptCredentials(stored.ciphertext, deps.credentialsKey, conn.id);
+    } catch {
+      return finish('failed', 'No se pudieron descifrar las credenciales (¿cambió CREDENTIALS_ENCRYPTION_KEY?): vuelve a conectar la fuente');
+    }
+  }
+  /** Fusiona y guarda (cifrado) estado del adapter, p. ej. el id de un export en curso, antes de que pueda perderse. */
+  const saveState =
+    credentials && deps.credentialsKey
+      ? async (patch: SourceCredentials) => {
+          credentials = { ...credentials!, ...patch };
+          await db
+            .update(sourceCredentials)
+            .set({ ciphertext: encryptCredentials(credentials, deps.credentialsKey!, conn.id), updatedAt: sql`now()` })
+            .where(eq(sourceCredentials.connectionId, conn.id));
+        }
+      : undefined;
+
   // Un solo sync a la vez por conexión (bloqueo de sesión en una conexión dedicada del pool).
   const lockClient = await database.pool.connect();
   const lockKey = `sync:${conn.id}`;
@@ -218,6 +251,8 @@ export async function runConnectionSync(deps: SyncDeps, runId: string): Promise<
     let cursor: SyncCursor | null = cursorBefore;
     let watermark: string | undefined;
     let allSnapshot = true;
+    /** Tipos que cubre la instantánea, si el adapter lo acota (null = todos los declarados). */
+    let coveredKinds: Set<string> | null = null;
     const seen = new Set<string>();
     const affected = new Set<string>();
 
@@ -232,13 +267,27 @@ export async function runConnectionSync(deps: SyncDeps, runId: string): Promise<
           cursor,
           watermarkAt: conn.watermarkAt?.toISOString() ?? null,
         },
+        ...(credentials ? { credentials } : {}),
+        ...(saveState ? { saveState } : {}),
         cursor,
         pageSize,
         now: now(),
       });
+      // El proveedor aún prepara los datos: nada que escribir; la ejecución vuelve a la cola sin contar como fallo.
+      if (batch.pending && page === 0) {
+        await db
+          .update(sourceSyncRuns)
+          .set({ status: 'queued', errorMessage: null })
+          .where(eq(sourceSyncRuns.id, runId));
+        outcome.status = 'deferred';
+        outcome.retryAfterMs = batch.pending.retryAfterMs;
+        outcome.deferReason = batch.pending.reason;
+        return outcome;
+      }
       outcome.recordsReceived += batch.records.length;
       outcome.partialErrors.push(...batch.partialErrors);
       allSnapshot &&= batch.snapshotComplete;
+      if (batch.snapshotKinds) coveredKinds = new Set([...(coveredKinds ?? []), ...batch.snapshotKinds]);
       if (batch.watermarkAt && (!watermark || batch.watermarkAt > watermark)) watermark = batch.watermarkAt;
 
       // 1) Normalizar y validar (fuera de la transacción).
@@ -310,11 +359,12 @@ export async function runConnectionSync(deps: SyncDeps, runId: string): Promise<
       if (!batch.hasMore) break;
     }
 
-    // 4) Instantánea completa y sin errores: lo que ya no aparece deja de ser evidencia vigente.
-    const snapshotKinds = adapter.snapshotObservationKinds ?? [];
+    // 4) Instantánea completa y sin errores bloqueantes: lo que ya no aparece deja de ser evidencia vigente.
+    const snapshotKinds = (adapter.snapshotObservationKinds ?? []).filter((k) => !coveredKinds || coveredKinds.has(k));
+    const blockingErrors = outcome.partialErrors.filter((e) => e.blocking !== false).length;
     await db.transaction(async (tx) => {
       await assertActive(tx, conn.id);
-      if (allSnapshot && snapshotKinds.length && outcome.partialErrors.length === 0) {
+      if (allSnapshot && snapshotKinds.length && blockingErrors === 0) {
         const current = await tx
           .select({
             id: userItemObservations.id,

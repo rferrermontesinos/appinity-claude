@@ -1,6 +1,6 @@
 # Arquitectura · APPINITY Claude
 
-Documento vivo. Describe lo implementado (fases 0, 1 y 2) y marca lo pendiente. Requisitos:
+Documento vivo. Describe lo implementado (fases 0 a 3) y marca lo pendiente. Requisitos:
 [APPINITY_Especificacion.md](APPINITY_Especificacion.md). Decisiones y parámetros: [decisions.md](decisions.md).
 
 ## Vista general
@@ -103,7 +103,7 @@ App (Perfil → Sign in through Steam)
   └─ POST /v1/me/connections {sourceKey:'steam', returnUrl}
        └─ API: state de un solo uso en Redis (10 min) → URL OpenID de steamcommunity.com
   └─ WebBrowser.openAuthSessionAsync(url) → el usuario inicia sesión EN STEAM
-  └─ Steam → GET /v1/connect/steam/callback?state=…&openid.*
+  └─ Steam → GET /v1/connect/steam/callback/<state>?openid.*
        └─ API: GETDEL state → verifySteamOpenId (incluye check_authentication) → conexión con SteamID
           → sync completo en cola → 302 a returnUrl?result=connected
 Worker: GetPlayerSummaries + GetOwnedGames (clave del servidor) → mapper steam-v1 → pipeline común
@@ -114,6 +114,27 @@ Worker: GetPlayerSummaries + GetOwnedGames (clave del servidor) → mapper steam
   privado), que dejan la conexión en «error» con el mensaje y no se reintentan.
 - Cuenta local real: `pnpm user:local` → `POST /v1/dev/session {handle, code}`; el guard acepta usuarios `live` solo si
   el token lleva la huella del código vigente.
+
+## Google Data Portability (fase 3)
+
+```text
+App (vista web del PC en desarrollo) → Perfil → Google → Conectar
+  └─ POST /v1/me/connections {sourceKey:'google_portability', returnUrl}
+       └─ API: state + verificador PKCE en Redis (10 min) → URL de consentimiento de Google (5 scopes, offline)
+          (localOnly: la URL de vuelta es localhost → en el teléfono la app avisa en vez de abrirla)
+  └─ El usuario elige datos y duración EN GOOGLE
+  └─ Google → GET /v1/connect/google_portability/callback?state=…&code=…&scope=…
+       └─ API: GETDEL state → canje del código con PKCE → grupos concedidos y tipo de acceso
+          → conexión (sin cuenta externa) + refresh token cifrado, o renovación de la conexión existente
+          → sync en cola → 302 a returnUrl?result=connected
+Worker, por cada grupo concedido:
+  initiate (id guardado cifrado con saveState) → estado IN_PROGRESS → SyncBatch.pending
+     → la ejecución vuelve a la cola (job.moveToDelayed, 1 min…1 h) sin gastar reintentos
+  COMPLETE → descarga de los ZIP (URLs firmadas) → lectura tolerante (GeoJSON/JSON) + resumen sin datos personales
+     → identificación: OpenStreetMap (lugares) / Wikidata (obras) → mapper google-portability-v1 → pipeline común
+     → instantánea solo de los grupos exportados (snapshotKinds); lo no identificado: error parcial no bloqueante
+Desconectar: borra credenciales → authorization:reset + revocación del token → providerRevocation
+```
 
 ## Resolución de entidades (§6)
 
@@ -181,6 +202,6 @@ producción (vista web de desarrollo).
 
 ## Pendiente por fase
 
-Ver [progress.md](progress.md). Google Data Portability: valoraciones y lugares (3), YouTube y YouTube Music (4), afinidad (5), Top 50 (6), recomendador y Trending
+Ver [progress.md](progress.md). Validación de Google con una cuenta real (3), YouTube y YouTube Music (4), afinidad (5), Top 50 (6), recomendador y Trending
 (7), Home con carrusel (8), Categories con recomendaciones (9), People/Friends (10), adapters restantes (11), chat,
 Premium y push (12), autenticación de producción y beta (13).

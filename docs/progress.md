@@ -10,12 +10,207 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | Aceptación de demo | **Hecha** | El usuario confirmó: «He probado la demo y funciona» |
 | 2 | **Validado con la cuenta real del usuario** (2026-10-08) | Entrega 2026-10-08 · fase 2 (rama `fase-2`, PR rferrermontesinos/appinity-claude#3, basada en `fase-1`) |
 | Revisión de fuentes | **Hecha** (2026-10-08) | Especificación 1.1 y docs/fuentes-de-datos.md (rama `especificacion-fuentes`, PR rferrermontesinos/appinity-claude#5, basada en `fase-2`). TMDb descartada: PR rferrermontesinos/appinity-claude#4 cerrada sin fusionar |
-| 3–4 | Pendiente | Google Data Portability: valoraciones y lugares (3); YouTube y YouTube Music (4) |
+| Revisión de fuentes · decisiones | **Aceptada** (2026-10-09) | El usuario aceptó la especificación 1.1; de momento, imagen genérica (sin licencia de catálogo); Gmail se evaluará más adelante |
+| 3 | **Sincronizado con la cuenta real del usuario** (2026-10-09); pendiente de revisar la identificación con el siguiente export y de la aceptación en la app | Entrega 2026-10-09 · fase 3 (rama `fase-3-google`, PR rferrermontesinos/appinity-claude#6, basada en `especificacion-fuentes`). Primer sync: 21 evidencias (20 reseñas y 1 sitio guardado) |
+| 4 | Pendiente | YouTube y YouTube Music (mismo consentimiento de Google) |
 | 5–7 | Pendiente | Afinidad, Top 50 y recomendador |
 | 8–10 | Pendiente | Home, Categories y social |
 | 11 | Pendiente | Fuentes adicionales viables, una por tarea |
 | 12 | Pendiente | Chat, Premium y notificaciones, por subentregas |
 | 13 | Pendiente | Preparación y prueba de beta |
+
+---
+
+## Entrega 2026-10-09 · fase 3 (Google Data Portability: valoraciones y lugares)
+
+Rama `fase-3-google` (basada en `especificacion-fuentes`), commit `7870721`, PR rferrermontesinos/appinity-claude#6.
+
+### Qué se ha hecho
+
+- **Ficha verificada** en la documentación oficial (ver integration-capabilities.md). Cuatro condiciones cambiaron el
+  diseño:
+  - el proyecto necesita cuenta de facturación;
+  - los scopes no se combinan con openid/email, así que no hay identidad de cuenta;
+  - los datos no traen identificadores ni categorías;
+  - en modo de pruebas, Google solo vuelve a `localhost` y el permiso dura 7 días.
+- **Adapter `profile/google-portability`:**
+  - OAuth con PKCE y solo los 5 grupos que se importan;
+  - un export por grupo, con el id del trabajo guardado cifrado antes de esperar;
+  - lectura tolerante de los ZIP (GeoJSON y JSON documentados) sin guardar el texto de las reseñas;
+  - mapper `google-portability-v1`, reintento de exports fallidos y límites de 24 h y de acceso único.
+- **Identificación de catálogo:** `OsmPlaceIdentifier` (OpenStreetMap, lugares clasificados por etiquetas) y
+  `WikidataWorkIdentifier` (obras por etiqueta exacta y tipo). Lo ambiguo no se importa y se informa.
+- **Pipeline:** exports aplazados sin gastar reintentos (`pending` + `moveToDelayed`), estado cifrado durante el sync
+  (`saveState`), instantánea por grupo (`snapshotKinds`) y errores parciales no bloqueantes.
+- **Renovación** del permiso sobre la misma conexión, sin perder lo importado.
+- **Piezas genéricas recuperadas de `fase-3`** (TMDb descartada):
+  - credenciales por usuario cifradas;
+  - `state` en el callback;
+  - revocación en el proveedor (`providerRevocation`) y de sesiones huérfanas.
+- **App:**
+  - ayuda de conexión de Google;
+  - aviso para conectar desde la vista web del PC en desarrollo;
+  - botón «Renovar permiso»;
+  - aviso de revocación;
+  - tarjeta «Créditos y fuentes de datos» con la atribución de OpenStreetMap.
+- **Configuración:** `pnpm secret:set GOOGLE_OAUTH_CLIENT_ID|GOOGLE_OAUTH_CLIENT_SECRET`, variables en `.env.example` y
+  `fflate` 0.8.3 para leer los ZIP.
+
+### Comandos ejecutados y resultados (Windows 11, 2026-10-09)
+
+| Comando | Resultado |
+|---|---|
+| `pnpm lint` | 0 errores |
+| `pnpm typecheck` | OK (paquetes, tests y app móvil) |
+| `pnpm test` | **15 ficheros, 173 tests OK** (93 unitarios, 80 de integración). Nuevos: 23 unitarios de Google (OAuth, archivo, máquina de estados, mapper, OSM y Wikidata, casos reales de OSM), 10 de integración (aplazamiento, evidencia, instantánea por grupo, renovación, revocación) y 4 HTTP (flujo con `state` y `code`, cancelación, revocación) |
+| `npx expo export --platform android --platform ios` | Bundles generados |
+| Vista web de desarrollo (8092, 375×812) | Perfil → «Créditos y fuentes de datos» con OpenStreetMap; sin errores de consola |
+| Identificadores contra los servicios reales (OpenStreetMap y Wikidata) | Museu Picasso, Can Culleretes y Sagrada Família (basílica, por contención) identificados; Breaking Bad, Casablanca, Moana, Radiohead, OK Computer → Radiohead, Hades y Cien años de soledad identificados. Detectado y corregido: la consulta a Overpass se truncaba en zonas densas y los monumentos patrimoniales no se clasificaban |
+| Endpoints reales de Google sin credenciales | `initiate`, `accessType:check` y `authorization:reset` → 401; `token` con un cliente falso → `invalid_client`. Coincide con el tratamiento del cliente |
+
+### Validación pendiente (usuario, con su cuenta)
+
+Guía paso a paso en el README, «Conectar tu cuenta de Google»:
+1. Crear el proyecto de Google Cloud, con cuenta de facturación, la API habilitada, el consentimiento en pruebas con tu
+   Gmail y los 5 scopes, y un cliente web con la URI de redirección.
+2. Guardar el ID y el secreto con `pnpm secret:set`.
+3. Reiniciar `pnpm api` y `pnpm worker`.
+4. Conectar desde la vista web del PC.
+
+Al terminar el export, las líneas `[google] export …` del worker muestran la estructura real del archivo, sin datos
+personales. Con ellas se confirma o corrige el formato documentado (escala de las estrellas de la Búsqueda, presencia
+de fechas y de identificadores).
+
+### Primer export real (2026-10-09, cuenta del usuario)
+
+El usuario creó el proyecto de Google Cloud y conectó su cuenta desde la vista web del PC. El primer intento dio
+`Error 403: access_denied` porque la cuenta no estaba en la lista de usuarios de prueba; se resolvió añadiéndola, y la
+solución está documentada en el README.
+
+Resumen de estructura de `maps.reviews`, sin datos personales:
+- Archivos: `Portability/Maps (your places)/Reviews.json` (59.841 bytes) y `Portability/archive_browser.json`
+  (índice del archivo, sin registros).
+- 75 reseñas leídas y 7 descartadas por datos incompletos.
+- Claves: `Comment`, `date`, `five_star_rating_published`, `google_maps_url`, `location`, `questions`,
+  `review_text_published`. Coinciden con la documentación, salvo `Comment`, que no figura en ella.
+- **Diferencia con la documentación:** los enlaces de Maps no usan `?cid=` sino `/maps/place//data=…`. Se añadió la
+  lectura del CID del lugar en ese formato (`!1s0x…:0x<CID>`), que pasa a ser el id del registro y un identificador
+  `google_maps:cid` del objeto. Al resumen se añadieron los motivos de descarte y un patrón de URL más detallado (sigue
+  sin datos).
+- Resto de grupos: `maps.starred_places` (`Saved Places.json`, 1 sitio leído y 1 descartado, enlaces `?cid=`).
+  Los tres grupos de la Búsqueda llegan **vacíos** (solo `archive_browser.json`): la cuenta no tiene valoraciones en
+  la Búsqueda. Su formato real sigue sin comprobarse.
+
+**Incidencia durante la identificación.** La primera ejecución falló con «OpenStreetMap (Overpass) no responde». No fue
+por el Ctrl+C accidental del usuario, que ocurrió después, sino por el ritmo de consultas:
+- La instancia pública da 4 huecos por IP y cada consulta bloquea el suyo unos 25 s (comprobado en `/api/status`).
+- El identificador consultaba cada 1,1 s, agotó los huecos y se rindió tras tres 429.
+
+Corregido:
+- Ante un 429, el identificador lee `/api/status`, espera al siguiente hueco y pasa a un ritmo sostenible (una consulta
+  cada 6,5 s).
+- Si OSM o Wikidata siguen sin responder, el sync se **aplaza 10 minutos** en vez de fallar. Los exports de Google
+  siguen disponibles 14 días y lo ya identificado queda en la caché del worker.
+- El worker indica el motivo de cada espera.
+
+Con este ritmo, identificar 75 lugares tarda unos 8 minutos la primera vez.
+
+**Segunda incidencia: 20 minutos sin mensajes.** El ritmo anterior no bastó. Medido el 2026-10-09 en `/api/status`:
+- Cada consulta bloquea su hueco **unos 60 s** aunque dure 5 s.
+- El balanceador alterna dos servidores, con 4 y 2 huecos, así que `/api/status` puede indicar huecos libres que el
+  otro servidor no tiene.
+- En horas de carga, la mitad de las consultas devuelven 504 (servidor ocupado).
+
+El worker identificaba los lugares de uno en uno y sin mostrar progreso. Además, Ctrl+C no lo detenía: cerraba `pnpm`,
+pero el proceso de Node seguía en segundo plano esperando a que terminara el sync.
+
+Corregido:
+- **Consultas por lotes.** Una consulta para hasta 25 lugares; un separador `make sep i=<n>` entre los resultados de
+  cada lugar permite repartirlos. Medido: 25 lugares en 26 s con una sola consulta; 75 lugares, en unas 3.
+- **Reintentos.** Ante un 429 o 504 se reintenta tras 15 s, 30 s, 60 s y después cada 2 min (más si `/api/status` lo
+  pide). Se repite también una respuesta incompleta (`runtime error` o separadores ausentes). Tras ~10 minutos sin
+  respuesta, el sync se aplaza.
+- **Progreso en el worker.** Por ejemplo, `[google] maps.reviews: 25/75 lugares consultados`,
+  `[catálogo] OpenStreetMap ocupado (HTTP 504); reintento 1/7 en 15 s` y `… 68 de 75 identificados`.
+- **Ctrl+C** deja de pedir trabajos, devuelve el sync en curso a la cola (se retoma al arrancar) y sale en unos
+  segundos. Un segundo Ctrl+C sale de inmediato.
+
+Prueba real con lugares públicos: Sagrada Família, Museu Picasso y Museo del Prado identificados en una sola consulta
+(11 s). Casa Batlló y el Mercado de San Miguel no se identifican por cómo están etiquetados en OSM; se revisará con el
+resultado del export real.
+
+### Resultado del primer sync (2026-10-09)
+
+`partial (+21 ~0 =0 -0, 3 errores parciales)`. Lo importado, sin nombres:
+- 20 reseñas: 18 restaurantes y 2 lugares culturales; 16 con nombre idéntico (confianza 0,95) y 4 sin palabras
+  genéricas (0,85).
+- Las estrellas se convierten como se esperaba: 5 → +1, 4 → +0,5, 3 → 0, 2 → −0,5. Conocido y consumido = confianza
+  de la identificación.
+- El sitio guardado es un lugar cultural: conocido 0,95, consumido 0 y preferencia NULL.
+- Avisos: 55 de 75 reseñas sin identificar, 7 reseñas y 1 sitio guardado con datos incompletos (sin nombre).
+
+**Identificación revisada.** El 27 % de reseñas identificadas obligaba a distinguir lo que APPINITY no usa (hoteles,
+tiendas, parques) de lo que falla. Cambios:
+- La consulta trae todos los lugares con nombre y alguna clave de comercio o servicio (`amenity`, `shop`,
+  `tourism`, `leisure`…), con una búsqueda por lugar en vez de tres. Es más rápida: 15 s frente a 23 s para 25
+  lugares.
+- Cada lugar no identificado tiene un motivo:
+  - **fuera de categoría**, con una etiqueta genérica: alojamiento, tienda, mercado, parque…;
+  - **sin coincidencia**;
+  - **ambiguo**.
+
+  El aviso de la app lo separa: «N son de lugares fuera de las categorías de APPINITY (…) y M no se pudieron
+  identificar con seguridad». El worker muestra el desglose.
+- Si lo que mejor coincide es de otra categoría (p. ej. un hotel), no se importa, aunque otro elemento coincida peor:
+  se prefiere perder una reseña a etiquetar un hotel como restaurante.
+- Casa Batlló (`historic=heritage` + `tourism=artwork`) se clasifica ya como lugar cultural.
+- El resumen del export incluye la forma de los registros descartados (`skippedShapes`: solo claves y estado de las
+  coordenadas), para saber por qué 7 reseñas llegan sin nombre.
+
+Prueba real con 8 lugares públicos en una consulta (6 s):
+- Identificados: Sagrada Família, Museu Picasso, Museo del Prado, Casa Batlló y Can Culleretes.
+- Fuera de categoría: el Mercado de San Miguel (mercado) y El Corte Inglés (tienda).
+- Sin coincidencia: el Hotel Arts, que en OSM se llama «Hotel Arts» y no «Hotel Arts Barcelona».
+
+Se descartó ignorar partículas como «de»: hacía que «Museu de la Sagrada Família» ganara a la basílica.
+
+Los cambios se aplican en el siguiente export. Google permite uno por grupo cada 24 h: desde el 2026-10-10 hacia las
+12:20 (hora local), con el sync diario automático o con «Sincronizar».
+
+Comprobaciones tras los cambios: `pnpm lint` 0 errores, `pnpm typecheck` OK y `pnpm test` con 15 ficheros y
+**181 tests OK**. Nuevos: lotes, separadores y reintentos de Overpass, motivos de no identificación, casos reales de
+etiquetado y resumen sin nombres.
+
+### Bloqueos y puntos declarados
+
+- **Cuenta de facturación de Google Cloud:** obligatoria para activar la API, aunque esta no tenga coste publicado.
+  Decisión del usuario.
+- **Formato real del export:** confirmado para Maps (reseñas y sitios guardados). Los grupos de la Búsqueda llegaron
+  vacíos en la cuenta del usuario: la escala de «Review Star Rating», los pulgares y la presencia de identificadores
+  siguen sin comprobarse con datos reales.
+- **Producción:**
+  - verificación de Google (anual);
+  - auditoría CASA si algún grupo es restringido;
+  - encaje de APPINITY en el caso de uso aprobado de Data Portability;
+  - URL de vuelta HTTPS;
+  - instancia propia o de pago de Overpass.
+- **Sin identidad de cuenta:** no se puede impedir que dos usuarios vinculen la misma cuenta de Google. Riesgo bajo; la
+  autenticación de producción (fase 13) puede mitigarlo con el login de Google.
+
+### Limitaciones
+
+- En desarrollo el permiso caduca a los 7 días: hay que renovarlo desde la vista web del PC.
+- Las confianzas de identificación y los parámetros del mapper están sin calibrar.
+- Sin imagen propia: las tarjetas usan el fallback de su categoría salvo que el objeto exista en la instantánea de
+  Wikidata (decisión del usuario).
+- `saved.collections` (colecciones de la Búsqueda) no se importa todavía: no trae coordenadas ni tipo.
+
+### Siguiente paso
+
+1. Con el siguiente export (desde el 2026-10-10), revisar el desglose de motivos del worker y `skippedShapes`, y
+   ajustar la identificación si procede.
+2. Aceptación del usuario en la app.
+3. Fase 4: YouTube y YouTube Music con el mismo consentimiento.
 
 ---
 
