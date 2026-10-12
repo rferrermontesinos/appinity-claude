@@ -1,4 +1,11 @@
-import { SourceError, normalizeTitle, type Category, type IdentifiedEntity } from '@appinity/shared';
+import {
+  SourceError,
+  normalizeTitle,
+  type Category,
+  type ChannelToIdentify,
+  type IdentifiedEntity,
+  type Identification,
+} from '@appinity/shared';
 import { z } from 'zod';
 
 /**
@@ -37,10 +44,19 @@ const TYPES: Record<string, { category: Category; itemType: string }> = {
   Q2088357: { category: 'music', itemType: 'artist' }, // agrupación musical
   Q9212979: { category: 'music', itemType: 'artist' }, // dúo musical
 };
+/** Programas de podcast (P31). */
+const PODCAST_TYPES = new Set(['Q24634210']);
+/** Canales por consulta de búsqueda (`haswbstatement:P2397=A|P2397=B…`, comprobado el 2026-10-13). */
+const CHANNEL_BATCH = 40;
+const CHANNEL_ID = /^UC[\w-]{22}$/;
 /** Obras musicales que se atribuyen a su intérprete. */
 const MUSIC_WORKS = new Set(['Q482994', 'Q208569', 'Q134556', 'Q7366', 'Q105543609']);
 /** Ocupaciones (P106) que hacen de una persona (Q5) un artista musical. */
 const MUSICIAN_OCCUPATIONS = new Set(['Q177220', 'Q639669', 'Q488205', 'Q2252262', 'Q36834', 'Q130857', 'Q753110', 'Q855091', 'Q486748']);
+
+const textSearchSchema = z.object({
+  query: z.object({ search: z.array(z.object({ title: z.string() })).default([]) }).optional(),
+});
 
 const searchSchema = z.object({
   search: z
@@ -88,7 +104,28 @@ function year(entity: Entity, ...properties: string[]): number | undefined {
   return years.length ? Math.min(...years) : undefined;
 }
 
-const label = (entity: Entity, languages: string[]) => languages.map((l) => entity.labels?.[l]?.value).find(Boolean);
+/** Etiqueta en los idiomas pedidos o, si no, la común («mul»): Wikidata guarda ahí muchos nombres propios. */
+const label = (entity: Entity, languages: string[]) => [...languages, 'mul'].map((l) => entity.labels?.[l]?.value).find(Boolean);
+
+const strings = (entity: Entity, property: string): string[] =>
+  (entity.claims?.[property] ?? []).map((c) => c.mainsnak.datavalue?.value).filter((v): v is string => typeof v === 'string');
+
+/** Tipo de APPINITY de una entidad de Wikidata; `musicWork`: disco o canción (se atribuye a su intérprete). */
+function kindOf(entity: Entity): { kind: { category: Category; itemType: string }; musicWork: boolean } | null {
+  const p31 = ids(entity, 'P31');
+  const direct = p31.map((t) => TYPES[t]).find(Boolean);
+  if (direct) return { kind: direct, musicWork: false };
+  if (p31.includes('Q5') && ids(entity, 'P106').some((o) => MUSICIAN_OCCUPATIONS.has(o))) {
+    return { kind: { category: 'music', itemType: 'artist' }, musicWork: false };
+  }
+  if (p31.some((t) => PODCAST_TYPES.has(t))) return { kind: { category: 'podcasts', itemType: 'podcast' }, musicWork: false };
+  if (p31.some((t) => MUSIC_WORKS.has(t))) return { kind: { category: 'music', itemType: 'artist' }, musicWork: true };
+  return null;
+}
+
+/** Categorías que se aceptan para un canal de YouTube: artistas musicales y programas de podcast. */
+const isChannelKind = (k: { category: Category; itemType: string }) =>
+  (k.category === 'music' && k.itemType === 'artist') || k.category === 'podcasts';
 
 export interface WikidataWorkIdentifierOptions {
   userAgent: string;
@@ -101,17 +138,19 @@ export class WikidataWorkIdentifier {
   private readonly fetchImpl: typeof fetch;
   private readonly sleep: (ms: number) => Promise<void>;
   private readonly cache = new Map<string, IdentifiedEntity | null>();
+  private readonly channelCache = new Map<string, Identification>();
 
   constructor(private readonly options: WikidataWorkIdentifierOptions) {
     this.fetchImpl = options.fetchImpl ?? fetch;
     this.sleep = options.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
   }
 
-  async identifyWork(work: { title: string; languages?: string[] }): Promise<IdentifiedEntity | null> {
+  /** `artistsOnly`: solo grupos y personas músicos (sin obras musicales ni otros tipos). */
+  async identifyWork(work: { title: string; languages?: string[]; artistsOnly?: boolean }): Promise<IdentifiedEntity | null> {
     const languages = work.languages?.length ? work.languages : ['es', 'en'];
     const wanted = normalizeTitle(work.title);
     if (!wanted) return null;
-    const cacheKey = `${languages.join(',')}:${wanted}`;
+    const cacheKey = `${work.artistsOnly ? 'artist' : 'work'}:${languages.join(',')}:${wanted}`;
     if (this.cache.has(cacheKey)) return this.cache.get(cacheKey)!;
 
     const found = new Set<string>();
@@ -124,28 +163,24 @@ export class WikidataWorkIdentifier {
         if (texts.some((t) => normalizeTitle(t) === wanted)) found.add(hit.id);
       }
     }
-    const result = found.size ? await this.choose([...found], languages) : null;
+    const result = found.size ? await this.choose([...found], languages, work.artistsOnly ?? false) : null;
     if (this.cache.size > 5_000) this.cache.clear();
     this.cache.set(cacheKey, result);
     return result;
   }
 
   /** Clasifica los candidatos por su tipo y elige uno solo si es inequívoco. */
-  private async choose(qids: string[], languages: string[]): Promise<IdentifiedEntity | null> {
+  private async choose(qids: string[], languages: string[], artistsOnly: boolean): Promise<IdentifiedEntity | null> {
     const entities = await this.entities(qids, languages);
     const typed: Array<{ entity: Entity; qid: string; kind: { category: Category; itemType: string }; sitelinks: number; musicWork: boolean }> = [];
     for (const qid of qids) {
       const entity = entities[qid];
       if (!entity || entity.missing !== undefined) continue;
-      const p31 = ids(entity, 'P31');
-      const sitelinks = Object.keys(entity.sitelinks ?? {}).length;
-      const direct = p31.map((t) => TYPES[t]).find(Boolean);
-      if (direct) typed.push({ entity, qid, kind: direct, sitelinks, musicWork: false });
-      else if (p31.includes('Q5') && ids(entity, 'P106').some((o) => MUSICIAN_OCCUPATIONS.has(o))) {
-        typed.push({ entity, qid, kind: { category: 'music', itemType: 'artist' }, sitelinks, musicWork: false });
-      } else if (p31.some((t) => MUSIC_WORKS.has(t))) {
-        typed.push({ entity, qid, kind: { category: 'music', itemType: 'artist' }, sitelinks, musicWork: true });
-      }
+      const found = kindOf(entity);
+      // Los podcasts solo se identifican por su canal: un título suelto es demasiado ambiguo.
+      if (!found || found.kind.category === 'podcasts') continue;
+      if (artistsOnly && (found.musicWork || found.kind.category !== 'music')) continue;
+      typed.push({ entity, qid, ...found, sitelinks: Object.keys(entity.sitelinks ?? {}).length });
     }
     if (!typed.length) return null;
     typed.sort((a, b) => b.sitelinks - a.sitelinks);
@@ -153,6 +188,16 @@ export class WikidataWorkIdentifier {
     const unique = typed.length === 1;
     if (!unique && first!.sitelinks < 2 * Math.max(1, second!.sitelinks)) return null;
     const confidence = unique ? 0.8 : 0.65;
+    if (artistsOnly) {
+      return {
+        category: 'music',
+        itemType: 'artist',
+        title: label(first!.entity, languages) ?? first!.qid,
+        canonicalIds: { 'wikidata:entity': first!.qid },
+        confidence,
+        method: unique ? 'wikidata_nombre_artista_unico' : 'wikidata_nombre_artista_dominante',
+      };
+    }
 
     if (first!.musicWork) {
       // En música el objeto recomendado es el artista: la obra se atribuye a su único intérprete.
@@ -183,6 +228,61 @@ export class WikidataWorkIdentifier {
     };
   }
 
+  /**
+   * Canales de YouTube: búsqueda exacta por la propiedad P2397 (ID de canal) en lotes; solo se aceptan artistas
+   * musicales y podcasts (0,95). Si el canal no figura y hay `musicName`, se busca el artista por nombre exacto (0,8
+   * o 0,65), sin atribuirle el ID del canal.
+   */
+  async identifyChannels(channels: ChannelToIdentify[], onProgress?: (done: number, total: number) => void): Promise<Identification[]> {
+    const languages = ['es', 'en'];
+    const pending = [...new Map(channels.filter((c) => !this.channelCache.has(c.channelId)).map((c) => [c.channelId, c])).values()];
+    for (let start = 0; start < pending.length; start += CHANNEL_BATCH) {
+      const batch = pending.slice(start, start + CHANNEL_BATCH);
+      const valid = batch.filter((c) => CHANNEL_ID.test(c.channelId));
+      const byChannel = new Map<string, Array<{ qid: string; entity: Entity }>>();
+      if (valid.length) {
+        const found = textSearchSchema.parse(
+          await this.get({
+            action: 'query',
+            list: 'search',
+            srsearch: `haswbstatement:${valid.map((c) => `P2397=${c.channelId}`).join('|')}`,
+            srnamespace: '0',
+            srlimit: '50',
+            srprop: '',
+          }),
+        );
+        const qids = (found.query?.search ?? []).map((hit) => hit.title).filter((t) => /^Q\d+$/.test(t));
+        const entities = qids.length ? await this.entities(qids, languages) : {};
+        for (const [qid, entity] of Object.entries(entities)) {
+          for (const channelId of strings(entity, 'P2397')) byChannel.set(channelId, [...(byChannel.get(channelId) ?? []), { qid, entity }]);
+        }
+      }
+      for (const channel of batch) {
+        let result = classifyChannel(channel.channelId, byChannel.get(channel.channelId) ?? [], languages);
+        if (result.entity === null && result.reason === 'no_match' && channel.musicName) {
+          const artist = await this.identifyWork({ title: channel.musicName, languages, artistsOnly: true });
+          if (artist) result = { entity: artist };
+        }
+        if (this.channelCache.size > 20_000) this.channelCache.clear();
+        this.channelCache.set(channel.channelId, result);
+      }
+      onProgress?.(Math.min(start + CHANNEL_BATCH, pending.length), pending.length);
+    }
+    return channels.map((c) => this.channelCache.get(c.channelId) ?? { entity: null, reason: 'no_match' });
+  }
+
+  /** Artistas por nombre exacto (solo grupos y personas músicos). */
+  async identifyArtists(names: string[], onProgress?: (done: number, total: number) => void): Promise<Identification[]> {
+    const unique = [...new Set(names)];
+    const found = new Map<string, Identification>();
+    for (const [i, name] of unique.entries()) {
+      const entity = await this.identifyWork({ title: name, languages: ['es', 'en'], artistsOnly: true });
+      found.set(name, entity ? { entity } : { entity: null, reason: 'no_match' });
+      if ((i + 1) % 25 === 0 || i + 1 === unique.length) onProgress?.(i + 1, unique.length);
+    }
+    return names.map((n) => found.get(n)!);
+  }
+
   private async entities(qids: string[], languages: string[]): Promise<Record<string, Entity>> {
     const out: Record<string, Entity> = {};
     for (let i = 0; i < qids.length; i += 50) {
@@ -191,7 +291,7 @@ export class WikidataWorkIdentifier {
           action: 'wbgetentities',
           ids: qids.slice(i, i + 50).join('|'),
           props: 'claims|labels|sitelinks',
-          languages: languages.join('|'),
+          languages: [...languages, 'mul'].join('|'),
         }),
       );
       Object.assign(out, data.entities);
@@ -224,4 +324,32 @@ export class WikidataWorkIdentifier {
     }
     throw new SourceError('unavailable', 'Wikidata no responde; se reintentará', true);
   }
+}
+
+/** Elige la entidad de un canal: debe ser única en su categoría (o dominante por enlaces a Wikipedias). */
+function classifyChannel(channelId: string, matches: Array<{ qid: string; entity: Entity }>, languages: string[]): Identification {
+  if (!matches.length) return { entity: null, reason: 'no_match' };
+  const typed = matches.flatMap((m) => {
+    const found = kindOf(m.entity);
+    return found && !found.musicWork && isChannelKind(found.kind)
+      ? [{ ...m, kind: found.kind, sitelinks: Object.keys(m.entity.sitelinks ?? {}).length }]
+      : [];
+  });
+  if (!typed.length) {
+    return { entity: null, reason: 'out_of_scope', scope: matches.some((m) => ids(m.entity, 'P31').includes('Q5')) ? 'persona' : 'otro tipo de canal' };
+  }
+  if (new Set(typed.map((t) => t.kind.category)).size > 1) return { entity: null, reason: 'ambiguous' };
+  typed.sort((a, b) => b.sitelinks - a.sitelinks);
+  const [first, second] = typed;
+  if (second && first!.sitelinks < 2 * Math.max(1, second.sitelinks)) return { entity: null, reason: 'ambiguous' };
+  return {
+    entity: {
+      category: first!.kind.category,
+      itemType: first!.kind.itemType,
+      title: label(first!.entity, languages) ?? first!.qid,
+      canonicalIds: { 'wikidata:entity': first!.qid, 'youtube:channel': channelId },
+      confidence: 0.95,
+      method: 'wikidata_canal_youtube',
+    },
+  };
 }

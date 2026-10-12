@@ -30,5 +30,7 @@ export function createCatalogIdentifier(options: CatalogIdentifierOptions): Enti
     identifyPlace: (place) => places.identifyPlace(place),
     identifyPlaces: (list, onProgress) => places.identifyPlaces(list, onProgress),
     identifyWork: (work) => works.identifyWork(work),
+    identifyChannels: (channels, onProgress) => works.identifyChannels(channels, onProgress),
+    identifyArtists: (names, onProgress) => works.identifyArtists(names, onProgress),
   };
 }

@@ -186,6 +186,11 @@ export interface NormalizeContext {
 export interface ProfileSourceAdapter {
   manifest: ProfileSourceManifest;
   /**
+   * Scopes que pide la versión actual del adapter. Si una conexión tiene menos (p. ej. se autorizó antes de que
+   * existieran nuevos datos), la app ofrece renovar el permiso para importarlos.
+   */
+  requestedScopes?: readonly string[];
+  /**
    * Ampliación: tipos de observación que forman una instantánea completa (biblioteca, recuento de escuchas).
    * Tras un sync completo, las evidencias de esos tipos que ya no aparecen se eliminan.
    */
@@ -226,7 +231,27 @@ export interface EntityIdentifier {
   /** Varios lugares a la vez (el proveedor agrupa las consultas); mismo orden que la entrada. */
   identifyPlaces(places: PlaceToIdentify[], onProgress?: (done: number, total: number) => void): Promise<PlaceIdentification[]>;
   identifyWork(work: { title: string; languages?: string[] }): Promise<IdentifiedEntity | null>;
+  /**
+   * Canales de YouTube por su ID (coincidencia exacta con el catálogo). Si el canal no figura y `musicName` está
+   * presente (canal «Artista - Topic» o escuchado en YouTube Music), se busca un artista musical con ese nombre exacto.
+   */
+  identifyChannels(channels: ChannelToIdentify[], onProgress?: (done: number, total: number) => void): Promise<Identification[]>;
+  /** Artistas musicales por nombre exacto (biblioteca de YouTube Music): solo grupos y personas músicos. */
+  identifyArtists(names: string[], onProgress?: (done: number, total: number) => void): Promise<Identification[]>;
 }
+
+export interface ChannelToIdentify {
+  channelId: string;
+  title: string;
+  /** Nombre de artista con el que buscar si el canal no está en el catálogo (sin el sufijo « - Topic»). */
+  musicName?: string;
+}
+
+/** Resultado de una identificación sin datos de ubicación (canales, artistas). */
+export type Identification =
+  | { entity: IdentifiedEntity }
+  | { entity: null; reason: 'no_match' | 'ambiguous' }
+  | { entity: null; reason: 'out_of_scope'; scope: string };
 
 /**
  * Resultado de identificar un lugar. Si no se identifica, el motivo distingue lo que APPINITY no usa (un hotel, una

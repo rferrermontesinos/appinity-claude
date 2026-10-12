@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import { createDatabase, sourceCredentials, type DatabaseHandle } from '@appinity/database';
+import { createDatabase, providerConsents, sourceCredentials, userConnections, type DatabaseHandle } from '@appinity/database';
 import { createOrResetLocalUser, seedDemoUsers } from '@appinity/ingestion';
 import { googleFixtures } from '@appinity/integrations';
 import type { ConnectStartDto, ConnectionDto, DisconnectResultDto, SourceDto } from '@appinity/shared';
@@ -91,9 +91,23 @@ describe('conexión con Google desde la API', () => {
     const raw = await (await api('/v1/me/connections')).text();
     expect(raw).not.toContain('refresh-simulado');
     const connection = (JSON.parse(raw) as ConnectionDto[]).find((c) => c.sourceKey === 'google_portability');
-    expect(connection).toMatchObject({ status: 'active', externalAccountHint: null });
+    expect(connection).toMatchObject({ status: 'active', externalAccountHint: null, missingScopes: 0 });
     const [stored] = await database.db.select().from(sourceCredentials).where(eq(sourceCredentials.connectionId, connection!.id));
     expect(stored!.ciphertext).not.toContain('refresh-simulado');
+  });
+
+  it('una conexión autorizada antes de YouTube indica cuántos permisos nuevos puede conceder', async () => {
+    const before = ((await (await api('/v1/me/connections')).json()) as ConnectionDto[]).find((c) => c.sourceKey === 'google_portability')!;
+    const [row] = await database.db.select().from(userConnections).where(eq(userConnections.id, before.id));
+    const [consent] = await database.db.select().from(providerConsents).where(eq(providerConsents.id, row!.consentId!));
+    // Como si se hubiera autorizado en la fase 3: sin los 3 grupos de YouTube.
+    await database.db
+      .update(providerConsents)
+      .set({ scopes: consent!.scopes.filter((s) => !/youtube/.test(s)) })
+      .where(eq(providerConsents.id, consent!.id));
+    const after = ((await (await api('/v1/me/connections')).json()) as ConnectionDto[]).find((c) => c.sourceKey === 'google_portability');
+    expect(after).toMatchObject({ missingScopes: 3 });
+    await database.db.update(providerConsents).set({ scopes: consent!.scopes }).where(eq(providerConsents.id, consent!.id));
   });
 
   it('cancelar la renovación en Google vuelve a la app con el error y no toca la conexión', async () => {

@@ -116,14 +116,28 @@ describe('sync de Google', () => {
     expect(outcome).toMatchObject({ status: 'deferred', retryAfterMs: 60_000, observationsInserted: 0 });
     const [run] = await database.db.select().from(sourceSyncRuns).where(eq(sourceSyncRuns.id, runId));
     expect(run!.status).toBe('queued');
-    expect(Object.keys(JSON.parse((await credentialsOf(connectionId))!.jobs!))).toHaveLength(5);
+    // 5 grupos de valoraciones y lugares (fase 3) y 3 de YouTube (fase 4).
+    expect(Object.keys(JSON.parse((await credentialsOf(connectionId))!.jobs!))).toHaveLength(8);
   });
 
   it('la misma ejecución se reanuda e importa lo identificado; lo no identificado se informa sin bloquear', async () => {
     const outcome = await runConnectionSync(deps(), runId);
-    expect(outcome).toMatchObject({ status: 'partial', recordsReceived: 8, observationsInserted: 8 });
-    // La ferretería y «Moana» no se identifican; el lugar sin coordenadas está incompleto. Ninguno bloquea.
-    expect(outcome.partialErrors.map((e) => e.code).sort()).toEqual(['invalid_record', 'unidentified', 'unidentified']);
+    // 8 de valoraciones y lugares y 4 de YouTube (escuchas de Radiohead y del podcast, suscripción y biblioteca).
+    expect(outcome).toMatchObject({ status: 'partial', recordsReceived: 12, observationsInserted: 12 });
+    // No se identifican: la ferretería, «Moana», el vlog (escuchas y suscripción) y un artista de la biblioteca.
+    // Incompletos: el lugar sin coordenadas y la canción sin artista. Ninguno bloquea.
+    expect(outcome.partialErrors.map((e) => e.code).sort()).toEqual([
+      'invalid_record',
+      'invalid_record',
+      'unidentified',
+      'unidentified',
+      'unidentified',
+      'unidentified',
+      'unidentified',
+    ]);
+    expect(outcome.partialErrors.find((e) => e.message.includes('canales vistos'))!.message).toBe(
+      '1 de 4 canales vistos o escuchados en YouTube no se importan: 1 son canales fuera de las categorías de APPINITY (persona)',
+    );
     expect(outcome.partialErrors.every((e) => e.blocking === false)).toBe(true);
     expect(JSON.parse((await credentialsOf(connectionId))!.jobs!)).toEqual({});
   });
@@ -148,6 +162,34 @@ describe('sync de Google', () => {
     expect(casablanca).toMatchObject({ preferenceScore: -0.5, preferenceBasis: 'explicit_rating', consumedConfidence: 0.65 });
   });
 
+  it('YouTube: escuchas agregadas por artista (canal oficial + «Topic») y por programa; suscripción y biblioteca solo conocidas', async () => {
+    const observations = await database.db.select().from(userItemObservations).where(eq(userItemObservations.connectionId, connectionId));
+    const byKind = (kind: string, recordId: string) => observations.find((o) => o.observationKind === kind && o.sourceRecordId === recordId);
+    // Radiohead: 4 escuchas en YouTube Music + 2 vídeos del canal oficial = 6; es su propio p95 → preferencia 1.
+    expect(byKind('yt_plays', 'wd:Q44190')).toMatchObject({
+      knownConfidence: 0.95,
+      consumedConfidence: 0.95,
+      preferenceScore: 1,
+      preferenceConfidence: 0.57,
+      preferenceBasis: 'strong_behavior',
+      engagement: { type: 'listened', value: 6, unit: 'plays' },
+      metadata: expect.objectContaining({ plays: 6, musicPlays: 4, channels: 2 }),
+    });
+    // Una sola escucha del podcast: consumido, pero sin preferencia (§9).
+    expect(byKind('yt_plays', 'wd:Q999999999')).toMatchObject({ consumedConfidence: 0.95, preferenceScore: null, preferenceBasis: null });
+    expect(byKind('yt_subscription', 'wd:Q44190')).toMatchObject({ knownConfidence: 0.95, consumedConfidence: 0, preferenceScore: null });
+    // Biblioteca: «Radiohead» y «Radiohead - Topic» son el mismo artista (2 canciones); identificado por nombre (0,8).
+    expect(byKind('ytm_library', 'wd:Q44190')).toMatchObject({ knownConfidence: 0.8, consumedConfidence: 0, engagement: { type: 'saved', value: 2 } });
+    const [podcast] = await database.db
+      .select({ item: catalogItems })
+      .from(catalogItems)
+      .innerJoin(userItemObservations, eq(userItemObservations.catalogItemId, catalogItems.id))
+      .where(eq(userItemObservations.sourceRecordId, 'wd:Q999999999'));
+    expect(podcast!.item).toMatchObject({ category: 'podcasts', itemType: 'podcast' });
+    // Ningún título de vídeo ni búsqueda se guarda.
+    expect(JSON.stringify(observations)).not.toMatch(/vídeo simulado|Has buscado/);
+  });
+
   it('antes de 24 h no se repite el export: sync sin cambios y sin retirar evidencia', async () => {
     const outcome = await runConnectionSync(deps(), await createSyncRun(database, connectionId, 'user', 'full'));
     expect(outcome).toMatchObject({ status: 'succeeded', observationsInserted: 0, observationsDeleted: 0 });
@@ -161,7 +203,7 @@ describe('sync de Google', () => {
     const id = await createSyncRun(database, connectionId, 'schedule', 'full');
     expect(await runConnectionSync(deps(), id)).toMatchObject({ status: 'deferred' });
     const outcome = await runConnectionSync(deps(), id);
-    expect(outcome).toMatchObject({ observationsDeleted: 1, observationsInserted: 0, observationsUnchanged: 7 });
+    expect(outcome).toMatchObject({ observationsDeleted: 1, observationsInserted: 0, observationsUnchanged: 11 });
     const left = await database.db.select().from(userItemObservations).where(eq(userItemObservations.sourceRecordId, 'place:cid:2222162186422964967'));
     expect(left).toHaveLength(0);
   });
@@ -175,12 +217,12 @@ describe('sync de Google', () => {
     const after = await credentialsOf(connectionId);
     expect(after!.refreshToken).not.toBe(before!.refreshToken);
     const kept = await database.db.select().from(userItemObservations).where(eq(userItemObservations.connectionId, connectionId));
-    expect(kept).toHaveLength(7);
+    expect(kept).toHaveLength(11);
   });
 
   it('desconectar y borrar revoca el permiso en Google, borra credenciales y lo importado', async () => {
     const result = await disconnectSource(database.db, registry(), gala, connectionId, { purge: true, credentialsKey: KEY });
-    expect(result).toMatchObject({ providerRevocation: 'revoked', purgedObservations: 7 });
+    expect(result).toMatchObject({ providerRevocation: 'revoked', purgedObservations: 11 });
     expect(google.resets()).toBe(1);
     expect(await credentialsOf(connectionId)).toBeUndefined();
     expect(await profileByWikidata(gala, 'Q1079')).toBeUndefined();

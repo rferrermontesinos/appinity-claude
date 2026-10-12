@@ -3,6 +3,7 @@ import {
   normalizeTitle,
   SourceError,
   type EntityIdentifier,
+  type Identification,
   type PlaceIdentification,
   type SyncBatch,
   type SyncContext,
@@ -20,6 +21,7 @@ import {
   type ResourceGroup,
 } from './constants.js';
 import type { ExportRecord, GoogleRecord } from './schemas.js';
+import { processYouTube } from './youtube.js';
 
 /** Estado del adapter guardado (cifrado) junto a las credenciales. */
 export interface PortabilityState {
@@ -38,6 +40,9 @@ const GROUP_LABEL: Record<ResourceGroup, string> = {
   'search_ugc.media.reviews_and_stars': 'valoraciones con estrellas de la Búsqueda',
   'search_ugc.media.thumbs': 'pulgares de la Búsqueda',
   'search_ugc.media.watched': 'películas y series vistas',
+  'myactivity.youtube': 'canales vistos o escuchados en YouTube',
+  'youtube.music': 'artistas de la biblioteca de YouTube Music',
+  'youtube.subscriptions': 'suscripciones de YouTube',
 };
 
 function json<T>(value: string | undefined, fallback: T): T {
@@ -71,7 +76,8 @@ export function recordIdOf(record: ExportRecord): string {
     if (placeId) return `place:pid:${placeId}`;
     return `place:${record.place.latitude.toFixed(5)},${record.place.longitude.toFixed(5)}:${normalizeTitle(record.place.name)}`;
   }
-  return `work:${normalizeTitle(record.query)}`;
+  // Los registros de YouTube llegan ya agregados con su id (youtube.ts); este caso no se da.
+  return 'query' in record ? `work:${normalizeTitle(record.query)}` : `${record.group}:sin-id`;
 }
 
 export interface PortabilitySyncOptions {
@@ -175,8 +181,53 @@ export async function syncPortability(
   for (const [group, urls] of completed) {
     const zips: Uint8Array[] = [];
     for (const url of urls) zips.push(await client.download(url));
-    const { records: exported, summary } = readArchive(group, zips);
+    const { records: exported, summary, youtube } = readArchive(group, zips);
     options.onArchiveSummary?.(summary);
+    if (youtube) {
+      // YouTube: se agregan escuchas por canal, se identifican los canales y se fusionan por artista o programa.
+      let result;
+      try {
+        result = await processYouTube(youtube, options.identifier, options.onProgress);
+      } catch (error) {
+        if (isSourceError(error) && error.retryable) {
+          return {
+            records: [],
+            cursor: null,
+            hasMore: false,
+            partialErrors: [],
+            snapshotComplete: false,
+            pending: { retryAfterMs: IDENTIFIER_RETRY_MS, reason: `${error.message} (identificación de catálogo)` },
+          };
+        }
+        throw error;
+      }
+      records.push(...result.records);
+      Object.assign(stats, result.stats);
+      const outcome = summarizeIdentification(result.identifications, group === 'youtube.music' ? 'son artistas' : 'son canales');
+      options.onProgress?.(
+        `${group}: ${result.records.length} artistas o programas de ${outcome.identified} de ${result.total} identificados${outcome.detail}` +
+          (result.beyondLimit ? ` · sin consultar (los menos escuchados) ${result.beyondLimit}` : ''),
+      );
+      const kind = OBSERVATION_KIND[group];
+      stats[`${kind}_exported`] = result.total;
+      stats[`${kind}_identified`] = outcome.identified;
+      stats[`${kind}_out_of_scope`] = outcome.outOfScope;
+      const notImported = result.total - outcome.identified;
+      if (notImported) {
+        const parts = [outcome.message, ...(result.beyondLimit ? [`${result.beyondLimit} con menos escuchas no se consultaron`] : [])].filter(Boolean);
+        partialErrors.push({
+          code: 'unidentified',
+          message: `${notImported} de ${result.total} ${GROUP_LABEL[group]} no se importan: ${parts.join(' y ')}`,
+          blocking: false,
+        });
+      }
+      if (summary.skipped && group !== 'myactivity.youtube') {
+        partialErrors.push({ code: 'invalid_record', message: `${summary.skipped} ${GROUP_LABEL[group]} con datos incompletos`, blocking: false });
+      }
+      state.exportedAt[group] = now.toISOString();
+      delete state.jobs[group];
+      continue;
+    }
     const mappable = exported.filter(isMappable);
     const invalid = summary.skipped + exported.length - mappable.length;
     let identified: PlaceIdentification[];
@@ -249,7 +300,7 @@ const isPlaceRecord = (record: ExportRecord): record is PlaceRecord => 'place' i
  * Recuento de la identificación de un grupo, sin nombres: para el aviso al usuario (lo que APPINITY no usa frente a lo
  * que no se pudo identificar) y para el log del worker (desglose por tipo de lugar).
  */
-export function summarizeIdentification(results: PlaceIdentification[]) {
+export function summarizeIdentification(results: Array<PlaceIdentification | Identification>, subject = 'son de lugares') {
   const scopes = new Map<string, number>();
   let identified = 0;
   let noMatch = 0;
@@ -261,13 +312,13 @@ export function summarizeIdentification(results: PlaceIdentification[]) {
     else if (result.reason === 'ambiguous') ambiguous++;
     else {
       noMatch++;
-      if (result.nearby) nearby[result.nearby]++;
+      if ('nearby' in result && result.nearby) nearby[result.nearby]++;
     }
   }
   const outOfScope = [...scopes.values()].reduce((a, b) => a + b, 0);
   const ranked = [...scopes].sort((a, b) => b[1] - a[1]);
   const parts = [
-    ...(outOfScope ? [`${outOfScope} son de lugares fuera de las categorías de APPINITY (${ranked.slice(0, 3).map(([s]) => s).join(', ')}${ranked.length > 3 ? '…' : ''})`] : []),
+    ...(outOfScope ? [`${outOfScope} ${subject} fuera de las categorías de APPINITY (${ranked.slice(0, 3).map(([s]) => s).join(', ')}${ranked.length > 3 ? '…' : ''})`] : []),
     ...(noMatch + ambiguous ? [`${noMatch + ambiguous} no se pudieron identificar con seguridad`] : []),
   ];
   const detail = [

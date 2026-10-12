@@ -12,12 +12,61 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | Revisión de fuentes | **Hecha** (2026-10-08) | Especificación 1.1 y docs/fuentes-de-datos.md (rama `especificacion-fuentes`, PR rferrermontesinos/appinity-claude#5, basada en `fase-2`). TMDb descartada: PR rferrermontesinos/appinity-claude#4 cerrada sin fusionar |
 | Revisión de fuentes · decisiones | **Aceptada** (2026-10-09) | El usuario aceptó la especificación 1.1; de momento, imagen genérica (sin licencia de catálogo); Gmail se evaluará más adelante |
 | 3 | **Sincronizado con la cuenta real del usuario** (2026-10-09); pendiente de revisar la identificación con el siguiente export y de la aceptación en la app | Entrega 2026-10-09 · fase 3 (rama `fase-3-google`, PR rferrermontesinos/appinity-claude#6, basada en `especificacion-fuentes`). Primer sync: 21 evidencias (20 reseñas y 1 sitio guardado) |
-| 4 | Pendiente | YouTube y YouTube Music (mismo consentimiento de Google) |
+| 4 | **Implementado y comprobado automáticamente**; pendiente de validar con la cuenta real | Entrega 2026-10-13 · fase 4 (rama `fase-4-youtube`, basada en `fase-3-google`). Falta añadir 3 permisos en Google Cloud y renovar el permiso (README) |
 | 5–7 | Pendiente | Afinidad, Top 50 y recomendador |
 | 8–10 | Pendiente | Home, Categories y social |
 | 11 | Pendiente | Fuentes adicionales viables, una por tarea |
 | 12 | Pendiente | Chat, Premium y notificaciones, por subentregas |
 | 13 | Pendiente | Preparación y prueba de beta |
+
+---
+
+## Entrega 2026-10-13 · fase 4 (YouTube y YouTube Music)
+
+El usuario autorizó seguir con las siguientes fases mientras no estaba (2026-10-13).
+
+### Qué se ha hecho
+
+- **Mismo consentimiento de Google, 8 grupos:** se añaden `myactivity.youtube`, `youtube.music` y
+  `youtube.subscriptions`. Ficha verificada en la documentación oficial (integration-capabilities.md).
+- **Lectura del export:** reproducciones de Mi actividad (URL `/watch?v=` con canal, sin anuncios; los títulos no se
+  usan ni se guardan), suscripciones y biblioteca en CSV (parser RFC 4180 propio). Lo que no se lee (HTML, audio,
+  música subida) ni se descomprime.
+- **Identificación:** canales por su ID en Wikidata (P2397), en lotes; artistas «Topic» y de la biblioteca por nombre
+  exacto, solo músicos. Podcasts por su canal.
+- **Agregación por artista o programa**, fusionando el canal oficial y el «Topic». Preferencia por frecuencia relativa
+  al propio usuario (log1p y p95), desde 3 escuchas.
+- **Permisos nuevos:** la API indica cuántos permisos faltan en cada conexión y la app pide renovar el de Google.
+- **Worker:** progreso de la identificación de canales y desglose de lo no importado, sin nombres.
+
+### Comandos ejecutados y resultados (Windows 11, 2026-10-13)
+
+| Comando | Resultado |
+|---|---|
+| `pnpm lint` | 0 errores |
+| `pnpm typecheck` | OK (paquetes, tests y app móvil) |
+| `pnpm test` | **16 ficheros, 194 tests OK**. Nuevos: 9 unitarios de YouTube (CSV, extracción, límites, fusión, Wikidata, mapper), comprobaciones de YouTube en la integración de Google y 1 HTTP (permisos que faltan) |
+| Identificación contra Wikidata real | Radiohead, The Beatles y Queen por su canal oficial (0,95); The Joe Rogan Experience y 99% Invisible como podcasts; Rosalía y Bad Bunny por nombre. Detectado y corregido: nombres solo en la etiqueta común `mul` |
+
+No se ha probado la vista de la app en la web: la API del usuario seguía con la versión anterior y no se detienen sus
+procesos. Se comprobó con el typecheck de la app.
+
+### Validación pendiente (usuario, con su cuenta)
+
+1. En Google Cloud, añadir los 3 permisos nuevos a la pantalla de consentimiento (README).
+2. Reiniciar `pnpm api` y `pnpm worker`.
+3. Desde la vista web del PC, pulsar «Renovar permiso» en Google y marcar los datos nuevos.
+4. Pegar las líneas `[google] export myactivity.youtube …` y `[google] myactivity.youtube: …` del worker.
+
+### Limitaciones
+
+- Formato real sin comprobar: si Mi actividad incluye las escuchas de YouTube Music y si el JSON llega junto al HTML.
+- Cobertura de Wikidata: solo ~570 podcasts tienen su canal de YouTube; muchos canales quedarán sin identificar.
+- Confianzas y parámetros sin calibrar.
+
+### Siguiente paso
+
+Validar con la cuenta real. Después, fase 5: afinidad direccional versionada.
 
 ---
 

@@ -1,6 +1,6 @@
 # Arquitectura · APPINITY Claude
 
-Documento vivo. Describe lo implementado (fases 0 a 3) y marca lo pendiente. Requisitos:
+Documento vivo. Describe lo implementado (fases 0 a 4) y marca lo pendiente. Requisitos:
 [APPINITY_Especificacion.md](APPINITY_Especificacion.md). Decisiones y parámetros: [decisions.md](decisions.md).
 
 ## Vista general
@@ -136,6 +136,19 @@ Worker, por cada grupo concedido:
 Desconectar: borra credenciales → authorization:reset + revocación del token → providerRevocation
 ```
 
+## YouTube y YouTube Music (fase 4)
+
+```text
+Mismo adapter y consentimiento de Google (8 grupos). Por cada export completado de YouTube:
+  readArchive → solo JSON y CSV (sin descomprimir HTML, audio ni música subida)
+    myactivity.youtube: reproducciones (/watch?v= con canal, sin anuncios) → recuento por canal
+    youtube.subscriptions / youtube.music: CSV → canales / canciones por artista
+  processYouTube → Wikidata: canales por P2397 (lotes de 40) · «Topic» y biblioteca por nombre exacto (solo músicos)
+    → fusión por entidad (canal oficial + «Topic») → p95 de escuchas del usuario por categoría (stats)
+  mapper: yt_plays (consumido; preferencia log1p/p95 desde 3) · yt_subscription y ytm_library (conocido)
+API: missingScopes = scopes que pide el adapter − concedidos → la app ofrece «Renovar permiso»
+```
+
 ## Resolución de entidades (§6)
 
 `EntityResolver.resolve(candidato, dataset)`:
@@ -202,6 +215,6 @@ producción (vista web de desarrollo).
 
 ## Pendiente por fase
 
-Ver [progress.md](progress.md). Validación de Google con una cuenta real (3), YouTube y YouTube Music (4), afinidad (5), Top 50 (6), recomendador y Trending
+Ver [progress.md](progress.md). Validación con una cuenta real de la identificación de Google (3) y de YouTube y YouTube Music (4), afinidad (5), Top 50 (6), recomendador y Trending
 (7), Home con carrusel (8), Categories con recomendaciones (9), People/Friends (10), adapters restantes (11), chat,
 Premium y push (12), autenticación de producción y beta (13).

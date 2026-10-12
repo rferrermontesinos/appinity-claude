@@ -3,7 +3,7 @@
  * acceso y reset) con exports ZIP generados al vuelo. Los formatos siguen la documentación oficial (2026-10-09); los
  * datos de usuario son inventados. Los lugares y títulos son reales y públicos.
  */
-import type { IdentifiedEntity, PlaceIdentification } from '@appinity/shared';
+import type { ChannelToIdentify, IdentifiedEntity, Identification, PlaceIdentification } from '@appinity/shared';
 import { createHash } from 'node:crypto';
 import { strToU8, zipSync } from 'fflate';
 
@@ -15,7 +15,26 @@ export const FAKE_CLIENT = {
 
 type Group = string;
 
-/** Archivos del export por grupo (JSON tal como lo documenta Google). */
+/** Canales simulados. El de Radiohead es su canal oficial real (P2397 en Wikidata); el resto son inventados. */
+export const FAKE_CHANNELS = {
+  radiohead: 'UCq19-LqvG35A-30oyAiPiqA',
+  radioheadTopic: 'UCTopicRadiohead00000000',
+  podcast: 'UCpodcastSimulado0000000',
+  vlog: 'UCvlogSimulado0000000000',
+} as const;
+
+/** Registro de Mi actividad (formato documentado). Los títulos van en el idioma de la cuenta: no se usan. */
+const watch = (videoId: string, channelId: string, channel: string, time: string, header = 'YouTube') => ({
+  header,
+  title: `Has visto un vídeo simulado ${videoId}`,
+  titleUrl: `https://${header === 'YouTube Music' ? 'music' : 'www'}.youtube.com/watch?v=${videoId}`,
+  subtitles: [{ name: channel, url: `https://www.youtube.com/channel/${channelId}` }],
+  time,
+  products: [header],
+  activityControls: ['YouTube watch history'],
+});
+
+/** Archivos del export por grupo (JSON o CSV tal como lo documenta Google; un texto se guarda tal cual). */
 export function defaultExports(): Record<Group, Record<string, unknown>> {
   return {
     'maps.reviews': {
@@ -84,6 +103,39 @@ export function defaultExports(): Record<Group, Record<string, unknown>> {
     'search_ugc.media.watched': {
       'Portability/Search Contributions/Watched.json': [{ Published: '2026-08-20T22:00:00.000Z', 'Search Query': 'Casablanca' }],
     },
+    'myactivity.youtube': {
+      'Portability/My Activity/YouTube/MyActivity.json': [
+        // Radiohead: 4 escuchas en YouTube Music (canal «Topic») y 2 vídeos en su canal oficial → un solo artista, 6.
+        ...['aaaaaaaaaa1', 'aaaaaaaaaa2', 'aaaaaaaaaa3', 'aaaaaaaaaa4'].map((v, i) =>
+          watch(v, FAKE_CHANNELS.radioheadTopic, 'Radiohead - Topic', `2026-09-0${i + 1}T20:00:00.000Z`, 'YouTube Music'),
+        ),
+        watch('bbbbbbbbbb1', FAKE_CHANNELS.radiohead, 'Radiohead', '2026-09-10T21:00:00.000Z'),
+        watch('bbbbbbbbbb2', FAKE_CHANNELS.radiohead, 'Radiohead', '2026-08-10T21:00:00.000Z'),
+        watch('cccccccccc1', FAKE_CHANNELS.podcast, 'Podcast simulado', '2026-09-05T08:00:00.000Z'),
+        watch('dddddddddd1', FAKE_CHANNELS.vlog, 'Vlog simulado', '2026-09-06T08:00:00.000Z'),
+        // Búsqueda, anuncio y vídeo eliminado: no son escuchas válidas.
+        { header: 'YouTube', title: 'Has buscado algo', titleUrl: 'https://www.youtube.com/results?search_query=simulada', time: '2026-09-07T08:00:00.000Z' },
+        { ...watch('eeeeeeeeee1', FAKE_CHANNELS.vlog, 'Anunciante', '2026-09-08T08:00:00.000Z'), details: [{ name: 'From Google Ads' }] },
+        { header: 'YouTube', title: 'Has visto un vídeo que se ha eliminado', titleUrl: 'https://www.youtube.com/watch?v=ffffffffff1', time: '2026-09-09T08:00:00.000Z' },
+      ],
+    },
+    'youtube.subscriptions': {
+      'Portability/YouTube and YouTube Music/subscriptions/subscriptions.csv': [
+        'Channel ID,Channel URL,Channel Title',
+        `${FAKE_CHANNELS.radiohead},http://www.youtube.com/channel/${FAKE_CHANNELS.radiohead},Radiohead`,
+        `${FAKE_CHANNELS.vlog},http://www.youtube.com/channel/${FAKE_CHANNELS.vlog},Vlog simulado`,
+        '',
+      ].join('\r\n'),
+    },
+    'youtube.music': {
+      'Portability/YouTube and YouTube Music/music (library and uploads)/music library songs.csv': [
+        'Video ID,Song Title,Album Title,Artist Name',
+        'gggggggggg1,Paranoid Android,OK Computer,Radiohead',
+        'gggggggggg2,"Karma Police, versión simulada",OK Computer,Radiohead - Topic',
+        'gggggggggg3,Canción simulada,Disco simulado,Artista desconocido',
+        'gggggggggg4,Sin artista,,',
+      ].join('\n'),
+    },
   };
 }
 
@@ -122,6 +174,31 @@ export const FAKE_IDENTIFICATIONS: Record<string, IdentifiedEntity> = {
   Radiohead: { category: 'music', itemType: 'artist', title: 'Radiohead', canonicalIds: { 'wikidata:entity': 'Q44190' }, confidence: 0.8, method: 'wikidata_titulo_exacto_unico' },
 };
 
+/** Identificación simulada de canales por su ID (lo que devolvería Wikidata con P2397). */
+export const FAKE_CHANNEL_IDENTIFICATIONS: Record<string, Identification> = {
+  [FAKE_CHANNELS.radiohead]: {
+    entity: {
+      category: 'music',
+      itemType: 'artist',
+      title: 'Radiohead',
+      canonicalIds: { 'wikidata:entity': 'Q44190', 'youtube:channel': FAKE_CHANNELS.radiohead },
+      confidence: 0.95,
+      method: 'wikidata_canal_youtube',
+    },
+  },
+  [FAKE_CHANNELS.podcast]: {
+    entity: {
+      category: 'podcasts',
+      itemType: 'podcast',
+      title: 'Podcast simulado',
+      canonicalIds: { 'wikidata:entity': 'Q999999999', 'youtube:channel': FAKE_CHANNELS.podcast },
+      confidence: 0.95,
+      method: 'wikidata_canal_youtube',
+    },
+  },
+  [FAKE_CHANNELS.vlog]: { entity: null, reason: 'out_of_scope', scope: 'persona' },
+};
+
 export function createFakeIdentifier(identifications: Record<string, IdentifiedEntity> = FAKE_IDENTIFICATIONS) {
   const calls: string[] = [];
   const identifyPlace = async (place: { name: string }) => {
@@ -143,6 +220,20 @@ export function createFakeIdentifier(identifications: Record<string, IdentifiedE
         calls.push(`work:${work.title}`);
         return identifications[work.title] ?? null;
       },
+      identifyChannels: async (channels: ChannelToIdentify[]): Promise<Identification[]> =>
+        channels.map((channel) => {
+          calls.push(`channel:${channel.channelId}`);
+          const byId = FAKE_CHANNEL_IDENTIFICATIONS[channel.channelId];
+          if (byId) return byId;
+          const artist = channel.musicName ? identifications[channel.musicName] : undefined;
+          return artist?.category === 'music' ? { entity: artist } : { entity: null, reason: 'no_match' };
+        }),
+      identifyArtists: async (names: string[]): Promise<Identification[]> =>
+        names.map((name) => {
+          calls.push(`artist:${name}`);
+          const artist = identifications[name];
+          return artist?.category === 'music' ? { entity: artist } : { entity: null, reason: 'no_match' };
+        }),
     },
   };
 }
@@ -225,7 +316,7 @@ export function createFakeGoogle(options: FakeGoogleOptions = {}) {
       const job = jobs.get(url.pathname.split('/').at(-1)!.replace('.zip', ''));
       if (!job) return new Response('no', { status: 404 });
       const files = exports[job.group] ?? {};
-      const zip = zipSync(Object.fromEntries(Object.entries(files).map(([path, data]) => [path, strToU8(JSON.stringify(data))])));
+      const zip = zipSync(Object.fromEntries(Object.entries(files).map(([path, data]) => [path, strToU8(typeof data === 'string' ? data : JSON.stringify(data))])));
       return new Response(zip, { status: 200, headers: { 'Content-Length': String(zip.byteLength) } });
     }
     if (url.host === 'dataportability.googleapis.com') {

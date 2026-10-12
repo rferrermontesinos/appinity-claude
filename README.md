@@ -10,8 +10,10 @@ Implementación independiente de APPINITY construida desde cero a partir de
 - Fase 2 (Steam) **validada con una cuenta real**.
 - Fuentes revisadas: especificación 1.1 y [docs/fuentes-de-datos.md](docs/fuentes-de-datos.md). TMDb queda descartada
   por ser de uso no comercial.
-- Fase 3 (Google Data Portability: valoraciones y lugares) **implementada y probada con un Google simulado**. Falta
-  validarla con tu cuenta ([docs/progress.md](docs/progress.md)).
+- Fase 3 (Google Data Portability: valoraciones y lugares) **sincronizada con tu cuenta real**; falta revisar la
+  identificación con el siguiente export.
+- Fase 4 (YouTube y YouTube Music) **implementada y probada con un Google simulado**. Falta validarla con tu cuenta
+  ([docs/progress.md](docs/progress.md)).
 - Todavía **no** hay recomendador, afinidades ni almas gemelas.
 
 ## Qué es real y qué es simulado
@@ -25,8 +27,9 @@ Implementación independiente de APPINITY construida desde cero a partir de
 | Fuentes «Demo · …» | **Simuladas**: mismo contrato de adapter que las fuentes reales, sin OAuth ni proveedores |
 | Steam | **Real** (fase 2): OpenID + Steam Web API. Solo para cuentas reales; requiere `STEAM_WEB_API_KEY` en el servidor |
 | Cuenta local real (`pnpm user:local`) | **Real** (`dataset = live`), con identidad de desarrollo y código de un solo uso. No es autenticación de producción |
-| Google · valoraciones y lugares | **Real** (fase 3, pendiente de validar con una cuenta real): reseñas y sitios guardados de Maps, valoraciones y «vistos» de la Búsqueda. Lugares identificados con OpenStreetMap y obras con Wikidata. Requiere el cliente OAuth en el servidor |
-| YouTube y YouTube Music, Google Books, Apple Music, calendario | **Pendientes** (fases 4 y 11). Se muestran como «Próximamente». TMDb, Last.fm y Spotify requieren acuerdo comercial |
+| Google · YouTube y YouTube Music | **Real** (fase 4, pendiente de validar con una cuenta real): escuchas agregadas por artista o programa, suscripciones y biblioteca. Canales identificados en Wikidata por su ID de YouTube |
+| Google · valoraciones y lugares | **Real** (fase 3, sincronizado con una cuenta real): reseñas y sitios guardados de Maps, valoraciones y «vistos» de la Búsqueda. Lugares identificados con OpenStreetMap y obras con Wikidata. Requiere el cliente OAuth en el servidor |
+| Google Books, Apple Music, calendario | **Pendientes** (fase 11). Se muestran como «Próximamente». TMDb, Last.fm y Spotify requieren acuerdo comercial |
 | Identidad | **De desarrollo** (JWT firmado por la API con `DEMO_MODE`). No es autenticación de producción |
 | Recomendaciones, afinidad, almas gemelas, Trending | **Pendientes** (fases 5–8). La app no muestra ninguna inventada |
 
@@ -224,7 +227,9 @@ instrucción y conserva lo ya importado.
 
 Con **una sola autorización** de Google, APPINITY importa:
 - tus reseñas y sitios guardados de **Maps** (restaurantes y lugares culturales);
-- lo que valoras o marcas como visto en la **Búsqueda** (películas, series, libros, música y juegos).
+- lo que valoras o marcas como visto en la **Búsqueda** (películas, series, libros, música y juegos);
+- lo que escuchas y ves en **YouTube y YouTube Music**, tu biblioteca de YouTube Music y tus suscripciones (artistas
+  y podcasts).
 
 Solo lee; nunca escribe en tu cuenta. Disponible en la UE, Suiza y Reino Unido.
 
@@ -248,7 +253,7 @@ con seguridad no se importa, y la app lo indica.
 4. **Google Auth Platform** (pantalla de consentimiento):
    - **Información de la marca:** nombre `APPINITY (desarrollo)` y tu correo de asistencia.
    - **Público:** tipo **Externo**, estado **Prueba**. En **Usuarios de prueba**, añade tu Gmail.
-   - **Acceso a los datos → Añadir o quitar permisos:** añade estos cinco (puedes pegarlos en «Añadir manualmente»):
+   - **Acceso a los datos → Añadir o quitar permisos:** añade estos ocho (puedes pegarlos en «Añadir manualmente»):
 
      ```text
      https://www.googleapis.com/auth/dataportability.maps.reviews
@@ -256,7 +261,14 @@ con seguridad no se importa, y la app lo indica.
      https://www.googleapis.com/auth/dataportability.search_ugc.media.reviews_and_stars
      https://www.googleapis.com/auth/dataportability.search_ugc.media.thumbs
      https://www.googleapis.com/auth/dataportability.search_ugc.media.watched
+     https://www.googleapis.com/auth/dataportability.myactivity.youtube
+     https://www.googleapis.com/auth/dataportability.youtube.music
+     https://www.googleapis.com/auth/dataportability.youtube.subscriptions
      ```
+
+     **Si ya conectaste Google antes de la fase 4:** añade solo los tres últimos (YouTube). Después reinicia `pnpm api`
+     y `pnpm worker`, y en la vista web del PC pulsa **«Renovar permiso»** en Google y marca los datos nuevos. Se
+     conserva lo ya importado.
 
 5. **Clientes → Crear cliente** → tipo **Aplicación web**. En **URIs de redirección autorizados** pon exactamente
    `http://localhost:3100/v1/connect/google_portability/callback`. Crea el cliente y deja abierta la ventana con el
