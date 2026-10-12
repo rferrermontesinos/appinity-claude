@@ -181,6 +181,30 @@ Comprobaciones tras los cambios: `pnpm lint` 0 errores, `pnpm typecheck` OK y `p
 **181 tests OK**. Nuevos: lotes, separadores y reintentos de Overpass, motivos de no identificación, casos reales de
 etiquetado y resumen sin nombres.
 
+### Segundo export real (2026-10-13)
+
+`partial (+0 ~0 =21 -0, 3 errores parciales)`: las mismas 21 evidencias, sin cambios (idempotencia comprobada con
+datos reales). Desglose de `maps.reviews`:
+- 20 de 75 identificadas;
+- 6 fuera de categoría: tienda 3, alojamiento 1, ocio nocturno 1, mercado 1;
+- 49 sin coincidencia.
+
+`skippedShapes` confirma que las 8 descartadas (7 reseñas y 1 sitio guardado) **no traen `location`** y tienen
+coordenadas 0,0. Solo conservan el enlace y la fecha. No hay forma de identificarlas y se siguen descartando.
+
+Cambios para entender y reducir las 49 sin coincidencia:
+- **Descriptor de Google.** Se compara también la parte anterior a un separador: «Can Pep - Tapas Bar» y «Can Pep |
+  Cocina mediterránea» coinciden con «Can Pep» (0,85).
+- **Diagnóstico sin nombres.** Cada lugar sin coincidencia indica qué hay cerca:
+  - nada con nombre;
+  - solo otros lugares;
+  - un restaurante o lugar cultural a ≤ 30 m con otro nombre (probablemente el mismo sitio).
+
+  Si predomina este último caso, el siguiente paso sería una regla de proximidad con confianza baja. Se decidirá con el
+  próximo export (desde el 2026-10-14), no a ciegas.
+
+Comprobaciones: `pnpm lint` 0 errores, `pnpm typecheck` OK y `pnpm test` **183 tests OK**.
+
 ### Bloqueos y puntos declarados
 
 - **Cuenta de facturación de Google Cloud:** obligatoria para activar la API, aunque esta no tenga coste publicado.
@@ -207,8 +231,8 @@ etiquetado y resumen sin nombres.
 
 ### Siguiente paso
 
-1. Con el siguiente export (desde el 2026-10-10), revisar el desglose de motivos del worker y `skippedShapes`, y
-   ajustar la identificación si procede.
+1. Con el siguiente export (desde el 2026-10-14), revisar el desglose de «sin coincidencia» y decidir si hace falta
+   una regla de proximidad.
 2. Aceptación del usuario en la app.
 3. Fase 4: YouTube y YouTube Music con el mismo consentimiento.
 

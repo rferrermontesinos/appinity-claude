@@ -254,11 +254,15 @@ export function summarizeIdentification(results: PlaceIdentification[]) {
   let identified = 0;
   let noMatch = 0;
   let ambiguous = 0;
+  const nearby = { none: 0, other: 0, app_category: 0 };
   for (const result of results) {
     if (result.entity) identified++;
     else if (result.reason === 'out_of_scope') scopes.set(result.scope, (scopes.get(result.scope) ?? 0) + 1);
     else if (result.reason === 'ambiguous') ambiguous++;
-    else noMatch++;
+    else {
+      noMatch++;
+      if (result.nearby) nearby[result.nearby]++;
+    }
   }
   const outOfScope = [...scopes.values()].reduce((a, b) => a + b, 0);
   const ranked = [...scopes].sort((a, b) => b[1] - a[1]);
@@ -268,7 +272,14 @@ export function summarizeIdentification(results: PlaceIdentification[]) {
   ];
   const detail = [
     ...(outOfScope ? [`fuera de categoría ${outOfScope} (${ranked.map(([s, n]) => `${s} ${n}`).join(', ')})`] : []),
-    ...(noMatch ? [`sin coincidencia en el catálogo ${noMatch}`] : []),
+    ...(noMatch
+      ? [
+          `sin coincidencia en el catálogo ${noMatch}` +
+            (nearby.none + nearby.other + nearby.app_category
+              ? ` (sin lugares cerca ${nearby.none}, solo otros lugares ${nearby.other}, restaurante o lugar cultural a ≤ 30 m con otro nombre ${nearby.app_category})`
+              : ''),
+        ]
+      : []),
     ...(ambiguous ? [`ambiguos ${ambiguous}`] : []),
   ];
   return { identified, outOfScope, noMatch, ambiguous, message: parts.join(' y '), detail: detail.length ? ` · ${detail.join(' · ')}` : '' };

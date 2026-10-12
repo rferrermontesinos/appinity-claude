@@ -1,7 +1,7 @@
 import { parseObservation, SourceError, type SourceCredentials, type SyncContext } from '@appinity/shared';
 import { strToU8, zipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
-import { classifyOsmTags, matchPlace, osmScope, overpassBatchQuery, pickPlace, slotWaitMs, OsmPlaceIdentifier } from '../src/catalog/osm-places.js';
+import { classifyOsmTags, descriptorHead, matchPlace, osmScope, overpassBatchQuery, pickPlace, slotWaitMs, OsmPlaceIdentifier } from '../src/catalog/osm-places.js';
 import { WikidataWorkIdentifier } from '../src/catalog/wikidata-works.js';
 import { googlePlaceIds, parseStars, readArchive, urlPattern } from '../src/profile/google-portability/archive.js';
 import { completePortabilityConnect, startPortabilityConnect } from '../src/profile/google-portability/auth.js';
@@ -365,7 +365,7 @@ describe('identificación en el catálogo', () => {
     const foodCourt = element(4185576491, { name: 'Mercado San Miguel', amenity: 'food_court' });
     const place = { name: 'Mercado de San Miguel', latitude: 40.4154, longitude: -3.7089 };
     expect(matchPlace(place, [market, foodCourt])).toEqual({ entity: null, reason: 'out_of_scope', scope: 'mercado' });
-    expect(matchPlace(place, [foodCourt])).toEqual({ entity: null, reason: 'no_match' });
+    expect(matchPlace(place, [foodCourt])).toMatchObject({ entity: null, reason: 'no_match' });
   });
 
   it('OSM: distingue lo que APPINITY no usa de lo que no se identifica', () => {
@@ -377,9 +377,27 @@ describe('identificación en el catálogo', () => {
     const building = element(3, { name: 'Can Pep', heritage: '2' });
     const restaurant = element(4, { name: 'Can Pep', amenity: 'restaurant' });
     expect(matchPlace({ name: 'Can Pep', ...at }, [building, restaurant])).toMatchObject({ entity: { category: 'food' } });
-    expect(matchPlace({ name: 'Can Pep', ...at }, [hotel])).toEqual({ entity: null, reason: 'no_match' });
+    expect(matchPlace({ name: 'Can Pep', ...at }, [hotel])).toMatchObject({ entity: null, reason: 'no_match' });
     expect(matchPlace({ name: 'Can Pep', ...at }, [restaurant, element(5, { name: 'Can Pep', tourism: 'museum' })])).toEqual({ entity: null, reason: 'ambiguous' });
     expect(osmScope({ leisure: 'park' })).toBe('parque');
+  });
+
+  it('OSM: el descriptor que añade Google tras un separador no impide la coincidencia', () => {
+    const at = { latitude: 41.38, longitude: 2.17 };
+    const restaurant = element(1, { name: 'Can Pep', amenity: 'restaurant' });
+    expect(matchPlace({ name: 'Can Pep - Tapas Bar', ...at }, [restaurant])).toMatchObject({ entity: { confidence: 0.85, method: 'osm_name_sin_genericos_100m' } });
+    expect(matchPlace({ name: 'Can Pep | Cocina mediterránea', ...at }, [restaurant])).toMatchObject({ entity: { category: 'food' } });
+    expect(descriptorHead('Bar - Restaurante')).toBeNull();
+    expect(descriptorHead('Sant Pau')).toBeNull();
+  });
+
+  it('OSM: diagnostica qué hay cerca cuando el nombre no coincide (sin guardar nombres)', () => {
+    const at = { latitude: 41.3852, longitude: 2.181 };
+    expect(matchPlace({ name: 'La Taberna Nueva', ...at }, [])).toEqual({ entity: null, reason: 'no_match', nearby: 'none' });
+    expect(matchPlace({ name: 'La Taberna Nueva', ...at }, [element(1, { name: 'Otra Cosa', shop: 'bakery' })])).toMatchObject({ nearby: 'other' });
+    // Un restaurante a pocos metros con otro nombre: probablemente el mismo sitio (renombrado o con otro nombre en OSM).
+    expect(matchPlace({ name: 'La Taberna Nueva', ...at }, [element(2, { name: 'Bodega Vieja', amenity: 'restaurant' })])).toMatchObject({ nearby: 'app_category' });
+    expect(matchPlace({ name: 'La Taberna Nueva', ...at }, [element(3, { name: 'Bodega Vieja', amenity: 'restaurant' }, 41.3862, 2.181)])).toMatchObject({ nearby: 'other' });
   });
 
   it('resume la identificación sin nombres: aviso para el usuario y desglose para el worker', () => {

@@ -57,6 +57,17 @@ const GENERIC_WORDS = new Set([
   'restaurante', 'restaurant', 'bar', 'cafe', 'cafeteria', 'taberna', 'tasca', 'pizzeria', 'museo', 'museu', 'museum',
   'teatro', 'teatre', 'theatre', 'cine', 'cinema', 'cines', 'galeria', 'gallery', 'el', 'la', 'los', 'las', 'les', 'l', 'the',
 ]);
+/**
+ * Nombre sin descriptor: Google añade a menudo uno tras un separador («Can Pep - Tapas Bar», «Lactuca | Cocina
+ * mediterránea»). Se usa solo la primera parte si conserva al menos 3 caracteres significativos.
+ */
+export function descriptorHead(name: string): string | null {
+  const head = name.split(/\s+[-–—|·:]\s+|\s*\|\s*/)[0] ?? '';
+  return head !== name && stripGeneric(head).length >= 3 ? head : null;
+}
+/** Distancia a la que un lugar de APPINITY con otro nombre probablemente es el mismo sitio (solo diagnóstico). */
+const SAME_SPOT_M = 30;
+
 const stripGeneric = (name: string) =>
   normalizeTitle(name)
     .split(' ')
@@ -283,6 +294,13 @@ export function matchPlace(place: PlaceToIdentify, elements: OsmElement[]): Plac
   const origin = { lat: place.latitude, lon: place.longitude };
   /** El nombre de Google aparece completo, como frase, dentro del de OSM («Sagrada Família» ⊂ «Basílica de la Sagrada Família»). */
   const contains = (n: string) => exact.split(' ').length >= 2 && ` ${normalizeTitle(n)} `.includes(` ${exact} `);
+  const head = descriptorHead(place.name);
+  const headKeys = head ? new Set([normalizeTitle(head), stripGeneric(head)]) : null;
+  /** Mismo nombre tras quitar palabras genéricas o el descriptor de Google (u OSM). */
+  const sameCore = (n: string) =>
+    (stripped.length >= 3 && stripGeneric(n) === stripped) ||
+    (headKeys !== null && (headKeys.has(normalizeTitle(n)) || headKeys.has(stripGeneric(n)) || headKeys.has(normalizeTitle(descriptorHead(n) ?? ''))));
+  const pois = elements.filter((el) => POI_KEYS.some((k) => el.tags?.[k]));
   const matches = elements
     .map((el) => {
       const tags = el.tags ?? {};
@@ -292,7 +310,7 @@ export function matchPlace(place: PlaceToIdentify, elements: OsmElement[]): Plac
       const elementNames = names(tags);
       const tier = elementNames.some((n) => normalizeTitle(n) === exact)
         ? 3
-        : stripped.length >= 3 && elementNames.some((n) => stripGeneric(n) === stripped)
+        : elementNames.some(sameCore)
           ? 2
           : elementNames.some(contains)
             ? 1
@@ -301,7 +319,13 @@ export function matchPlace(place: PlaceToIdentify, elements: OsmElement[]): Plac
       return { el, tags, kind: classifyOsmTags(tags), at, tier, distance: distanceM(origin, at) };
     })
     .filter((c): c is NonNullable<typeof c> => c !== null);
-  if (!matches.length) return { entity: null, reason: 'no_match' };
+  if (!matches.length) {
+    const close = pois.some((el) => {
+      const at = el.lat !== undefined && el.lon !== undefined ? { lat: el.lat, lon: el.lon } : el.center;
+      return at && classifyOsmTags(el.tags ?? {}) && distanceM(origin, at) <= SAME_SPOT_M;
+    });
+    return { entity: null, reason: 'no_match', nearby: !pois.length ? 'none' : close ? 'app_category' : 'other' };
+  }
   const topTier = Math.max(...matches.map((c) => c.tier));
   const top = matches.filter((c) => c.tier === topTier);
   // A igual coincidencia, cuenta el elemento de las categorías de APPINITY (un restaurante y su edificio con el mismo nombre).

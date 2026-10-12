@@ -234,7 +234,12 @@ export interface EntityIdentifier {
  */
 export type PlaceIdentification =
   | { entity: IdentifiedEntity }
-  | { entity: null; reason: 'no_match' | 'ambiguous' }
+  | { entity: null; reason: 'ambiguous' }
+  /**
+   * `nearby` (diagnóstico, sin nombres): ningún lugar con nombre cerca, solo otros lugares, o un lugar de las
+   * categorías de APPINITY muy cerca con otro nombre (probable mismo sitio con nombre distinto).
+   */
+  | { entity: null; reason: 'no_match'; nearby?: 'none' | 'other' | 'app_category' }
   | { entity: null; reason: 'out_of_scope'; scope: string };
 
 export interface PlaceToIdentify {
