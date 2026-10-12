@@ -93,6 +93,19 @@ describe(`motor de afinidad ${AFFINITY_VERSION}`, () => {
     expect(result.confidence).toBeGreaterThan(single.confidence);
   });
 
+  it('la evidencia repartida entre categorías se suma (affinity-v2): 11 coincidencias en 4 categorías superan a 4 en una', () => {
+    const spread = idx(profile('movies', 4, 1), profile('books', 2, 1), profile('culture', 2, 1), profile('food', 3, 1));
+    const onlyMovies = idx(profile('movies', 4, 1));
+    const broad = affinity(spread, spread);
+    const narrow = affinity(onlyMovies, onlyMovies);
+    expect(broad.categoriesCompared).toBe(4);
+    expect(broad.score!).toBeGreaterThan(narrow.score!);
+    // Cada categoría por separado tiene poca evidencia: la global es mayor que cualquiera de ellas.
+    for (const c of ['movies', 'books', 'culture', 'food'] as const) expect(broad.score!).toBeGreaterThan(broad.categories[c].score!);
+    // Pero con poca evidencia total sigue sin acercarse a 100.
+    expect(broad.score!).toBeLessThan(95);
+  });
+
   it('la confianza de los datos importa: la conducta (0,6) pesa menos que la valoración explícita (1)', () => {
     const explicit = affinity(idx(profile('games', 12, 0.8, 1)), idx(profile('games', 12, 0.8, 1))).score!;
     const behavior = affinity(idx(profile('games', 12, 0.8, 0.6)), idx(profile('games', 12, 0.8, 0.6))).score!;

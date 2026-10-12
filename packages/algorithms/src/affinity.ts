@@ -19,12 +19,21 @@ import { CATEGORIES, type Category } from '@appinity/shared';
  * n_eff (y con ella evidenceFactor), y multiplicarla otra vez entera limitaba al 57 % a dos personas con gustos
  * idénticos inferidos de conducta (horas, escuchas: confianza 0,6). Calibración en docs/decisions.md.
  *
- * Sin objetos comparables suficientes el resultado es NULL; con evidencia suficiente y desacuerdo total, 0. La global
- * es la media ponderada de las categorías no NULL (una categoría ausente no cuenta como 0), con peso
- * log1p(Σ confianzas de las preferencias de A en la categoría): profundidad del historial de origen sin que miles de
- * escuchas de un mismo objeto pesen más que una preferencia (cada objeto cuenta una vez).
+ * Sin objetos comparables suficientes el resultado es NULL; con evidencia suficiente y desacuerdo total, 0.
+ *
+ * Global (`affinity-v2`): media ponderada de la CALIDAD del acuerdo de las categorías no NULL (una categoría ausente
+ * no cuenta como 0), multiplicada por un factor de evidencia que SUMA la de todas ellas, cada una en sus unidades:
+ *
+ *   calidad_c = agreement · coverageFactor · dataConfidenceFactor     peso_c = log1p(Σ confianzas de A en c)
+ *   evidenciaGlobal = 1 − exp(−Σ_c n_eff_c / tau_c)
+ *   global = 100 · (Σ peso_c · calidad_c / Σ peso_c) · evidenciaGlobal
+ *
+ * Con una sola categoría coincide exactamente con su cifra. `affinity-v1` promediaba las cifras de categoría, que ya
+ * incluyen su propio factor de evidencia: quien coincidía en 11 objetos repartidos en 4 categorías (40,9) quedaba por
+ * debajo de quien coincidía en 4 películas (48,7). Calibración en docs/decisions.md. El peso usa la profundidad del
+ * historial de origen sin que miles de escuchas de un mismo objeto pesen más que una preferencia.
  */
-export const AFFINITY_VERSION = 'affinity-v1';
+export const AFFINITY_VERSION = 'affinity-v2';
 
 export interface AffinityParams {
   /** Evidencia efectiva con la que evidenceFactor llega al 63 % (1 − 1/e). Depende del tamaño típico de la categoría. */
@@ -61,6 +70,12 @@ export interface CategoryAffinity {
   commonItems: number;
   effectiveEvidence: number;
   agreement: number | null;
+  /** agreement · coverageFactor · dataConfidenceFactor (sin el factor de evidencia): lo que promedia la global. */
+  quality: number | null;
+  /** Evidencia efectiva en unidades de tau de la categoría (lo que suma la evidencia global). */
+  evidenceUnits: number;
+  /** Media de los pesos w_i (confianza de los datos comparados). */
+  dataConfidence: number | null;
   coverage: number;
   /** Preferencias del usuario de origen en la categoría (denominador de la cobertura). */
   sourceItems: number;
@@ -117,7 +132,7 @@ export function categoryAffinity(
   const coverage = sourceItems ? common / sourceItems : 0;
   const base = { category, commonItems: common, effectiveEvidence: round(nEff), coverage: round(coverage), sourceItems };
   if (common < params.minCommon || nEff < params.minEffective) {
-    return { ...base, score: null, confidence: 0, agreement: null };
+    return { ...base, score: null, confidence: 0, agreement: null, quality: null, evidenceUnits: 0, dataConfidence: null };
   }
   const agreement = weighted / nEff;
   const evidenceFactor = 1 - Math.exp(-nEff / params.tau[category]);
@@ -129,6 +144,9 @@ export function categoryAffinity(
     score: round(100 * agreement * evidenceFactor * coverageFactor * dataFactor, 2),
     confidence: round(evidenceFactor * dataConfidence),
     agreement: round(agreement),
+    quality: agreement * coverageFactor * dataFactor,
+    evidenceUnits: nEff / params.tau[category],
+    dataConfidence,
   };
 }
 
@@ -136,8 +154,9 @@ export function categoryAffinity(
 export function affinity(source: PreferenceIndex, target: PreferenceIndex, params: AffinityParams = AFFINITY_PARAMS_V1): GlobalAffinity {
   const categories = {} as Record<Category, CategoryAffinity>;
   let weightSum = 0;
-  let scoreSum = 0;
-  let notConfident = 1;
+  let qualitySum = 0;
+  let dataSum = 0;
+  let units = 0;
   let compared = 0;
   let commonItems = 0;
   for (const category of CATEGORIES) {
@@ -145,19 +164,22 @@ export function affinity(source: PreferenceIndex, target: PreferenceIndex, param
     const result = categoryAffinity(category, sourceCat, target.get(category), params);
     categories[category] = result;
     commonItems += result.commonItems;
-    if (result.score === null) continue;
+    if (result.score === null || result.quality === null || result.dataConfidence === null) continue;
     let depth = 0;
     for (const p of sourceCat?.values() ?? []) depth += p.confidence;
     const weight = Math.log1p(depth);
     weightSum += weight;
-    scoreSum += weight * result.score;
-    notConfident *= 1 - result.confidence;
+    qualitySum += weight * result.quality;
+    dataSum += weight * result.dataConfidence;
+    units += result.evidenceUnits;
     compared++;
   }
+  if (!compared || weightSum <= 0) return { score: null, confidence: 0, categoriesCompared: 0, commonItems, categories };
+  // La evidencia de varias categorías se suma: más categorías comparables, más evidencia y más confianza.
+  const evidence = 1 - Math.exp(-units);
   return {
-    score: compared && weightSum > 0 ? round(scoreSum / weightSum, 2) : null,
-    // Varias categorías comparables aumentan la confianza global.
-    confidence: compared ? round(1 - notConfident) : 0,
+    score: round(100 * (qualitySum / weightSum) * evidence, 2),
+    confidence: round(evidence * (dataSum / weightSum)),
     categoriesCompared: compared,
     commonItems,
     categories,

@@ -577,3 +577,44 @@ documentado aquí.
   (NULL donde no hay datos) y si la afinidad mutua es excepcional (ambas ≥ 90). De la dirección inversa solo se expone
   ese booleano. Solo entre personas del mismo dataset.
 - **Pendiente:** bloqueos (fase 10) y ajustes de privacidad de descubrimiento. Calibrar tau y mínimos con datos reales.
+
+## Fase 6 · 2026-10-13 (Top 50 de almas gemelas)
+
+- **`affinity-v2` (cambio de calibración de la global).** Al construir el ranking de la demo apareció un caso que
+  `affinity-v1` resolvía mal:
+
+  | Persona | Coincidencias de Laura | v1 | v2 |
+  |---|---|---|---|
+  | Clara | 11 objetos en 4 categorías, acuerdo total | 40,9 | 85,9 |
+  | Teo | 4 películas, acuerdo total | 48,7 | 48,7 |
+
+  v1 promediaba las cifras de categoría, y cada una ya incluye su propio factor de evidencia. Así la evidencia
+  repartida en varias categorías se penalizaba dos veces. v2 promedia la **calidad** del acuerdo (acuerdo × cobertura ×
+  confianza de datos, ponderada por la profundidad del historial de origen) y la multiplica por un factor de evidencia
+  que **suma** la de todas las categorías, cada una en sus unidades (`Σ n_eff_c / tau_c`). Consecuencias:
+  - con una sola categoría, la global coincide exactamente con su cifra (las tablas de calibración de la fase 5 no
+    cambian);
+  - una categoría sin datos sigue sin contar como 0;
+  - la cifra por categoría no cambia;
+  - confianza global = factor de evidencia × confianza media de los datos.
+
+  Se sube la versión del algoritmo; las filas guardadas con `affinity-v1` se sustituyen en el siguiente recálculo.
+- **Ranking:** `topSoulmates` lee las afinidades guardadas (no calcula al abrir la app). Orden estable: afinidad,
+  confianza, objetos en común e id. Versión gratuita: 50. Si hay menos candidatas, se devuelven las que existan.
+  Comprobado contra el cálculo exhaustivo con 12 y 70 perfiles sintéticos.
+- **Elegibilidad al leer:** activa, no borrada, mayoría de edad confirmada, mismo dataset y sin bloqueo en ninguna
+  dirección. El mínimo de evidencia (≥ 3 preferencias) lo aplica el cálculo.
+- **Bloqueos:** tabla `user_blocks` (migración `0005`). Excluyen en ambas direcciones del ranking, del perfil y de la
+  afinidad (404). Bloquear y desbloquear desde la app llega con la fase 10.
+- **Perfil público mínimo** (`GET /v1/people/:id`): nombre, país, foto y las afinidades (global y 8 categorías, NULL como
+  raya). Ningún objeto, título ni historial. De la dirección inversa solo se expone el indicador de afinidad mutua
+  excepcional.
+- **Personas sintéticas de la demo:** 7 personas nuevas (Clara, Pau, Iris, Leo, Ona, Teo y Vera) cuya actividad se
+  **deriva** de forma determinista de la de las personas existentes (`personas.ts`):
+  - mismas notas, parecidas, opuestas o solo tres registros;
+  - mismos objetos reales del catálogo y valoraciones inventadas;
+  - pasan por el mismo pipeline que el resto.
+
+  Así el ranking de la demo tiene casos variados sin escribir cientos de registros a mano.
+- **Pendiente:** ajuste de privacidad «aparecer en almas gemelas» (no existe todavía; solo
+  `discoverableByContacts`, que es para contactos) y exploración Premium más allá de 50 (fase 12).
