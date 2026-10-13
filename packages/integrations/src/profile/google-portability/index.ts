@@ -48,6 +48,14 @@ export function createGooglePortabilityAdapter(options: GooglePortabilityAdapter
       });
     },
     normalize: async (record, context) => mapGoogleRecord(record, context),
+    async releaseGrantBeforeRenewal(_connection, credentials) {
+      const refreshToken = credentials?.refreshToken;
+      if (!refreshToken) return;
+      // Si el permiso ya caducó o se revocó, no queda nada que liberar.
+      const accessToken = await client.refresh(refreshToken).catch(() => null);
+      if (accessToken) await client.reset(accessToken).catch(() => undefined);
+      await client.revoke(refreshToken).catch(() => undefined);
+    },
     async disconnect(_connection, credentials) {
       const refreshToken = credentials?.refreshToken;
       if (!refreshToken) return;
