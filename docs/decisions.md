@@ -522,6 +522,12 @@ El usuario autorizó continuar con las siguientes fases sin esperar a su revisi�
   retira lo que desaparece. Se revisará si el tamaño real del export lo exige.
 - **Permisos nuevos sobre conexiones existentes.** El adapter declara `requestedScopes`; la API devuelve
   `missingScopes` por conexión y la app invita a renovar el permiso. Renovar conserva lo importado.
+- **Sin autorización incremental (comprobado con la cuenta real el 2026-10-13).** Al renovar con los grupos de YouTube,
+  Google respondió `Error 400: invalid_request` · «Incremental auth is not allowed for the requested scopes». La
+  documentación no lo trata. Solución: si la conexión no tiene todos los permisos que se piden, antes de redirigir se
+  libera la concesión vigente (`authorization:reset` y revocación del token), se borran sus credenciales y la conexión
+  queda «requiere acción» hasta completar el consentimiento con los 8 grupos. Lo importado se conserva. Si el
+  usuario abandona el consentimiento, la conexión sigue en ese estado y puede volver a intentarlo.
 
 ## Fase 5 · 2026-10-13 (afinidad direccional versionada)
 
