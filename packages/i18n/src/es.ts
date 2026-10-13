@@ -160,6 +160,14 @@ export const es = {
     connectSteam: 'Iniciar sesión con Steam',
     steamHelp:
       'Se abrirá Steam para que inicies sesión allí (APPINITY no ve tu contraseña). Solo se vincula tu SteamID; la biblioteca se lee con la Steam Web API.',
+    googleHelp:
+      'Se abrirá Google: marca los datos que quieres compartir y elige 180 días para que se mantengan al día. APPINITY solo lee; nunca escribe en tu cuenta.',
+    localOnlyNotice:
+      'En desarrollo, Google solo puede volver a este PC: conecta Google desde la vista web del PC (puerto 8092) con tu cuenta local. Después lo verás aquí.',
+    renew: 'Renovar permiso',
+    revokedAtProvider: 'Desconectada. El proveedor confirmó que el acceso de APPINITY queda revocado.',
+    revokeFailed:
+      'Desconectada en APPINITY y credenciales borradas, pero el proveedor no confirmó la revocación. Puedes revisarlo en los ajustes de tu cuenta del proveedor.',
     unconfigured: 'No disponible en este servidor: {{reason}}',
     demoOnlyReal: 'Solo para cuentas reales. Entra con una cuenta local real para conectarla.',
     connectedResult: 'Cuenta conectada. La primera sincronización está en marcha.',
@@ -195,6 +203,13 @@ export const es = {
       fixture_play: 'Demo · Biblioteca de juegos',
       fixture_audio: 'Demo · Música y podcasts',
     },
+  },
+  credits: {
+    title: 'Créditos y fuentes de datos',
+    osm: 'Lugares identificados con datos de © OpenStreetMap contributors (licencia ODbL).',
+    wikidata: 'Catálogo: Wikidata (CC0) e imágenes de Wikimedia Commons; cada imagen muestra su autor y licencia.',
+    steam: 'Juegos: datos de la Steam Web API y arte de la tienda de Steam, solo como referencia.',
+    google: 'Tus datos de Google se importan con tu autorización mediante Google Data Portability y nunca se comparten.',
   },
   categoriesScreen: {
     title: 'Categorías',

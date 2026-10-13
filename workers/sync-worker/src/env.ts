@@ -7,6 +7,11 @@ export interface WorkerEnv {
   storageDir: string;
   steamApiKey?: string;
   syncIntervalHours: number;
+  /** Descifra en memoria las credenciales por usuario (p. ej. el refresh token de Google). */
+  credentialsKey?: string;
+  google?: { clientId: string; clientSecret: string; redirectUri: string };
+  /** User-Agent identificable para Wikidata y OpenStreetMap (sus políticas lo exigen). */
+  catalogUserAgent: string;
 }
 
 function required(name: string): string {
@@ -28,5 +33,17 @@ export function loadWorkerEnv(): WorkerEnv {
     storageDir: process.env.STORAGE_DIR ?? '.data/media',
     ...(process.env.STEAM_WEB_API_KEY?.trim() ? { steamApiKey: process.env.STEAM_WEB_API_KEY.trim() } : {}),
     syncIntervalHours: Number(process.env.SYNC_INTERVAL_HOURS ?? 24) || 24,
+    ...(process.env.CREDENTIALS_ENCRYPTION_KEY?.trim() ? { credentialsKey: process.env.CREDENTIALS_ENCRYPTION_KEY.trim() } : {}),
+    ...(process.env.GOOGLE_OAUTH_CLIENT_ID?.trim() && process.env.GOOGLE_OAUTH_CLIENT_SECRET?.trim()
+      ? {
+          google: {
+            clientId: process.env.GOOGLE_OAUTH_CLIENT_ID.trim(),
+            clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET.trim(),
+            redirectUri: process.env.GOOGLE_OAUTH_REDIRECT_URI?.trim() || 'http://localhost:3100/v1/connect/google_portability/callback',
+          },
+        }
+      : {}),
+    catalogUserAgent:
+      process.env.CATALOG_USER_AGENT?.trim() || 'APPINITY-Claude/0.1 (desarrollo; https://github.com/rferrermontesinos/appinity-claude)',
   };
 }

@@ -6,6 +6,8 @@ export type SourceErrorCode =
   | 'unavailable'
   | 'profile_inaccessible'
   | 'bad_response'
+  | 'not_found'
+  | 'aborted'
   | 'verification_failed';
 
 /**

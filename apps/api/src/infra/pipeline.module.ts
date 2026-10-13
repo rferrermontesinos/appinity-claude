@@ -17,7 +17,20 @@ import { ADAPTER_REGISTRY, DATABASE, ENTITY_RESOLVER, QUEUES, STORAGE } from './
       provide: ADAPTER_REGISTRY,
       inject: [APP_ENV],
       useFactory: (env: AppEnv) =>
-        createAdapterRegistry({ demoMode: env.DEMO_MODE, ...(env.STEAM_WEB_API_KEY ? { steam: { apiKey: env.STEAM_WEB_API_KEY } } : {}) }),
+        createAdapterRegistry({
+          demoMode: env.DEMO_MODE,
+          ...(env.STEAM_WEB_API_KEY ? { steam: { apiKey: env.STEAM_WEB_API_KEY } } : {}),
+          // La API solo conecta y desconecta Google; la identificación de catálogo la hace el worker al sincronizar.
+          ...(env.GOOGLE_OAUTH_CLIENT_ID && env.GOOGLE_OAUTH_CLIENT_SECRET
+            ? {
+                google: {
+                  clientId: env.GOOGLE_OAUTH_CLIENT_ID,
+                  clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET,
+                  redirectUri: env.GOOGLE_OAUTH_REDIRECT_URI,
+                },
+              }
+            : {}),
+        }),
     },
     {
       provide: ENTITY_RESOLVER,

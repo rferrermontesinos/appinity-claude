@@ -72,14 +72,30 @@ export interface SourceDto extends ProfileSourceManifest {
   /** Motivo por el que una fuente real no se puede conectar todavía (p. ej. falta configuración). */
   unavailableReason?: string;
   plannedPhase?: string;
+  /** La autorización se puede renovar sobre la misma conexión sin perder lo importado. */
+  supportsRenewal?: boolean;
 }
 
-/** Resultado de iniciar una conexión: inmediata (fuentes simuladas) o con redirección al proveedor. */
+/**
+ * Resultado de iniciar una conexión: inmediata (fuentes simuladas) o con redirección al proveedor. `localOnly`: el
+ * proveedor solo puede volver a este PC (Google en desarrollo), así que el flujo debe hacerse en su navegador.
+ * `renewal`: renueva la autorización de una conexión existente.
+ */
 export type ConnectStartDto =
   | { kind: 'connected'; connection: ConnectionDto; run: SyncRunDto }
-  | { kind: 'redirect'; authorizationUrl: string; expiresAt: string };
+  | { kind: 'redirect'; authorizationUrl: string; expiresAt: string; localOnly?: boolean; renewal?: boolean };
 
-export type SyncRunStatus = 'queued' | 'running' | 'succeeded' | 'partial' | 'failed' | 'cancelled';
+/**
+ * Resultado de desconectar. `providerRevocation`: si el proveedor confirmó que invalidó el acceso (p. ej. el permiso
+ * de Google), si no lo confirmó (en APPINITY ya está borrado) o si no había nada que revocar (Steam, simuladas).
+ */
+export interface DisconnectResultDto {
+  purgedObservations: number;
+  affectedItems: number;
+  providerRevocation: 'revoked' | 'failed' | 'not_applicable';
+}
+
+export type SyncRunStatus ='queued' | 'running' | 'succeeded' | 'partial' | 'failed' | 'cancelled';
 
 export interface ConnectionDto {
   id: string;
