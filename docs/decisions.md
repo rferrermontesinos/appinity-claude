@@ -526,6 +526,14 @@ El usuario autorizó continuar con las siguientes fases sin esperar a su revisi�
   retira lo que desaparece. Se revisará si el tamaño real del export lo exige.
 - **Permisos nuevos sobre conexiones existentes.** El adapter declara `requestedScopes`; la API devuelve
   `missingScopes` por conexión y la app invita a renovar el permiso. Renovar conserva lo importado.
+- **Primer export real de YouTube (2026-10-13).** 34.293 reproducciones válidas en 11.861 canales (descartados 9.764
+  anuncios, 5.755 registros que no son reproducciones y 4.129 vídeos sin canal). De los 394 canales más escuchados se
+  identificaron 42, 57 quedaron fuera de categoría y 301 sin coincidencia. Biblioteca de YouTube Music vacía en esa
+  cuenta; 9 suscripciones (1 identificada). Cambios:
+  - un artista o podcast también se reconoce por tener un ID en MusicBrainz, Spotify, Apple Music o Discogs (P434,
+    P1902, P2850, P1953) o en Apple Podcasts o Spotify (P5842, P5916), aunque su tipo u ocupación no estén en la lista;
+  - el worker indica cuántos canales sin coincidencia se buscaron además como artista por nombre, para distinguir
+    canales de música no reconocidos de canales que no son de música.
 - **Sin autorización incremental (comprobado con la cuenta real el 2026-10-13).** Al renovar con los grupos de YouTube,
   Google respondió `Error 400: invalid_request` · «Incremental auth is not allowed for the requested scopes». La
   documentación no lo trata. Solución: si la conexión no tiene todos los permisos que se piden, antes de redirigir se

@@ -256,7 +256,9 @@ export interface ChannelToIdentify {
 /** Resultado de una identificación sin datos de ubicación (canales, artistas). */
 export type Identification =
   | { entity: IdentifiedEntity }
-  | { entity: null; reason: 'no_match' | 'ambiguous' }
+  | { entity: null; reason: 'ambiguous' }
+  /** `triedName`: además del ID, se buscó un artista con ese nombre (canal «Topic» o escuchado en YouTube Music). */
+  | { entity: null; reason: 'no_match'; triedName?: boolean }
   | { entity: null; reason: 'out_of_scope'; scope: string };
 
 /**
