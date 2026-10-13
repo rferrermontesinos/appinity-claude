@@ -261,6 +261,12 @@ Cambios para entender y reducir las 49 sin coincidencia:
 
 Comprobaciones: `pnpm lint` 0 errores, `pnpm typecheck` OK y `pnpm test` **183 tests OK**.
 
+### Tercer export real (2026-10-13, con los permisos de YouTube)
+
+`maps.reviews`: 21 de 75 identificadas; 7 fuera de categoría; 47 sin coincidencia (4 sin lugares cerca, 17 solo con
+otros lugares y **26 con un restaurante o lugar cultural a ≤ 30 m con otro nombre**). Se añade la regla de nombre
+parecido a ≤ 30 m (decisions.md); su efecto se verá en el siguiente export.
+
 ### Bloqueos y puntos declarados
 
 - **Cuenta de facturación de Google Cloud:** obligatoria para activar la API, aunque esta no tenga coste publicado.
