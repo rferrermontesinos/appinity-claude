@@ -320,11 +320,18 @@ export function matchPlace(place: PlaceToIdentify, elements: OsmElement[]): Plac
     })
     .filter((c): c is NonNullable<typeof c> => c !== null);
   if (!matches.length) {
-    const close = pois.some((el) => {
+    const close = pois.flatMap((el) => {
       const at = el.lat !== undefined && el.lon !== undefined ? { lat: el.lat, lon: el.lon } : el.center;
-      return at && classifyOsmTags(el.tags ?? {}) && distanceM(origin, at) <= SAME_SPOT_M;
+      const kind = classifyOsmTags(el.tags ?? {});
+      return at && kind && distanceM(origin, at) <= SAME_SPOT_M ? [{ el, tags: el.tags ?? {}, kind, at }] : [];
     });
-    return { entity: null, reason: 'no_match', nearby: !pois.length ? 'none' : close ? 'app_category' : 'other' };
+    // Mismo sitio con un nombre algo distinto («Bar Casa Paco Tapas» ↔ «Casa Paco»): a ≤ 30 m, de las categorías de
+    // APPINITY y con la mitad o más de todas sus palabras significativas en común. Solo si es el único candidato.
+    const own = significantWords(place.name);
+    const similar = close.filter((c) => names(c.tags).some((n) => wordsOverlap(own, significantWords(n))));
+    if (similar.length === 1) return { entity: entityFor(place, similar[0]!, 0.6, 'osm_nombre_parecido_30m') };
+    if (similar.length > 1) return { entity: null, reason: 'ambiguous' };
+    return { entity: null, reason: 'no_match', nearby: !pois.length ? 'none' : close.length ? 'app_category' : 'other' };
   }
   const topTier = Math.max(...matches.map((c) => c.tier));
   const top = matches.filter((c) => c.tier === topTier);
@@ -339,10 +346,33 @@ export function matchPlace(place: PlaceToIdentify, elements: OsmElement[]): Plac
     if (best.length !== 1) return { entity: null, reason: 'ambiguous' };
   }
   const chosen = best.sort((a, b) => a.distance - b.distance)[0]!;
-  const wikidata = chosen.tags.wikidata && /^Q\d+$/.test(chosen.tags.wikidata) ? chosen.tags.wikidata : undefined;
   const confidence = topTier === 3 ? 0.95 : topTier === 2 ? 0.85 : candidates.length === 1 ? 0.75 : 0.7;
   const method = topTier === 3 ? 'osm_exact_name_100m' : topTier === 2 ? 'osm_name_sin_genericos_100m' : 'osm_nombre_contenido_100m';
-  const entity: IdentifiedEntity = {
+  return { entity: entityFor(place, chosen, confidence, method) };
+}
+
+/** Palabras significativas de un nombre (sin genéricas ni palabras de menos de 3 letras). */
+function significantWords(name: string): Set<string> {
+  return new Set(stripGeneric(name).split(' ').filter((w) => w.length >= 3));
+}
+
+/**
+ * Comparten al menos la mitad de todas sus palabras significativas (Jaccard ≥ 0,5): «Bar Casa Paco Tapas» ↔ «Casa Paco»
+ * sí; «Picasso» ↔ «Fundació Picasso Barcelona» no (una palabra suelta es demasiado poco).
+ */
+function wordsOverlap(a: Set<string>, b: Set<string>): boolean {
+  const shared = [...a].filter((w) => b.has(w)).length;
+  return shared >= 1 && shared / new Set([...a, ...b]).size >= 0.5;
+}
+
+function entityFor(
+  place: PlaceToIdentify,
+  chosen: { el: OsmElement; tags: Record<string, string>; kind: { category: Category; itemType: string }; at: { lat: number; lon: number } },
+  confidence: number,
+  method: string,
+): IdentifiedEntity {
+  const wikidata = chosen.tags.wikidata && /^Q\d+$/.test(chosen.tags.wikidata) ? chosen.tags.wikidata : undefined;
+  return {
     category: chosen.kind.category,
     itemType: chosen.kind.itemType,
     title: place.name,
@@ -359,5 +389,4 @@ export function matchPlace(place: PlaceToIdentify, elements: OsmElement[]): Plac
     confidence,
     method,
   };
-  return { entity };
 }

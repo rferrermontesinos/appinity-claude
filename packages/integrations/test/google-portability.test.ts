@@ -391,6 +391,19 @@ describe('identificación en el catálogo', () => {
     expect(descriptorHead('Sant Pau')).toBeNull();
   });
 
+  it('OSM: a ≤ 30 m, un único lugar de APPINITY con un nombre parecido se identifica con confianza baja', () => {
+    const at = { latitude: 41.3852, longitude: 2.181 };
+    const pacoNear = element(1, { name: 'Casa Paco', amenity: 'restaurant' });
+    expect(matchPlace({ name: 'Bar Casa Paco Tapas', ...at }, [pacoNear])).toMatchObject({ entity: { confidence: 0.6, method: 'osm_nombre_parecido_30m' } });
+    // A más de 30 m, no.
+    const pacoFar = element(2, { name: 'Casa Paco', amenity: 'restaurant' }, 41.3858, 2.181);
+    expect(matchPlace({ name: 'Bar Casa Paco Tapas', ...at }, [pacoFar])).toMatchObject({ entity: null, reason: 'no_match' });
+    // Dos candidatos parecidos: ambiguo.
+    expect(matchPlace({ name: 'Bar Casa Paco Tapas', ...at }, [pacoNear, element(3, { name: 'Paco Tapas', amenity: 'bar' })])).toEqual({ entity: null, reason: 'ambiguous' });
+    // Una sola palabra en común entre varias no basta.
+    expect(matchPlace({ name: 'La Bodega del Puerto', ...at }, [element(4, { name: 'Bodega Antigua Casa Ramón', amenity: 'restaurant' })])).toMatchObject({ entity: null });
+  });
+
   it('OSM: diagnostica qué hay cerca cuando el nombre no coincide (sin guardar nombres)', () => {
     const at = { latitude: 41.3852, longitude: 2.181 };
     expect(matchPlace({ name: 'La Taberna Nueva', ...at }, [])).toEqual({ entity: null, reason: 'no_match', nearby: 'none' });

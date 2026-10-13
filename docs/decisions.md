@@ -451,6 +451,10 @@ Ficha en [integration-capabilities.md](integration-capabilities.md#google-data-p
     muestra el desglose por etiqueta, sin nombres.
   - Monumentos: se añade `tourism=artwork` con `historic`/`heritage` (Casa Batlló).
   - Se descartó ignorar partículas («de», «del»): hacía que «Museu de la Sagrada Família» ganara a la basílica.
+- **Nombre parecido muy cerca (2026-10-13).** En el tercer export real, 26 de los 47 lugares sin coincidencia tenían un
+  restaurante o lugar cultural a ≤ 30 m con otro nombre. Nueva regla, la de menor confianza (0,6): a ≤ 30 m, de las
+  categorías de APPINITY, con Jaccard ≥ 0,5 entre las palabras significativas de ambos nombres y único candidato (si
+  hay varios, ambiguo). Una sola palabra suelta en común no basta («Picasso» ↔ «Fundació Picasso Barcelona»).
 - La confianza de la identificación **multiplica** las de conocido, consumido y preferencia. Así una identificación
   dudosa pesa menos y no oculta el objeto en Home (umbral 0,8).
 - Comprobación en vivo (2026-10-09):
