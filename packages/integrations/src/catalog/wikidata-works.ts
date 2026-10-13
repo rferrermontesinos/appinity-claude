@@ -110,6 +110,15 @@ const label = (entity: Entity, languages: string[]) => [...languages, 'mul'].map
 const strings = (entity: Entity, property: string): string[] =>
   (entity.claims?.[property] ?? []).map((c) => c.mainsnak.datavalue?.value).filter((v): v is string => typeof v === 'string');
 
+/**
+ * Identificadores externos que solo tienen los artistas musicales (MusicBrainz, Spotify, Apple Music, Discogs) y los
+ * podcasts (Apple Podcasts, Spotify). Comprobado el 2026-10-13. Con YouTube real, exigir tipos y ocupaciones concretos
+ * dejaba fuera a muchos artistas (grupos de subtipos no listados, ocupaciones como «cantautor de trap»…).
+ */
+const ARTIST_ID_PROPERTIES = ['P434', 'P1902', 'P2850', 'P1953'];
+const PODCAST_ID_PROPERTIES = ['P5842', 'P5916'];
+const hasAny = (entity: Entity, properties: string[]) => properties.some((p) => (entity.claims?.[p] ?? []).length > 0);
+
 /** Tipo de APPINITY de una entidad de Wikidata; `musicWork`: disco o canción (se atribuye a su intérprete). */
 function kindOf(entity: Entity): { kind: { category: Category; itemType: string }; musicWork: boolean } | null {
   const p31 = ids(entity, 'P31');
@@ -120,6 +129,9 @@ function kindOf(entity: Entity): { kind: { category: Category; itemType: string 
   }
   if (p31.some((t) => PODCAST_TYPES.has(t))) return { kind: { category: 'podcasts', itemType: 'podcast' }, musicWork: false };
   if (p31.some((t) => MUSIC_WORKS.has(t))) return { kind: { category: 'music', itemType: 'artist' }, musicWork: true };
+  // Sin tipo reconocido: un ID de artista o de podcast en una plataforma musical lo delata.
+  if (hasAny(entity, PODCAST_ID_PROPERTIES)) return { kind: { category: 'podcasts', itemType: 'podcast' }, musicWork: false };
+  if (hasAny(entity, ARTIST_ID_PROPERTIES)) return { kind: { category: 'music', itemType: 'artist' }, musicWork: false };
   return null;
 }
 
@@ -261,7 +273,7 @@ export class WikidataWorkIdentifier {
         let result = classifyChannel(channel.channelId, byChannel.get(channel.channelId) ?? [], languages);
         if (result.entity === null && result.reason === 'no_match' && channel.musicName) {
           const artist = await this.identifyWork({ title: channel.musicName, languages, artistsOnly: true });
-          if (artist) result = { entity: artist };
+          result = artist ? { entity: artist } : { entity: null, reason: 'no_match', triedName: true };
         }
         if (this.channelCache.size > 20_000) this.channelCache.clear();
         this.channelCache.set(channel.channelId, result);

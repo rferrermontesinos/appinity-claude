@@ -126,7 +126,7 @@ describe('YouTube: identificación y agregación', () => {
 });
 
 describe('Wikidata: canales de YouTube (P2397) y artistas por nombre', () => {
-  type FakeEntity = { P31: string[]; P106?: string[]; P2397?: string[]; label: string; sitelinks?: number };
+  type FakeEntity = { P31: string[]; P106?: string[]; P2397?: string[]; ids?: Record<string, string>; label: string; sitelinks?: number };
   function fakeWikidata(entities: Record<string, FakeEntity>, labelSearch: Record<string, string[]> = {}) {
     const requests: URL[] = [];
     const fetchImpl = (async (input: string | URL | Request) => {
@@ -156,6 +156,7 @@ describe('Wikidata: canales de YouTube (P2397) y artistas por nombre', () => {
                 P31: e.P31.map((q) => claim({ id: q })),
                 ...(e.P106 ? { P106: e.P106.map((q) => claim({ id: q })) } : {}),
                 ...(e.P2397 ? { P2397: e.P2397.map((c) => claim(c)) } : {}),
+                ...Object.fromEntries(Object.entries(e.ids ?? {}).map(([p, v]) => [p, [claim(v)]])),
               },
             },
           ];
@@ -201,6 +202,22 @@ describe('Wikidata: canales de YouTube (P2397) y artistas por nombre', () => {
     expect(requests.filter((r) => r.searchParams.get('action') === 'query')).toHaveLength(1);
     await wd.identifyChannels([{ channelId: RADIOHEAD, title: 'Radiohead' }]);
     expect(requests.filter((r) => r.searchParams.get('action') === 'query')).toHaveLength(1);
+  });
+
+  it('un ID de artista (MusicBrainz, Spotify…) o de podcast identifica aunque el tipo u ocupación no estén en la lista', async () => {
+    const ARTIST = 'UCartistaSinOcupacion000';
+    const SHOW = 'UCprogramaSinTipo0000000';
+    const { fetchImpl } = fakeWikidata({
+      Q10: { P31: ['Q5'], P106: ['Q17125263'], P2397: [ARTIST], ids: { P1902: 'spotify-artista' }, label: 'Artista sin ocupación musical' },
+      Q11: { P31: ['Q1002697'], P2397: [SHOW], ids: { P5842: '123456' }, label: 'Programa sin tipo de podcast' },
+    });
+    const wd = new WikidataWorkIdentifier({ userAgent: 'APPINITY-test', fetchImpl, sleep: async () => undefined });
+    const [artist, show] = await wd.identifyChannels([
+      { channelId: ARTIST, title: 'Artista' },
+      { channelId: SHOW, title: 'Programa' },
+    ]);
+    expect(artist).toMatchObject({ entity: { category: 'music', itemType: 'artist' } });
+    expect(show).toMatchObject({ entity: { category: 'podcasts', itemType: 'podcast' } });
   });
 
   it('artistas por nombre: solo músicos (no una película o un disco homónimos)', async () => {
