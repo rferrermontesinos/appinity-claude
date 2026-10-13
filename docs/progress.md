@@ -129,6 +129,13 @@ El usuario autorizó seguir con las siguientes fases mientras no estaba (2026-10
 No se ha probado la vista de la app en la web: la API del usuario seguía con la versión anterior y no se detienen sus
 procesos. Se comprobó con el typecheck de la app.
 
+### Incidencia con la cuenta real (2026-10-13)
+
+Al pulsar «Renovar permiso», Google rechazó la petición: «Incremental auth is not allowed for the requested scopes»
+(`Error 400: invalid_request`). Data Portability no admite añadir grupos a una autorización existente. Corregido: al
+renovar con permisos nuevos se libera antes la autorización anterior y se piden los 8 grupos (decisions.md). Test de
+integración añadido (12 en el fichero de Google).
+
 ### Validación pendiente (usuario, con su cuenta)
 
 1. En Google Cloud, añadir los 3 permisos nuevos a la pantalla de consentimiento (README).

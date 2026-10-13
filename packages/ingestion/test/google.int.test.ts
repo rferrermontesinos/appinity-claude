@@ -3,6 +3,7 @@ import {
   catalogExternalIds,
   catalogItems,
   createDatabase,
+  providerConsents,
   decryptCredentials,
   sourceCredentials,
   sourceSyncRuns,
@@ -220,10 +221,45 @@ describe('sync de Google', () => {
     expect(kept).toHaveLength(11);
   });
 
+  it('pedir permisos nuevos (YouTube) sobre una conexión antigua libera antes la concesión: Google no admite autorización incremental', async () => {
+    const [row] = await database.db.select().from(userConnections).where(eq(userConnections.id, connectionId));
+    const [consent] = await database.db.select().from(providerConsents).where(eq(providerConsents.id, row!.consentId!));
+    // Como si se hubiera autorizado en la fase 3, sin los grupos de YouTube.
+    await database.db.update(providerConsents).set({ scopes: consent!.scopes.filter((sc) => !/youtube/.test(sc)) }).where(eq(providerConsents.id, consent!.id));
+    const before = await credentialsOf(connectionId);
+    const resetsBefore = google.resets();
+    const state = 'estado-renovacion-0123456789';
+    const start = await startConnect(database.db, registry(), gala, 'google_portability', { state, credentialsKey: KEY });
+    expect(start).toMatchObject({ kind: 'redirect', renewal: true });
+    // Concesión anterior liberada en Google y credenciales borradas; la conexión espera a que se complete el permiso.
+    expect(google.resets()).toBe(resetsBefore + 1);
+    expect(google.revoked).toContain(before!.refreshToken);
+    expect(await credentialsOf(connectionId)).toBeUndefined();
+    const [waiting] = await database.db.select().from(userConnections).where(eq(userConnections.id, connectionId));
+    expect(waiting!.status).toBe('error');
+    // Lo importado sigue ahí.
+    expect(await database.db.select().from(userItemObservations).where(eq(userItemObservations.connectionId, connectionId))).toHaveLength(11);
+    // Al completar, la conexión vuelve a estar activa con los 8 permisos.
+    const code = google.approve((start as { url: string }).url);
+    const done = await completeConnect(database.db, registry(), gala, 'google_portability', {
+      redirectUri: FAKE_CLIENT.redirectUri,
+      callbackParams: { code, state },
+      pending: (start as { pending: Record<string, string> }).pending,
+      credentialsKey: KEY,
+    });
+    expect(done).toMatchObject({ id: connectionId, status: 'active' });
+    const [renewed] = await database.db.select().from(providerConsents).where(eq(providerConsents.id, row!.consentId!));
+    expect(renewed!.scopes.filter((sc) => /youtube/.test(sc))).toHaveLength(3);
+    // Con todos los permisos, renovar otra vez no libera nada.
+    const resets = google.resets();
+    await startConnect(database.db, registry(), gala, 'google_portability', { state: 'estado-otra-0123456789ab', credentialsKey: KEY });
+    expect(google.resets()).toBe(resets);
+  });
+
   it('desconectar y borrar revoca el permiso en Google, borra credenciales y lo importado', async () => {
     const result = await disconnectSource(database.db, registry(), gala, connectionId, { purge: true, credentialsKey: KEY });
     expect(result).toMatchObject({ providerRevocation: 'revoked', purgedObservations: 11 });
-    expect(google.resets()).toBe(1);
+    expect(google.resets()).toBe(2);
     expect(await credentialsOf(connectionId)).toBeUndefined();
     expect(await profileByWikidata(gala, 'Q1079')).toBeUndefined();
   });

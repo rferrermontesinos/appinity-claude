@@ -191,6 +191,12 @@ export interface ProfileSourceAdapter {
    */
   requestedScopes?: readonly string[];
   /**
+   * Libera la autorización vigente antes de pedir permisos que la conexión no tiene. Google Data Portability no admite
+   * autorización incremental («Incremental auth is not allowed for the requested scopes», comprobado el 2026-10-13):
+   * para añadir grupos hay que revocar la concesión y pedir todos los permisos de nuevo. Lo importado se conserva.
+   */
+  releaseGrantBeforeRenewal?(connection: UserConnection, credentials: SourceCredentials | undefined): Promise<void>;
+  /**
    * Ampliación: tipos de observación que forman una instantánea completa (biblioteca, recuento de escuchas).
    * Tras un sync completo, las evidencias de esos tipos que ya no aparecen se eliminan.
    */
