@@ -306,6 +306,7 @@ export function summarizeIdentification(results: Array<PlaceIdentification | Ide
   let noMatch = 0;
   let ambiguous = 0;
   const nearby = { none: 0, other: 0, app_category: 0 };
+  let triedName = 0;
   for (const result of results) {
     if (result.entity) identified++;
     else if (result.reason === 'out_of_scope') scopes.set(result.scope, (scopes.get(result.scope) ?? 0) + 1);
@@ -313,6 +314,7 @@ export function summarizeIdentification(results: Array<PlaceIdentification | Ide
     else {
       noMatch++;
       if ('nearby' in result && result.nearby) nearby[result.nearby]++;
+      if ('triedName' in result && result.triedName) triedName++;
     }
   }
   const outOfScope = [...scopes.values()].reduce((a, b) => a + b, 0);
@@ -328,7 +330,8 @@ export function summarizeIdentification(results: Array<PlaceIdentification | Ide
           `sin coincidencia en el catálogo ${noMatch}` +
             (nearby.none + nearby.other + nearby.app_category
               ? ` (sin lugares cerca ${nearby.none}, solo otros lugares ${nearby.other}, restaurante o lugar cultural a ≤ 30 m con otro nombre ${nearby.app_category})`
-              : ''),
+              : '') +
+            (triedName ? ` (buscados también como artista por nombre ${triedName})` : ''),
         ]
       : []),
     ...(ambiguous ? [`ambiguos ${ambiguous}`] : []),
