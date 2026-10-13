@@ -233,7 +233,7 @@ export const en: TranslationResources = {
     soulmatesCount: '{{count}} out of a maximum of {{limit}}',
     affinity: 'Affinity',
     affinityValue: '{{value}}%',
-    affinityHint: 'Directional figure (your affinity towards this person). It is not a probability.',
+    affinityHint: 'Computed only from what you both know and rate. It is not a probability.',
     categoriesCompared_one: '{{count}} category compared',
     categoriesCompared_other: '{{count}} categories compared',
     exceptionalMutual: 'Exceptional mutual affinity',

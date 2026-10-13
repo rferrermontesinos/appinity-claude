@@ -45,6 +45,12 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | `pnpm db:migrate` + `pnpm db:seed` en la BD de desarrollo | 13 personas de demo, 27 syncs, 30 parejas con afinidad. Laura → Clara 85,94; Teo 48,66; Pau 22,95; Jordi 22,24. Marta → Iris 76,88. Àlex → Leo 70,95 |
 | Vista web propia (API en 3101 y web en 8093, 375×812) | Personas: ranking con avatar, país, categorías comparadas y cifra. Perfil: cifra global y 8 categorías con «—». Se corrigió un texto que ensanchaba la tarjeta. Sin errores de consola. Servidores detenidos al terminar |
 
+### Cambio pedido por el usuario: affinity-v3
+
+Lo que solo conoce una de las dos personas ya no cuenta (ni sus gustos ni sus disgustos). Se elimina la cobertura y la
+global pondera por la evidencia en común, así que la afinidad pasa a ser simétrica (decisions.md). Tests reescritos para
+comprobarlo; **226 tests OK**. Demo recalculada: el orden no cambia (Clara 85,94; Teo 48,66; Jordi 23,62; Pau 22,95).
+
 ### Pasos para probarlo (usuario)
 
 1. Reiniciar `pnpm api` y `pnpm worker` (las migraciones y el seed ya se aplicaron en la BD de desarrollo).

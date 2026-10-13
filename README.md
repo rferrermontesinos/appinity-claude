@@ -14,7 +14,8 @@ Implementación independiente de APPINITY construida desde cero a partir de
   identificación con el siguiente export.
 - Fase 4 (YouTube y YouTube Music) **implementada y probada con un Google simulado**. Falta validarla con tu cuenta
   ([docs/progress.md](docs/progress.md)).
-- Fase 5 (afinidad direccional) **implementada**.
+- Fase 5 (afinidad entre personas) **implementada**. Solo cuenta lo que conocen las dos personas, así que es simétrica
+  (decisión del usuario).
 - Fase 6 (Top 50 de almas gemelas) **implementada**: la pestaña Personas muestra el ranking y el perfil mínimo de cada
   persona. Todavía **no** hay recomendador.
 

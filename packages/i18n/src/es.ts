@@ -233,7 +233,7 @@ export const es = {
     soulmatesCount: '{{count}} de un máximo de {{limit}}',
     affinity: 'Afinidad',
     affinityValue: '{{value}} %',
-    affinityHint: 'Cifra direccional (tu afinidad hacia esta persona). No es una probabilidad.',
+    affinityHint: 'Se calcula solo con lo que conocéis y valoráis los dos. No es una probabilidad.',
     categoriesCompared_one: '{{count}} categoría comparada',
     categoriesCompared_other: '{{count}} categorías comparadas',
     exceptionalMutual: 'Afinidad mutua excepcional',

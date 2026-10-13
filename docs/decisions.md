@@ -624,3 +624,22 @@ documentado aquí.
   Así el ranking de la demo tiene casos variados sin escribir cientos de registros a mano.
 - **Pendiente:** ajuste de privacidad «aparecer en almas gemelas» (no existe todavía; solo
   `discoverableByContacts`, que es para contactos) y exploración Premium más allá de 50 (fase 12).
+
+### Decisión del usuario · affinity-v3 (2026-10-13)
+
+> «Las no coincidencias no deberían penalizar. Solo deberían contabilizar las coincidencias en positivas y en
+> negativas. Si Laura ha votado negativamente un restaurante pero Sam no lo conoce, el % de afinidad no debería verse
+> afectado.»
+
+- Se elimina el factor de cobertura de §11 (`0,80 + 0,20 · √(|C| / N_A)`). La cobertura se sigue guardando como dato
+  informativo, sin efecto en la cifra.
+- La global pondera cada categoría por la evidencia en común (`log1p(n_eff_c)`), no por todo el historial de quien
+  consulta.
+- **Consecuencia: la afinidad es simétrica** (A → B = B → A). §4 y §11 la describen como direccional porque la cobertura
+  dependía del historial de origen; con esta decisión desaparece esa diferencia. Se mantienen las filas por pareja
+  ordenada (no cuesta nada y permite volver a una variante direccional sin migrar). «Afinidad mutua excepcional» queda
+  como afinidad ≥ 90.
+- Se conservan: NULL sin objetos en común suficientes, 0 con desacuerdo real, el factor de evidencia (pocas
+  coincidencias no dan cifras altas) y el suelo de confianza de datos.
+- Demo con v3: Laura ↔ Clara 85,94; Teo 48,66; Jordi 23,62 (antes 22,24 y 22,76 según el sentido); Pau 22,95. Marta ↔
+  Iris 76,88.

@@ -57,18 +57,18 @@ describe(`motor de afinidad ${AFFINITY_VERSION}`, () => {
     expect(five).toBeLessThan(twenty);
   });
 
-  it('es direccional: la cobertura depende del historial de origen', () => {
+  it('lo que solo conoce una persona no cuenta: ni sus gustos ni sus disgustos cambian la afinidad (y es simétrica)', () => {
     // A tiene 200 películas; B, 10, todas también en A y con el mismo gusto.
-    const a = idx(profile('movies', 200, 1));
-    const b = idx(profile('movies', 10, 1));
+    const common = profile('movies', 10, 1);
+    const a = idx(common, profile('movies', 190, -1, 1, 10));
+    const b = idx(common);
     const aToB = affinity(a, b);
-    const bToA = affinity(b, a);
-    expect(aToB.categories.movies.coverage).toBe(0.05);
-    expect(bToA.categories.movies.coverage).toBe(1);
-    expect(aToB.score).not.toBe(bToA.score);
-    expect(bToA.score!).toBeGreaterThan(aToB.score!);
-    // Cobertura suavizada: un historial enorme no hunde la afinidad a casi 0.
-    expect(aToB.score!).toBeGreaterThan(60);
+    // Las 190 películas que B no conoce (todas puntuadas en negativo por A) no influyen.
+    expect(aToB.score).toBe(affinity(idx(common), b).score);
+    expect(aToB.categories.movies.coverage).toBe(0.05); // dato informativo, no penaliza
+    expect(affinity(b, a).score).toBe(aToB.score);
+    // Tampoco una categoría entera que solo tiene A (p. ej. un restaurante puntuado en negativo).
+    expect(affinity(idx(common, profile('food', 1, -1)), b).score).toBe(aToB.score);
   });
 
   it('las categorías sin comparación no cuentan como 0 en la global', () => {
@@ -81,13 +81,13 @@ describe(`motor de afinidad ${AFFINITY_VERSION}`, () => {
     expect(onlyMovies.score).toBe(onlyMovies.categories.movies.score);
   });
 
-  it('la global pondera por la profundidad del historial de origen y gana confianza con más categorías', () => {
+  it('la global pondera cada categoría por la evidencia en común y gana confianza con más categorías', () => {
     const a = idx(profile('movies', 30, 1), profile('games', 3, 1));
     const b = idx(profile('movies', 30, 1), profile('games', 3, -1));
     const result = affinity(a, b);
     expect(result.categoriesCompared).toBe(2);
     expect(result.categories.games.score).toBe(0);
-    // Películas (30 objetos) pesa más que juegos (3): la global queda más cerca de películas que de 0.
+    // Películas (30 objetos en común) pesa más que juegos (3): la global queda más cerca de películas que de 0.
     expect(result.score!).toBeGreaterThan(result.categories.movies.score! / 2);
     const single = affinity(idx(profile('movies', 30, 1)), idx(profile('movies', 30, 1)));
     expect(result.confidence).toBeGreaterThan(single.confidence);
