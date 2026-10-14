@@ -534,6 +534,13 @@ El usuario autorizó continuar con las siguientes fases sin esperar a su revisi�
     P1902, P2850, P1953) o en Apple Podcasts o Spotify (P5842, P5916), aunque su tipo u ocupación no estén en la lista;
   - el worker indica cuántos canales sin coincidencia se buscaron además como artista por nombre, para distinguir
     canales de música no reconocidos de canales que no son de música.
+- **Segundo export de YouTube (2026-10-14).** 46 canales identificados (antes 42). De los 311 sin coincidencia, solo 20
+  se escucharon como música (se buscaron también como artista); el resto son canales que no son de música ni están en
+  Wikidata. La identificación musical no es el cuello de botella. Maps: 33 de 75 (antes 21) gracias a la regla de nombre
+  parecido a ≤ 30 m.
+- **Wikidata más tolerante.** En ese sync, Wikidata falló cuatro veces seguidas y cada fallo aplazó todo 10 minutos. El
+  cliente pasa de 3 intentos (~7 s) a 6 (2, 4, 8, 16 y 32 s, o lo que pida Retry-After), trata como pasajeros los
+  errores `search-error` y de tiempo de consulta que llegan con HTTP 200, y avisa de cada espera en el worker.
 - **Sin autorización incremental (comprobado con la cuenta real el 2026-10-13).** Al renovar con los grupos de YouTube,
   Google respondió `Error 400: invalid_request` · «Incremental auth is not allowed for the requested scopes». La
   documentación no lo trata. Solución: si la conexión no tiene todos los permisos que se piden, antes de redirigir se
