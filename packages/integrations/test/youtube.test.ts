@@ -220,6 +220,22 @@ describe('Wikidata: canales de YouTube (P2397) y artistas por nombre', () => {
     expect(show).toMatchObject({ entity: { category: 'podcasts', itemType: 'podcast' } });
   });
 
+  it('aguanta cortes breves de Wikidata (503 y búsqueda saturada) sin aplazar el sync, y avisa de cada espera', async () => {
+    const { fetchImpl: ok } = fakeWikidata({ Q44190: { P31: ['Q5741069'], P2397: [RADIOHEAD], label: 'Radiohead' } });
+    const replies: Array<() => Response> = [
+      () => new Response('caído', { status: 503 }),
+      () => new Response(JSON.stringify({ error: { code: 'search-error' } })),
+    ];
+    const fetchImpl = (async (input: string | URL | Request, init?: RequestInit) => (replies.length ? replies.shift()!() : ok(input, init))) as typeof fetch;
+    const slept: number[] = [];
+    const logs: string[] = [];
+    const wd = new WikidataWorkIdentifier({ userAgent: 'APPINITY-test', fetchImpl, sleep: async (ms) => void slept.push(ms), log: (m) => logs.push(m) });
+    const [radiohead] = await wd.identifyChannels([{ channelId: RADIOHEAD, title: 'Radiohead' }]);
+    expect(radiohead).toMatchObject({ entity: { canonicalIds: { 'wikidata:entity': 'Q44190' } } });
+    expect(slept).toEqual([2_000, 4_000]);
+    expect(logs).toEqual([expect.stringContaining('HTTP 503'), expect.stringContaining('search-error')]);
+  });
+
   it('artistas por nombre: solo músicos (no una película o un disco homónimos)', async () => {
     const { fetchImpl } = fakeWikidata(
       {
