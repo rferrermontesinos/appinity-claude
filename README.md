@@ -20,6 +20,8 @@ Implementación independiente de APPINITY construida desde cero a partir de
   persona.
 - Fase 7 (recomendador y Trending local) **implementada**.
 - Fase 8 (Home) **aceptada en el teléfono**: Inicio muestra las recomendaciones con descartar, conservar, deshacer y NEW.
+- Fase 10 (People y Friends) **implementada**: amistad, bloqueo, reporte y privacidad de descubrimiento. El matching
+  de contactos está pendiente de la autenticación de producción.
 - Fase 9 (Categories) **implementada**: recomendaciones por categoría y un mazo continuo. Cuando se agotan las almas
   gemelas y la zona, siguen «comunidad» y «para explorar», siempre con su motivo real.
 

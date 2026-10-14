@@ -757,3 +757,34 @@ actual.
   - el consenso usa las almas gemelas por afinidad global, así que una categoría sin historial propio también recibe
     recomendaciones; no se muestra ninguna «afinidad de categoría» inventada;
   - selector «Recomendado / Catálogo» con el color de la categoría y paginación al llegar al final.
+
+## Fase 10 · 2026-10-14 (People y Friends)
+
+- **Amistad** (tabla `friendships`, migración 0008): una fila por pareja (índice único sobre la pareja ordenada), con
+  estados `pending`, `accepted` y `rejected`.
+  - Pedir amistad a quien ya te la pidió equivale a aceptarla.
+  - **Un rechazo no se revela**: quien envió la solicitud la sigue viendo pendiente y no puede insistir. Quien rechazó
+    sí puede pedir amistad después.
+  - Una solicitud recibida se rechaza, no se borra.
+  - Los amigos no tienen por qué ser almas gemelas: se muestra su afinidad, o «—».
+- **Bloqueo**: excluye en ambas direcciones del ranking, del perfil, de la afinidad, de las solicitudes y de los votos y
+  atribuciones del recomendador, y elimina la amistad o la solicitud. Solo se lista a quien yo bloqueé (nunca quién me
+  bloqueó) y se puede desbloquear.
+- **Reporte** (tabla `user_reports`): motivo cerrado (spam, acoso, contenido inapropiado, suplantación u otro) y nota
+  opcional de hasta 500 caracteres. Opcionalmente bloquea a la vez. No se comunica a la persona reportada. Su revisión
+  (moderación) queda fuera del MVP.
+- **Privacidad**: `discoverable_as_soulmate` (por defecto, sí). Si se desactiva, la persona no aparece en el ranking ni
+  en las atribuciones de otras personas. Sigue viendo el suyo, y su perfil sigue accesible a quien ya la conoce.
+- **Afinidad mutua excepcional**: ambas direcciones ≥ 90. Con `affinity-v3` (simétrica), equivale a afinidad ≥ 90 con
+  evidencia válida.
+- **Contactos (pendiente, diseño)**: necesita una identidad verificada (teléfono o email), que no existe hasta la
+  autenticación de producción (fase 13). Propuesta:
+  - permiso explícito del sistema (`expo-contacts`) y del usuario en la app, solo bajo demanda;
+  - normalización en el dispositivo (E.164 o email en minúsculas);
+  - envío solo de un HMAC con clave del servidor y por lotes limitados;
+  - el servidor responde solo con coincidencias de personas con `discoverable_by_contacts` activado y no guarda lo
+    recibido;
+  - límite de peticiones para impedir enumeración.
+
+  Un hash, incluso con clave, **no garantiza el anonimato**: los teléfonos tienen poca entropía y quien tenga la clave
+  puede recorrerlos todos. Por eso se minimiza lo enviado y lo guardado, y no se sube la agenda completa por defecto.

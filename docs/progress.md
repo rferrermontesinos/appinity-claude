@@ -18,10 +18,57 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 7 | **Implementado y comprobado automáticamente** | Entrega 2026-10-14 · fase 7 (rama `fase-7-recomendador`, basada en `fase-6-top50`). Sin pantalla: Home llega en la fase 8 |
 | 8 | **Aceptado en el teléfono** (2026-10-14) | Entrega 2026-10-14 · fase 8 (rama `fase-8-home`, basada en `fase-7-recomendador`) |
 | 9 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-14 · fase 9 (rama `fase-9-categories`, basada en `fase-8-home`). Incluye el feed continuo pedido por el usuario |
-| 10 | Pendiente | People y Friends |
+| 10 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-14 · fase 10 (rama `fase-10-people`, basada en `fase-9-categories`). Contactos: pendiente (fase 13) |
 | 11 | Pendiente | Fuentes adicionales viables, una por tarea |
 | 12 | Pendiente | Chat, Premium y notificaciones, por subentregas |
 | 13 | Pendiente | Preparación y prueba de beta |
+
+---
+
+## Entrega 2026-10-14 · fase 10 (People y Friends)
+
+### Qué se ha hecho
+
+- **API:**
+  - `GET /v1/me/friends`;
+  - `POST /v1/me/friends/requests` y `…/:id/accept|reject`;
+  - `DELETE /v1/me/friends/:userId`;
+  - `GET|POST /v1/me/blocks` y `DELETE /v1/me/blocks/:userId`;
+  - `POST /v1/me/reports`;
+  - el perfil público incluye la relación (`friendship`);
+  - ajuste `discoverableAsSoulmate`.
+- **App:**
+  - **Personas**: amigos con su afinidad, solicitudes recibidas y enviadas, personas bloqueadas y el flujo de contactos
+    marcado como pendiente;
+  - **perfil**: añadir, aceptar, cancelar o eliminar amistad; bloquear (con confirmación); reportar con motivo;
+  - **Perfil**: «Aparecer como alma gemela».
+- **Migración 0008**: `friendships`, `user_reports` y la columna de privacidad.
+
+### Comandos ejecutados y resultados (Windows 11, 2026-10-14)
+
+| Comando | Resultado |
+|---|---|
+| `pnpm lint` / `pnpm typecheck` | 0 errores / OK |
+| `pnpm test` | **23 ficheros, 264 tests OK**. Nuevos: 8 de integración (amistad, rechazo no revelado, aceptación cruzada, bloqueo y desbloqueo, reporte, privacidad del ranking, demo frente a cuentas reales) y 2 HTTP |
+| Vista web propia (375×812) | Laura → Clara «Añadir amigo» → «Solicitud enviada». Clara acepta (API) y Laura la ve en Amigos (86 %). Bloquear con confirmación: Clara sale del ranking y de Amigos y aparece en «Personas bloqueadas». Al desbloquear, vuelve |
+
+### Pasos para probarlo en el teléfono
+
+1. Reiniciar `pnpm api` y `pnpm mobile` (migración ya aplicada).
+2. Laura (demo) → Personas → Clara → «Añadir amigo».
+3. Salir y entrar como Clara → Personas → «Solicitudes recibidas» → «Aceptar».
+4. Volver a Laura: Clara en Amigos. En su perfil, «Bloquear» → «Confirmar»: desaparece y queda en «Personas bloqueadas».
+5. Perfil → «Aparecer como alma gemela»: al desactivarlo, esa persona deja de salir en los rankings de las demás.
+
+### Limitaciones
+
+- Contactos: pendiente de identidad verificada (fase 13). Diseño en decisions.md.
+- Los reportes se guardan, pero no hay panel de moderación (fuera del MVP).
+
+### Siguiente paso
+
+Fase 11: fuentes adicionales viables, una por tarea (Google Books, Apple Music, calendario…). Cada una requiere comprobar
+antes sus condiciones de uso comercial.
 
 ---
 

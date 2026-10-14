@@ -22,6 +22,7 @@ import { PeopleController } from './people/people.controller.js';
 import { HomeController } from './recommendations/home.controller.js';
 import { RecommendationsController } from './recommendations/recommendations.controller.js';
 import { PeopleService } from './people/people.service.js';
+import { SocialController } from './people/social.controller.js';
 import { ItemProfilesController } from './profiles/item-profiles.controller.js';
 import { SourcesController } from './sources/sources.controller.js';
 
@@ -51,6 +52,7 @@ export class AppModule {
         MediaController,
         ItemProfilesController,
         PeopleController,
+        SocialController,
         RecommendationsController,
         HomeController,
       ],
