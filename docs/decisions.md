@@ -850,3 +850,22 @@ gente con la que tienes afinidad, igual que en Tinder cuando haces match»).
 - Prioridad 3: las APIs de portabilidad DMA (TikTok, Meta, Amazon, Apple App Store), gratuitas por ley pero con
   aprobación previa del desarrollador.
 - Las exportaciones RGPD subidas como archivo quedan aparcadas: exigen pasos después del alta.
+
+## Fase 11 · 2026-10-14 (Google ampliado: Play, pedidos y guardados)
+
+- Apple Music queda **descartada** mientras exija pago (decisión del usuario).
+- Se añaden `play.library`, `order_reserve.purchases_reservations` y `saved.collections` al **mismo consentimiento
+  de Google** del alta: ningún permiso ni configuración posterior para usuarios nuevos.
+- **Semántica**:
+  - descargar o comprar en Play prueba que se conoce, no que se use ni que guste: conocido, preferencia NULL;
+  - pedir o reservar prueba consumo; repetir sugiere gusto (preferencia por frecuencia desde 2 visitas, confianza 0,5
+    porque es conducta, no un voto);
+  - guardar no prueba gusto (§5), igual que los sitios con estrella.
+- **Geocodificación**: Nominatim (OSM, ODbL) en vez de un proveedor de pago. Su política obliga a ≤ 1 consulta/s, caché
+  y uso moderado, así que hay tope por sync y endpoint configurable; para producción a escala, instancia propia. La
+  identificación final sigue siendo la regla OSM (nombre y tipo a ≤ 100 m), así que un geocodificado erróneo no
+  identifica un lugar equivocado. En una prueba real, nombre y dirección juntos no dan resultado: se consulta primero la
+  dirección y después nombre + ciudad.
+- **Apps**: solo cuentan los videojuegos (P3418 en Wikidata, o el título limitado a juegos). WhatsApp, Gmail y similares
+  quedan fuera de categoría y se informan como tales, no como «no identificados».
+- **Minimización**: ni platos, ni importes, ni pagos, ni notas o comentarios de las colecciones.

@@ -222,7 +222,7 @@ describe('sync de Google', () => {
     const unavailable = async (): Promise<never> => {
       throw new SourceError('unavailable', 'OpenStreetMap (Overpass) no responde; se reintentará', true);
     };
-    const failing = { identifyPlace: unavailable, identifyPlaces: unavailable, identifyWork: async () => null, identifyChannels: unavailable, identifyArtists: unavailable };
+    const failing = { identifyPlace: unavailable, identifyPlaces: unavailable, identifyPlacesByText: unavailable, identifyWork: async () => null, identifyChannels: unavailable, identifyArtists: unavailable, identifyApps: unavailable };
     const context = syncContext({ ...done.credentials! });
     const progress: string[] = [];
     const deferred = await syncPortability(client, context, { identifier: failing, onProgress: (m) => progress.push(m) });

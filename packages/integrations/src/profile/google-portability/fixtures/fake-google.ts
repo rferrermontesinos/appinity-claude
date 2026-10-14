@@ -136,6 +136,35 @@ export function defaultExports(): Record<Group, Record<string, unknown>> {
         'gggggggggg4,Sin artista,,',
       ].join('\n'),
     },
+    // Fase 11 (esquemas oficiales consultados el 2026-10-14; los nombres de archivo son supuestos hasta un export real).
+    'play.library': {
+      'Portability/Google Play Store/Library.json': [
+        { libraryDoc: { doc: { documentType: 'Books', title: 'Cien años de soledad' }, acquisitionTime: '2025-03-01T10:00:00.000Z' } },
+        { libraryDoc: { doc: { documentType: 'Android Apps', title: 'Monument Valley', docid: 'com.ustwo.monumentvalley' }, acquisitionTime: '2025-04-01T10:00:00.000Z' } },
+        { libraryDoc: { doc: { documentType: 'Android Apps', title: 'WhatsApp Messenger' }, acquisitionTime: '2024-01-01T10:00:00.000Z' } },
+        { libraryDoc: { doc: { documentType: 'Music', title: 'Disco simulado' }, acquisitionTime: '2024-02-01T10:00:00.000Z' } },
+      ],
+    },
+    'order_reserve.purchases_reservations': {
+      'Portability/Purchases & Reservations/Purchases.json': [
+        { merchantOrderId: 'o-1', creationTime: '2026-05-01T20:00:00.000Z', orderStatus: 'COMPLETED', transactionMerchant: { name: 'Restaurante Can Culleretes' }, lineItem: [{ name: 'Plato simulado' }] },
+        { merchantOrderId: 'o-2', creationTime: '2026-06-01T20:00:00.000Z', orderStatus: 'COMPLETED', transactionMerchant: { name: 'Restaurante Can Culleretes' } },
+        { merchantOrderId: 'o-3', creationTime: '2026-06-02T20:00:00.000Z', orderStatus: 'CANCELLED', transactionMerchant: { name: 'Pizzería cancelada' } },
+      ],
+      'Portability/Purchases & Reservations/Reservations.json': [
+        { uniqueId: 'r-1', merchantName: 'Restaurante Can Culleretes', address: 'Carrer d’en Quintana, 5, Barcelona', startTime: '2026-07-01T21:00:00.000Z', partySize: '2', canceled: 'false' },
+        { uniqueId: 'r-2', merchantName: 'Reserva futura', startTime: '2099-01-01T21:00:00.000Z', canceled: 'false' },
+      ],
+    },
+    'saved.collections': {
+      'Portability/Saved/Quiero ir.csv': [
+        'Lugares para visitar',
+        '',
+        'Title,Note,URL,Tags,Comment',
+        'Sagrada Família,Nota privada,https://www.google.com/maps/place/Sagrada+Fam%C3%ADlia/data=!4m2!3m1!1s0x12a4a2dcd83dfb93:0x9bd8aac21bc3c950,,',
+        'Artículo interesante,,https://example.com/articulo,,',
+      ].join('\n'),
+    },
   };
 }
 
@@ -172,6 +201,8 @@ export const FAKE_IDENTIFICATIONS: Record<string, IdentifiedEntity> = {
   Casablanca: { category: 'movies', itemType: 'movie', title: 'Casablanca', canonicalIds: { 'wikidata:entity': 'Q132689' }, releaseYear: 1942, confidence: 0.65, method: 'wikidata_titulo_exacto_dominante' },
   Hades: { category: 'games', itemType: 'game', title: 'Hades', canonicalIds: { 'wikidata:entity': 'Q61949891' }, releaseYear: 2020, confidence: 0.65, method: 'wikidata_titulo_exacto_dominante' },
   Radiohead: { category: 'music', itemType: 'artist', title: 'Radiohead', canonicalIds: { 'wikidata:entity': 'Q44190' }, confidence: 0.8, method: 'wikidata_titulo_exacto_unico' },
+  'Cien años de soledad': { category: 'books', itemType: 'book', title: 'Cien años de soledad', canonicalIds: { 'wikidata:entity': 'Q178869' }, releaseYear: 1967, confidence: 0.8, method: 'wikidata_titulo_exacto_unico' },
+  'com.ustwo.monumentvalley': { category: 'games', itemType: 'game', title: 'Monument Valley', canonicalIds: { 'wikidata:entity': 'Q15553298' }, releaseYear: 2014, confidence: 0.95, method: 'wikidata_id_google_play' },
 };
 
 /** Identificación simulada de canales por su ID (lo que devolvería Wikidata con P2397). */
@@ -216,10 +247,23 @@ export function createFakeIdentifier(identifications: Record<string, IdentifiedE
             return entity ? { entity } : { entity: null, reason: 'no_match' };
           }),
         ),
-      identifyWork: async (work: { title: string }) => {
+      identifyWork: async (work: { title: string; categories?: string[] }) => {
         calls.push(`work:${work.title}`);
-        return identifications[work.title] ?? null;
+        const entity = identifications[work.title] ?? null;
+        return entity && (!work.categories || work.categories.includes(entity.category)) ? entity : null;
       },
+      identifyPlacesByText: async (places: Array<{ name: string; address?: string }>): Promise<PlaceIdentification[]> =>
+        places.map((place) => {
+          calls.push(`text:${place.name}`);
+          const entity = identifications[place.name];
+          return entity ? { entity: { ...entity, confidence: entity.confidence * 0.9, method: `geocodificado_${entity.method}` } } : { entity: null, reason: 'no_match', nearby: 'none' };
+        }),
+      identifyApps: async (packages: string[]): Promise<Identification[]> =>
+        packages.map((pkg) => {
+          calls.push(`app:${pkg}`);
+          const entity = identifications[pkg];
+          return entity ? (entity.category === 'games' ? { entity } : { entity: null, reason: 'out_of_scope', scope: 'app' }) : { entity: null, reason: 'no_match' };
+        }),
       identifyChannels: async (channels: ChannelToIdentify[]): Promise<Identification[]> =>
         channels.map((channel) => {
           calls.push(`channel:${channel.channelId}`);

@@ -236,7 +236,15 @@ export interface EntityIdentifier {
   identifyPlace(place: PlaceToIdentify): Promise<IdentifiedEntity | null>;
   /** Varios lugares a la vez (el proveedor agrupa las consultas); mismo orden que la entrada. */
   identifyPlaces(places: PlaceToIdentify[], onProgress?: (done: number, total: number) => void): Promise<PlaceIdentification[]>;
-  identifyWork(work: { title: string; languages?: string[] }): Promise<IdentifiedEntity | null>;
+  /** `categories`: solo se aceptan obras de esas categorías (p. ej., un libro de Play solo puede ser un libro). */
+  identifyWork(work: { title: string; languages?: string[]; categories?: Category[] }): Promise<IdentifiedEntity | null>;
+  /**
+   * Lugares sin coordenadas (pedidos, reservas y guardados de Google): se geocodifican por nombre y dirección y después
+   * pasan por la misma comprobación que `identifyPlaces` (nombre y tipo del elemento de OSM). Mismo orden.
+   */
+  identifyPlacesByText(places: PlaceTextToIdentify[], onProgress?: (done: number, total: number) => void): Promise<PlaceIdentification[]>;
+  /** Apps de Google Play por su ID de paquete (coincidencia exacta en el catálogo); solo se aceptan videojuegos. */
+  identifyApps(packageNames: string[], onProgress?: (done: number, total: number) => void): Promise<Identification[]>;
   /**
    * Canales de YouTube por su ID (coincidencia exacta con el catálogo). Si el canal no figura y `musicName` está
    * presente (canal «Artista - Topic» o escuchado en YouTube Music), se busca un artista musical con ese nombre exacto.
@@ -244,6 +252,13 @@ export interface EntityIdentifier {
   identifyChannels(channels: ChannelToIdentify[], onProgress?: (done: number, total: number) => void): Promise<Identification[]>;
   /** Artistas musicales por nombre exacto (biblioteca de YouTube Music): solo grupos y personas músicos. */
   identifyArtists(names: string[], onProgress?: (done: number, total: number) => void): Promise<Identification[]>;
+}
+
+/** Lugar conocido solo por su nombre y, si la hay, su dirección. */
+export interface PlaceTextToIdentify {
+  name: string;
+  address?: string;
+  countryCode?: string;
 }
 
 export interface ChannelToIdentify {

@@ -27,7 +27,7 @@ Leyenda de la columna «Comprobado»:
 | # | Fuente | Por qué | Coste | Bloqueos |
 |---|---|---|---|---|
 | 1 | **Google Data Portability ampliado** | Mismo consentimiento y misma infraestructura. Añade libros, juegos, restaurantes y guardados | 0 € | Solo UE/CH/UK. Los scopes «Restricted» exigen la verificación de Google en producción (ya pendiente para Maps y YouTube) |
-| 2 | **Apple Music (MusicKit)** | Global; biblioteca, escuchas recientes, rotación frecuente y valoraciones (me encanta / no me gusta) | 99 $/año del Apple Developer Program, necesario igualmente para publicar en iOS | Solo suscriptores de Apple Music. En Android hace falta MusicKit JS (web). Condiciones por verificar |
+| 2 | ~~Apple Music (MusicKit)~~ **descartada mientras sea de pago** | Global; biblioteca, escuchas recientes, rotación frecuente y valoraciones (me encanta / no me gusta) | 99 $/año del Apple Developer Program, necesario igualmente para publicar en iOS | Solo suscriptores de Apple Music. En Android hace falta MusicKit JS (web). Condiciones por verificar |
 | 3 | **APIs DMA: TikTok, Meta, Amazon, Apple (App Store)** | Gratuitas por ley; grandes audiencias; likes de páginas, seguidos, compras de libros, apps y juegos | 0 € | UE. Requieren alta y aprobación del desarrollador (identidad de empresa, revisión de seguridad o lista de admitidos). Tarea del titular del proyecto |
 | 4 | Twitch (canales seguidos → videojuegos) | Global, OAuth | 0 € | Condiciones por verificar |
 
@@ -82,6 +82,12 @@ Leyenda de la columna «Comprobado»:
 | Xbox / PlayStation / Nintendo | games | Bloqueadas | Sin API pública para terceros (Xbox: solo socios) | Previo |
 | Podcast Index | podcasts (catálogo) | Útil como catálogo, no como perfil | API gratuita de catálogo | Previo |
 | Pinterest, Reddit | varias | Bloqueadas | Aprobación o acuerdo comercial | Previo |
+
+## Estado (2026-10-14)
+
+- Implementado: Google ampliado (`play.library`, `order_reserve.purchases_reservations` y `saved.collections`), a
+  falta de un export real.
+- Apple Music: **descartada** mientras exija pago.
 
 ## Siguiente paso
 
