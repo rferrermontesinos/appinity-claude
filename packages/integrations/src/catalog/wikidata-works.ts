@@ -144,7 +144,12 @@ export interface WikidataWorkIdentifierOptions {
   endpoint?: string;
   fetchImpl?: typeof fetch;
   sleep?: (ms: number) => Promise<void>;
+  /** Avisos de espera (Wikidata saturado), para que el worker muestre que sigue trabajando. */
+  log?: (message: string) => void;
 }
+
+/** Intentos por petición: con 3 (unos 7 s) un corte breve de Wikidata obligaba a repetir el sync entero. */
+const WIKIDATA_ATTEMPTS = 6;
 
 export class WikidataWorkIdentifier {
   private readonly fetchImpl: typeof fetch;
@@ -314,22 +319,35 @@ export class WikidataWorkIdentifier {
   private async get(params: Record<string, string>): Promise<unknown> {
     const url = new URL(this.options.endpoint ?? WIKIDATA_API);
     for (const [k, v] of Object.entries({ ...params, format: 'json', maxlag: '5' })) url.searchParams.set(k, v);
-    for (let attempt = 0; attempt < 3; attempt++) {
+    // Esperas de 2, 4, 8, 16 y 32 s (o lo que pida Retry-After): aguanta cortes de ~1 min sin aplazar el sync.
+    const wait = async (attempt: number, problem: string, retryAfter?: string | null) => {
+      const ms = Number(retryAfter ?? '0') * 1000 || 2_000 * 2 ** attempt;
+      if (attempt + 1 < WIKIDATA_ATTEMPTS) {
+        this.options.log?.(`Wikidata ocupado (${problem}); reintento ${attempt + 1}/${WIKIDATA_ATTEMPTS - 1} en ${Math.round(ms / 1000)} s`);
+        await this.sleep(ms);
+      }
+    };
+    for (let attempt = 0; attempt < WIKIDATA_ATTEMPTS; attempt++) {
       let response: Response;
       try {
         response = await this.fetchImpl(url, { headers: { 'User-Agent': this.options.userAgent, Accept: 'application/json' }, signal: AbortSignal.timeout(20_000) });
-      } catch {
-        await this.sleep(1_000 * 2 ** attempt);
+      } catch (error) {
+        await wait(attempt, (error as Error).name === 'TimeoutError' ? 'sin respuesta' : 'error de red');
         continue;
       }
       if (response.status === 429 || response.status >= 500) {
-        await this.sleep(Number(response.headers.get('retry-after') ?? '0') * 1000 || 2_000 * 2 ** attempt);
+        await wait(attempt, `HTTP ${response.status}`, response.headers.get('retry-after'));
         continue;
       }
       if (!response.ok) throw new SourceError('bad_response', `Wikidata respondió HTTP ${response.status}`, false);
-      const data = (await response.json()) as { error?: { code?: string } };
-      if (data.error?.code === 'maxlag') {
-        await this.sleep(5_000);
+      const data = (await response.json().catch(() => null)) as { error?: { code?: string } } | null;
+      if (!data) {
+        await wait(attempt, 'respuesta ilegible');
+        continue;
+      }
+      // maxlag (réplicas atrasadas) o búsqueda saturada: errores pasajeros que Wikidata devuelve con HTTP 200.
+      if (data.error?.code === 'maxlag' || data.error?.code === 'search-error' || data.error?.code === 'internal_api_error_DBQueryTimeoutError') {
+        await wait(attempt, data.error.code);
         continue;
       }
       return data;
