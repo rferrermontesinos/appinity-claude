@@ -662,3 +662,46 @@ documentado aquí.
   coincidencias no dan cifras altas) y el suelo de confianza de datos.
 - Demo con v3: Laura ↔ Clara 85,94; Teo 48,66; Jordi 23,62 (antes 22,24 y 22,76 según el sentido); Pau 22,95. Marta ↔
   Iris 76,88.
+
+## Fase 7 · 2026-10-14 (recomendador y Trending local)
+
+Motor `recommendation-v1` (`packages/algorithms/src/recommendation.ts` y `packages/ingestion/src/recommendations.ts`).
+Se calcula al pedirlo, a partir de perfiles y afinidades ya guardados. No hace falta tabla de candidatos con el tamaño
+actual.
+
+- **Consenso (70 %)**:
+  - solo el Top 50 de almas gemelas; una persona = un voto;
+  - apoyo = preferencia ≥ 0,5 con confianza ≥ 0,5; mínimo 2 apoyos (con uno solo es descubrimiento, no consenso);
+  - puntuación = (apoyos / almas gemelas con opinión) · (1 − e^(−apoyos/3)) · preferencia media de los apoyos ·
+    confianza media. Se conservan apoyos y denominador.
+- **Descubrimiento (20 %)**:
+  - persona con afinidad ≥ 50 (la de la categoría si existe; si no, la global);
+  - gusto ≥ 0,8 con confianza ≥ 0,7;
+  - puntuación = afinidad/100 · preferencia · confianza;
+  - se registra quién lo aporta, y su nombre es el motivo («Descubierto a través de…»).
+- **Trending (10 %)**:
+  - votantes: personas del mismo dataset, activas y adultas, sin bloqueos, cuya ubicación está dentro del radio del
+    destinatario (PostGIS en metros); la afinidad no interviene;
+  - voto: valoración explícita (rating o like) consolidada, confianza ≥ 0,8, con una observación explícita cuyo
+    `occurred_at` cae en el año actual del destinatario (zona horaria del usuario; con precisión de año, en UTC).
+    Nunca `synced_at`;
+  - reglas de fecha: películas, series, libros y videojuegos, estreno en el año actual; eventos, en el año actual;
+    restaurantes, lugares, artistas y podcasts, sin regla de creación;
+  - lugares dentro del radio;
+  - ranking: media bayesiana (prior 0, peso 3) con votos altos y bajos, mínimo 5 votantes únicos, mitad o más de
+    votos altos (≥ 0,6) y media ≥ 0,3. Se guardan votos altos, totales, media, año y radio.
+- **Mezcla**: tandas de 10 (7/2/1). Si un bloque no tiene candidatos, su hueco lo ocupa otro bloque (consenso →
+  descubrimiento → trending) marcado con `fillsFor`. El motivo sigue siendo el real de la tarjeta. Nunca se inventan
+  apoyos ni se llama Trending a otra cosa.
+- **Filtros**:
+  - conocidos (knownConfidence ≥ 0,8);
+  - descartes de Home (tabla `home_dismissals`, migración 0006; la gestión llega en la fase 8). Categories no los
+    aplica;
+  - objetos ya mostrados en la sesión (`exclude`);
+  - lugares fuera del radio;
+  - eventos terminados.
+- **Sin ubicación**: no se recomiendan lugares (no se presume ninguna ciudad) y no hay Trending local
+  (`no_location`).
+- **Demo**: las personas sintéticas pueden combinar la actividad de varias personas (Clara = Laura + series de Núria +
+  restaurantes de Marta). Si dos personas de origen valoraron el mismo objeto, vale la primera receta. Así la demo
+  tiene recomendaciones y el seed sigue siendo idempotente.

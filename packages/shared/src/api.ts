@@ -211,6 +211,38 @@ export interface PublicPersonDto {
   affinity: AffinityDto;
 }
 
+export type RecommendationBlockDto = 'consensus' | 'discovery' | 'trending';
+
+/**
+ * Motivo verificable de una tarjeta (§2 y §12): para el consenso, cuántas almas gemelas la apoyan (nunca quiénes); para
+ * el descubrimiento, la persona que la aporta; para Trending, cuántas personas de la zona la votaron este año.
+ */
+export interface RecommendationReasonDto {
+  code: RecommendationBlockDto;
+  supporters?: number;
+  opinionated?: number;
+  contributor?: { userId: string; displayName: string };
+  positiveVoters?: number;
+  totalVoters?: number;
+}
+
+export interface RecommendationDto {
+  item: CatalogItemDto;
+  block: RecommendationBlockDto;
+  /** Ocupa el hueco de otro bloque sin candidatos (la cuota 70/20/10 es un objetivo, no se rellena inventando). */
+  fillsFor: RecommendationBlockDto | null;
+  reason: RecommendationReasonDto;
+}
+
+export interface RecommendationsDto {
+  items: RecommendationDto[];
+  available: Record<RecommendationBlockDto, number>;
+  trending: { status: 'ok' | 'no_location' | 'insufficient_votes'; year: number; radiusKm: number | null; minVoters: number };
+  /** Sin ubicación no se recomiendan lugares (no se presume ninguna zona). */
+  localFilter: 'radius' | 'no_location';
+  algorithmVersion: string;
+}
+
 export interface ItemProfileDto {
   item: CatalogItemDto;
   knownConfidence: number;

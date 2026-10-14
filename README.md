@@ -17,7 +17,8 @@ Implementación independiente de APPINITY construida desde cero a partir de
 - Fase 5 (afinidad entre personas) **implementada**. Solo cuenta lo que conocen las dos personas, así que es simétrica
   (decisión del usuario).
 - Fase 6 (Top 50 de almas gemelas) **implementada**: la pestaña Personas muestra el ranking y el perfil mínimo de cada
-  persona. Todavía **no** hay recomendador.
+  persona.
+- Fase 7 (recomendador y Trending local) **implementada en la API**. Home la mostrará en la fase 8.
 
 ## Qué es real y qué es simulado
 
@@ -35,7 +36,7 @@ Implementación independiente de APPINITY construida desde cero a partir de
 | Google Books, Apple Music, calendario | **Pendientes** (fase 11). Se muestran como «Próximamente». TMDb, Last.fm y Spotify requieren acuerdo comercial |
 | Identidad | **De desarrollo** (JWT firmado por la API con `DEMO_MODE`). No es autenticación de producción |
 | Afinidad y almas gemelas | **Calculadas** (fases 5 y 6) con las preferencias importadas. En la demo, 7 de las 13 personas son sintéticas y su actividad se deriva de la de las demás |
-| Recomendaciones y Trending | **Pendientes** (fases 7–8). La app no muestra ninguna inventada |
+| Recomendaciones y Trending | **Calculadas** (fase 7) con almas gemelas reales y votos explícitos de la zona. Sin pantalla hasta la fase 8 |
 
 ## Requisitos
 
