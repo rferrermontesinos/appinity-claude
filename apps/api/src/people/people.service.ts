@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { categoryAffinities, userAffinities, userProfiles, type DatabaseHandle } from '@appinity/database';
-import { AFFINITY_VERSION, NotFoundError, canSeePerson, friendshipState, isExceptionalMutual, topSoulmates } from '@appinity/ingestion';
+import { AFFINITY_VERSION, NotFoundError, canSeePerson, chatState, friendshipState, isExceptionalMutual, topSoulmates } from '@appinity/ingestion';
 import { CATEGORIES, type AffinityDto, type PublicPersonDto, type SoulmatesDto } from '@appinity/shared';
 import { and, eq } from 'drizzle-orm';
 import { DATABASE } from '../infra/tokens.js';
@@ -75,6 +75,7 @@ export class PeopleService {
       avatarUrl: profile?.avatarUrl ?? null,
       affinity,
       friendship: await friendshipState(this.database.db, viewerId, targetId),
+      chat: await chatState(this.database.db, viewerId, targetId),
     };
   }
 }

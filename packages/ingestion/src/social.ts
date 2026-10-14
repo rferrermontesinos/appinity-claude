@@ -1,6 +1,7 @@
 import { friendships, userAffinities, userBlocks, userProfiles, userReports, users, type Database } from '@appinity/database';
 import { and, eq, inArray, isNull, or } from 'drizzle-orm';
 import { ConflictError, ForbiddenError, NotFoundError } from './errors.js';
+import { closeChatForBlock, openMatch } from './chat.js';
 import { canSeePerson } from './soulmates.js';
 
 /**
@@ -29,7 +30,11 @@ export async function sendFriendRequest(db: Database, from: string, to: string, 
     if (row.status === 'accepted') throw new ConflictError('Ya sois amigos');
     // Si la otra persona ya había pedido amistad, pedirla también equivale a aceptarla.
     if (row.addresseeId === from && row.status === 'pending') {
-      await db.update(friendships).set({ status: 'accepted', respondedAt: now }).where(eq(friendships.id, row.id));
+      await db.transaction(async (tx) => {
+        await tx.update(friendships).set({ status: 'accepted', respondedAt: now }).where(eq(friendships.id, row.id));
+        // La amistad aceptada abre el chat (equivale a un match).
+        await openMatch(tx, from, to, 'friendship', now, from);
+      });
       return { state: 'friends' };
     }
     // Ya enviada (o rechazada sin que se sepa): no se duplica ni se insiste.
@@ -47,7 +52,11 @@ export async function respondFriendRequest(db: Database, userId: string, request
   const [row] = await db.select().from(friendships).where(eq(friendships.id, requestId));
   if (!row || row.addresseeId !== userId || row.status !== 'pending') throw new NotFoundError('Solicitud no encontrada');
   if (accept && !(await canSeePerson(db, userId, row.requesterId))) throw new NotFoundError('Persona no encontrada');
-  await db.update(friendships).set({ status: accept ? 'accepted' : 'rejected', respondedAt: now }).where(eq(friendships.id, requestId));
+  await db.transaction(async (tx) => {
+    await tx.update(friendships).set({ status: accept ? 'accepted' : 'rejected', respondedAt: now }).where(eq(friendships.id, requestId));
+    // La amistad aceptada abre el chat (equivale a un match).
+    if (accept) await openMatch(tx, userId, row.requesterId, 'friendship', now, userId);
+  });
   return { state: accept ? 'friends' : 'none' };
 }
 
@@ -106,7 +115,7 @@ export async function listFriends(db: Database, userId: string): Promise<{ frien
   return { friends: friends.sort(byName), incoming: incoming.sort(byName), outgoing: outgoing.sort(byName) };
 }
 
-/** Bloquear: oculta a ambas personas entre sí en todas las superficies y elimina la amistad o la solicitud. */
+/** Bloquear: oculta a ambas personas entre sí en todas las superficies, elimina la amistad o la solicitud y cierra el chat. */
 export async function blockUser(db: Database, userId: string, target: string, now = new Date()): Promise<void> {
   if (userId === target) throw new ForbiddenError('No puedes bloquearte');
   const [viewer] = await db.select({ dataset: users.dataset }).from(users).where(eq(users.id, userId));
@@ -115,6 +124,8 @@ export async function blockUser(db: Database, userId: string, target: string, no
   await db.transaction(async (tx) => {
     await tx.insert(userBlocks).values({ blockerUserId: userId, blockedUserId: target, createdAt: now }).onConflictDoNothing();
     await tx.delete(friendships).where(pair(userId, target));
+    // Bloquear detiene los mensajes: la conversación se cierra y se borran las solicitudes de chat.
+    await closeChatForBlock(tx, userId, target, now);
   });
 }
 

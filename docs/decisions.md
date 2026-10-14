@@ -788,3 +788,45 @@ actual.
 
   Un hash, incluso con clave, **no garantiza el anonimato**: los teléfonos tienen poca entropía y quien tenga la clave
   puede recorrerlos todos. Por eso se minimiza lo enviado y lo guardado, y no se sube la agenda completa por defecto.
+
+## Fase 12A · 2026-10-14 (Chat)
+
+Se adelanta a la fase 11 por decisión del usuario: el chat es uno de los núcleos de la aplicación («poder charlar con la
+gente con la que tienes afinidad, igual que en Tinder cuando haces match»).
+
+- **Modelo «match», inspirado en Tinder** (solo su funcionamiento público; no se copia código, marca ni diseño):
+  - «Quiero hablar» en el perfil equivale al *like*: no envía ningún mensaje.
+  - Si la otra persona acepta, o si también había mostrado interés, hay **match**: pantalla «¡Es un match!» y se abre la
+    conversación. Una amistad aceptada también abre el chat (migración: las amistades existentes reciben su conversación).
+  - Nadie recibe mensajes de quien no ha aceptado. Así se cumple EARLY_ACCESS (§16: solicitud y aceptación).
+- **Dónde vive el chat**: la app conserva sus cuatro pestañas (regla de producto). El chat está en **Personas →
+  Chats** (segmento por defecto), con aviso numérico en la propia pestaña. La bandeja sigue el esquema de Tinder:
+  - solicitudes recibidas;
+  - fila de **nuevos matches** (aún sin mensajes, con anillo si no se han visto);
+  - **conversaciones** ordenadas por el último mensaje, con no leídos.
+  Desde el perfil de cualquier persona visible: «Quiero hablar», «Aceptar y chatear» o «Enviar mensaje».
+- **Ignorar** no se revela (quien envió la solicitud la sigue viendo «enviada» y no puede insistir) ni genera señales.
+  Quien ignoró puede cambiar de idea: si después muestra interés, el match es inmediato.
+- **Deshacer el match**: la conversación desaparece para las dos personas. La otra no puede volver a pedirlo; quien lo
+  deshizo sí puede mostrar interés de nuevo (y, como la otra ya lo había mostrado, el match vuelve, vacío).
+- **Bloquear** cierra la conversación y borra las solicitudes de chat entre ambas. Desbloquear no la recupera; un match
+  nuevo la reabre **vacía** (los mensajes antiguos se borran al reabrir). El reporte se hace desde el perfil.
+- **PREMIUM_DIRECT_MESSAGE**: la ruta existe (primer mensaje como solicitud; responder equivale a aceptar; un único
+  mensaje sin respuesta). **Sin RevenueCat nadie es Premium**: la API responde 403 aunque el flag esté activo. El
+  entitlement solo se inyecta en tests de dominio, marcado como tal. No se finge ningún entitlement.
+- **Permisos en servidor**: toda lectura y escritura comprueba que la persona es miembro de una conversación activa y que
+  puede ver a la otra (mismo dataset, activa, sin bloqueos). Si no, 404 (no se revela si existe).
+- **Anti-abuso**:
+  - 30 solicitudes nuevas por persona y 24 h;
+  - 20 mensajes por minuto y 500 al día;
+  - de 1 a 1.000 caracteres;
+  - el limitador HTTP por ruta añade una segunda barrera.
+  Al superarlos, la API responde 429. El `clientId` evita duplicados al reintentar.
+- **Sin push todavía** (fase 12C): la bandeja se consulta cada 15 s y la conversación abierta cada 4 s. Leído y «Visto»
+  con `last_read_at` por miembro.
+- **Ningún permiso nuevo**: el chat no pide permisos del sistema ni configuración adicional (regla del usuario: solo se
+  acepta al registrarse). Las futuras notificaciones push sí requieren el permiso del sistema operativo. La propuesta es
+  pedirlo dentro del alta (fase 12C/13), nunca después.
+- **Gustos intactos**: ningún paso del chat lee ni escribe preferencias, perfiles de objetos ni afinidades (lo comprueba
+  un test). La pantalla de match solo dice «os gustan cosas parecidas» con afinidad calculada ≥ 50. La sugerencia para
+  romper el hielo usa la categoría de mayor afinidad, nunca objetos del historial ajeno.

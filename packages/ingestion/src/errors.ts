@@ -19,3 +19,8 @@ export class UnavailableError extends Error {
 export class ConnectionRevokedError extends Error {
   readonly code = 'revoked';
 }
+
+/** Límite de envío superado (anti-abuso). La API responde 429. */
+export class RateLimitedError extends Error {
+  readonly code = 'rate_limited';
+}

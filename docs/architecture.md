@@ -1,6 +1,6 @@
 # Arquitectura · APPINITY Claude
 
-Documento vivo. Describe lo implementado (fases 0 a 10) y marca lo pendiente. Requisitos:
+Documento vivo. Describe lo implementado (fases 0 a 10 y 12A) y marca lo pendiente. Requisitos:
 [APPINITY_Especificacion.md](APPINITY_Especificacion.md). Decisiones y parámetros: [decisions.md](decisions.md).
 
 ## Vista general
@@ -76,6 +76,9 @@ Tablas de la fase 1:
 | `recommendation_impressions` (fase 8) | Primera y última impresión por usuario y objeto (NEW) |
 | `recommendation_actions` (fase 8) | Descartar o conservar, con `undone_at` para deshacer |
 | `home_dismissals` (fase 7) | Descarte de Home por usuario y objeto canónico. Solo filtra Home; nunca toca los gustos |
+| `message_requests` (fase 12A) | Interés (`interest`) o primer mensaje Premium (`direct`) de una persona a otra: pending, accepted o ignored; ignorar no se revela |
+| `conversations` (fase 12A) | Una por pareja ordenada tras el match (request, mutual, friendship o direct); `closed` al deshacer o bloquear |
+| `conversation_members` / `messages` (fase 12A) | Lectura y aviso de match por persona; mensajes de 1 a 1.000 caracteres con `client_id` idempotente |
 | `friendships` (fase 10) | Una fila por pareja (único sobre la pareja ordenada): pending, accepted o rejected; el rechazo no se revela |
 | `user_reports` (fase 10) | Reportes con motivo cerrado y nota opcional (≤ 500) |
 | `user_blocks` (fase 6) | Bloqueo por pareja ordenada (sin autorreferencia). Excluye en ambas direcciones del ranking, del perfil y de la afinidad |
@@ -184,6 +187,18 @@ GET /v1/me/recommendations → recommendFor(usuario)
   fase 9: si falta, respaldos → comunidad (≥ 2 personas, bayes > 0) → conservados (Inicio) → explorar (sin valoraciones)
   POST /v1/me/recommendations/query { limit, category, context: home|category, exclude[] } → Inicio y Categories
 ```
+
+## Chat (fase 12A)
+
+```text
+perfil → POST /v1/me/chats/requests (interés, EARLY_ACCESS) ─┬─ la otra ya lo había mostrado → match (mutual)
+                                                            └─ solicitud → aceptar → match (request) · ignorar (sin aviso)
+amistad aceptada → match (friendship)       Premium (12B) → POST /v1/me/chats/direct → 403 sin entitlement
+match → conversación → GET|POST /v1/me/chats/:id/messages (solo miembros, sin bloqueos; 404 si no)
+bloqueo → conversación cerrada + solicitudes borradas · DELETE /v1/me/chats/:id → deshacer match
+```
+
+Sin push (12C): la app consulta la bandeja cada 15 s y la conversación abierta cada 4 s.
 
 ## Resolución de entidades (§6)
 

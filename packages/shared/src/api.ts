@@ -213,6 +213,80 @@ export interface PublicPersonDto {
   affinity: AffinityDto;
   /** Relación vista por quien consulta (un rechazo se muestra como «pendiente» a quien envió la solicitud). */
   friendship: { state: 'none' | 'pending_out' | 'pending_in' | 'friends'; requestId: string | null };
+  /** Relación de chat vista por quien consulta (una solicitud ignorada se le sigue mostrando «enviada»). */
+  chat: ChatStateDto;
+}
+
+/** Chat (§16, fase 12A): interés → match → conversación. */
+export type ChatStateDto =
+  | { state: 'none' }
+  | { state: 'request_sent'; kind: 'interest' | 'direct' }
+  | { state: 'request_received'; requestId: string; kind: 'interest' | 'direct'; firstMessage: string | null }
+  | { state: 'matched'; conversationId: string };
+
+export interface ChatConfigDto {
+  /** EARLY_ACCESS: chat gratuito con solicitud y aceptación. */
+  earlyAccess: boolean;
+  /** PREMIUM_DIRECT_MESSAGE activo en el servidor. */
+  premiumDirectMessage: boolean;
+  /** Entitlement verificado en servidor. Falso mientras no exista RevenueCat (fase 12B). */
+  premium: boolean;
+  premiumSource: 'none';
+  limits: { requestsPerDay: number; messagesPerMinute: number; messagesPerDay: number; bodyMaxLength: number };
+}
+
+export interface ChatMatchResultDto {
+  state: ChatStateDto['state'];
+  conversationId: string | null;
+  /** Se acaba de producir el match: la app muestra «¡Es un match!». */
+  newMatch: boolean;
+}
+
+export interface ChatPersonDto {
+  userId: string;
+  displayName: string;
+  countryCode: string | null;
+  avatarUrl: string | null;
+  /** Afinidad ya calculada (el chat nunca la modifica). NULL: «—». */
+  affinity: number | null;
+}
+
+export interface ChatListItemDto {
+  conversationId: string;
+  person: ChatPersonDto;
+  matchedAt: string;
+  isNew: boolean;
+  lastMessage: { body: string; mine: boolean; createdAt: string } | null;
+  unread: number;
+}
+
+export interface ChatRequestDto {
+  requestId: string;
+  kind: 'interest' | 'direct';
+  firstMessage: string | null;
+  person: ChatPersonDto;
+  createdAt: string;
+}
+
+export interface ChatInboxDto {
+  matches: ChatListItemDto[];
+  conversations: ChatListItemDto[];
+  requests: ChatRequestDto[];
+  badge: number;
+}
+
+export interface ChatMessageDto {
+  id: string;
+  senderId: string;
+  mine: boolean;
+  body: string;
+  createdAt: string;
+}
+
+export interface ChatConversationDto {
+  conversation: { id: string; origin: string; matchedAt: string; person: ChatPersonDto; otherLastReadAt: string | null };
+  messages: ChatMessageDto[];
+  hasMore: boolean;
 }
 
 export interface FriendDto {

@@ -18,6 +18,8 @@ import { InfraModule } from './infra/infra.module.js';
 import { PipelineModule } from './infra/pipeline.module.js';
 import { MeController } from './me/me.controller.js';
 import { MeService } from './me/me.service.js';
+import { ChatController } from './people/chat.controller.js';
+import { ChatPolicyService } from './people/chat-policy.service.js';
 import { PeopleController } from './people/people.controller.js';
 import { HomeController } from './recommendations/home.controller.js';
 import { RecommendationsController } from './recommendations/recommendations.controller.js';
@@ -53,6 +55,7 @@ export class AppModule {
         ItemProfilesController,
         PeopleController,
         SocialController,
+        ChatController,
         RecommendationsController,
         HomeController,
       ],
@@ -63,6 +66,7 @@ export class AppModule {
         ConnectionsService,
         CatalogQueryService,
         PeopleService,
+        ChatPolicyService,
         { provide: APP_GUARD, useClass: ThrottlerGuard },
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_FILTER, useClass: DomainErrorsFilter },
