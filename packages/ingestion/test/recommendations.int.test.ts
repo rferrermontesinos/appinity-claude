@@ -160,7 +160,11 @@ describe('recomendador (fase 7)', () => {
     const result = await recommendFor(database.db, viewer, { now: NOW });
     const byItem = new Map(result.items.map((r) => [r.itemId, r]));
     expect(byItem.get(items.consenso!)).toMatchObject({ block: 'consensus', consensus: { supporters: 3 } });
-    expect(byItem.has(items.persona51!)).toBe(false);
+    // Las personas 51 y 52 no cuentan para el consenso. Su objeto solo puede salir como respaldo de comunidad, con ese
+    // motivo (2 personas de APPINITY), nunca como «tus almas gemelas».
+    expect(byItem.get(items.persona51!)?.block ?? 'community').toBe('community');
+    const primaryOnly = await recommendFor(database.db, viewer, { now: NOW, limit: 100, includeFallbacks: false });
+    expect(primaryOnly.items.map((r) => r.itemId)).not.toContain(items.persona51);
   });
 
   it('descubrimiento: identifica a la persona que lo aporta', async () => {
@@ -266,5 +270,49 @@ describe('Home: acciones e impresiones (fase 8)', () => {
       .returning({ id: catalogItems.id });
     await expect(applyHomeAction(database.db, viewer, demoItem!.id, 'dismiss')).rejects.toBeInstanceOf(NotFoundError);
     await expect(recordImpression(database.db, viewer, '10000000-0000-4000-a000-00000000dead')).rejects.toBeInstanceOf(NotFoundError);
+  });
+});
+
+describe('feed continuo: respaldos honestos (fase 9)', () => {
+  it('cuando se agotan los bloques principales siguen comunidad, conservados y explorar, cada uno con su motivo', async () => {
+    await database.db.delete(homeDismissals);
+    await item('sinSenales', 'movies');
+    await item('conservado', 'books');
+    await applyHomeAction(database.db, viewer, items.conservado!, 'keep');
+    const all = await recommendFor(database.db, viewer, { now: NOW, limit: 50 });
+    const blocks = all.items.map((r) => r.block);
+    // Primero los bloques principales; después, los respaldos en orden.
+    const firstFallback = blocks.findIndex((b) => ['community', 'kept', 'explore'].includes(b));
+    expect(firstFallback).toBeGreaterThan(0);
+    expect(blocks.slice(firstFallback).every((b) => ['community', 'kept', 'explore'].includes(b))).toBe(true);
+    const byItem = new Map(all.items.map((r) => [r.itemId, r]));
+    expect(byItem.get(items.persona51!)).toMatchObject({ block: 'community', community: { supporters: 2 } });
+    expect(byItem.get(items.conservado!)?.block).toBe('kept');
+    expect(byItem.get(items.sinSenales!)?.block).toBe('explore');
+    // Los filtros siguen valiendo: lo conocido y los lugares fuera del radio tampoco salen como respaldo.
+    expect(byItem.has(items.conocido!)).toBe(false);
+    expect(byItem.has(items.lejos!)).toBe(false);
+    expect(all.available.explore).toBeGreaterThan(0);
+    // «Para explorar» solo incluye objetos que nadie ha valorado: «votado2025» (valorado por vecinos) no sale así.
+    expect(byItem.get(items.votado2025!)?.block).not.toBe('explore');
+  });
+
+  it('el orden de explorar es estable en el día y cambia de un día a otro', async () => {
+    const explore = async (now: Date) =>
+      (await recommendFor(database.db, viewer, { now, limit: 50 })).items.filter((r) => r.block === 'explore').map((r) => r.itemId);
+    expect(await explore(NOW)).toEqual(await explore(new Date(NOW.getTime() + 3_600_000)));
+    expect(new Set(await explore(new Date('2026-10-15T10:00:00Z')))).toEqual(new Set(await explore(NOW)));
+  });
+
+  it('Categories: solo la categoría pedida, sin aplicar los descartes de Home', async () => {
+    await applyHomeAction(database.db, viewer, items.cerca!, 'dismiss');
+    const food = await recommendFor(database.db, viewer, { now: NOW, limit: 50, category: 'food', applyHomeDismissals: false });
+    expect(food.items.length).toBeGreaterThan(0);
+    expect(food.items.map((r) => r.itemId)).toContain(items.cerca);
+    const metaRows = await database.db.select({ id: catalogItems.id, category: catalogItems.category }).from(catalogItems);
+    const categoryOf = new Map(metaRows.map((m) => [m.id, m.category]));
+    expect(food.items.every((r) => categoryOf.get(r.itemId) === 'food')).toBe(true);
+    // En Home, el descarte sí se aplica.
+    expect((await recommendFor(database.db, viewer, { now: NOW, limit: 50, category: 'food' })).items.map((r) => r.itemId)).not.toContain(items.cerca);
   });
 });

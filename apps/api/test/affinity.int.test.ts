@@ -171,3 +171,28 @@ describe('Home (fase 8)', () => {
     expect((await post('/v1/me/home/actions', { itemId: '10000000-0000-4000-a000-00000000dead', action: 'dismiss' })).status).toBe(404);
   });
 });
+
+describe('feed continuo y Categories (fase 9)', () => {
+  const query = (body: unknown) =>
+    fetch(`${base}/v1/me/recommendations/query`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+
+  it('POST /query pagina con la cola de la sesión en el cuerpo, sin repetir y con respaldos etiquetados', async () => {
+    const seen: string[] = [];
+    for (let page = 0; page < 3; page++) {
+      const body = (await (await query({ limit: 10, context: 'home', exclude: seen })).json()) as RecommendationsDto;
+      for (const r of body.items) {
+        expect(seen).not.toContain(r.item.id);
+        seen.push(r.item.id);
+        expect(['consensus', 'discovery', 'trending', 'community', 'kept', 'explore']).toContain(r.reason.code);
+      }
+    }
+    expect(seen.length).toBeGreaterThan(10);
+  });
+
+  it('Categories: solo la categoría pedida', async () => {
+    const body = (await (await query({ limit: 20, category: 'food', context: 'category' })).json()) as RecommendationsDto;
+    expect(body.items.length).toBeGreaterThan(0);
+    expect(body.items.every((r) => r.item.category === 'food')).toBe(true);
+    expect((await query({ limit: 20, exclude: ['no-uuid'] })).status).toBe(400);
+  });
+});

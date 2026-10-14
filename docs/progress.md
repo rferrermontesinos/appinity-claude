@@ -16,11 +16,48 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 5 | **Implementado y comprobado automáticamente** | Entrega 2026-10-13 · fase 5 (rama `fase-5-afinidad`, basada en `fase-4-youtube`). Calibración en decisions.md |
 | 6 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-13 · fase 6 (rama `fase-6-top50`, basada en `fase-5-afinidad`). Pendiente de aceptación en el teléfono |
 | 7 | **Implementado y comprobado automáticamente** | Entrega 2026-10-14 · fase 7 (rama `fase-7-recomendador`, basada en `fase-6-top50`). Sin pantalla: Home llega en la fase 8 |
-| 8 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-14 · fase 8 (rama `fase-8-home`, basada en `fase-7-recomendador`). Pendiente de aceptación en el teléfono |
-| 9–10 | Pendiente | Categories y social |
+| 8 | **Aceptado en el teléfono** (2026-10-14) | Entrega 2026-10-14 · fase 8 (rama `fase-8-home`, basada en `fase-7-recomendador`) |
+| 9 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-14 · fase 9 (rama `fase-9-categories`, basada en `fase-8-home`). Incluye el feed continuo pedido por el usuario |
+| 10 | Pendiente | People y Friends |
 | 11 | Pendiente | Fuentes adicionales viables, una por tarea |
 | 12 | Pendiente | Chat, Premium y notificaciones, por subentregas |
 | 13 | Pendiente | Preparación y prueba de beta |
+
+---
+
+## Entrega 2026-10-14 · fase 9 (Categories y feed continuo)
+
+El usuario aceptó la fase 8 en el teléfono («Todo funciona correctamente») y pidió un mazo «que tienda al infinito, al
+estilo de Tinder».
+
+### Qué se ha hecho
+
+- **Respaldos honestos** tras los bloques principales: comunidad, conservados y explorar, cada uno con su motivo
+  (decisions.md).
+- `POST /v1/me/recommendations/query`: paginación con la cola de la sesión en el cuerpo. Inicio la usa.
+- **Categories**: cada categoría muestra recomendaciones (sin los descartes de Inicio) y el catálogo, con paginación
+  continua.
+
+### Comandos ejecutados y resultados (Windows 11, 2026-10-14)
+
+| Comando | Resultado |
+|---|---|
+| `pnpm lint` / `pnpm typecheck` | 0 errores / OK |
+| `pnpm test` | **22 ficheros, 254 tests OK**. Nuevos: respaldos en orden y con motivo, objeto de la persona 51 solo como «comunidad», explorar solo lo no valorado y en orden estable, Categories sin descartes de Inicio y paginación por POST |
+| Vista web propia (375×812) | Restaurantes como Laura: Lasarte, Alkimia y Cinc Sentits (consenso) y después «para explorar». Se corrigieron dos fallos: la lista pedía datos antes de recuperar la sesión, y «explorar» incluía restaurantes ya valorados (mal) por otras personas |
+| Mazo de Inicio de Laura por la API, de 10 en 10 | 49 tarjetas en la sesión (antes 5): 2 de consenso (respetando lo que el usuario descartó y conservó en el teléfono), 13 de comunidad y 34 de explorar |
+
+### Pasos para probarlo en el teléfono
+
+1. Reiniciar `pnpm api` y `pnpm mobile`.
+2. Laura (demo) → **Inicio**: después de las tarjetas de almas gemelas siguen «Lo valoraron muy bien N personas de
+   APPINITY» y «Para explorar».
+3. **Categorías** → Restaurantes: pestaña «Recomendado» (aparece Cinc Sentits aunque se descartara en Inicio) y
+   «Catálogo». Al bajar se cargan más.
+
+### Siguiente paso
+
+Fase 10: People y Friends (solicitudes de amistad, bloqueo desde la app, privacidad de descubrimiento).
 
 ---
 
