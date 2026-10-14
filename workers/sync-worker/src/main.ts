@@ -1,11 +1,12 @@
 import { EntityResolver, LocalDiskStorage, WikidataSnapshotProvider, cacheCatalogImage } from '@appinity/catalog';
 import { createDatabase } from '@appinity/database';
-import { createProducerQueues, enqueueSync, runConnectionSync, scheduleDueSyncs } from '@appinity/ingestion';
+import { createProducerQueues, enqueueAffinity, enqueueSync, recomputeAffinities, runConnectionSync, scheduleDueSyncs } from '@appinity/ingestion';
 import { createAdapterRegistry, createCatalogIdentifier } from '@appinity/integrations';
 import {
   QUEUES,
   isSourceError,
   workerHeartbeatKey,
+  type AffinityJob,
   type CatalogImageJob,
   type PingJob,
   type ProfileSyncJob,
@@ -83,6 +84,9 @@ const workers: Worker[] = [
         await job.moveToDelayed(Date.now() + delay, token);
         throw new DelayedError();
       }
+      // La evidencia cambió: se recalculan las afinidades del usuario (agrupando syncs cercanos).
+      const changed = outcome.observationsInserted + outcome.observationsUpdated + outcome.observationsDeleted > 0;
+      if (changed && outcome.userId) await enqueueAffinity(producer, outcome.userId).catch(() => undefined);
       console.log(
         `[sync] ${job.data.connectionId} run ${job.data.runId}: ${outcome.status} ` +
           `(+${outcome.observationsInserted} ~${outcome.observationsUpdated} =${outcome.observationsUnchanged} -${outcome.observationsDeleted}, ` +
@@ -91,6 +95,21 @@ const workers: Worker[] = [
       return { status: outcome.status };
     },
     { connection, prefix: env.queuePrefix, concurrency: 2 },
+  ),
+  // Afinidades direccionales (§11): de un usuario tras un cambio de evidencia, o de todo cada día.
+  new Worker<AffinityJob>(
+    QUEUES.affinity,
+    async (job) => {
+      const results = await recomputeAffinities(database.db, job.data.userId ? { userIds: [job.data.userId] } : {});
+      for (const r of results) {
+        console.log(
+          `[afinidad] ${job.data.userId ? `usuario ${job.data.userId}` : 'recálculo completo'} (${r.dataset}): ` +
+            `${r.pairsWithAffinity} parejas con afinidad de ${r.pairsCompared} comparadas, ${r.eligibleUsers} usuarios elegibles`,
+        );
+      }
+      return { results };
+    },
+    { connection, prefix: env.queuePrefix, concurrency: 1 },
   ),
   // Caché de imágenes del catálogo, con ritmo limitado para no sobrecargar el origen (Wikimedia).
   new Worker<CatalogImageJob>(
@@ -117,6 +136,9 @@ const heartbeat = setInterval(beat, 10_000);
 // Revisión horaria de syncs pendientes (idempotente: el programador se registra con un id fijo).
 const systemQueue = new Queue(QUEUES.system, { connection, prefix: env.queuePrefix });
 await systemQueue.upsertJobScheduler('schedule-syncs', { every: 60 * 60 * 1000 }, { name: 'schedule-syncs', data: { requestedAt: 'scheduler' } });
+// Recálculo completo diario de afinidades (cubre cambios no ligados a un sync, como un usuario que deja de ser elegible).
+const affinityQueue = new Queue<AffinityJob>(QUEUES.affinity, { connection, prefix: env.queuePrefix });
+await affinityQueue.upsertJobScheduler('recompute-affinities', { every: 24 * 60 * 60 * 1000 }, { name: 'recompute-all', data: {} });
 
 console.log(
   `Worker escuchando colas [${workers.map((w) => w.name).join(', ')}] con prefijo ${env.queuePrefix}` +
@@ -146,7 +168,7 @@ async function shutdown(signal: string): Promise<void> {
       .catch((error: Error) => console.error(`[sync] run ${job.data.runId}: no se pudo devolver a la cola (${error.message})`));
   }
   await Promise.race([Promise.allSettled(workers.map((w) => w.close(true))), new Promise((r) => setTimeout(r, 5_000))]);
-  await Promise.allSettled([systemQueue.close(), producer.close()]);
+  await Promise.allSettled([systemQueue.close(), affinityQueue.close(), producer.close()]);
   await Promise.allSettled([connection.quit(), heartbeatClient.quit(), database.close()]);
   process.exit(0);
 }

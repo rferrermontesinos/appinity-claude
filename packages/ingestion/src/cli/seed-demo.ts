@@ -1,4 +1,5 @@
 import { createDatabase, requireEnv } from '@appinity/database';
+import { recomputeAffinities } from '../affinities.js';
 import { seedDemo } from '../demo/seed-demo.js';
 import { createProducerQueues, enqueueImage } from '../queues.js';
 
@@ -12,6 +13,11 @@ try {
     console.log(
       `  · ${s.handle.padEnd(11)} ${s.source.padEnd(17)} ${s.status.padEnd(9)} nuevas ${s.observationsInserted}, actualizadas ${s.observationsUpdated}, sin cambios ${s.observationsUnchanged}${errors}`,
     );
+  }
+
+  // Afinidades direccionales de la demo (§11), calculadas con las preferencias recién consolidadas.
+  for (const r of await recomputeAffinities(handle.db)) {
+    console.log(`✔ Afinidades (${r.dataset}): ${r.pairsWithAffinity} parejas con afinidad de ${r.pairsCompared} comparadas; ${r.eligibleUsers} usuarios elegibles`);
   }
 
   // Caché de imágenes: lo hace el worker. Si Redis no está disponible, la app usa la URL de origen.

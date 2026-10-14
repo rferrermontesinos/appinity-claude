@@ -5,6 +5,7 @@ import {
   createSyncRun,
   startConnect,
   disconnectSource,
+  enqueueAffinity,
   enqueueSync,
   NotFoundError,
   UnavailableError,
@@ -248,6 +249,10 @@ export class ConnectionsService {
     });
     // Detener los trabajos que aún esperan en la cola (los que ya corren se cancelan al comprobar el estado).
     await Promise.allSettled(pending.map((p) => this.queues.profileSync.remove(p.id)));
+    // Lo importado se borró: las afinidades que dependían de ello se recalculan (§10).
+    if (purge && result.purgedObservations > 0) {
+      await enqueueAffinity(this.queues, userId).catch((error: Error) => this.logger.warn(`No se pudo encolar el recálculo de afinidades: ${error.message}`));
+    }
     return result;
   }
 }

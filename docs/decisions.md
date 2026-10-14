@@ -547,3 +547,58 @@ El usuario autorizó continuar con las siguientes fases sin esperar a su revisi�
   libera la concesión vigente (`authorization:reset` y revocación del token), se borran sus credenciales y la conexión
   queda «requiere acción» hasta completar el consentimiento con los 8 grupos. Lo importado se conserva. Si el
   usuario abandona el consentimiento, la conexión sigue en ese estado y puede volver a intentarlo.
+
+## Fase 5 · 2026-10-13 (afinidad direccional versionada)
+
+Motor `affinity-v1` en `packages/algorithms/src/affinity.ts`: la fórmula V1 de §11, con un cambio de calibración
+documentado aquí.
+
+- **Solo preferencias consolidadas.** Conocido o consumido sin preferencia no entra. Peso por objeto:
+  `w = min(confA, confB)`.
+- **Parámetros (sin calibrar con usuarios reales):**
+
+  | Parámetro | Valor | Motivo |
+  |---|---|---|
+  | tau | food 4, culture 3, movies 6, series 4, music 5, games 4, books 4, podcasts 2 | Evidencia efectiva con la que el factor de evidencia llega al 63 %. Mayor en categorías donde la gente acumula más objetos (películas) |
+  | Mínimo comparable | 2 objetos y Σw ≥ 1 | Con 1 solo objeto, NULL |
+  | Suelo de confianza de datos | 0,75 | Ver calibración |
+  | Elegibilidad | Activo, no borrado, mayoría de edad confirmada y ≥ 3 preferencias | Mínimo de evidencia documentado (§4) |
+
+- **Calibración (perfiles sintéticos; tabla generada con el motor el 2026-10-13):**
+
+  | Escenario | Fórmula literal §11 | `affinity-v1` |
+  |---|---|---|
+  | Gustos idénticos, 20 valoraciones explícitas (películas) | 96,4 | 96,4 |
+  | Gustos idénticos, 12 juegos inferidos por horas (confianza 0,6) | 50,1 | 75,1 |
+  | Idénticos, 2 valoraciones | 28,4 | 28,4 |
+  | Idénticos, 5 valoraciones | 56,5 | 56,5 |
+  | Contrarios, 10 valoraciones (+1 frente a −1) | 0 | 0 |
+  | A con 200 películas, B con 10 en común idénticas (A → B) | 68,5 | 68,5 |
+  | El mismo caso, B → A | 81,1 | 81,1 |
+  | 8 restaurantes, acuerdo parcial (1 frente a 0,5) | 64,8 | 64,8 |
+
+  La fórmula literal multiplica tres veces la confianza de los datos: en n_eff (y por tanto en el factor de evidencia),
+  en el peso del acuerdo y en `dataConfidence`. Así, dos personas con gustos idénticos inferidos de conducta no
+  pasaban del ~50 % aunque tuvieran mucha evidencia. Es lo que §11 pide documentar. `affinity-v1` usa
+  `dataConfidenceFactor = 0,75 + 0,25 · media(w)`: con datos explícitos (confianza 1) no cambia nada; con conducta
+  sigue penalizando, pero menos. Con `dataConfidenceFloor = 0` se obtiene la fórmula literal (queda en los tests).
+- **Global:** media ponderada de las categorías con resultado; las que faltan no cuentan como 0. Peso:
+  `log1p(Σ confianzas de las preferencias del usuario de origen en la categoría)`. Cada objeto cuenta una vez, así
+  que miles de escuchas no duplican el peso de una preferencia. Confianza global: `1 − Π(1 − confianza de cada
+  categoría)`. Varias categorías comparables la aumentan.
+- **Almacenamiento:** `user_affinities` y `category_affinities` por pareja ordenada, con `algorithm_version` y
+  `computed_at`. NULL = sin fila (nunca un 0 inventado). No se guarda qué objetos coinciden.
+- **Prefiltro exacto:** solo se calculan parejas que comparten algún objeto con preferencia. Sin objetos en común todo es
+  NULL, así que no pierde candidatos; un test lo compara con el cálculo exhaustivo.
+- **Separación de datasets:** la demo y las cuentas reales nunca se comparan entre sí.
+- **Cuándo se recalcula:**
+  - tras un sync con cambios: trabajo `affinity` del usuario, agrupado 10 s;
+  - tras borrar lo importado de una fuente;
+  - cada 24 h, completo;
+  - al terminar `pnpm db:seed`.
+
+  Nunca al abrir la app (§11).
+- **API:** `GET /v1/me/affinities/:userId` devuelve solo la dirección «yo → otra persona»: global, las 8 categorías
+  (NULL donde no hay datos) y si la afinidad mutua es excepcional (ambas ≥ 90). De la dirección inversa solo se expone
+  ese booleano. Solo entre personas del mismo dataset.
+- **Pendiente:** bloqueos (fase 10) y ajustes de privacidad de descubrimiento. Calibrar tau y mínimos con datos reales.

@@ -39,6 +39,8 @@ export type SyncMode = 'incremental' | 'full';
 
 export interface SyncOutcome {
   runId: string;
+  /** Propietario de la conexión (para recalcular sus afinidades si cambió su evidencia). */
+  userId?: string;
   /** `deferred`: el proveedor aún prepara los datos; el worker vuelve a intentarlo pasado `retryAfterMs`. */
   status: 'succeeded' | 'partial' | 'failed' | 'cancelled' | 'skipped' | 'deferred';
   retryAfterMs?: number;
@@ -206,6 +208,7 @@ export async function runConnectionSync(deps: SyncDeps, runId: string): Promise<
 
   if (!connection || connection.connection.status === 'revoked') return finish('cancelled', 'La conexión está revocada');
   const conn = connection.connection;
+  outcome.userId = conn.userId;
   const adapter = registry.get(conn.sourceKey);
   if (!adapter) return finish('failed', `La fuente ${conn.sourceKey} no está disponible en este entorno`);
 

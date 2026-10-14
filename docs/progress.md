@@ -13,11 +13,48 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | Revisión de fuentes · decisiones | **Aceptada** (2026-10-09) | El usuario aceptó la especificación 1.1; de momento, imagen genérica (sin licencia de catálogo); Gmail se evaluará más adelante |
 | 3 | **Sincronizado con la cuenta real del usuario** (2026-10-09); pendiente de revisar la identificación con el siguiente export y de la aceptación en la app | Entrega 2026-10-09 · fase 3 (rama `fase-3-google`, PR rferrermontesinos/appinity-claude#6, basada en `especificacion-fuentes`). Primer sync: 21 evidencias (20 reseñas y 1 sitio guardado) |
 | 4 | **Implementado y comprobado automáticamente**; pendiente de validar con la cuenta real | Entrega 2026-10-13 · fase 4 (rama `fase-4-youtube`, basada en `fase-3-google`). Falta añadir 3 permisos en Google Cloud y renovar el permiso (README) |
-| 5–7 | Pendiente | Afinidad, Top 50 y recomendador |
+| 5 | **Implementado y comprobado automáticamente** | Entrega 2026-10-13 · fase 5 (rama `fase-5-afinidad`, basada en `fase-4-youtube`). Calibración en decisions.md |
+| 6–7 | Pendiente | Top 50 y recomendador |
 | 8–10 | Pendiente | Home, Categories y social |
 | 11 | Pendiente | Fuentes adicionales viables, una por tarea |
 | 12 | Pendiente | Chat, Premium y notificaciones, por subentregas |
 | 13 | Pendiente | Preparación y prueba de beta |
+
+---
+
+## Entrega 2026-10-13 · fase 5 (afinidad direccional versionada)
+
+### Qué se ha hecho
+
+- **Motor `affinity-v1`** (`packages/algorithms/src/affinity.ts`): la fórmula V1 de §11 con un ajuste de calibración
+  documentado. Determinista y sin IA generativa.
+- **Tablas** `user_affinities` y `category_affinities` (migración `0004_affinities`) por pareja ordenada, versionadas.
+- **Recálculo** (`packages/ingestion/src/affinities.ts`):
+  - solo usuarios elegibles y del mismo dataset;
+  - prefiltro exacto;
+  - parcial tras cada sync con cambios o al borrar lo importado de una fuente;
+  - completo cada día y al terminar el seed.
+- **API** `GET /v1/me/affinities/:userId`: afinidad propia hacia otra persona, sin historiales.
+- `pnpm db:generate` volvía a fallar con drizzle-kit 0.31 (no exporta `bin.cjs`) y con `--`. Corregido.
+
+### Comandos ejecutados y resultados (Windows 11, 2026-10-13)
+
+| Comando | Resultado |
+|---|---|
+| `pnpm db:generate -- --name=affinities` | `0004_affinities.sql`: dos tablas con sus restricciones (revisado) |
+| `pnpm lint` / `pnpm typecheck` | 0 errores / OK |
+| `pnpm test` | **19 ficheros, 216 tests OK**. Nuevos: 12 del motor (perfiles sintéticos), 7 de integración (elegibilidad, NULL, 0, direccionalidad, prefiltro frente a cálculo exhaustivo, recálculo parcial, datasets separados) y 3 HTTP |
+| `pnpm db:migrate` en la BD de desarrollo + recálculo | Demo: 5 usuarios elegibles. Solo Laura y Jordi comparten preferencias (2 películas): 22,24 en un sentido y 22,76 en el otro. Cuenta real: sola en su dataset, sin parejas |
+
+### Limitaciones
+
+- La demo apenas tiene preferencias en común: para el Top 50 (fase 6) hará falta ampliarla con personas sintéticas.
+- Sin bloqueos todavía (fase 10). Parámetros sin calibrar con usuarios reales.
+- Sin pantalla propia: el ranking y el perfil con afinidades llegan con las fases 6 y 10.
+
+### Siguiente paso
+
+Fase 6: ranking Top 50 (excluye bloqueos y al propio usuario; orden estable) y personas sintéticas para la demo.
 
 ---
 

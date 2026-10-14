@@ -1,4 +1,4 @@
-import { QUEUES, type CatalogImageJob, type ProfileSyncJob } from '@appinity/shared';
+import { QUEUES, type AffinityJob, type CatalogImageJob, type ProfileSyncJob } from '@appinity/shared';
 import { Queue, type JobsOptions } from 'bullmq';
 import { Redis } from 'ioredis';
 
@@ -13,6 +13,7 @@ export const DEFAULT_JOB_OPTIONS: JobsOptions = {
 export interface ProducerQueues {
   profileSync: Queue<ProfileSyncJob>;
   catalogImages: Queue<CatalogImageJob>;
+  affinity: Queue<AffinityJob>;
   connection: Redis;
   close(): Promise<void>;
 }
@@ -22,12 +23,14 @@ export function createProducerQueues(redisUrl: string, prefix: string): Producer
   const connection = new Redis(redisUrl, { maxRetriesPerRequest: 1 });
   const profileSync = new Queue<ProfileSyncJob>(QUEUES.profileSync, { connection, prefix, defaultJobOptions: DEFAULT_JOB_OPTIONS });
   const catalogImages = new Queue<CatalogImageJob>(QUEUES.catalogImages, { connection, prefix, defaultJobOptions: DEFAULT_JOB_OPTIONS });
+  const affinity = new Queue<AffinityJob>(QUEUES.affinity, { connection, prefix, defaultJobOptions: DEFAULT_JOB_OPTIONS });
   return {
     profileSync,
     catalogImages,
+    affinity,
     connection,
     async close() {
-      await Promise.allSettled([profileSync.close(), catalogImages.close()]);
+      await Promise.allSettled([profileSync.close(), catalogImages.close(), affinity.close()]);
       await connection.quit().catch(() => undefined);
     },
   };
@@ -36,6 +39,14 @@ export function createProducerQueues(redisUrl: string, prefix: string): Producer
 /** El id del trabajo es el de la ejecución: reencolar la misma ejecución no la duplica. */
 export function enqueueSync(queues: ProducerQueues, job: ProfileSyncJob) {
   return queues.profileSync.add('sync', job, { jobId: job.runId });
+}
+
+/**
+ * Recálculo de afinidades de un usuario. Se agrupan los cambios cercanos: mientras el trabajo espera (10 s), otro sync
+ * del mismo usuario no encola otro (mismo id); al completarse se puede volver a encolar.
+ */
+export function enqueueAffinity(queues: Pick<ProducerQueues, 'affinity'>, userId: string) {
+  return queues.affinity.add('recompute', { userId }, { jobId: `affinity-${userId}`, delay: 10_000, removeOnComplete: true, removeOnFail: { count: 100 } });
 }
 
 /** Una imagen pendiente no se encola dos veces; al completarse puede volver a encolarse. */
