@@ -17,6 +17,7 @@ import {
 import { catalogItems, categoryAffinities, homeDismissals, userItemProfiles, userProfiles, userSettings, users, type Database } from '@appinity/database';
 import { isCategory, type Category } from '@appinity/shared';
 import { and, eq, gte, inArray, isNotNull, sql } from 'drizzle-orm';
+import { unseenItems } from './home.js';
 import { topSoulmates } from './soulmates.js';
 
 /**
@@ -47,6 +48,8 @@ export interface RecommendationItem {
   block: RecommendationBlock;
   fillsFor: RecommendationBlock | null;
   score: number;
+  /** NEW: nunca se había mostrado a este usuario (no significa estreno). */
+  isNew: boolean;
   consensus?: { supporters: number; opinionated: number };
   discovery?: { contributorId: string; contributorName: string; contributorAffinity: number };
   trending?: { positiveVoters: number; totalVoters: number; averageScore: number };
@@ -230,9 +233,10 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
       : [],
   );
   const mixed = mixRecommendations({ consensus, discovery, trending }, limit, params);
+  const unseen = await unseenItems(db, userId, mixed.map((m) => m.candidate.itemId));
   return {
     items: mixed.map(({ block, fillsFor, candidate }) => {
-      const base = { itemId: candidate.itemId, block, fillsFor, score: (candidate as { score: number }).score };
+      const base = { itemId: candidate.itemId, block, fillsFor, score: (candidate as { score: number }).score, isNew: unseen.has(candidate.itemId) };
       if (block === 'consensus') {
         const c = candidate as ConsensusCandidate;
         return { ...base, consensus: { supporters: c.supporters, opinionated: c.opinionated } };
