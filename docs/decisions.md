@@ -830,3 +830,23 @@ gente con la que tienes afinidad, igual que en Tinder cuando haces match»).
 - **Gustos intactos**: ningún paso del chat lee ni escribe preferencias, perfiles de objetos ni afinidades (lo comprueba
   un test). La pantalla de match solo dice «os gustan cosas parecidas» con afinidad calculada ≥ 50. La sugerencia para
   romper el hielo usa la categoría de mayor afinidad, nunca objetos del historial ajeno.
+
+## 2026-10-14 · Aceptación del chat y reglas sociales (usuario)
+
+- Chat aceptado en el teléfono.
+- **Almas gemelas**: se ven sus datos de afinidad y se puede elegir hablar con ellas. **Más adelante, hablar con almas
+  gemelas será una opción Premium.**
+- **Amigos**: siempre aparecen en el listado, con afinidad alta, baja o «—», con sus datos de afinidad, y siempre se puede
+  hablar con ellos.
+
+## Fase 11 · 2026-10-14 (análisis de fuentes)
+
+- Análisis completo en [source-candidates.md](source-candidates.md).
+- Spotify, Last.fm, Deezer, TMDB y Open Library quedan **bloqueadas** para uso comercial gratuito (condiciones oficiales
+  comprobadas hoy).
+- **Prioridad 1: ampliar Google Data Portability** (libros y juegos de Play, pedidos de comida, guardados) dentro del
+  mismo consentimiento del alta.
+- Prioridad 2: Apple Music (MusicKit).
+- Prioridad 3: las APIs de portabilidad DMA (TikTok, Meta, Amazon, Apple App Store), gratuitas por ley pero con
+  aprobación previa del desarrollador.
+- Las exportaciones RGPD subidas como archivo quedan aparcadas: exigen pasos después del alta.

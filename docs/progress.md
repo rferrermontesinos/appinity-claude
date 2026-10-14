@@ -19,7 +19,7 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 8 | **Aceptado en el teléfono** (2026-10-14) | Entrega 2026-10-14 · fase 8 (rama `fase-8-home`, basada en `fase-7-recomendador`) |
 | 9 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-14 · fase 9 (rama `fase-9-categories`, basada en `fase-8-home`). Incluye el feed continuo pedido por el usuario |
 | 10 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-14 · fase 10 (rama `fase-10-people`, basada en `fase-9-categories`). Contactos: pendiente (fase 13) |
-| 11 | Pendiente | Fuentes adicionales viables, una por tarea |
+| 11 | **Análisis hecho** ([source-candidates.md](source-candidates.md)); implementación pendiente, una fuente por tarea | Siguiente: Google Data Portability ampliado |
 | 12 | **12A (chat) implementada, comprobada automáticamente y verificada en la vista web**; 12B (Premium/RevenueCat) y 12C (push) pendientes | Entrega 2026-10-14 · fase 12A (rama `fase-12a-chat`, basada en `fase-10-people`) |
 | 13 | Pendiente | Preparación y prueba de beta |
 
