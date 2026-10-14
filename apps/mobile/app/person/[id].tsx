@@ -2,6 +2,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 import { usePerson } from '../../src/api/queries';
+import { ChatActions } from '../../src/components/ChatActions';
 import { PersonActions } from '../../src/components/PersonActions';
 import { PersonAvatar, formatAffinity } from '../../src/components/PersonAvatar';
 import { Badge, Body, Card, CategoryIcon, ErrorCard, Loading, Screen, Small, Title } from '../../src/components/ui';
@@ -37,6 +38,7 @@ export default function PersonScreen() {
             {/* alignSelf stretch: en la tarjeta centrada, el texto debe ajustarse al ancho en vez de ensancharla. */}
             <Small style={{ textAlign: 'center', alignSelf: 'stretch' }}>{t('people.affinityHint')}</Small>
           </Card>
+          <ChatActions person={data} />
           <Card>
             <Title>{t('people.byCategory')}</Title>
             {data.affinity.categories.map((cat) => {

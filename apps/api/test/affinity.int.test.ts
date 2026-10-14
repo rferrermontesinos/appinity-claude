@@ -1,7 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import { createDatabase, userAffinities, userBlocks, users, type DatabaseHandle } from '@appinity/database';
 import { DEMO_USERS, recomputeAffinities, seedDemo } from '@appinity/ingestion';
-import { CATEGORIES, type AffinityDto, type FriendsDto, type PublicPersonDto, type RecommendationsDto, type SoulmatesDto } from '@appinity/shared';
+import { CATEGORIES, type AffinityDto, type ChatConfigDto, type ChatConversationDto, type ChatInboxDto, type ChatMatchResultDto, type FriendsDto, type PublicPersonDto, type RecommendationsDto, type SoulmatesDto } from '@appinity/shared';
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { testEnv, truncateAll } from '../../../test/helpers.js';
@@ -95,8 +95,9 @@ describe('almas gemelas y perfil público (fase 6)', () => {
     const res = await get(`/v1/people/${byHandle('demo_clara').id}`);
     expect(res.status).toBe(200);
     const body = (await res.json()) as PublicPersonDto;
-    expect(Object.keys(body).sort()).toEqual(['affinity', 'avatarUrl', 'countryCode', 'displayName', 'friendship', 'userId']);
+    expect(Object.keys(body).sort()).toEqual(['affinity', 'avatarUrl', 'chat', 'countryCode', 'displayName', 'friendship', 'userId']);
     expect(body.friendship).toEqual({ state: 'none', requestId: null });
+    expect(body.chat).toEqual({ state: 'none' });
     expect(body.displayName).toBe('Clara (demo)');
     expect(body.affinity.categories).toHaveLength(8);
     expect(body.affinity.categories.some((c) => c.score === null)).toBe(true);
@@ -233,5 +234,48 @@ describe('People y Friends (fase 10)', () => {
     expect(patched.status).toBe(200);
     expect(((await patched.json()) as { settings: { discoverableAsSoulmate: boolean } }).settings.discoverableAsSoulmate).toBe(false);
     await call(token, 'PATCH', '/v1/me/settings', { discoverableAsSoulmate: true });
+  });
+});
+
+describe('Chat (fase 12A)', () => {
+  async function tokenFor(handle: string) {
+    const res = await fetch(`${base}/v1/dev/session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle }) });
+    return ((await res.json()) as { token: string }).token;
+  }
+  const call = (tok: string, method: string, path: string, body?: unknown) =>
+    fetch(`${base}${path}`, { method, headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
+
+  it('configuración: EARLY_ACCESS activo y nadie es Premium sin RevenueCat', async () => {
+    const config = (await (await call(token, 'GET', '/v1/me/chats/config')).json()) as ChatConfigDto;
+    expect(config).toMatchObject({ earlyAccess: true, premium: false, premiumSource: 'none' });
+    const iris = DEMO_USERS.find((u) => u.handle === 'demo_iris')!;
+    expect((await call(token, 'POST', '/v1/me/chats/direct', { userId: iris.id, body: 'hola' })).status).toBe(403);
+  });
+
+  it('interés, aceptación, mensajes y acceso solo de los miembros', async () => {
+    const iris = DEMO_USERS.find((u) => u.handle === 'demo_iris')!;
+    const irisToken = await tokenFor('demo_iris');
+    const leoToken = await tokenFor('demo_leo');
+    expect(await (await call(token, 'POST', '/v1/me/chats/requests', { userId: iris.id })).json()).toEqual({ state: 'request_sent', conversationId: null, newMatch: false });
+    const person = (await (await call(token, 'GET', `/v1/people/${iris.id}`)).json()) as PublicPersonDto;
+    expect(person.chat).toEqual({ state: 'request_sent', kind: 'interest' });
+    const inbox = (await (await call(irisToken, 'GET', '/v1/me/chats')).json()) as ChatInboxDto;
+    expect(inbox.requests.map((r) => r.person.userId)).toEqual([laura.id]);
+    const match = (await (await call(irisToken, 'POST', `/v1/me/chats/requests/${inbox.requests[0]!.requestId}/accept`)).json()) as ChatMatchResultDto;
+    expect(match).toMatchObject({ state: 'matched', newMatch: true });
+    const conv = match.conversationId!;
+    const sent = await call(token, 'POST', `/v1/me/chats/${conv}/messages`, { body: 'Hola Iris', clientId: 'laura-1' });
+    expect(sent.status).toBe(201);
+    expect((await call(token, 'POST', `/v1/me/chats/${conv}/messages`, { body: '' })).status).toBe(400);
+    // Leo no es miembro: ni lee ni escribe.
+    expect((await call(leoToken, 'GET', `/v1/me/chats/${conv}/messages`)).status).toBe(404);
+    expect((await call(leoToken, 'POST', `/v1/me/chats/${conv}/messages`, { body: 'hola' })).status).toBe(404);
+    const page = (await (await call(irisToken, 'GET', `/v1/me/chats/${conv}/messages`)).json()) as ChatConversationDto;
+    expect(page.messages.map((m) => [m.body, m.mine])).toEqual([['Hola Iris', false]]);
+    expect((await call(irisToken, 'POST', `/v1/me/chats/${conv}/read`)).status).toBe(204);
+    // Bloquear detiene los mensajes.
+    expect((await call(irisToken, 'POST', '/v1/me/blocks', { userId: laura.id })).status).toBe(204);
+    expect((await call(token, 'POST', `/v1/me/chats/${conv}/messages`, { body: '¿sigues ahí?' })).status).toBe(404);
+    expect((await call(irisToken, 'DELETE', `/v1/me/blocks/${laura.id}`)).status).toBe(204);
   });
 });
