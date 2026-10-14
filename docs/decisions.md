@@ -705,3 +705,27 @@ actual.
 - **Demo**: las personas sintéticas pueden combinar la actividad de varias personas (Clara = Laura + series de Núria +
   restaurantes de Marta). Si dos personas de origen valoraron el mismo objeto, vale la primera receta. Así la demo
   tiene recomendaciones y el seed sigue siendo idempotente.
+
+## Fase 8 · 2026-10-14 (Home)
+
+- **Tablas** (migración 0007):
+  - `recommendation_impressions`: primera y última vez mostrada, y veces;
+  - `recommendation_actions`: descartar o conservar, con `undone_at`.
+
+  Junto con `home_dismissals` (fase 7), solo deciden qué se muestra en Home. Ninguna toca gustos ni afinidades; un test
+  lo comprueba.
+- **NEW** = APPINITY nunca había mostrado ese objeto a esa persona (no es «estreno»). La impresión se registra cuando la
+  tarjeta pasa a ser la primera del mazo, no al precargarla. Deshacer no borra impresiones.
+- **Descartar** persiste: el objeto no vuelve a Home, ni tras reiniciar. **Conservar** no crea ninguna lista: en la misma
+  sesión no se repite (la app manda `exclude`), pero puede volver en otra sesión. **Deshacer** revierte la última
+  acción vigente (en el servidor) y devuelve la tarjeta arriba.
+- **Autorización por recurso:** las acciones solo aceptan objetos del dataset del usuario (si no, 404).
+- **App:**
+  - una tarjeta grande con imagen (fallback de categoría si falla), categoría, NEW y motivo verificable;
+  - enlace externo discreto;
+  - gestos (deslizar a la izquierda para descartar, a la derecha para conservar) y tres botones accesibles con las
+    mismas acciones;
+  - un borde de «mazo» indica que hay más tarjetas sin mostrar la siguiente, que ni se ve ni se lee antes de tiempo;
+  - el mazo se monta por usuario: al cambiar de sesión empieza de cero;
+  - sin recomendaciones se explica por qué (sin almas gemelas o sin zona) y no se inventa nada;
+  - no se muestra ningún porcentaje «Para ti» (no hay una puntuación calibrada).

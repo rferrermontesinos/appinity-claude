@@ -65,6 +65,7 @@ export class RecommendationsController {
             item,
             block: r.block,
             fillsFor: r.fillsFor,
+            isNew: r.isNew,
             reason: {
               code: r.block,
               ...(r.consensus ? { supporters: r.consensus.supporters, opinionated: r.consensus.opinionated } : {}),

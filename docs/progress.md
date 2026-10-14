@@ -16,10 +16,53 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 5 | **Implementado y comprobado automáticamente** | Entrega 2026-10-13 · fase 5 (rama `fase-5-afinidad`, basada en `fase-4-youtube`). Calibración en decisions.md |
 | 6 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-13 · fase 6 (rama `fase-6-top50`, basada en `fase-5-afinidad`). Pendiente de aceptación en el teléfono |
 | 7 | **Implementado y comprobado automáticamente** | Entrega 2026-10-14 · fase 7 (rama `fase-7-recomendador`, basada en `fase-6-top50`). Sin pantalla: Home llega en la fase 8 |
-| 8–10 | Pendiente | Home, Categories y social |
+| 8 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-14 · fase 8 (rama `fase-8-home`, basada en `fase-7-recomendador`). Pendiente de aceptación en el teléfono |
+| 9–10 | Pendiente | Categories y social |
 | 11 | Pendiente | Fuentes adicionales viables, una por tarea |
 | 12 | Pendiente | Chat, Premium y notificaciones, por subentregas |
 | 13 | Pendiente | Preparación y prueba de beta |
+
+---
+
+## Entrega 2026-10-14 · fase 8 (Home)
+
+### Qué se ha hecho
+
+- **API:**
+  - `POST /v1/me/home/impressions` (NEW);
+  - `POST /v1/me/home/actions` (descartar o conservar);
+  - `POST /v1/me/home/undo`;
+  - las tarjetas de `/v1/me/recommendations` incluyen `isNew`.
+- **App:** Inicio muestra el mazo de recomendaciones con gestos, botones, NEW, motivo, enlace externo y estados de carga,
+  error y vacío.
+
+### Comandos ejecutados y resultados (Windows 11, 2026-10-14)
+
+| Comando | Resultado |
+|---|---|
+| `pnpm db:generate -- --name=home_actions` | `0007_home_actions.sql`: dos tablas nuevas (revisado) |
+| `pnpm lint` / `pnpm typecheck` | 0 errores / OK (incluida la app) |
+| `pnpm test` | **22 ficheros, 249 tests OK**. Nuevos: 4 de integración (descartar, deshacer, conservar, NEW, sin efecto en gustos ni afinidades, autorización) y 2 HTTP |
+| Vista web propia (API en 3101 y web en 8093, 375×812) | Como Laura: Merlí con NEW y «2 de tus almas gemelas lo valoraron muy bien». Descartar con botón y con gesto (eventos de ratón reales), deshacer y conservar. Tras recargar, Merlí (descartada) no vuelve y Lasarte (conservada) sí. Sin errores de consola. Se corrigieron dos fallos: el mazo no se reiniciaba al cambiar de usuario, y la tarjeta de fondo se leía con el lector de pantalla (ahora es un borde decorativo) |
+
+### Pasos para probarlo en el teléfono
+
+1. Reiniciar `pnpm api`, `pnpm worker` y `pnpm mobile` (las migraciones ya están aplicadas).
+2. Entrar como **Laura (demo)** → **Inicio**: tarjetas de Merlí, Lasarte, Alkimia, Fundació Miró y Cinc Sentits, con NEW
+   la primera vez.
+3. Deslizar a la izquierda (o «Descartar»), «Deshacer» y deslizar a la derecha (o «Conservar»).
+4. Cerrar Expo Go y volver a abrir: lo descartado no aparece; lo conservado sí.
+5. Entrar como **Àlex (demo)**: Lasarte como «Muy bien valorado en tu zona».
+
+### Limitaciones
+
+- Verificado en la vista web, no en el teléfono. El gesto se probó con eventos de ratón; falta probarlo con el dedo.
+- Deshacer actúa sobre la última acción vigente en el servidor. En la app solo se ofrece para acciones de la sesión.
+
+### Siguiente paso
+
+Aceptación en el teléfono. Después, fase 9: Categories (recomendaciones por categoría, sin aplicar los descartes de
+Home).
 
 ---
 

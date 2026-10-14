@@ -19,6 +19,7 @@ import { PipelineModule } from './infra/pipeline.module.js';
 import { MeController } from './me/me.controller.js';
 import { MeService } from './me/me.service.js';
 import { PeopleController } from './people/people.controller.js';
+import { HomeController } from './recommendations/home.controller.js';
 import { RecommendationsController } from './recommendations/recommendations.controller.js';
 import { PeopleService } from './people/people.service.js';
 import { ItemProfilesController } from './profiles/item-profiles.controller.js';
@@ -51,6 +52,7 @@ export class AppModule {
         ItemProfilesController,
         PeopleController,
         RecommendationsController,
+        HomeController,
       ],
       providers: [
         DevAuthService,

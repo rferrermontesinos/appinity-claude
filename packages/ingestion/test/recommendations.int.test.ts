@@ -2,6 +2,8 @@ import {
   catalogItems,
   createDatabase,
   homeDismissals,
+  recommendationImpressions,
+  userAffinities,
   userConnections,
   userItemObservations,
   userItemProfiles,
@@ -12,7 +14,16 @@ import type { Category } from '@appinity/shared';
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { testEnv, truncateAll } from '../../../test/helpers.js';
-import { createOrResetLocalUser, recomputeAffinities, recommendFor, topSoulmates } from '../src/index.js';
+import {
+  NotFoundError,
+  applyHomeAction,
+  createOrResetLocalUser,
+  recomputeAffinities,
+  recommendFor,
+  recordImpression,
+  topSoulmates,
+  undoLastHomeAction,
+} from '../src/index.js';
 
 /**
  * Datos SINTÉTICOS (dataset live, handles «test_rec_*»). Una persona destinataria en Barcelona, 52 personas con gustos
@@ -204,5 +215,56 @@ describe('recomendador (fase 7)', () => {
     expect(result).toMatchObject({ localFilter: 'no_location', trending: { status: 'no_location', radiusKm: null } });
     expect(result.items.map((r) => r.itemId)).not.toContain(items.cerca);
     expect(result.items.map((r) => r.itemId)).toContain(items.consenso);
+  });
+});
+
+describe('Home: acciones e impresiones (fase 8)', () => {
+  it('descartar quita la tarjeta de Home; deshacer la devuelve; conservar no la filtra en la siguiente sesión', async () => {
+    await database.db.delete(homeDismissals);
+    const ids = async () => (await recommendFor(database.db, viewer, { now: NOW, limit: 100 })).items.map((r) => r.itemId);
+    expect(await ids()).toContain(items.consenso);
+    await applyHomeAction(database.db, viewer, items.consenso!, 'dismiss');
+    expect(await ids()).not.toContain(items.consenso);
+    expect(await undoLastHomeAction(database.db, viewer)).toEqual({ itemId: items.consenso, action: 'dismiss' });
+    expect(await ids()).toContain(items.consenso);
+    await applyHomeAction(database.db, viewer, items.cerca!, 'keep');
+    expect(await ids()).toContain(items.cerca);
+    // Deshacer revierte solo la última acción vigente; después ya no queda nada.
+    expect(await undoLastHomeAction(database.db, viewer)).toEqual({ itemId: items.cerca, action: 'keep' });
+    expect(await undoLastHomeAction(database.db, viewer)).toBeNull();
+  });
+
+  it('NEW = primera impresión efectiva; deshacer no borra impresiones', async () => {
+    await database.db.delete(recommendationImpressions);
+    const before = await recommendFor(database.db, viewer, { now: NOW, limit: 100 });
+    expect(before.items.find((r) => r.itemId === items.consenso)!.isNew).toBe(true);
+    expect(await recordImpression(database.db, viewer, items.consenso!)).toEqual({ isNew: true });
+    expect(await recordImpression(database.db, viewer, items.consenso!)).toEqual({ isNew: false });
+    await applyHomeAction(database.db, viewer, items.consenso!, 'keep');
+    await undoLastHomeAction(database.db, viewer);
+    const after = await recommendFor(database.db, viewer, { now: NOW, limit: 100 });
+    expect(after.items.find((r) => r.itemId === items.consenso)!.isNew).toBe(false);
+  });
+
+  it('ninguna acción de Home cambia gustos ni afinidades', async () => {
+    const profiles = await database.db.select().from(userItemProfiles).where(eq(userItemProfiles.userId, viewer));
+    const affinities = await database.db.select().from(userAffinities).where(eq(userAffinities.sourceUserId, viewer));
+    for (const key of ['consenso', 'cerca', 'descubierto']) {
+      await recordImpression(database.db, viewer, items[key]!);
+      await applyHomeAction(database.db, viewer, items[key]!, 'dismiss');
+      await applyHomeAction(database.db, viewer, items[key]!, 'keep');
+    }
+    await undoLastHomeAction(database.db, viewer);
+    expect(await database.db.select().from(userItemProfiles).where(eq(userItemProfiles.userId, viewer))).toEqual(profiles);
+    expect(await database.db.select().from(userAffinities).where(eq(userAffinities.sourceUserId, viewer))).toEqual(affinities);
+  });
+
+  it('no se puede actuar sobre objetos de otro dataset ni inexistentes', async () => {
+    const [demoItem] = await database.db
+      .insert(catalogItems)
+      .values({ dataset: 'demo', category: 'movies', itemType: 'movie', title: 'Objeto de la demo', normalizedTitle: 'objeto de la demo', createdVia: 'test' })
+      .returning({ id: catalogItems.id });
+    await expect(applyHomeAction(database.db, viewer, demoItem!.id, 'dismiss')).rejects.toBeInstanceOf(NotFoundError);
+    await expect(recordImpression(database.db, viewer, '10000000-0000-4000-a000-00000000dead')).rejects.toBeInstanceOf(NotFoundError);
   });
 });
