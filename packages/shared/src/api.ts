@@ -211,7 +211,11 @@ export interface PublicPersonDto {
   affinity: AffinityDto;
 }
 
-export type RecommendationBlockDto = 'consensus' | 'discovery' | 'trending';
+/**
+ * Bloques principales (70/20/10) y respaldos cuando se agotan (fase 9): comunidad (valorado por varias personas de
+ * APPINITY), conservados en otra sesión y explorar (sin señales todavía). Cada tarjeta dice de dónde sale.
+ */
+export type RecommendationBlockDto = 'consensus' | 'discovery' | 'trending' | 'community' | 'kept' | 'explore';
 
 /**
  * Motivo verificable de una tarjeta (§2 y §12): para el consenso, cuántas almas gemelas la apoyan (nunca quiénes); para
@@ -230,7 +234,7 @@ export interface RecommendationDto {
   item: CatalogItemDto;
   block: RecommendationBlockDto;
   /** Ocupa el hueco de otro bloque sin candidatos (la cuota 70/20/10 es un objetivo, no se rellena inventando). */
-  fillsFor: RecommendationBlockDto | null;
+  fillsFor: 'consensus' | 'discovery' | 'trending' | null;
   reason: RecommendationReasonDto;
   /** NEW: APPINITY nunca había mostrado este objeto a este usuario (no significa estreno). */
   isNew: boolean;

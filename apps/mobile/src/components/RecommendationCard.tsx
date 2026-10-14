@@ -20,10 +20,23 @@ export function reasonText(t: (key: string, options?: Record<string, unknown>) =
       return t('home.reasonDiscovery', { name: r.reason.contributor?.displayName ?? '—' });
     case 'trending':
       return t('home.reasonTrending', { count: r.reason.positiveVoters ?? 0 });
+    case 'community':
+      return t('home.reasonCommunity', { count: r.reason.supporters ?? 0 });
+    case 'kept':
+      return t('home.reasonKept');
+    case 'explore':
+      return t('home.reasonExplore');
   }
 }
 
-const REASON_ICON = { consensus: 'account-group', discovery: 'account-heart', trending: 'map-marker-radius' } as const;
+const REASON_ICON = {
+  consensus: 'account-group',
+  discovery: 'account-heart',
+  trending: 'map-marker-radius',
+  community: 'account-multiple-outline',
+  kept: 'heart-outline',
+  explore: 'compass-outline',
+} as const;
 
 export function RecommendationCard({
   recommendation,

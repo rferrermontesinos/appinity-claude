@@ -2,21 +2,35 @@ import {
   DATED_CATEGORIES,
   RECOMMENDATION_PARAMS_V1,
   RECOMMENDATION_VERSION,
+  communityCandidates,
   consensusCandidates,
   currentYear,
+  exploreOrder,
   discoveryCandidates,
   mixRecommendations,
   trendingCandidates,
   type ConsensusCandidate,
+  type CommunityCandidate,
   type DiscoveryCandidate,
+  type FallbackBlock,
   type Opinion,
   type RecommendationBlock,
   type RecommendationParams,
   type TrendingCandidate,
 } from '@appinity/algorithms';
-import { catalogItems, categoryAffinities, homeDismissals, userItemProfiles, userProfiles, userSettings, users, type Database } from '@appinity/database';
+import {
+  catalogItems,
+  categoryAffinities,
+  homeDismissals,
+  recommendationActions,
+  userItemProfiles,
+  userProfiles,
+  userSettings,
+  users,
+  type Database,
+} from '@appinity/database';
 import { isCategory, type Category } from '@appinity/shared';
-import { and, eq, gte, inArray, isNotNull, sql } from 'drizzle-orm';
+import { and, eq, gte, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { unseenItems } from './home.js';
 import { topSoulmates } from './soulmates.js';
 
@@ -41,11 +55,16 @@ export interface RecommendationOptions {
   /** Objetos ya mostrados en la sesión. */
   excludeItemIds?: readonly string[];
   params?: RecommendationParams;
+  /**
+   * Respaldos cuando se agotan los bloques principales (comunidad, conservados, explorar). Por defecto, sí: el mazo no
+   * se agota mientras haya algo honesto que enseñar (decisión del usuario, 2026-10-14).
+   */
+  includeFallbacks?: boolean;
 }
 
 export interface RecommendationItem {
   itemId: string;
-  block: RecommendationBlock;
+  block: RecommendationBlock | FallbackBlock;
   fillsFor: RecommendationBlock | null;
   score: number;
   /** NEW: nunca se había mostrado a este usuario (no significa estreno). */
@@ -53,6 +72,7 @@ export interface RecommendationItem {
   consensus?: { supporters: number; opinionated: number };
   discovery?: { contributorId: string; contributorName: string; contributorAffinity: number };
   trending?: { positiveVoters: number; totalVoters: number; averageScore: number };
+  community?: { supporters: number };
 }
 
 export type TrendingStatus = 'ok' | 'no_location' | 'insufficient_votes';
@@ -60,7 +80,7 @@ export type TrendingStatus = 'ok' | 'no_location' | 'insufficient_votes';
 export interface RecommendationResult {
   items: RecommendationItem[];
   /** Candidatos disponibles por bloque (antes de mezclar). */
-  available: Record<RecommendationBlock, number>;
+  available: Record<RecommendationBlock | FallbackBlock, number>;
   trending: { status: TrendingStatus; year: number; radiusKm: number | null; minVoters: number };
   localFilter: 'radius' | 'no_location';
   algorithmVersion: string;
@@ -233,22 +253,87 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
       : [],
   );
   const mixed = mixRecommendations({ consensus, discovery, trending }, limit, params);
-  const unseen = await unseenItems(db, userId, mixed.map((m) => m.candidate.itemId));
+  const items: RecommendationItem[] = mixed.map(({ block, fillsFor, candidate }) => {
+    const base = { itemId: candidate.itemId, block, fillsFor, score: (candidate as { score: number }).score, isNew: false };
+    if (block === 'consensus') {
+      const c = candidate as ConsensusCandidate;
+      return { ...base, consensus: { supporters: c.supporters, opinionated: c.opinionated } };
+    }
+    if (block === 'discovery') {
+      const d = candidate as DiscoveryCandidate;
+      return { ...base, discovery: { contributorId: d.contributorId, contributorName: names.get(d.contributorId) ?? '—', contributorAffinity: d.contributorAffinity } };
+    }
+    const t = candidate as TrendingCandidate;
+    return { ...base, trending: { positiveVoters: t.positiveVoters, totalVoters: t.totalVoters, averageScore: t.averageScore } };
+  });
+
+  // Respaldos, en este orden y solo si los bloques principales no llenan la página.
+  const available = { consensus: consensus.length, discovery: discovery.length, trending: trending.length, community: 0, kept: 0, explore: 0 };
+  if (options.includeFallbacks !== false && items.length < limit && viewer) {
+    const used = new Set(items.map((i) => i.itemId));
+    const take = (itemId: string) => !used.has(itemId) && items.length < limit && (used.add(itemId), true);
+
+    // Comunidad: cualquier persona elegible del dataset (sin afinidad ni zona), una persona = un voto.
+    const community = await db.execute<{ user_id: string; item_id: string; score: number; confidence: number }>(sql`
+      select p.user_id, p.catalog_item_id as item_id, p.preference_score as score, p.preference_confidence as confidence
+      from user_item_profiles p
+      join users u on u.id = p.user_id
+      where u.dataset = ${viewer.dataset} and u.status = 'active' and u.deleted_at is null and u.adult_confirmed_at is not null
+        and u.id <> ${userId} and p.preference_score is not null
+        and not exists (select 1 from user_blocks b where (b.blocker_user_id = ${userId} and b.blocked_user_id = u.id) or (b.blocker_user_id = u.id and b.blocked_user_id = ${userId}))
+    `);
+    const communityRows = community.rows.map((r) => ({ userId: r.user_id, itemId: r.item_id, score: Number(r.score), confidence: Number(r.confidence) }));
+    for (const [id, m] of await itemMeta(db, [...new Set(communityRows.map((r) => r.itemId))].filter((id) => !meta.has(id)), userId, hasLocation, radiusM)) meta.set(id, m);
+    const byItem = new Map<string, Opinion[]>();
+    for (const r of communityRows) {
+      if (!eligible(r.itemId)) continue;
+      byItem.set(r.itemId, [...(byItem.get(r.itemId) ?? []), { userId: r.userId, score: r.score, confidence: r.confidence }]);
+    }
+    const communityList: CommunityCandidate[] = communityCandidates(byItem, params);
+    available.community = communityList.length;
+    for (const c of communityList) {
+      if (take(c.itemId)) items.push({ itemId: c.itemId, block: 'community', fillsFor: null, score: c.score, isNew: false, community: { supporters: c.supporters } });
+    }
+
+    // Conservados en otra sesión (solo Home): pueden volver (§2).
+    if (options.applyHomeDismissals !== false && items.length < limit) {
+      const kept = await db
+        .selectDistinct({ itemId: recommendationActions.catalogItemId })
+        .from(recommendationActions)
+        .where(and(eq(recommendationActions.userId, userId), eq(recommendationActions.action, 'keep'), isNull(recommendationActions.undoneAt)));
+      for (const [id, m] of await itemMeta(db, kept.map((k) => k.itemId).filter((id) => !meta.has(id)), userId, hasLocation, radiusM)) meta.set(id, m);
+      const keptIds = kept.map((k) => k.itemId).filter(eligible).sort();
+      available.kept = keptIds.length;
+      for (const itemId of keptIds) if (take(itemId)) items.push({ itemId, block: 'kept', fillsFor: null, score: 0, isNew: false });
+    }
+
+    // Explorar: objetos del catálogo sin señales (obras, no ediciones ni temporadas), en orden estable por día.
+    if (items.length < limit) {
+      const catalog = await db
+        .select({ id: catalogItems.id })
+        .from(catalogItems)
+        .where(
+          and(
+            eq(catalogItems.dataset, viewer.dataset),
+            isNull(catalogItems.parentItemId),
+            ...(options.category ? [eq(catalogItems.category, options.category)] : []),
+          ),
+        )
+        .limit(2_000);
+      for (const [id, m] of await itemMeta(db, catalog.map((r) => r.id).filter((id) => !meta.has(id)), userId, hasLocation, radiusM)) meta.set(id, m);
+      const seed = `${userId}:${now.toISOString().slice(0, 10)}`;
+      // «Sin señales» es literal: si alguien de APPINITY ya lo valoró (también mal), no sale como «para explorar».
+      const rated = new Set(communityRows.map((r) => r.itemId));
+      const explore = exploreOrder(catalog.map((r) => r.id).filter((id) => eligible(id) && !rated.has(id)), seed);
+      available.explore = explore.length;
+      for (const itemId of explore) if (take(itemId)) items.push({ itemId, block: 'explore', fillsFor: null, score: 0, isNew: false });
+    }
+  }
+
+  const unseen = await unseenItems(db, userId, items.map((i) => i.itemId));
   return {
-    items: mixed.map(({ block, fillsFor, candidate }) => {
-      const base = { itemId: candidate.itemId, block, fillsFor, score: (candidate as { score: number }).score, isNew: unseen.has(candidate.itemId) };
-      if (block === 'consensus') {
-        const c = candidate as ConsensusCandidate;
-        return { ...base, consensus: { supporters: c.supporters, opinionated: c.opinionated } };
-      }
-      if (block === 'discovery') {
-        const d = candidate as DiscoveryCandidate;
-        return { ...base, discovery: { contributorId: d.contributorId, contributorName: names.get(d.contributorId) ?? '—', contributorAffinity: d.contributorAffinity } };
-      }
-      const t = candidate as TrendingCandidate;
-      return { ...base, trending: { positiveVoters: t.positiveVoters, totalVoters: t.totalVoters, averageScore: t.averageScore } };
-    }),
-    available: { consensus: consensus.length, discovery: discovery.length, trending: trending.length },
+    items: items.map((i) => ({ ...i, isNew: unseen.has(i.itemId) })),
+    available,
     trending: { status: trendingStatus, year, radiusKm: hasLocation ? radiusKm : null, minVoters: params.trending.minVoters },
     localFilter: hasLocation ? 'radius' : 'no_location',
     algorithmVersion: RECOMMENDATION_VERSION,
