@@ -2,7 +2,7 @@ import type { EntityIdentifier, ProfileSourceAdapter } from '@appinity/shared';
 import type { ArchiveSummary } from './archive.js';
 import { completePortabilityConnect, startPortabilityConnect } from './auth.js';
 import { GooglePortabilityClient, type GoogleClientOptions } from './client.js';
-import { OBSERVATION_KIND, PHASE3_RESOURCE_GROUPS, isResourceGroup, type ResourceGroup } from './constants.js';
+import { ALL_RESOURCE_GROUPS, OBSERVATION_KIND, PORTABILITY_SCOPE_PREFIX, isResourceGroup, type ResourceGroup } from './constants.js';
 import { GOOGLE_PORTABILITY_MANIFEST } from './manifest.js';
 import { mapGoogleRecord } from './mapper.js';
 import { syncPortability } from './sync.js';
@@ -16,7 +16,7 @@ export { isLocalRedirect } from './auth.js';
 export * from './constants.js';
 
 export interface GooglePortabilityAdapterOptions extends GoogleClientOptions {
-  /** Grupos a pedir; por defecto, los de la fase 3. Solo se piden los que se importan (scopes mínimos). */
+  /** Grupos a pedir; por defecto, los de las fases 3 y 4. Solo se piden los que se importan (scopes mínimos). */
   groups?: readonly string[];
   /** Identificación de lugares y obras en el catálogo (solo la necesita el worker). */
   identifier?: EntityIdentifier;
@@ -31,10 +31,11 @@ export interface GooglePortabilityAdapterOptions extends GoogleClientOptions {
  */
 export function createGooglePortabilityAdapter(options: GooglePortabilityAdapterOptions): ProfileSourceAdapter {
   const client = new GooglePortabilityClient(options);
-  const groups: ResourceGroup[] = (options.groups ?? PHASE3_RESOURCE_GROUPS).filter(isResourceGroup);
+  const groups: ResourceGroup[] = (options.groups ?? ALL_RESOURCE_GROUPS).filter(isResourceGroup);
   return {
     manifest: GOOGLE_PORTABILITY_MANIFEST,
     supportsRenewal: true,
+    requestedScopes: groups.map((g) => `${PORTABILITY_SCOPE_PREFIX}${g}`),
     snapshotObservationKinds: groups.map((g) => OBSERVATION_KIND[g]),
     connect: async (context) => startPortabilityConnect(client, groups, context),
     completeConnect: (context) => completePortabilityConnect(client, groups, context),
@@ -47,6 +48,14 @@ export function createGooglePortabilityAdapter(options: GooglePortabilityAdapter
       });
     },
     normalize: async (record, context) => mapGoogleRecord(record, context),
+    async releaseGrantBeforeRenewal(_connection, credentials) {
+      const refreshToken = credentials?.refreshToken;
+      if (!refreshToken) return;
+      // Si el permiso ya caducó o se revocó, no queda nada que liberar.
+      const accessToken = await client.refresh(refreshToken).catch(() => null);
+      if (accessToken) await client.reset(accessToken).catch(() => undefined);
+      await client.revoke(refreshToken).catch(() => undefined);
+    },
     async disconnect(_connection, credentials) {
       const refreshToken = credentials?.refreshToken;
       if (!refreshToken) return;

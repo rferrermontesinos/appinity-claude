@@ -110,6 +110,8 @@ export interface ConnectionDto {
   observationCount: number;
   /** Cuenta externa vinculada, abreviada (p. ej. SteamID terminado en …1234). */
   externalAccountHint: string | null;
+  /** Permisos que la fuente pide ahora y la conexión no tiene (renovar el permiso los añade). */
+  missingScopes: number;
 }
 
 export interface SyncRunDto {

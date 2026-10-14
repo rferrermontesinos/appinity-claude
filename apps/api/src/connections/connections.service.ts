@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
-import { sourceSyncRuns, userConnections, userItemObservations, type DatabaseHandle } from '@appinity/database';
+import { providerConsents, sourceSyncRuns, userConnections, userItemObservations, type DatabaseHandle } from '@appinity/database';
 import {
   completeConnect,
   createSyncRun,
@@ -74,11 +74,14 @@ export class ConnectionsService {
 
   async list(userId: string): Promise<ConnectionDto[]> {
     const db = this.database.db;
-    const rows = await db
-      .select()
-      .from(userConnections)
-      .where(eq(userConnections.userId, userId))
-      .orderBy(desc(userConnections.createdAt));
+    const rows = (
+      await db
+        .select({ connection: userConnections, grantedScopes: providerConsents.scopes })
+        .from(userConnections)
+        .leftJoin(providerConsents, eq(providerConsents.id, userConnections.consentId))
+        .where(eq(userConnections.userId, userId))
+        .orderBy(desc(userConnections.createdAt))
+    ).map((r) => ({ ...r.connection, grantedScopes: r.grantedScopes ?? [] }));
     const ids = rows.map((r) => r.id);
     const counts = ids.length
       ? await db
@@ -105,6 +108,10 @@ export class ConnectionsService {
       lastError: r.lastError,
       observationCount: countBy.get(r.id) ?? 0,
       externalAccountHint: accountHint(r.sourceKey, r.externalAccountRef),
+      missingScopes:
+        r.status === 'revoked'
+          ? 0
+          : (this.registry.get(r.sourceKey)?.requestedScopes ?? []).filter((s) => !r.grantedScopes.includes(s)).length,
     }));
   }
 

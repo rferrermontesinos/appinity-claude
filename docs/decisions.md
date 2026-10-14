@@ -491,3 +491,59 @@ El siguiente sync la actualiza como instantánea.
 - Revocación de credenciales huérfanas.
 - `pending` del flujo en Redis.
 - `datasets` en los proveedores de catálogo.
+
+## Fase 4 · 2026-10-13 (YouTube y YouTube Music por Data Portability)
+
+El usuario autorizó continuar con las siguientes fases sin esperar a su revisión (2026-10-13). Decisiones:
+
+- **Mismo adapter y mismo consentimiento.** Los grupos `myactivity.youtube`, `youtube.music` y
+  `youtube.subscriptions` se añaden al consentimiento de Google (8 grupos). Sigue la especificación (§9: «el mismo
+  consentimiento de Google») y la regla de permisos mínimos (solo se piden grupos que se importan).
+- **Política.** La de Data Portability no menciona YouTube; su único caso de uso aprobado es trasladar datos. Es el
+  bloqueo de producción ya declarado en la fase 3, no uno nuevo. En desarrollo se usa como en la fase 3.
+- **Reproducción = URL `/watch?v=` con canal y sin `details`.** Los títulos de Mi actividad se traducen al idioma de la
+  cuenta («Watched…», «Has visto…»); los anuncios llevan `details`. No se guardan títulos de vídeos ni búsquedas.
+- **Identificación de canales por P2397 (ID de canal de YouTube en Wikidata, CC0).** Es un identificador exacto, no un
+  título parecido (§6): confianza 0,95. La búsqueda `haswbstatement:P2397=A|P2397=B…` admite varios canales a la vez
+  (comprobado en vivo el 2026-10-13: Radiohead, The Beatles, Queen, The Joe Rogan Experience y 99% Invisible).
+  - Solo artistas musicales (grupos o personas con ocupación musical) y podcasts (P31 = Q24634210). Un youtuber o una
+    marca quedan fuera de categoría.
+  - Canales autogenerados «Artista - Topic» (o escuchados en YouTube Music) que no estén en Wikidata: artista por
+    nombre exacto, solo músicos, 0,8 si es único y 0,65 si domina en enlaces. No se le atribuye el ID del canal.
+  - Las etiquetas de Wikidata se leen también en el idioma común `mul`: muchas personas solo tienen ahí su nombre
+    (detectado en vivo con Bad Bunny).
+- **Agregación por artista o programa (§6).** Los canales de una misma entidad se fusionan (oficial + «Topic»). Una
+  observación por artista y tipo: `yt_plays`, `yt_subscription` y `ytm_library`.
+- **Normalización (propuesta sin calibrar, §5 y §9):**
+  - escuchas → consumido; desde 3 escuchas, `min(1, log1p(n) / log1p(p95))` con el p95 del propio usuario en esa
+    categoría (música y podcasts por separado), confianza 0,6 × identificación, base `strong_behavior` (igual que
+    las horas de Steam). Con menos de 3, preferencia NULL: una escucha aislada confirma consumo, no gusto;
+  - suscripción → conocido sin consumo (tabla de §5: «artista o podcast seguido o suscrito»);
+  - biblioteca de YouTube Music → guardado: conocido sin consumo (§9: «Biblioteca → guardado»).
+- **Límites:** se identifican como máximo los 400 canales más escuchados, 400 suscripciones y 300 artistas de la
+  biblioteca. Lo que queda fuera se informa («N con menos escuchas no se consultaron»).
+- **Historial completo en cada export** (sin `startTime`): la agregación necesita todas las escuchas y la instantánea
+  retira lo que desaparece. Se revisará si el tamaño real del export lo exige.
+- **Permisos nuevos sobre conexiones existentes.** El adapter declara `requestedScopes`; la API devuelve
+  `missingScopes` por conexión y la app invita a renovar el permiso. Renovar conserva lo importado.
+- **Primer export real de YouTube (2026-10-13).** 34.293 reproducciones válidas en 11.861 canales (descartados 9.764
+  anuncios, 5.755 registros que no son reproducciones y 4.129 vídeos sin canal). De los 394 canales más escuchados se
+  identificaron 42, 57 quedaron fuera de categoría y 301 sin coincidencia. Biblioteca de YouTube Music vacía en esa
+  cuenta; 9 suscripciones (1 identificada). Cambios:
+  - un artista o podcast también se reconoce por tener un ID en MusicBrainz, Spotify, Apple Music o Discogs (P434,
+    P1902, P2850, P1953) o en Apple Podcasts o Spotify (P5842, P5916), aunque su tipo u ocupación no estén en la lista;
+  - el worker indica cuántos canales sin coincidencia se buscaron además como artista por nombre, para distinguir
+    canales de música no reconocidos de canales que no son de música.
+- **Segundo export de YouTube (2026-10-14).** 46 canales identificados (antes 42). De los 311 sin coincidencia, solo 20
+  se escucharon como música (se buscaron también como artista); el resto son canales que no son de música ni están en
+  Wikidata. La identificación musical no es el cuello de botella. Maps: 33 de 75 (antes 21) gracias a la regla de nombre
+  parecido a ≤ 30 m.
+- **Wikidata más tolerante.** En ese sync, Wikidata falló cuatro veces seguidas y cada fallo aplazó todo 10 minutos. El
+  cliente pasa de 3 intentos (~7 s) a 6 (2, 4, 8, 16 y 32 s, o lo que pida Retry-After), trata como pasajeros los
+  errores `search-error` y de tiempo de consulta que llegan con HTTP 200, y avisa de cada espera en el worker.
+- **Sin autorización incremental (comprobado con la cuenta real el 2026-10-13).** Al renovar con los grupos de YouTube,
+  Google respondió `Error 400: invalid_request` · «Incremental auth is not allowed for the requested scopes». La
+  documentación no lo trata. Solución: si la conexión no tiene todos los permisos que se piden, antes de redirigir se
+  libera la concesión vigente (`authorization:reset` y revocación del token), se borran sus credenciales y la conexión
+  queda «requiere acción» hasta completar el consentimiento con los 8 grupos. Lo importado se conserva. Si el
+  usuario abandona el consentimiento, la conexión sigue en ese estado y puede volver a intentarlo.
