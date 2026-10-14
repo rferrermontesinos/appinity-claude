@@ -102,12 +102,12 @@ describe('recálculo de afinidades', () => {
     expect(await row('gus', 'ana')).toBeUndefined();
   });
 
-  it('A → B difiere de B → A con historiales desiguales', async () => {
+  it('con historiales desiguales solo cuentan los objetos en común: la afinidad es la misma en ambos sentidos', async () => {
     const anaEva = (await row('ana', 'eva'))!;
     const evaAna = (await row('eva', 'ana'))!;
-    expect(anaEva.score).not.toBe(evaAna.score);
-    // Para Ana, Eva cubre todas sus películas; para Eva, Ana cubre 12 de 60.
-    expect(anaEva.score).toBeGreaterThan(evaAna.score);
+    // Eva tiene 60 películas y Ana 12 (y restaurantes que Eva no conoce): solo cuentan las 12 en común.
+    expect(anaEva.score).toBe(evaAna.score);
+    expect((await row('ana', 'bea'))!.score).toBe(anaEva.score);
   });
 
   it('las categorías se guardan por separado; una categoría sin comparación no tiene fila', async () => {

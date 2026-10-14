@@ -14,8 +14,10 @@ Implementación independiente de APPINITY construida desde cero a partir de
   identificación con el siguiente export.
 - Fase 4 (YouTube y YouTube Music) **implementada y probada con un Google simulado**. Falta validarla con tu cuenta
   ([docs/progress.md](docs/progress.md)).
-- Fase 5 (afinidad direccional) **implementada**: se calcula en segundo plano y se consulta por API. Todavía **no**
-  hay ranking de almas gemelas ni recomendador en la app.
+- Fase 5 (afinidad entre personas) **implementada**. Solo cuenta lo que conocen las dos personas, así que es simétrica
+  (decisión del usuario).
+- Fase 6 (Top 50 de almas gemelas) **implementada**: la pestaña Personas muestra el ranking y el perfil mínimo de cada
+  persona. Todavía **no** hay recomendador.
 
 ## Qué es real y qué es simulado
 
@@ -32,8 +34,8 @@ Implementación independiente de APPINITY construida desde cero a partir de
 | Google · valoraciones y lugares | **Real** (fase 3, sincronizado con una cuenta real): reseñas y sitios guardados de Maps, valoraciones y «vistos» de la Búsqueda. Lugares identificados con OpenStreetMap y obras con Wikidata. Requiere el cliente OAuth en el servidor |
 | Google Books, Apple Music, calendario | **Pendientes** (fase 11). Se muestran como «Próximamente». TMDb, Last.fm y Spotify requieren acuerdo comercial |
 | Identidad | **De desarrollo** (JWT firmado por la API con `DEMO_MODE`). No es autenticación de producción |
-| Afinidad entre personas | **Calculada** (fase 5) con las preferencias importadas, por pareja y categoría. Sin pantalla todavía |
-| Recomendaciones, almas gemelas, Trending | **Pendientes** (fases 6–8). La app no muestra ninguna inventada |
+| Afinidad y almas gemelas | **Calculadas** (fases 5 y 6) con las preferencias importadas. En la demo, 7 de las 13 personas son sintéticas y su actividad se deriva de la de las demás |
+| Recomendaciones y Trending | **Pendientes** (fases 7–8). La app no muestra ninguna inventada |
 
 ## Requisitos
 

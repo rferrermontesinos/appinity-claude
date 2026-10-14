@@ -3,3 +3,4 @@ export * from './catalog.js';
 export * from './connections.js';
 export * from './evidence.js';
 export * from './affinity.js';
+export * from './social.js';

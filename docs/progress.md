@@ -14,11 +14,58 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 3 | **Sincronizado con la cuenta real del usuario** (2026-10-09); pendiente de revisar la identificación con el siguiente export y de la aceptación en la app | Entrega 2026-10-09 · fase 3 (rama `fase-3-google`, PR rferrermontesinos/appinity-claude#6, basada en `especificacion-fuentes`). Primer sync: 21 evidencias (20 reseñas y 1 sitio guardado) |
 | 4 | **Implementado y comprobado automáticamente**; pendiente de validar con la cuenta real | Entrega 2026-10-13 · fase 4 (rama `fase-4-youtube`, basada en `fase-3-google`). Falta añadir 3 permisos en Google Cloud y renovar el permiso (README) |
 | 5 | **Implementado y comprobado automáticamente** | Entrega 2026-10-13 · fase 5 (rama `fase-5-afinidad`, basada en `fase-4-youtube`). Calibración en decisions.md |
-| 6–7 | Pendiente | Top 50 y recomendador |
+| 6 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-13 · fase 6 (rama `fase-6-top50`, basada en `fase-5-afinidad`). Pendiente de aceptación en el teléfono |
+| 7 | Pendiente | Recomendador y Trending |
 | 8–10 | Pendiente | Home, Categories y social |
 | 11 | Pendiente | Fuentes adicionales viables, una por tarea |
 | 12 | Pendiente | Chat, Premium y notificaciones, por subentregas |
 | 13 | Pendiente | Preparación y prueba de beta |
+
+---
+
+## Entrega 2026-10-13 · fase 6 (Top 50 de almas gemelas)
+
+### Qué se ha hecho
+
+- **Ranking** de almas gemelas: Top 50 con orden estable, sin el propio usuario, sin bloqueos en ninguna dirección y
+  solo personas elegibles del mismo dataset.
+- **Perfil público mínimo** con afinidad global y por categoría (NULL como raya), sin historial.
+- **API:** `GET /v1/me/soulmates`, `GET /v1/people/:id` y `GET /v1/me/affinities/:id` (ahora respeta los bloqueos).
+- **App:** la pestaña Personas muestra el ranking. Al tocar una persona se abre su perfil.
+- **Tabla `user_blocks`** (migración `0005_user_blocks`).
+- **`affinity-v2`:** la evidencia repartida entre categorías se suma (decisions.md).
+- **7 personas sintéticas** en la demo, con actividad derivada de la de las existentes.
+
+### Comandos ejecutados y resultados (Windows 11, 2026-10-13)
+
+| Comando | Resultado |
+|---|---|
+| `pnpm lint` / `pnpm typecheck` | 0 errores / OK (incluida la app) |
+| `pnpm test` | **20 ficheros, 225 tests OK**. Nuevos: ranking con 12 y 70 perfiles sintéticos comparado con el cálculo exhaustivo, bloqueos en ambas direcciones, cuentas suspendidas, orden estable, perfil sin historial, ranking de la demo y evidencia repartida (v2) |
+| `pnpm db:migrate` + `pnpm db:seed` en la BD de desarrollo | 13 personas de demo, 27 syncs, 30 parejas con afinidad. Laura → Clara 85,94; Teo 48,66; Pau 22,95; Jordi 22,24. Marta → Iris 76,88. Àlex → Leo 70,95 |
+| Vista web propia (API en 3101 y web en 8093, 375×812) | Personas: ranking con avatar, país, categorías comparadas y cifra. Perfil: cifra global y 8 categorías con «—». Se corrigió un texto que ensanchaba la tarjeta. Sin errores de consola. Servidores detenidos al terminar |
+
+### Cambio pedido por el usuario: affinity-v3
+
+Lo que solo conoce una de las dos personas ya no cuenta (ni sus gustos ni sus disgustos). Se elimina la cobertura y la
+global pondera por la evidencia en común, así que la afinidad pasa a ser simétrica (decisions.md). Tests reescritos para
+comprobarlo; **226 tests OK**. Demo recalculada: el orden no cambia (Clara 85,94; Teo 48,66; Jordi 23,62; Pau 22,95).
+
+### Pasos para probarlo (usuario)
+
+1. Reiniciar `pnpm api` y `pnpm worker` (las migraciones y el seed ya se aplicaron en la BD de desarrollo).
+2. En el teléfono, entrar como **Laura (demo)** → pestaña **Personas**: Clara primera, Teo, Pau y Jordi.
+3. Tocar a Clara: afinidad global y por categoría; las categorías sin datos muestran «—».
+4. Entrar como **Sam (demo)**: Personas indica que aún no hay almas gemelas (sin cifras inventadas).
+
+### Limitaciones
+
+- Sin gestión de bloqueos en la app (fase 10) ni ajuste de privacidad «aparecer en almas gemelas».
+- Validado en la vista web, no en el teléfono.
+
+### Siguiente paso
+
+Aceptación en el teléfono. Después, fase 7: recomendador (70/20/10) y Trending local.
 
 ---
 

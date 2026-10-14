@@ -65,6 +65,7 @@ export default function RootLayout() {
             <Stack.Screen name="model" />
             <Stack.Screen name="category/[code]" />
             <Stack.Screen name="item/[id]" />
+            <Stack.Screen name="person/[id]" />
           </Stack>
         </QueryClientProvider>
       </I18nextProvider>
