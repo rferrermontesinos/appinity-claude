@@ -12,6 +12,9 @@ import type {
   Page,
   PublicPersonDto,
   SoulmatesDto,
+  BlockedPersonDto,
+  FriendsDto,
+  FriendshipResultDto,
   SettingsDto,
   SourceDto,
   SyncRunDto,
@@ -97,7 +100,59 @@ export const dataKeys = {
   item: (itemId: string) => ['item', itemId] as const,
   soulmates: ['soulmates'] as const,
   person: (userId: string) => ['person', userId] as const,
+  friends: ['friends'] as const,
+  blocks: ['blocks'] as const,
 };
+
+/** Amigos y solicitudes (enviadas y recibidas). */
+export function useFriends() {
+  return useQuery({ queryKey: dataKeys.friends, queryFn: () => apiRequest<FriendsDto>('/v1/me/friends'), enabled: useHasSession() });
+}
+
+export function useBlocked() {
+  return useQuery({ queryKey: dataKeys.blocks, queryFn: () => apiRequest<BlockedPersonDto[]>('/v1/me/blocks'), enabled: useHasSession() });
+}
+
+export type SocialAction =
+  | { kind: 'request'; userId: string }
+  | { kind: 'accept' | 'reject'; requestId: string }
+  | { kind: 'remove'; userId: string }
+  | { kind: 'block'; userId: string }
+  | { kind: 'unblock'; userId: string }
+  | { kind: 'report'; userId: string; reason: 'spam' | 'harassment' | 'inappropriate' | 'impersonation' | 'other'; block: boolean };
+
+/** Acciones sociales. Al terminar se refrescan amigos, bloqueos, ranking y perfiles (un bloqueo los cambia todos). */
+export function useSocialAction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (action: SocialAction): Promise<FriendshipResultDto | null> => {
+      switch (action.kind) {
+        case 'request':
+          return apiRequest<FriendshipResultDto>('/v1/me/friends/requests', { method: 'POST', body: { userId: action.userId } });
+        case 'accept':
+        case 'reject':
+          return apiRequest<FriendshipResultDto>(`/v1/me/friends/requests/${action.requestId}/${action.kind}`, { method: 'POST' });
+        case 'remove':
+          await apiRequest(`/v1/me/friends/${action.userId}`, { method: 'DELETE' });
+          return null;
+        case 'block':
+          await apiRequest('/v1/me/blocks', { method: 'POST', body: { userId: action.userId } });
+          return null;
+        case 'unblock':
+          await apiRequest(`/v1/me/blocks/${action.userId}`, { method: 'DELETE' });
+          return null;
+        case 'report':
+          await apiRequest('/v1/me/reports', { method: 'POST', body: { userId: action.userId, reason: action.reason, block: action.block } });
+          return null;
+      }
+    },
+    onSuccess: async () => {
+      await Promise.all(
+        [dataKeys.friends, dataKeys.blocks, dataKeys.soulmates, ['person']].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+      );
+    },
+  });
+}
 
 /** Top 50 almas gemelas (afinidades ya calculadas en segundo plano). */
 export function useSoulmates() {

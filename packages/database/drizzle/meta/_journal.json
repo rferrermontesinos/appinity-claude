@@ -57,6 +57,13 @@
       "when": 1791975100318,
       "tag": "0007_home_actions",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791987717098,
+      "tag": "0008_social",
+      "breakpoints": true
     }
   ]
 }

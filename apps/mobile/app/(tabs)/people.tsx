@@ -3,8 +3,9 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 import { useSoulmates } from '../../src/api/queries';
+import { FriendsCard } from '../../src/components/FriendsCard';
 import { PersonAvatar, formatAffinity } from '../../src/components/PersonAvatar';
-import { Badge, Body, Card, ErrorCard, Loading, PendingNotice, Screen, Small, Title } from '../../src/components/ui';
+import { Badge, Body, Card, ErrorCard, Loading, Screen, Small, Title } from '../../src/components/ui';
 import { spacing, usePalette } from '../../src/theme';
 
 function SoulmateRow({ person }: { person: SoulmateDto }) {
@@ -56,10 +57,7 @@ export default function PeopleScreen() {
           </>
         ) : null}
       </Card>
-      <Card>
-        <Title>{t('people.friends')}</Title>
-        <PendingNotice phase="10" text={t('people.friendsPending')} />
-      </Card>
+      <FriendsCard />
     </Screen>
   );
 }

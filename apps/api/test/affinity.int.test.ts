@@ -1,7 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import { createDatabase, userAffinities, userBlocks, users, type DatabaseHandle } from '@appinity/database';
 import { DEMO_USERS, recomputeAffinities, seedDemo } from '@appinity/ingestion';
-import { CATEGORIES, type AffinityDto, type PublicPersonDto, type RecommendationsDto, type SoulmatesDto } from '@appinity/shared';
+import { CATEGORIES, type AffinityDto, type FriendsDto, type PublicPersonDto, type RecommendationsDto, type SoulmatesDto } from '@appinity/shared';
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { testEnv, truncateAll } from '../../../test/helpers.js';
@@ -95,7 +95,8 @@ describe('almas gemelas y perfil público (fase 6)', () => {
     const res = await get(`/v1/people/${byHandle('demo_clara').id}`);
     expect(res.status).toBe(200);
     const body = (await res.json()) as PublicPersonDto;
-    expect(Object.keys(body).sort()).toEqual(['affinity', 'avatarUrl', 'countryCode', 'displayName', 'userId']);
+    expect(Object.keys(body).sort()).toEqual(['affinity', 'avatarUrl', 'countryCode', 'displayName', 'friendship', 'userId']);
+    expect(body.friendship).toEqual({ state: 'none', requestId: null });
     expect(body.displayName).toBe('Clara (demo)');
     expect(body.affinity.categories).toHaveLength(8);
     expect(body.affinity.categories.some((c) => c.score === null)).toBe(true);
@@ -194,5 +195,43 @@ describe('feed continuo y Categories (fase 9)', () => {
     expect(body.items.length).toBeGreaterThan(0);
     expect(body.items.every((r) => r.item.category === 'food')).toBe(true);
     expect((await query({ limit: 20, exclude: ['no-uuid'] })).status).toBe(400);
+  });
+});
+
+describe('People y Friends (fase 10)', () => {
+  async function tokenFor(handle: string) {
+    const res = await fetch(`${base}/v1/dev/session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle }) });
+    return ((await res.json()) as { token: string }).token;
+  }
+  const call = (tok: string, method: string, path: string, body?: unknown) =>
+    fetch(`${base}${path}`, { method, headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
+
+  it('solicitud, aceptación, perfil con la relación y eliminación por HTTP', async () => {
+    const clara = DEMO_USERS.find((u) => u.handle === 'demo_clara')!;
+    const claraToken = await tokenFor('demo_clara');
+    expect(await (await call(token, 'POST', '/v1/me/friends/requests', { userId: clara.id })).json()).toEqual({ state: 'pending_out' });
+    const incoming = ((await (await call(claraToken, 'GET', '/v1/me/friends')).json()) as FriendsDto).incoming;
+    expect(incoming.map((f) => f.userId)).toEqual([laura.id]);
+    // Laura no puede aceptar su propia solicitud.
+    expect((await call(token, 'POST', `/v1/me/friends/requests/${incoming[0]!.requestId}/accept`)).status).toBe(404);
+    expect(await (await call(claraToken, 'POST', `/v1/me/friends/requests/${incoming[0]!.requestId}/accept`)).json()).toEqual({ state: 'friends' });
+    const person = (await (await get(`/v1/people/${clara.id}`)).json()) as PublicPersonDto;
+    expect(person.friendship.state).toBe('friends');
+    expect((await call(token, 'DELETE', `/v1/me/friends/${clara.id}`)).status).toBe(204);
+  });
+
+  it('bloquear, listar bloqueados, desbloquear y reportar; ajuste de privacidad', async () => {
+    const pau = DEMO_USERS.find((u) => u.handle === 'demo_pau')!;
+    expect((await call(token, 'POST', '/v1/me/blocks', { userId: pau.id })).status).toBe(204);
+    expect(await (await call(token, 'GET', '/v1/me/blocks')).json()).toEqual([{ userId: pau.id, displayName: 'Pau (demo)' }]);
+    expect((await get(`/v1/people/${pau.id}`)).status).toBe(404);
+    expect((await call(token, 'POST', '/v1/me/reports', { userId: pau.id, reason: 'spam' })).status).toBe(204);
+    expect((await call(token, 'POST', '/v1/me/reports', { userId: pau.id, reason: 'inventado' })).status).toBe(400);
+    expect((await call(token, 'DELETE', `/v1/me/blocks/${pau.id}`)).status).toBe(204);
+    expect((await call(token, 'DELETE', `/v1/me/blocks/${pau.id}`)).status).toBe(404);
+    const patched = await call(token, 'PATCH', '/v1/me/settings', { discoverableAsSoulmate: false });
+    expect(patched.status).toBe(200);
+    expect(((await patched.json()) as { settings: { discoverableAsSoulmate: boolean } }).settings.discoverableAsSoulmate).toBe(false);
+    await call(token, 'PATCH', '/v1/me/settings', { discoverableAsSoulmate: true });
   });
 });

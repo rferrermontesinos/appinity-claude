@@ -45,6 +45,8 @@ export interface SettingsDto {
   location: LocationDto | null;
   timeZone: string;
   discoverableByContacts: boolean;
+  /** Aparecer en el ranking de almas gemelas de otras personas. */
+  discoverableAsSoulmate: boolean;
   notificationFrequency: NotificationFrequency;
 }
 
@@ -209,6 +211,33 @@ export interface PublicPersonDto {
   countryCode: string | null;
   avatarUrl: string | null;
   affinity: AffinityDto;
+  /** Relación vista por quien consulta (un rechazo se muestra como «pendiente» a quien envió la solicitud). */
+  friendship: { state: 'none' | 'pending_out' | 'pending_in' | 'friends'; requestId: string | null };
+}
+
+export interface FriendDto {
+  userId: string;
+  displayName: string;
+  countryCode: string | null;
+  avatarUrl: string | null;
+  /** Mi afinidad hacia esa persona; NULL («—») si no hay evidencia comparable. Los amigos no tienen por qué ser afines. */
+  affinity: number | null;
+  requestId: string;
+}
+
+export interface FriendsDto {
+  friends: FriendDto[];
+  incoming: FriendDto[];
+  outgoing: FriendDto[];
+}
+
+export interface FriendshipResultDto {
+  state: 'none' | 'pending_out' | 'pending_in' | 'friends';
+}
+
+export interface BlockedPersonDto {
+  userId: string;
+  displayName: string;
 }
 
 /**
