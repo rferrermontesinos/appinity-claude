@@ -29,7 +29,7 @@ Leyenda de la columna «Comprobado»:
 | 1 | **Google Data Portability ampliado** | Mismo consentimiento y misma infraestructura. Añade libros, juegos, restaurantes y guardados | 0 € | Solo UE/CH/UK. Los scopes «Restricted» exigen la verificación de Google en producción (ya pendiente para Maps y YouTube) |
 | 2 | ~~Apple Music (MusicKit)~~ **descartada mientras sea de pago** | Global; biblioteca, escuchas recientes, rotación frecuente y valoraciones (me encanta / no me gusta) | 99 $/año del Apple Developer Program, necesario igualmente para publicar en iOS | Solo suscriptores de Apple Music. En Android hace falta MusicKit JS (web). Condiciones por verificar |
 | 3 | **APIs DMA: TikTok, Meta, Amazon, Apple (App Store)** | Gratuitas por ley; grandes audiencias; likes de páginas, seguidos, compras de libros, apps y juegos | 0 € | UE. Requieren alta y aprobación del desarrollador (identidad de empresa, revisión de seguridad o lista de admitidos). Tarea del titular del proyecto |
-| 4 | Twitch (canales seguidos → videojuegos) | Global, OAuth | 0 € | Condiciones por verificar |
+| 4 | ~~Twitch~~ **bloqueada** (ver ficha) | — | — | Requiere permiso escrito de Twitch |
 
 ## Fichas
 
@@ -65,7 +65,7 @@ Leyenda de la columna «Comprobado»:
 | TMDB (cuenta del usuario) | movies, series | **Bloqueada** | Uso comercial solo con acuerdo escrito; caché ≤ 6 meses | Oficial: [ToS](https://www.themoviedb.org/api-terms-of-use) |
 | Open Library (reading log público) | books | **Bloqueada** para producción | No debe usarse como backend de servicios comerciales | Oficial: [API](https://openlibrary.org/developers/api) |
 | Trakt | movies, series | Por verificar | OAuth con tokens de 24 h desde 2025; VIP para algunas funciones; condiciones comerciales no confirmadas | Previo/secundaria |
-| Twitch | games | Por verificar | Seguidos → categorías de juego | Previo |
+| Twitch | games | **Bloqueada** salvo permiso escrito de Twitch | Acuerdo de desarrolladores (modificado el 04/12/2024, leído el 2026-10-15): no guardar contenido ni datos más de 24 h sin autorización escrita (Schedule 1, C); los insights derivados no pueden monetizarse ni compartirse con terceros sin permiso (VI.C); los usos con permiso del usuario también requieren permiso escrito (VI.B(e)). APPINITY guarda evidencia permanente y recomienda a otras personas | Oficial: [acuerdo](https://legal.twitch.com/en/legal/developer-agreement/) |
 | AniList / MyAnimeList | series (anime), books (manga) | Por verificar | Nicho grande; listas con puntuación | Previo (la documentación oficial respondió 403) |
 | Discogs | music | Por verificar | Colección y wantlist; nicho de vinilo | Previo (403) |
 | Goodreads | books | **Bloqueada** | API cerrada a nuevas claves desde 2020 | Previo |

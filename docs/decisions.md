@@ -959,3 +959,8 @@ gente con la que tienes afinidad, igual que en Tinder cuando haces match»).
   `authorization:reset` y la revocación por API no hicieron que Google volviera a tratarlo como primera autorización.
 - Solución: el usuario quita APPINITY en esa página una vez y vuelve a conectar. La app lo explica cuando el acceso
   temporal caduca. Con el cliente en producción, la renovación la hace el usuario desde esa misma página.
+- **Comprobado (2026-10-15)**: tras quitar la conexión en myaccount.google.com/connections y reconectar, la conexión guarda refresh token; el refresh devuelve un access token con los 11 permisos (acceso temporal) y se conservan las fechas de export. En modo Testing dura 7 días.
+
+## 2026-10-15 · Twitch descartada
+
+El acuerdo de desarrolladores de Twitch exige permiso escrito para guardar sus datos más de 24 h y para usar o compartir insights derivados. APPINITY guarda evidencia permanente y la usa para recomendar a otras personas, así que no se implementa sin ese permiso. Ver [source-candidates.md](source-candidates.md).
