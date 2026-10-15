@@ -949,3 +949,18 @@ gente con la que tienes afinidad, igual que en Tinder cuando haces match»).
 - **Recibos de Expo push**: ~15 min después del envío se consulta si FCM o APNs aceptaron cada notificación.
   DeviceNotRegistered desactiva el token. Sin recibo todavía, se vuelve a mirar, como mucho hasta las 23 h.
 - **Pendiente con justificación**: «Iniciar sesión con Apple» (iOS; requiere Apple Developer Program, de pago).
+
+## 2026-10-15 · Por qué Google no entregaba el refresh token (Data Portability)
+
+- Documentación oficial: el refresh token se entrega **solo en la primera autorización** con `access_type=offline`
+  (el ejemplo de «Use Time-Based Access» no usa `prompt`). En autorizaciones posteriores no se repite salvo con
+  `prompt=consent` (que Google rechaza ahora para este cliente) o si el usuario **quita la conexión** de la app.
+- Las conexiones de Data Portability están en **myaccount.google.com/connections** (no en `/permissions`).
+  `authorization:reset` y la revocación por API no hicieron que Google volviera a tratarlo como primera autorización.
+- Solución: el usuario quita APPINITY en esa página una vez y vuelve a conectar. La app lo explica cuando el acceso
+  temporal caduca. Con el cliente en producción, la renovación la hace el usuario desde esa misma página.
+- **Comprobado (2026-10-15)**: tras quitar la conexión en myaccount.google.com/connections y reconectar, la conexión guarda refresh token; el refresh devuelve un access token con los 11 permisos (acceso temporal) y se conservan las fechas de export. En modo Testing dura 7 días.
+
+## 2026-10-15 · Twitch descartada
+
+El acuerdo de desarrolladores de Twitch exige permiso escrito para guardar sus datos más de 24 h y para usar o compartir insights derivados. APPINITY guarda evidencia permanente y la usa para recomendar a otras personas, así que no se implementa sin ese permiso. Ver [source-candidates.md](source-candidates.md).

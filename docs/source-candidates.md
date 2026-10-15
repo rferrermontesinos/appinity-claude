@@ -29,7 +29,7 @@ Leyenda de la columna «Comprobado»:
 | 1 | **Google Data Portability ampliado** | Mismo consentimiento y misma infraestructura. Añade libros, juegos, restaurantes y guardados | 0 € | Solo UE/CH/UK. Los scopes «Restricted» exigen la verificación de Google en producción (ya pendiente para Maps y YouTube) |
 | 2 | ~~Apple Music (MusicKit)~~ **descartada mientras sea de pago** | Global; biblioteca, escuchas recientes, rotación frecuente y valoraciones (me encanta / no me gusta) | 99 $/año del Apple Developer Program, necesario igualmente para publicar en iOS | Solo suscriptores de Apple Music. En Android hace falta MusicKit JS (web). Condiciones por verificar |
 | 3 | **APIs DMA: TikTok, Meta, Amazon, Apple (App Store)** | Gratuitas por ley; grandes audiencias; likes de páginas, seguidos, compras de libros, apps y juegos | 0 € | UE. Requieren alta y aprobación del desarrollador (identidad de empresa, revisión de seguridad o lista de admitidos). Tarea del titular del proyecto |
-| 4 | Twitch (canales seguidos → videojuegos) | Global, OAuth | 0 € | Condiciones por verificar |
+| 4 | ~~Twitch~~ **bloqueada** (ver ficha) | — | — | Requiere permiso escrito de Twitch |
 
 ## Fichas
 
@@ -65,7 +65,7 @@ Leyenda de la columna «Comprobado»:
 | TMDB (cuenta del usuario) | movies, series | **Bloqueada** | Uso comercial solo con acuerdo escrito; caché ≤ 6 meses | Oficial: [ToS](https://www.themoviedb.org/api-terms-of-use) |
 | Open Library (reading log público) | books | **Bloqueada** para producción | No debe usarse como backend de servicios comerciales | Oficial: [API](https://openlibrary.org/developers/api) |
 | Trakt | movies, series | Por verificar | OAuth con tokens de 24 h desde 2025; VIP para algunas funciones; condiciones comerciales no confirmadas | Previo/secundaria |
-| Twitch | games | Por verificar | Seguidos → categorías de juego | Previo |
+| Twitch | games | **Bloqueada** salvo permiso escrito de Twitch | Acuerdo de desarrolladores (modificado el 04/12/2024, leído el 2026-10-15): no guardar contenido ni datos más de 24 h sin autorización escrita (Schedule 1, C); los insights derivados no pueden monetizarse ni compartirse con terceros sin permiso (VI.C); los usos con permiso del usuario también requieren permiso escrito (VI.B(e)). APPINITY guarda evidencia permanente y recomienda a otras personas | Oficial: [acuerdo](https://legal.twitch.com/en/legal/developer-agreement/) |
 | AniList / MyAnimeList | series (anime), books (manga) | Por verificar | Nicho grande; listas con puntuación | Previo (la documentación oficial respondió 403) |
 | Discogs | music | Por verificar | Colección y wantlist; nicho de vinilo | Previo (403) |
 | Goodreads | books | **Bloqueada** | API cerrada a nuevas claves desde 2020 | Previo |
@@ -103,3 +103,29 @@ Encaje con la arquitectura actual:
 
 En paralelo, el titular del proyecto puede iniciar las solicitudes DMA (TikTok, Apple, Amazon, Meta). Son trámites de
 empresa que no puedo hacer por él.
+
+## Revisión de condiciones oficiales (2026-10-15)
+
+Leídas en sus páginas oficiales; las que bloquean la lectura automática, con el navegador (solo lectura). Trakt muestra
+una verificación anti-bots en su página general de condiciones; se usó su política de API en developer.trakt.tv.
+
+| Fuente | Veredicto | Motivo (cláusulas oficiales) |
+|---|---|---|
+| **Google Books** (estanterías del usuario) | **Viable** | API oficial con OAuth (`https://www.googleapis.com/auth/books`): estanterías «Leídos», «Favoritos», «Reseñados», «Por leer». Puede pedirse en el **mismo consentimiento que «Continuar con Google»** (alta), no en el de Data Portability. Gratuita. [Docs](https://developers.google.com/books/docs/v1/using) |
+| **Trakt** (cine y series) | **Viable** (confirmar con Trakt el uso comercial) | [API Use Policy](https://developer.trakt.tv/docs/api-use-policy) (22/09/2026): exige autorización del usuario; permite caché «cuando sirve a las funciones que tus usuarios eligen»; prohíbe vender datos, copiar el catálogo o redistribuirlo. Crear la app requiere una cuenta de GitHub verificada ([Create an App](https://developer.trakt.tv/docs/create-an-app)). Fuentes secundarias de agosto de 2026 hablan de exigir VIP (4,99 $/mes) para crear apps; la documentación oficial no lo dice |
+| **AniList** (anime y manga) | **Viable con límite** | [Terms of Use](https://docs.anilist.co/guide/terms-of-use): gratis para uso comercial por debajo de 150 $/mes de ingresos; por encima, licencia. Prohíbe usarla como almacén o copia de seguridad y la recolección masiva |
+| Google Calendar (eventos asistidos) | Viable con verificación | Scope sensible: en producción requiere la verificación de Google (gratuita). Señal débil (asistencia) e identificación difícil |
+| Discogs | **Bloqueada** | [API Terms](https://support.discogs.com/hc/en-us/articles/360009334593-API-Terms-of-Use): la colección y la lista de deseos son «Restricted Data»: prohibido usarlas con fines comerciales o transferirlas |
+| Eventbrite | **Descartada** | [API Terms](https://www.eventbrite.com/help/en-us/articles/833731/eventbrite-api-terms-of-use/) (30/05/2025): prohibido guardar contenido de eventos pasados (3.1), justo la evidencia útil; prohibida la ganancia comercial directa (3.6) |
+| SoundCloud | **Bloqueada** | [API Terms](https://developers.soundcloud.com/docs/api/terms-of-use) (30/03/2024): caché solo durante la sesión; registro de apps a discreción de SoundCloud |
+| Plex | **Bloqueada** | Sin API oficial para el historial de la cuenta; Plex no revisa ni respalda herramientas de terceros ([developer.plex.tv](https://developer.plex.tv/)) |
+| Podchaser | **Descartada** (de pago) | [API](https://www.podchaser.com/api): desde 30 $/mes; solo catálogo, no los gustos del usuario |
+| Foursquare / Swarm | Por verificar | API de personalización en beta pública, sujeta a un EULA propio; precio no publicado |
+| Twitch | **Bloqueada** | Ver ficha anterior |
+| Apple Music | Descartada mientras sea de pago | Decisión del usuario |
+
+### Orden recomendado (gratuito)
+
+1. **Google Books**: va en el consentimiento del alta; casi sin coste de identificación (ISBN e IDs de volumen).
+2. **Trakt**: cine y series con valoraciones explícitas; identificación exacta por IMDb/TMDB → Wikidata (P345/P4947).
+3. **AniList**: nicho grande de anime y manga; identificación por MyAnimeList o AniList → Wikidata (P4086/P8729).
