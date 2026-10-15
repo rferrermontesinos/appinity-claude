@@ -70,7 +70,8 @@ describe('autorización de Google Data Portability', () => {
     expect(url.origin + url.pathname).toBe('https://accounts.google.com/o/oauth2/v2/auth');
     expect(url.searchParams.get('scope')!.split(' ')).toEqual(PHASE3_RESOURCE_GROUPS.map((g) => `https://www.googleapis.com/auth/dataportability.${g}`));
     expect(url.searchParams.get('access_type')).toBe('offline');
-    expect(url.searchParams.get('prompt')).toBe('consent');
+    // `prompt=consent` se retiró el 2026-10-15: Google lo rechaza (400 invalid_request).
+    expect(url.searchParams.get('prompt')).toBeNull();
     expect(url.searchParams.get('state')).toBe('estado-0123456789abcdef');
     expect(url.searchParams.get('code_challenge_method')).toBe('S256');
     expect(url.searchParams.has('include_granted_scopes')).toBe(false);

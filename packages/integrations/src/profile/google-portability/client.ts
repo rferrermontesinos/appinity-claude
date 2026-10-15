@@ -78,7 +78,9 @@ export class GooglePortabilityClient {
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('scope', input.groups.map((g) => `${PORTABILITY_SCOPE_PREFIX}${g}`).join(' '));
     url.searchParams.set('access_type', 'offline');
-    url.searchParams.set('prompt', 'consent');
+    // Sin `prompt=consent`: desde el 2026-10-15 Google lo rechaza (400 invalid_request) con este cliente; comprobado
+    // probando cada parámetro por separado. No hace falta: antes de renovar se revoca la concesión anterior, así que Google
+    // muestra el consentimiento completo y devuelve el refresh token.
     url.searchParams.set('state', input.state);
     url.searchParams.set('code_challenge', input.codeChallenge);
     url.searchParams.set('code_challenge_method', 'S256');
