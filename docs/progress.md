@@ -21,7 +21,54 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 10 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-14 · fase 10 (rama `fase-10-people`, basada en `fase-9-categories`). Contactos: pendiente (fase 13) |
 | 11 | **Paso 1 implementado** (Google: Play, pedidos y guardados), comprobado automáticamente y en parte con servicios reales; falta un export real | Entrega 2026-10-14 · fase 11 (rama `fase-11-fuentes`). Análisis en [source-candidates.md](source-candidates.md) |
 | 12 | **12C (push, servidor) implementada y comprobada automáticamente**; envío real pendiente de build de desarrollo y FCM · **12B (Premium, servidor) implementada y comprobada automáticamente**; compra en la app pendiente de cuentas y build de desarrollo · **12A (chat) implementada, comprobada automáticamente y verificada en la vista web**; 12B (Premium/RevenueCat) y 12C (push) pendientes | Entrega 2026-10-14 · fase 12A (rama `fase-12a-chat`, basada en `fase-10-people`) |
-| 13 | Pendiente | Preparación y prueba de beta |
+| 13 | **Preparada**: auth de producción, alta, eliminación de cuenta y despliegue probados en local; beta real pendiente de dominio, servidor y cuentas ([beta.md](beta.md)) | Entrega 2026-10-15 · fase 13 (rama `fase-13-beta`) |
+
+---
+
+## Entrega 2026-10-15 · fase 13 (preparación de la beta)
+
+### Qué se ha hecho
+
+- **Autenticación de producción**: «Continuar con Google» (OpenID Connect), sesiones con rotación y revocación, alta (mayoría de edad y condiciones) y eliminación de cuenta. Migración 0012.
+- **App**:
+  - botón de Google en el login;
+  - vuelta `/auth`, que canjea el código;
+  - pantalla de alta;
+  - Perfil con «Cerrar sesión» y «Eliminar mi cuenta»;
+  - renovación automática de la sesión.
+- **Operación**:
+  - `Dockerfile`, `docker-compose.prod.yml` y `.dockerignore`;
+  - `pnpm db:backup` con rotación;
+  - `apps/mobile/eas.json`;
+  - [operations.md](operations.md) y [beta.md](beta.md).
+- `pnpm setup` genera `AUTH_SECRET` (generado ya en el `.env` local).
+
+### Comandos ejecutados y resultados (Windows 11, 2026-10-15)
+
+| Comando | Resultado |
+|---|---|
+| `pnpm lint` / `pnpm typecheck` | 0 errores / OK |
+| `pnpm test` | **30 ficheros, 322 tests OK** (5 nuevos de auth: OIDC con claves locales y recorrido HTTP completo) |
+| Vista web (API 3101 con `AUTH_SECRET`, web 8093) | Botón de Google visible. Código de un solo uso → alta → Perfil → «Eliminar mi cuenta» con confirmación → usuario, identidad y sesiones borrados en la BD → login. La vuelta de Google se simuló dejando el código en Redis; la verificación del ID token la cubren los tests |
+| `docker build` | Imagen construida; se ejecuta como usuario `appinity` |
+| `docker run` (producción) | Se niega a arrancar sin `AUTH_SECRET` y con `DEMO_MODE` |
+| Pila `docker-compose.prod.yml` en local (puerto 3111) | Migraciones desde cero; `/health` en producción con BD, PostGIS, Redis y worker correctos; `/v1/dev/session` → 404; `/v1/me` → 401 |
+| `pnpm db:backup` + `pg_restore` | Copia de 95 KB restaurada completa (13 migraciones, PostGIS) |
+
+### Añadido después (mismo día)
+
+- **Reutilización del refresh token**: un token ya rotado revoca la sesión entera. Migración 0013.
+- **Recibos de Expo push**: los tokens dados de baja por FCM/APNs se desactivan.
+- `pnpm test`: **30 ficheros, 325 tests OK**.
+
+### Limitaciones
+
+- El inicio de sesión con Google real no se ha probado: falta autorizar la URL de vuelta (paso del usuario) y, para el teléfono, un dominio HTTPS.
+- Sin «Iniciar sesión con Apple» (iOS).
+
+### Siguiente paso
+
+Ver [beta.md](beta.md): dominio y servidor, verificación de Google, EAS y FCM.
 
 ---
 

@@ -4,7 +4,10 @@ import type { Request } from 'express';
 export interface AuthContext {
   userId: string;
   dataset: 'demo' | 'live';
-  kind: 'dev';
+  /** dev: identidad de desarrollo (DEMO_MODE); user: sesión de producción. */
+  kind: 'dev' | 'user';
+  /** Solo en sesiones de producción (para cerrarlas). */
+  sessionId?: string;
 }
 
 export interface AuthedRequest extends Request {

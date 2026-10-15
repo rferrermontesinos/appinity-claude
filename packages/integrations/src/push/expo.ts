@@ -8,6 +8,15 @@ import { z } from 'zod';
  * reintento con espera exponencial. El token de acceso solo es obligatorio si se activa la seguridad reforzada en EAS.
  */
 export const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
+export const EXPO_RECEIPTS_URL = 'https://exp.host/--/api/v2/push/getReceipts';
+const RECEIPTS_BATCH = 1000;
+const receiptsSchema = z.object({
+  data: z.record(
+    z.string(),
+    z.object({ status: z.enum(['ok', 'error']), message: z.string().optional(), details: z.object({ error: z.string().optional() }).passthrough().optional() }),
+  ),
+});
+export type ExpoReceipt = { status: 'ok' } | { status: 'error'; message: string; error?: string };
 const BATCH = 100;
 const ATTEMPTS = 4;
 
@@ -29,6 +38,7 @@ export type ExpoTicket = { status: 'ok'; id: string } | { status: 'error'; messa
 export interface ExpoPushSenderOptions {
   accessToken?: string;
   endpoint?: string;
+  receiptsEndpoint?: string;
   fetchImpl?: typeof fetch;
   sleep?: (ms: number) => Promise<void>;
 }
@@ -49,6 +59,34 @@ export class ExpoPushSender {
       tickets.push(...(await this.post(batch)));
     }
     return tickets;
+  }
+
+  /**
+   * Recibos: si FCM/APNs aceptaron cada notificación (Expo recomienda consultarlos ~15 min después; duran 24 h).
+   * Los ids sin recibo todavía no aparecen en la respuesta.
+   */
+  async receipts(ids: string[]): Promise<Record<string, ExpoReceipt>> {
+    const out: Record<string, ExpoReceipt> = {};
+    for (let start = 0; start < ids.length; start += RECEIPTS_BATCH) {
+      const response = await this.fetchImpl(this.options.receiptsEndpoint ?? EXPO_RECEIPTS_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          ...(this.options.accessToken ? { Authorization: `Bearer ${this.options.accessToken}` } : {}),
+        },
+        body: JSON.stringify({ ids: ids.slice(start, start + RECEIPTS_BATCH) }),
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (response.status === 429 || response.status >= 500) throw new SourceError('unavailable', `Expo push respondió HTTP ${response.status}`, true);
+      if (!response.ok) throw new SourceError('bad_response', `Expo push respondió HTTP ${response.status}`, false);
+      const parsed = receiptsSchema.safeParse(await response.json().catch(() => null));
+      if (!parsed.success) throw new SourceError('bad_response', 'Respuesta inesperada de los recibos de Expo', false);
+      for (const [id, r] of Object.entries(parsed.data.data)) {
+        out[id] = r.status === 'ok' ? { status: 'ok' } : { status: 'error', message: r.message ?? '', ...(r.details?.error ? { error: r.details.error } : {}) };
+      }
+    }
+    return out;
   }
 
   private async post(batch: unknown[]): Promise<ExpoTicket[]> {

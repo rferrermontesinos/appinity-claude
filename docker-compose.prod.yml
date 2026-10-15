@@ -1,0 +1,80 @@
+# Despliegue de APPINITY (beta): PostgreSQL/PostGIS y Redis persistentes, migraciones, API y worker.
+# Uso (en el servidor, con .env.production fuera de Git):
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+# La API escucha solo en 127.0.0.1:3100: ponla detrás de un proxy HTTPS (Caddy, Nginx…). Nada más se expone.
+name: appinity-claude-prod
+
+x-app: &app
+  build: .
+  image: appinity-claude:beta
+  env_file: .env.production
+  environment:
+    NODE_ENV: production
+    DEMO_MODE: "false"
+    DEV_AUTH_ENABLED: "false"
+    DATABASE_URL: postgres://appinity_claude:${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD}@postgres:5432/appinity_claude
+    REDIS_URL: redis://redis:6379
+    STORAGE_DIR: /data/media
+  volumes:
+    - appinity_media:/data/media
+  restart: unless-stopped
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    environment:
+      POSTGRES_USER: appinity_claude
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD}
+      POSTGRES_DB: appinity_claude
+    volumes:
+      - appinity_pg:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appinity_claude -d appinity_claude"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4.7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - appinity_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  migrate:
+    <<: *app
+    command: ["node", "packages/database/dist/cli/migrate.js"]
+    restart: "no"
+
+  api:
+    <<: *app
+    command: ["node", "apps/api/dist/main.js"]
+    ports:
+      - "127.0.0.1:3100:3100"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  worker:
+    <<: *app
+    command: ["node", "workers/sync-worker/dist/main.js"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  appinity_pg:
+  appinity_redis:
+  appinity_media:
