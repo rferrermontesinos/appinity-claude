@@ -159,6 +159,8 @@ export class WikidataWorkIdentifier {
   private readonly sleep: (ms: number) => Promise<void>;
   private readonly cache = new Map<string, IdentifiedEntity | null>();
   private readonly channelCache = new Map<string, Identification>();
+  /** Hasta cuándo se omite maxlag tras detectar un retraso persistente (evita esperar en cada consulta). */
+  private noMaxlagUntil = 0;
 
   constructor(private readonly options: WikidataWorkIdentifierOptions) {
     this.fetchImpl = options.fetchImpl ?? fetch;
@@ -329,6 +331,37 @@ export class WikidataWorkIdentifier {
     return packageNames.map((p) => this.channelCache.get(`app:${p}`) ?? { entity: null, reason: 'no_match' });
   }
 
+  /**
+   * Coordenadas (P625) de un lugar por su nombre exacto (etiqueta o alias en inglés o español). Solo sitúa: la
+   * identificación la hace después OSM. Varios candidatos con coordenadas: el de más enlaces si domina claramente.
+   */
+  async locatePlace(name: string): Promise<{ latitude: number; longitude: number } | null> {
+    const wanted = normalizeTitle(name);
+    if (!wanted) return null;
+    const found = new Set<string>();
+    for (const language of ['en', 'es']) {
+      const data = searchSchema.parse(await this.get({ action: 'wbsearchentities', search: name, language, uselang: language, type: 'item', limit: '10' }));
+      for (const hit of data.search) {
+        const texts = [hit.match?.text, hit.label, ...(hit.aliases ?? [])].filter((t): t is string => Boolean(t));
+        if (texts.some((t) => normalizeTitle(t) === wanted)) found.add(hit.id);
+      }
+    }
+    if (!found.size) return null;
+    const entities = await this.entities([...found], ['en', 'es']);
+    const located = Object.values(entities)
+      .map((entity) => {
+        const value = entity.claims?.P625?.[0]?.mainsnak.datavalue?.value as { latitude?: number; longitude?: number } | undefined;
+        return value?.latitude !== undefined && value.longitude !== undefined
+          ? { latitude: value.latitude, longitude: value.longitude, sitelinks: Object.keys(entity.sitelinks ?? {}).length }
+          : null;
+      })
+      .filter((v): v is { latitude: number; longitude: number; sitelinks: number } => v !== null)
+      .sort((a, b) => b.sitelinks - a.sitelinks);
+    const [first, second] = located;
+    if (!first || (second && first.sitelinks < 2 * Math.max(1, second.sitelinks))) return null;
+    return { latitude: first.latitude, longitude: first.longitude };
+  }
+
   /** Artistas por nombre exacto (solo grupos y personas músicos). */
   async identifyArtists(names: string[], onProgress?: (done: number, total: number) => void): Promise<Identification[]> {
     const unique = [...new Set(names)];
@@ -359,7 +392,8 @@ export class WikidataWorkIdentifier {
 
   private async get(params: Record<string, string>): Promise<unknown> {
     const url = new URL(this.options.endpoint ?? WIKIDATA_API);
-    for (const [k, v] of Object.entries({ ...params, format: 'json', maxlag: '5' })) url.searchParams.set(k, v);
+    const maxlag = Date.now() >= this.noMaxlagUntil ? { maxlag: '5' } : {};
+    for (const [k, v] of Object.entries({ ...params, format: 'json', ...maxlag })) url.searchParams.set(k, v);
     // Esperas de 2, 4, 8, 16 y 32 s (o lo que pida Retry-After): aguanta cortes de ~1 min sin aplazar el sync.
     const wait = async (attempt: number, problem: string, retryAfter?: string | null) => {
       const ms = Number(retryAfter ?? '0') * 1000 || 2_000 * 2 ** attempt;
@@ -391,6 +425,7 @@ export class WikidataWorkIdentifier {
       if (data.error?.code === 'maxlag' && url.searchParams.has('maxlag') && attempt >= 1) {
         this.options.log?.('Wikidata con retraso persistente (maxlag): se continúa sin ese parámetro (solo lectura)');
         url.searchParams.delete('maxlag');
+        this.noMaxlagUntil = Date.now() + 10 * 60_000;
         continue;
       }
       // maxlag (réplicas atrasadas) o búsqueda saturada: errores pasajeros que Wikidata devuelve con HTTP 200.

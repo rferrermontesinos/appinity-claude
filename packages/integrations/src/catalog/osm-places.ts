@@ -55,7 +55,7 @@ const CULTURE_HISTORIC = new Set(['castle', 'monument', 'archaeological_site']);
  */
 const GENERIC_WORDS = new Set([
   'restaurante', 'restaurant', 'bar', 'cafe', 'cafeteria', 'taberna', 'tasca', 'pizzeria', 'museo', 'museu', 'museum',
-  'teatro', 'teatre', 'theatre', 'cine', 'cinema', 'cines', 'galeria', 'gallery', 'el', 'la', 'los', 'las', 'les', 'l', 'the',
+  'teatro', 'teatre', 'theatre', 'theater', 'cine', 'cinema', 'cines', 'galeria', 'gallery', 'el', 'la', 'los', 'las', 'les', 'l', 'the',
 ]);
 /**
  * Nombre sin descriptor: Google añade a menudo uno tras un separador («Can Pep - Tapas Bar», «Lactuca | Cocina

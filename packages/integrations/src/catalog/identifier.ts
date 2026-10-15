@@ -40,8 +40,12 @@ export function createCatalogIdentifier(options: CatalogIdentifierOptions): Enti
     ...(options.nominatimUrl ? { endpoint: options.nominatimUrl } : {}),
     ...(options.log ? { log: options.log } : {}),
   });
+  // Nominatim y, si no encuentra un sitio concreto, Wikidata (coordenadas de lugares notables: ruinas, monumentos…).
+  const chained = {
+    geocode: async (place: PlaceTextToIdentify) => (await geocoder.geocode(place)) ?? (await works.locatePlace(place.name)),
+  };
   return {
-    identifyPlacesByText: (list, onProgress) => identifyPlacesByText(list, geocoder, (points) => places.identifyPlaces(points), onProgress),
+    identifyPlacesByText: (list, onProgress) => identifyPlacesByText(list, chained, (points) => places.identifyPlaces(points), onProgress),
     identifyApps: (packages, onProgress) => works.identifyApps(packages, onProgress),
     identifyPlace: (place) => places.identifyPlace(place),
     identifyPlaces: (list, onProgress) => places.identifyPlaces(list, onProgress),

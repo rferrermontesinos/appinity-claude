@@ -58,9 +58,34 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 3. T2 (worker): espera a que Google prepare los exports. Verás líneas `[google] export play.library: …` con la
    estructura real, sin datos personales. Pégame esas líneas: sirven para confirmar el formato de `doc` en Play.
 
+### Sync real con la cuenta del usuario (2026-10-15)
+
+**115 evidencias de Google** (antes, 82):
+- YouTube: 50 artistas o programas y 2 suscripciones.
+- Maps: 33 reseñas y 1 sitio con estrella.
+- **Colecciones guardadas: 29**, de 166 consultadas; el resto, en syncs posteriores por el tope de 150.
+- Play: 9 apps, ninguna es un videojuego.
+- Pedidos y reservas: Google rechaza exportarlos para esta cuenta, aunque concede el permiso.
+
+Incidencias reales resueltas por el camino:
+-  rechazado por Google.
+- Sin refresh token: se guarda el access token de 1 h.
+- Ventana emergente sin vínculo (COOP): ahora es una página completa.
+- 409 y 400 por grupo, sin bloquear el resto.
+-  persistente de Wikidata.
+- Los exports se conservan al renovar.
+
+Mejora de precisión tras el sync, con nombres reales:
+- Nominatim por nombre solo acepta sitios concretos, no ciudades ni calles homónimas.
+- Se busca sin el descriptor de marketing.
+- Wikidata (P625) como segundo localizador.
+
+Muestra de 7 lugares reales: de 2 a 3 identificados. El resto falla por títulos descriptivos de Google («Abandoned Village of Kayaköy»), sin un nombre exacto en los catálogos.
+
 ### Limitaciones
 
-- El formato interno de `doc` en Play no está documentado. Se contrastará con tu primer export real.
+- Google no entrega refresh token: el acceso dura 1 h y los syncs automáticos posteriores requieren renovar el permiso. Pendiente de investigar.
+- El formato interno de  en Play no está documentado. Se contrastará con tu primer export real.
 - Nominatim público solo vale para desarrollo y volúmenes pequeños.
 - Pedidos y reservas solo existen si se usó «Pedir con Google» o «Reservar con Google».
 

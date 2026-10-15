@@ -1,5 +1,6 @@
 import { SourceError, normalizeTitle, type PlaceTextToIdentify } from '@appinity/shared';
 import { z } from 'zod';
+import { descriptorHead } from './osm-places.js';
 
 /**
  * Geocodificación con Nominatim (OpenStreetMap) para lugares exportados sin coordenadas: pedidos y reservas de comida
@@ -15,12 +16,18 @@ import { z } from 'zod';
 export const NOMINATIM_DEFAULT_URL = 'https://nominatim.openstreetmap.org/search';
 const MIN_INTERVAL_MS = 1_100;
 const ATTEMPTS = 4;
+/**
+ * Clases de OSM que son un sitio concreto. Al buscar por nombre, Nominatim devuelve a veces una ciudad, una calle o una
+ * región homónima (82 de 166 lugares guardados reales quedaban «sin lugares cerca», 2026-10-15): se descartan.
+ */
+const POI_CATEGORIES = new Set(['amenity', 'tourism', 'historic', 'leisure', 'shop', 'craft', 'building', 'man_made', 'natural', 'office', 'club']);
 
 const resultSchema = z.array(
   z.object({
     lat: z.string(),
     lon: z.string(),
     name: z.string().optional(),
+    category: z.string().optional(),
     address: z.object({ country_code: z.string().optional() }).passthrough().optional(),
   }),
 );
@@ -47,7 +54,8 @@ export interface NominatimGeocoderOptions {
  * ese nombre a ≤ 100 m, así que una posición equivocada no identifica nada.
  */
 export function geocodeQueries(place: PlaceTextToIdentify): string[] {
-  const name = place.name.trim();
+  // Sin descriptor de marketing («Agreste | Restaurante gastronómico Barcelona» → «Agreste»): Nominatim no lo encuentra.
+  const name = (descriptorHead(place.name) ?? place.name).trim();
   const address = place.address?.trim();
   if (!address) return name ? [name] : [];
   const city = address
@@ -71,20 +79,22 @@ export class NominatimGeocoder {
   }
 
   async geocode(place: PlaceTextToIdentify): Promise<GeocodedPlace | null> {
+    const address = place.address?.trim();
     for (const q of geocodeQueries(place)) {
-      const found = await this.search(q, place.countryCode);
+      // La dirección sola puede ser un edificio o una calle; por nombre, solo un sitio concreto.
+      const found = await this.search(q, place.countryCode, q !== address);
       if (found) return found;
     }
     return null;
   }
 
-  private async search(q: string, countryCode: string | undefined): Promise<GeocodedPlace | null> {
-    const key = `${countryCode ?? ''}:${normalizeTitle(q)}`;
+  private async search(q: string, countryCode: string | undefined, poiOnly: boolean): Promise<GeocodedPlace | null> {
+    const key = `${poiOnly ? 'poi' : 'any'}:${countryCode ?? ''}:${normalizeTitle(q)}`;
     if (this.cache.has(key)) return this.cache.get(key)!;
     const url = new URL(this.options.endpoint ?? NOMINATIM_DEFAULT_URL);
     url.searchParams.set('q', q);
     url.searchParams.set('format', 'jsonv2');
-    url.searchParams.set('limit', '1');
+    url.searchParams.set('limit', poiOnly ? '5' : '1');
     url.searchParams.set('addressdetails', '1');
     if (countryCode) url.searchParams.set('countrycodes', countryCode.toLowerCase());
     let problem = '';
@@ -118,7 +128,7 @@ export class NominatimGeocoder {
         problem = 'respuesta ilegible';
         continue;
       }
-      const first = parsed.data[0];
+      const first = poiOnly ? parsed.data.find((r) => POI_CATEGORIES.has(r.category ?? '')) : parsed.data[0];
       const result: GeocodedPlace | null = first
         ? {
             latitude: Number(first.lat),

@@ -140,7 +140,7 @@ describe('fase 11 · identificación', () => {
       if (calls === 1) return new Response('', { status: 429 });
       // La dirección no se encuentra; nombre + ciudad, sí.
       if (url.searchParams.get('q')!.startsWith('Carrer')) return new Response('[]');
-      return new Response(JSON.stringify([{ lat: '41.38', lon: '2.17', address: { country_code: 'es' } }]));
+      return new Response(JSON.stringify([{ lat: '41.38', lon: '2.17', category: 'amenity', address: { country_code: 'es' } }]));
     }) as typeof fetch;
     const geocoder = new NominatimGeocoder({ userAgent: 'APPINITY-test', fetchImpl, sleep: async () => undefined, minIntervalMs: 0 });
     const place = { name: 'Can Culleretes', address: 'Carrer d’en Quintana, 5, 08002 Barcelona', countryCode: 'ES' };
@@ -151,6 +151,17 @@ describe('fase 11 · identificación', () => {
     expect(urls.map((u) => u.searchParams.get('q'))).toEqual([place.address, place.address, 'Can Culleretes, Barcelona']);
     expect(urls[2]!.searchParams.get('countrycodes')).toBe('es');
     expect(geocodeQueries({ name: 'Bar X' })).toEqual(['Bar X']);
+  });
+
+  it('Nominatim por nombre: descarta ciudades o calles homónimas y acepta el primer sitio concreto', async () => {
+    const fetchImpl = (async () =>
+      new Response(JSON.stringify([
+        { lat: '1', lon: '1', category: 'place' },
+        { lat: '2', lon: '2', category: 'highway' },
+        { lat: '3', lon: '3', category: 'tourism' },
+      ]))) as typeof fetch;
+    const geocoder = new NominatimGeocoder({ userAgent: 'APPINITY-test', fetchImpl, sleep: async () => undefined, minIntervalMs: 0 });
+    expect(await geocoder.geocode({ name: 'Aspendos Theater' })).toMatchObject({ latitude: 3, longitude: 3 });
   });
 
   it('Nominatim caído: error reintentable (el sync se aplaza)', async () => {
@@ -247,5 +258,26 @@ describe('Wikidata con retraso persistente', () => {
     const wd = new WikidataWorkIdentifier({ userAgent: 'APPINITY-test', fetchImpl, sleep: async () => undefined });
     expect(await wd.identifyWork({ title: 'Título sin coincidencias', languages: ['es'] })).toBeNull();
     expect(urls.map((u) => u.searchParams.has('maxlag'))).toEqual([true, true, false]);
+    // Durante 10 minutos ya no se envía: ninguna espera más.
+    await wd.identifyWork({ title: 'Otro título', languages: ['es'] });
+    expect(urls.at(-1)!.searchParams.has('maxlag')).toBe(false);
+    expect(urls).toHaveLength(4);
+  });
+});
+
+describe('Wikidata como localizador de lugares', () => {
+  it('coordenadas (P625) por nombre exacto; sin coincidencia exacta o sin coordenadas, nada', async () => {
+    const fetchImpl = (async (input: string | URL | Request) => {
+      const url = new URL(input.toString());
+      if (url.searchParams.get('action') === 'wbsearchentities') {
+        const search = url.searchParams.get('search');
+        return new Response(JSON.stringify({ search: search === 'Kayaköy' ? [{ id: 'Q1', label: 'Kayaköy' }, { id: 'Q2', label: 'Kayaköy Beach' }] : [] }));
+      }
+      const claim = (v: unknown) => ({ mainsnak: { datavalue: { value: v } } });
+      return new Response(JSON.stringify({ entities: { Q1: { id: 'Q1', claims: { P625: [claim({ latitude: 36.57, longitude: 29.09 })] }, sitelinks: { a: {}, b: {} } } } }));
+    }) as typeof fetch;
+    const wd = new WikidataWorkIdentifier({ userAgent: 'APPINITY-test', fetchImpl, sleep: async () => undefined });
+    expect(await wd.locatePlace('Kayaköy')).toEqual({ latitude: 36.57, longitude: 29.09 });
+    expect(await wd.locatePlace('Lugar inventado')).toBeNull();
   });
 });
