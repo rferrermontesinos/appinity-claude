@@ -283,6 +283,8 @@ export function createFakeIdentifier(identifications: Record<string, IdentifiedE
 }
 
 export interface FakeGoogleOptions {
+  /** Google recuerda una concesión anterior y no entrega refresh token (sin pantalla de consentimiento). */
+  omitRefreshToken?: boolean;
   exports?: Record<Group, Record<string, unknown>>;
   /** Grupos que el usuario deja marcados en el consentimiento (por defecto, todos los pedidos). */
   grantedGroups?: string[];
@@ -340,6 +342,7 @@ export function createFakeGoogle(options: FakeGoogleOptions = {}) {
         const access = `access-simulado-${++counter}`;
         refreshTokens.add(refresh);
         accessTokens.add(access);
+        if (options.omitRefreshToken) return json({ access_token: access, expires_in: 3599, scope: entry.scope, token_type: 'Bearer' });
         return json({ access_token: access, expires_in: 3599, refresh_token: refresh, refresh_token_expires_in: 604_800, scope: entry.scope, token_type: 'Bearer' });
       }
       if (form.get('grant_type') === 'refresh_token') {

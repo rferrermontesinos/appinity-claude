@@ -56,7 +56,10 @@ export async function completePortabilityConnect(
 
   const token = await client.exchangeCode(params.code, verifier);
   if (!token.refresh_token) {
-    throw new SourceError('verification_failed', 'Google no entregó un acceso continuado: vuelve a autorizar', false);
+    // Google recordaba una concesión anterior y se saltó el consentimiento: sin refresh token no hay sync programado.
+    // Revocar el token recibido libera esa concesión, así que el siguiente intento vuelve a mostrar el consentimiento.
+    await client.revoke(token.access_token).catch(() => undefined);
+    throw new SourceError('verification_failed', 'Google recordaba un permiso anterior y no entregó un acceso continuado. Lo hemos liberado: pulsa de nuevo «Renovar permiso».', false);
   }
   const granted = scopesToGroups(token.scope).filter((g): g is ResourceGroup => (requested as readonly string[]).includes(g));
   if (!granted.length) {
