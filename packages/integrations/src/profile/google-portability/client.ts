@@ -33,8 +33,10 @@ export interface GoogleClientOptions {
 /** Google limita los exports: acceso único ya usado o acceso temporal antes de 24 h. */
 export class ExportLimitError extends Error {
   constructor(
-    readonly kind: 'one_time' | 'time_based',
+    readonly kind: 'one_time' | 'time_based' | 'already_exists',
     message: string,
+    /** Solo en already_exists: id del export que Google dice tener ya en curso, si su mensaje lo incluye. */
+    readonly existingJobId?: string,
   ) {
     super(message);
     this.name = 'ExportLimitError';
@@ -186,6 +188,13 @@ export class GooglePortabilityClient {
       throw new ExportLimitError('time_based', 'Google solo permite un export de cada grupo cada 24 h');
     }
     if (status === 'FAILED_PRECONDITION') throw new ExportLimitError('time_based', 'Google aún no permite otro export de este grupo');
+    const googleMessage = parsed.success ? (parsed.data.error.message ?? '').slice(0, 200) : '';
+    // 409: ya hay un export de este grupo en curso (iniciado en un intento anterior cuyo id se perdió). Si el mensaje
+    // de Google trae su id, se adopta; si no, el grupo se salta en este sync sin hacer fallar los demás.
+    if (response.status === 409 || status === 'ALREADY_EXISTS') {
+      const id = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.exec(googleMessage)?.[0];
+      throw new ExportLimitError('already_exists', googleMessage || 'Google ya tiene un export de este grupo en curso', id);
+    }
     if (response.status === 401) {
       throw new SourceError('auth', 'El permiso de Google ya no es válido: renuévalo desde la app', false);
     }
@@ -196,7 +205,12 @@ export class GooglePortabilityClient {
         false,
       );
     }
-    throw new SourceError('bad_response', `La Data Portability API respondió HTTP ${response.status} (${status ?? 'sin estado'})`, false);
+    // El mensaje de Google describe el problema (sin datos personales) y es lo que permite diagnosticarlo.
+    throw new SourceError(
+      'bad_response',
+      `La Data Portability API respondió HTTP ${response.status} (${status ?? 'sin estado'})${googleMessage ? `: ${googleMessage}` : ''}`,
+      false,
+    );
   }
 
   /** Petición con reintentos ante red caída, 5xx y 429 genéricos (no los límites de export, que se tratan aparte). */

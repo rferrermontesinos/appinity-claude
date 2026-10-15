@@ -209,6 +209,19 @@ describe('sync de Google', () => {
     expect(JSON.parse(context.credentials!.jobs!)).toEqual({});
   });
 
+  it('409 (export previo en curso): adopta su id si Google lo da; si no, salta ese grupo sin hacer fallar los demás', async () => {
+    const PREVIOUS = '0b3f7a52-1c2d-4e5f-8a9b-0c1d2e3f4a5b';
+    const { google, client } = setup({ alreadyExists: { 'maps.reviews': PREVIOUS, 'search_ugc.media.thumbs': '' } });
+    const done = await connect(google, client);
+    const { identifier } = createFakeIdentifier();
+    const context = syncContext({ ...done.credentials! });
+    const first = await syncPortability(client, context, { identifier });
+    expect(JSON.parse(context.credentials!.jobs!)['maps.reviews']).toMatchObject({ id: PREVIOUS });
+    const second = first.pending ? await syncPortability(client, context, { identifier }) : first;
+    expect(second.snapshotKinds?.sort()).toEqual(['maps_review', 'maps_starred', 'search_rating', 'search_watched']);
+    expect(second.partialErrors.find((e) => e.code === 'export_in_progress')).toMatchObject({ blocking: false, message: expect.stringMatching(/pulgares/) });
+  });
+
   it('no repite un export antes de 24 h y respeta el acceso único', async () => {
     const { google, client } = setup({ oneTimeGroups: ['maps.reviews'] });
     const done = await connect(google, client);

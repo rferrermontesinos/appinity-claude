@@ -283,6 +283,8 @@ export function createFakeIdentifier(identifications: Record<string, IdentifiedE
 }
 
 export interface FakeGoogleOptions {
+  /** Grupos con un export previo en curso (409). Valor: su id (en el mensaje de Google) o '' si no se indica. */
+  alreadyExists?: Record<string, string>;
   /** Google recuerda una concesión anterior y no entrega refresh token (sin pantalla de consentimiento). */
   omitRefreshToken?: boolean;
   exports?: Record<Group, Record<string, unknown>>;
@@ -371,6 +373,12 @@ export function createFakeGoogle(options: FakeGoogleOptions = {}) {
       const body = typeof init?.body === 'string' && init.body.startsWith('{') ? (JSON.parse(init.body) as { resources?: string[] }) : {};
       if (url.pathname === '/v1/portabilityArchive:initiate') {
         const group = body.resources?.[0] ?? '';
+        const existing = options.alreadyExists?.[group];
+        if (existing !== undefined) {
+          // Export de un intento anterior aún en curso: con o sin su id en el mensaje.
+          if (existing) jobs.set(existing, { group, polls: 0, failed: false });
+          return json({ error: { code: 409, status: 'ALREADY_EXISTS', message: existing ? `Archive job ${existing} already exists` : 'Archive job already exists' } }, 409);
+        }
         const last = exportedAt.get(group);
         if (last !== undefined && (options.oneTimeGroups ?? []).includes(group)) {
           return json({ error: { code: 429, status: 'RESOURCE_EXHAUSTED', details: [{ reason: 'RESOURCE_EXHAUSTED_ONE_TIME' }] } }, 429);

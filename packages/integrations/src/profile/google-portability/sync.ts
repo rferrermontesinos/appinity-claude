@@ -160,6 +160,21 @@ export async function syncPortability(
         await persist();
       } catch (error) {
         if (!(error instanceof ExportLimitError)) throw error;
+        if (error.kind === 'already_exists') {
+          if (error.existingJobId) {
+            state.jobs[group] = { id: error.existingJobId, initiatedAt: now.toISOString(), retries: 0 };
+            await persist();
+            // Se consultará su estado en la siguiente pasada, como cualquier export recién pedido.
+            retryAfterMs = Math.min(retryAfterMs ?? Infinity, 60_000);
+          } else {
+            partialErrors.push({
+              code: 'export_in_progress',
+              message: `Google ya está preparando un export de ${GROUP_LABEL[group]} pedido en un intento anterior; se volverá a pedir en el próximo sync (${error.message})`,
+              blocking: false,
+            });
+            continue;
+          }
+        }
         if (error.kind === 'one_time') {
           state.exportedAt[group] ??= now.toISOString();
           await persist();
