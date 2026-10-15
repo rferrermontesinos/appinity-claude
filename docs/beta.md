@@ -4,7 +4,7 @@
 
 | Paso | Estado | Cómo se ha comprobado |
 |---|---|---|
-| Entrar con Google (producción) | **Implementado** | Tests: OpenID Connect con claves locales (firma, emisor, audiencia, caducidad, nonce) y HTTP (código de un solo uso, rotación, cierre de sesión). Vista web: botón visible, canje del código, alta y Perfil. **Sin probar contra Google real** (necesita autorizar la URL de vuelta) |
+| Entrar con Google (producción) | **Implementado** | Tests: OpenID Connect con claves locales (firma, emisor, audiencia, caducidad, nonce) y HTTP (código de un solo uso, rotación, cierre de sesión). Vista web: botón visible, canje del código, alta y Perfil. **Probado con Google real en el PC (2026-10-15)**: cuenta `live` creada con email verificado, alta completada y sesión activa |
 | Alta: mayoría de edad y condiciones | **Implementado** | Test HTTP y vista web (alta → Perfil) |
 | Conectar fuentes (único consentimiento) | Google y Steam implementados | Sync real de Google con tu cuenta: 115 evidencias. Steam: fases anteriores |
 | Sync, perfil, afinidades, recomendaciones | Implementados | Fases 2 a 11, con datos reales |
@@ -29,7 +29,13 @@
    es obligatorio en iOS si se ofrece Google).
 6. **Textos legales**: condiciones y política de privacidad (el alta ya pide aceptarlas).
 
-## Siguiente paso concreto para probar el inicio de sesión real en el PC (sin contratar nada)
+## Nota sobre cuentas (2026-10-15)
+
+La cuenta de Google es nueva y está vacía; los gustos del usuario siguen en su cuenta local de desarrollo. Pasar fuentes a otra cuenta tiene dos límites:
+- Google: un export por grupo cada 24 h.
+- Steam: una cuenta de Steam solo puede estar vinculada a un usuario a la vez.
+
+## Probar el inicio de sesión real en el PC (hecho)
 
 1. En Google Cloud → tu cliente OAuth → «URIs de redireccionamiento autorizados», añade
    `http://localhost:3100/v1/auth/google/callback`.
