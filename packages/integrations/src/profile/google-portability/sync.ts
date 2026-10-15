@@ -160,6 +160,14 @@ export async function syncPortability(
         await persist();
       } catch (error) {
         if (!(error instanceof ExportLimitError)) throw error;
+        if (error.kind === 'unsupported') {
+          partialErrors.push({
+            code: 'export_unsupported',
+            message: `Google no permite exportar ${GROUP_LABEL[group]} para esta cuenta, aunque se concedió el permiso; el resto se importa con normalidad`,
+            blocking: false,
+          });
+          continue;
+        }
         if (error.kind === 'already_exists') {
           if (error.existingJobId) {
             state.jobs[group] = { id: error.existingJobId, initiatedAt: now.toISOString(), retries: 0 };

@@ -33,7 +33,7 @@ export interface GoogleClientOptions {
 /** Google limita los exports: acceso único ya usado o acceso temporal antes de 24 h. */
 export class ExportLimitError extends Error {
   constructor(
-    readonly kind: 'one_time' | 'time_based' | 'already_exists',
+    readonly kind: 'one_time' | 'time_based' | 'already_exists' | 'unsupported',
     message: string,
     /** Solo en already_exists: id del export que Google dice tener ya en curso, si su mensaje lo incluye. */
     readonly existingJobId?: string,
@@ -191,6 +191,11 @@ export class GooglePortabilityClient {
     const googleMessage = parsed.success ? (parsed.data.error.message ?? '').slice(0, 200) : '';
     // 409: ya hay un export de este grupo en curso (iniciado en un intento anterior cuyo id se perdió). Si el mensaje
     // de Google trae su id, se adopta; si no, el grupo se salta en este sync sin hacer fallar los demás.
+    // 400 al pedir un export de un grupo cuyo permiso sí se concedió: Google no lo ofrece para esa cuenta (comprobado el
+    // 2026-10-15 con order_reserve.purchases_reservations: «The requested resources do not correspond to valid scopes»).
+    if (response.status === 400 && /do not correspond to valid scopes/i.test(googleMessage)) {
+      throw new ExportLimitError('unsupported', googleMessage);
+    }
     if (response.status === 409 || status === 'ALREADY_EXISTS') {
       const id = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.exec(googleMessage)?.[0];
       throw new ExportLimitError('already_exists', googleMessage || 'Google ya tiene un export de este grupo en curso', id);

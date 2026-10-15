@@ -283,6 +283,8 @@ export function createFakeIdentifier(identifications: Record<string, IdentifiedE
 }
 
 export interface FakeGoogleOptions {
+  /** Grupos cuyo export Google rechaza aunque el permiso se concediera (400 INVALID_ARGUMENT). */
+  unsupportedGroups?: string[];
   /** Grupos con un export previo en curso (409). Valor: su id (en el mensaje de Google) o '' si no se indica. */
   alreadyExists?: Record<string, string>;
   /** Google recuerda una concesión anterior y no entrega refresh token (sin pantalla de consentimiento). */
@@ -373,6 +375,9 @@ export function createFakeGoogle(options: FakeGoogleOptions = {}) {
       const body = typeof init?.body === 'string' && init.body.startsWith('{') ? (JSON.parse(init.body) as { resources?: string[] }) : {};
       if (url.pathname === '/v1/portabilityArchive:initiate') {
         const group = body.resources?.[0] ?? '';
+        if ((options.unsupportedGroups ?? []).includes(group)) {
+          return json({ error: { code: 400, status: 'INVALID_ARGUMENT', message: 'The requested resources do not correspond to valid scopes.' } }, 400);
+        }
         const existing = options.alreadyExists?.[group];
         if (existing !== undefined) {
           // Export de un intento anterior aún en curso: con o sin su id en el mensaje.

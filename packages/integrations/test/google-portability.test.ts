@@ -209,6 +209,17 @@ describe('sync de Google', () => {
     expect(JSON.parse(context.credentials!.jobs!)).toEqual({});
   });
 
+  it('grupo que Google no permite exportar (400 «do not correspond to valid scopes»): se salta y el resto se importa', async () => {
+    const { google, client } = setup({ unsupportedGroups: ['maps.reviews'] });
+    const done = await connect(google, client);
+    const { identifier } = createFakeIdentifier();
+    const context = syncContext({ ...done.credentials! });
+    const first = await syncPortability(client, context, { identifier });
+    const batch = first.pending ? await syncPortability(client, context, { identifier }) : first;
+    expect(batch.snapshotKinds?.sort()).toEqual(['maps_starred', 'search_rating', 'search_thumb', 'search_watched']);
+    expect(batch.partialErrors.find((e) => e.code === 'export_unsupported')).toMatchObject({ blocking: false, message: expect.stringMatching(/reseñas de Maps/) });
+  });
+
   it('409 (export previo en curso): adopta su id si Google lo da; si no, salta ese grupo sin hacer fallar los demás', async () => {
     const PREVIOUS = '0b3f7a52-1c2d-4e5f-8a9b-0c1d2e3f4a5b';
     const { google, client } = setup({ alreadyExists: { 'maps.reviews': PREVIOUS, 'search_ugc.media.thumbs': '' } });
