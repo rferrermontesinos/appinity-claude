@@ -63,6 +63,9 @@ describe('OpenID Connect de Google (claves locales, sin red)', () => {
     expect(params.get('code_challenge_method')).toBe('S256');
     expect(params.get('nonce')).toBe(pending.nonce);
     expect(params.has('prompt')).toBe(false);
+    // En el alta, Google Books va en el mismo consentimiento, con acceso continuado.
+    const withBooks = new URL(oidc.start('estado-0123456789abcdef', { books: true }).url).searchParams;
+    expect([withBooks.get('scope'), withBooks.get('access_type')]).toEqual(['openid email profile https://www.googleapis.com/auth/books', 'offline']);
 
     const sign = (claims: Record<string, unknown>, exp = '5m', audience = CLIENT_ID) =>
       new SignJWT({ nonce: pending.nonce, email: 'Ana@Example.com', email_verified: true, given_name: 'Ana', ...claims })

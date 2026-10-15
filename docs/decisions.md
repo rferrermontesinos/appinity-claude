@@ -964,3 +964,9 @@ gente con la que tienes afinidad, igual que en Tinder cuando haces match»).
 ## 2026-10-15 · Twitch descartada
 
 El acuerdo de desarrolladores de Twitch exige permiso escrito para guardar sus datos más de 24 h y para usar o compartir insights derivados. APPINITY guarda evidencia permanente y la usa para recomendar a otras personas, así que no se implementa sin ese permiso. Ver [source-candidates.md](source-candidates.md).
+
+## 2026-10-15 · Google Books
+
+- En el **alta**, el permiso de Books va en el mismo consentimiento de «Continuar con Google» (regla del único momento de consentimiento). Si se concede, la conexión se crea sola y empieza su primer sync.
+- Para cuentas creadas antes, hay una conexión normal (otra URL de vuelta autorizada).
+- Favoritos es un me gusta explícito. Comprar o querer leer no prueba gusto: solo cuenta como conocido.

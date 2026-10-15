@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { providerConsents, sourceSyncRuns, userConnections, userItemObservations, type DatabaseHandle } from '@appinity/database';
 import {
+  attachConnection,
   completeConnect,
   createSyncRun,
   startConnect,
@@ -13,7 +14,7 @@ import {
   type SyncMode,
   type SyncTrigger,
 } from '@appinity/ingestion';
-import type { AdapterRegistry } from '@appinity/integrations';
+import { googleBooksConnection, type AdapterRegistry } from '@appinity/integrations';
 import type { ConnectStartDto, ConnectionDto, SyncRunDto } from '@appinity/shared';
 import { randomBytes } from 'node:crypto';
 import type { Redis } from 'ioredis';
@@ -149,6 +150,18 @@ export class ConnectionsService {
       };
     }
     return this.afterConnected(userId, result.connection.id);
+  }
+
+  /** ¿Está registrada esa fuente en este servidor? */
+  hasSource(sourceKey: string): boolean {
+    return Boolean(this.registry.get(sourceKey));
+  }
+
+  /** Google Books concedido en «Continuar con Google» (mismo consentimiento del alta): conecta y lanza el primer sync. */
+  async attachGoogleBooks(userId: string, tokens: { access_token: string; refresh_token?: string; expires_in?: number; scope?: string }): Promise<void> {
+    if (!this.hasSource('google_books')) return;
+    const connection = await attachConnection(this.database.db, this.registry, userId, 'google_books', googleBooksConnection(tokens), this.credentialsOption().credentialsKey);
+    await this.startSync(userId, connection.id, 'connect', 'full');
   }
 
   private credentialsOption(): { credentialsKey?: string } {

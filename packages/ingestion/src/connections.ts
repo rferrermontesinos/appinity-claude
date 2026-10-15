@@ -269,6 +269,24 @@ export async function completeConnect(
   }
 }
 
+/**
+ * Guarda una conexión cuyo permiso se obtuvo en otro flujo (p. ej., Google Books concedido en «Continuar con Google»,
+ * en el mismo consentimiento del alta). Crea la conexión o renueva la que ya hubiera.
+ */
+export async function attachConnection(
+  db: Database,
+  registry: AdapterRegistry,
+  userId: string,
+  sourceKey: string,
+  auth: AuthResult,
+  credentialsKey: string | undefined,
+): Promise<ConnectionRow> {
+  const { adapter, existing } = await assertCanConnect(db, registry, userId, sourceKey);
+  if (auth.kind !== 'connected') throw new UnavailableError('El proveedor no confirmó la conexión');
+  if (existing) return renewConnection(db, existing, auth, credentialsKey, adapter.credentialsKeptOnRenewal);
+  return createConnection(db, userId, sourceKey, auth, credentialsKey);
+}
+
 /** Atajo para fuentes sin redirección (simuladas, seed y tests). */
 export async function connectSource(
   db: Database,

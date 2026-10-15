@@ -158,6 +158,17 @@ incremental, así que en las cuentas ya conectadas basta un «Renovar permiso».
 | Prueba real (2026-10-14) | Con los servicios públicos: Can Culleretes y Museu Picasso (por dirección) y Sagrada Família (por nombre) identificados (0,855; 0,855; 0,63). Wikidata (consultas directas, porque la API rechazaba con `maxlag`): P3418 devuelve Monument Valley y Clash Royale como videojuegos (Q7889) y WhatsApp como no videojuego (fuera de categoría) |
 | Tests | `packages/integrations/test/google-phase11.test.ts` (12) y `packages/ingestion/test/google.int.test.ts` (ampliado) |
 
+## Google Books · fase 11
+
+| Aspecto | Detalle |
+|---|---|
+| API | Oficial y gratuita:  con scope  ([docs](https://developers.google.com/books/docs/v1/using), consultadas el 2026-10-15). Hay que activar la «Books API» en el proyecto de Google Cloud |
+| Consentimiento | **Alta**: va en el mismo consentimiento de «Continuar con Google» (con ), así que la fuente queda conectada sin pasos extra. Google deja desmarcarlo. **Cuentas ya creadas**: conexión normal con su URL de vuelta () |
+| Estanterías | Favoritos (0), Comprados (1), Por leer (2), Leyendo (3), Leídos (4), Reseñados (5) y Mis eBooks (7). Las de recomendaciones y el historial (6, 8, 9) no se usan: no son gustos. Hasta 400 libros por estantería |
+| Identificación | ID de Google Books en Wikidata (P675, exacto; una edición se atribuye a su obra con P629). Si no, título exacto limitado a libros. Si Wikidata no tiene etiqueta en español o inglés, se usa el título de Google. **Prueba real**: P675  → Q27102283 |
+| Normalización () | Reseña con estrellas: valoración explícita. Favorito: me gusta +0,8. Leído, leyendo o reseñado: consumido. Por leer, comprado o eBook: solo conocido |
+| Tests |  (5) y OIDC con Books en  |
+
 ## Fuentes reales previstas
 
 Revisión del 2026-10-08: análisis de más de 60 plataformas en [fuentes-de-datos.md](fuentes-de-datos.md). Se muestran

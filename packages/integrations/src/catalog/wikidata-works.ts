@@ -51,6 +51,8 @@ const CHANNEL_BATCH = 40;
 const CHANNEL_ID = /^UC[\w-]{22}$/;
 /** Apps de Google Play por consulta (`haswbstatement:P3418=…`, mismo mecanismo que los canales). */
 const APP_BATCH = 40;
+/** «Versión, edición o traducción» en Wikidata. */
+const EDITION = 'Q3331189';
 const PACKAGE_NAME = /^[A-Za-z]\w*(\.\w+)+$/;
 /** Obras musicales que se atribuyen a su intérprete. */
 const MUSIC_WORKS = new Set(['Q482994', 'Q208569', 'Q134556', 'Q7366', 'Q105543609']);
@@ -360,6 +362,46 @@ export class WikidataWorkIdentifier {
     const [first, second] = located;
     if (!first || (second && first.sitelinks < 2 * Math.max(1, second.sitelinks))) return null;
     return { latitude: first.latitude, longitude: first.longitude };
+  }
+
+  /**
+   * Libro por su ID de Google Books (P675, coincidencia exacta). Si la entidad es una edición (Q3331189), se atribuye a
+   * su obra (P629): APPINITY recomienda obras, no ediciones. Solo libros; confianza 0,95.
+   */
+  async identifyGoogleBooksVolume(volumeId: string): Promise<IdentifiedEntity | null> {
+    if (!/^[\w-]{6,20}$/.test(volumeId)) return null;
+    const key = `gbooks:${volumeId}`;
+    if (this.cache.has(key)) return this.cache.get(key)!;
+    const languages = ['es', 'en'];
+    const found = textSearchSchema.parse(
+      await this.get({ action: 'query', list: 'search', srsearch: `haswbstatement:P675=${volumeId}`, srnamespace: '0', srlimit: '5', srprop: '' }),
+    );
+    const qids = (found.query?.search ?? []).map((hit) => hit.title).filter((t) => /^Q\d+$/.test(t));
+    let result: IdentifiedEntity | null = null;
+    if (qids.length === 1) {
+      let qid = qids[0]!;
+      let entity = (await this.entities([qid], languages))[qid];
+      const work = entity && ids(entity, 'P31').includes(EDITION) ? ids(entity, 'P629') : [];
+      if (work.length === 1) {
+        qid = work[0]!;
+        entity = (await this.entities([qid], languages))[qid];
+      }
+      if (entity && kindOf(entity)?.kind.category === 'books') {
+        const releaseYear = year(entity, 'P577');
+        result = {
+          category: 'books',
+          itemType: 'book',
+          title: label(entity, languages) ?? qid,
+          canonicalIds: { 'wikidata:entity': qid },
+          ...(releaseYear ? { releaseYear } : {}),
+          confidence: 0.95,
+          method: work.length === 1 ? 'wikidata_google_books_edicion' : 'wikidata_google_books',
+        };
+      }
+    }
+    if (this.cache.size > 5_000) this.cache.clear();
+    this.cache.set(key, result);
+    return result;
   }
 
   /** Artistas por nombre exacto (solo grupos y personas músicos). */
