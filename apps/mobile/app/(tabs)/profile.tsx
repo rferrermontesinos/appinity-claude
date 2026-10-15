@@ -7,6 +7,7 @@ import { useMe, useUpdateSettings, type SettingsPatch } from '../../src/api/quer
 import { CreditsCard } from '../../src/components/CreditsCard';
 import { DataBanner } from '../../src/components/DataBanner';
 import { Diagnostics } from '../../src/components/Diagnostics';
+import { PremiumCard } from '../../src/components/PremiumCard';
 import { SourcesCard } from '../../src/components/SourcesCard';
 import {
   Badge,
@@ -192,6 +193,7 @@ export default function ProfileScreen() {
             <Button label={t('profile.switchUser')} variant="secondary" icon="account-switch" onPress={() => void clear()} />
           </Card>
           <SourcesCard />
+          <PremiumCard />
           <SettingsCard settings={me.data.settings} />
           <Card>
             <Title style={{ fontSize: 16 }}>{t('profile.subscription')}</Title>

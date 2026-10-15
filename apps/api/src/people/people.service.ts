@@ -1,9 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { categoryAffinities, userAffinities, userProfiles, type DatabaseHandle } from '@appinity/database';
-import { AFFINITY_VERSION, NotFoundError, canSeePerson, chatState, friendshipState, isExceptionalMutual, topSoulmates } from '@appinity/ingestion';
+import { AFFINITY_VERSION, FREE_SOULMATES_LIMIT, NotFoundError, PREMIUM_SOULMATES_LIMIT, canSeePerson, chatState, friendshipState, isExceptionalMutual, topSoulmates } from '@appinity/ingestion';
 import { CATEGORIES, type AffinityDto, type PublicPersonDto, type SoulmatesDto } from '@appinity/shared';
 import { and, eq } from 'drizzle-orm';
 import { DATABASE } from '../infra/tokens.js';
+import { PremiumService } from '../premium/premium.service.js';
 
 /**
  * Personas: ranking de almas gemelas y perfil público mínimo (§4). Nunca expone historiales importados ni qué objetos
@@ -11,10 +12,15 @@ import { DATABASE } from '../infra/tokens.js';
  */
 @Injectable()
 export class PeopleService {
-  constructor(@Inject(DATABASE) private readonly database: DatabaseHandle) {}
+  constructor(
+    @Inject(DATABASE) private readonly database: DatabaseHandle,
+    private readonly premium: PremiumService,
+  ) {}
 
   async soulmates(userId: string): Promise<SoulmatesDto> {
-    const rows = await topSoulmates(this.database.db, userId);
+    // Premium explora más personas; el consenso del recomendador sigue usando el Top 50.
+    const limit = (await this.premium.isPremium(userId)) ? PREMIUM_SOULMATES_LIMIT : FREE_SOULMATES_LIMIT;
+    const rows = await topSoulmates(this.database.db, userId, limit);
     return {
       items: rows.map((r) => ({
         rank: r.rank,
@@ -27,7 +33,7 @@ export class PeopleService {
         categoriesCompared: r.categoriesCompared,
         exceptionalMutual: r.exceptionalMutual,
       })),
-      limit: 50,
+      limit,
       algorithmVersion: AFFINITY_VERSION,
     };
   }

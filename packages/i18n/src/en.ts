@@ -348,6 +348,15 @@ export const en: TranslationResources = {
     rateLimited: 'You are going too fast. Wait a moment.',
     pollingNote: 'New messages refresh every few seconds. Push notifications arrive in phase 12C.',
   },
+  premium: {
+    title: 'Premium',
+    active: 'Premium active',
+    activeUntil: 'Premium active until {{date}}',
+    inactive: 'No Premium',
+    includes: 'Includes exploring up to 200 soulmates (instead of 50) and writing without a match once enabled. Consensus recommendations still use your 50 closest soulmates.',
+    notPurchasable: 'You cannot buy it from the app yet: the stores and RevenueCat still need to be configured, plus an app build with purchases (Expo Go does not support them).',
+    sandbox: 'Test environment: only test (sandbox) purchases count.',
+  },
   profile: {
     title: 'Profile',
     identity: 'Identity',

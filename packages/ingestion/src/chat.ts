@@ -1,6 +1,7 @@
 import {
   conversationMembers,
   conversations,
+  friendships,
   messageRequests,
   messages,
   userAffinities,
@@ -28,7 +29,12 @@ export interface ChatPolicy {
   earlyAccess: boolean;
   /** PREMIUM_DIRECT_MESSAGE: Premium puede enviar el primer mensaje sin aceptación previa. */
   premiumDirectMessage: boolean;
-  /** Entitlement Premium verificado en servidor. Sin RevenueCat (fase 12B) siempre es falso en la API. */
+  /**
+   * Hablar con almas gemelas (no amigas) exige Premium (regla de producto «más adelante»; flag desactivado por
+   * defecto). Con amigos siempre se puede hablar.
+   */
+  soulmateChatRequiresPremium?: boolean;
+  /** Entitlement Premium verificado en servidor (webhooks de RevenueCat, fase 12B). */
   isPremium: (userId: string) => Promise<boolean> | boolean;
 }
 
@@ -56,6 +62,19 @@ export interface MatchResult {
 }
 
 type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
+
+async function areFriends(db: Database, a: string, b: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: friendships.id })
+    .from(friendships)
+    .where(
+      and(
+        eq(friendships.status, 'accepted'),
+        or(and(eq(friendships.requesterId, a), eq(friendships.addresseeId, b)), and(eq(friendships.requesterId, b), eq(friendships.addresseeId, a))),
+      ),
+    );
+  return Boolean(row);
+}
 type Db = Database | Tx;
 
 const ordered = (a: string, b: string): [string, string] => (a < b ? [a, b] : [b, a]);
@@ -188,6 +207,9 @@ async function matchIfMutual(db: Database, from: string, to: string, now: Date, 
 export async function sendChatInterest(db: Database, policy: ChatPolicy, from: string, to: string, now = new Date()): Promise<MatchResult> {
   if (!policy.earlyAccess) throw new ForbiddenError('El chat todavía no está disponible');
   if (!(await canSeePerson(db, from, to))) throw new NotFoundError('Persona no encontrada');
+  if (policy.soulmateChatRequiresPremium && !(await areFriends(db, from, to)) && !(await policy.isPremium(from))) {
+    throw new ForbiddenError('Hablar con almas gemelas es una función Premium; con tus amigos puedes hablar siempre');
+  }
   const conversation = await conversationOfPair(db, from, to);
   if (conversation?.status === 'active') return { state: 'matched', conversationId: conversation.id, newMatch: false };
   const mutual = await matchIfMutual(db, from, to, now, 'mutual');
