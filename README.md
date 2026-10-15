@@ -20,7 +20,8 @@ Implementación independiente de APPINITY construida desde cero a partir de
   persona.
 - Fase 7 (recomendador y Trending local) **implementada**.
 - Fase 8 (Home) **aceptada en el teléfono**: Inicio muestra las recomendaciones con descartar, conservar, deshacer y NEW.
-- Fase 12A (Chat) **implementada**, adelantada a la fase 11. Funciona como un match de Tinder: interés, aceptación o
+- Fase 11: análisis de fuentes en `docs/source-candidates.md`. Paso 1 hecho: Google amplía a la biblioteca de Google Play, los pedidos y reservas de comida y las colecciones guardadas (mismo consentimiento).
+- Fase 12A (Chat) **implementada** y aceptada en el teléfono, adelantada a la fase 11. Funciona como un match de Tinder: interés, aceptación o
   interés mutuo, y conversación en Personas → Chats. Premium (12B) y push (12C) están pendientes.
 - Fase 10 (People y Friends) **implementada**: amistad, bloqueo, reporte y privacidad de descubrimiento. El matching
   de contactos está pendiente de la autenticación de producción.

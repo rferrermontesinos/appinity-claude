@@ -218,6 +218,12 @@ Después se añaden al objeto los IDs que aún no tenía. Un ID que pertenece a 
 Bloqueos `pg_advisory_xact_lock` por ID externo evitan duplicados con syncs concurrentes. Las ediciones
 (`book_edition`) atribuyen la evidencia a su obra.
 
+## Identificación de lugares sin coordenadas (fase 11)
+
+`identifyPlacesByText`: Nominatim (dirección → nombre + ciudad → nombre) da una posición aproximada. Después,
+`OsmPlaceIdentifier` aplica la regla de siempre (nombre y tipo a ≤ 100 m). Confianza × 0,9. Las apps de Play se
+identifican por P3418 en Wikidata (`identifyApps`).
+
 ## Catálogo e imágenes
 
 - **Instantánea** `packages/catalog/data/wikidata-snapshot.json`: 108 objetos reales: 96 principales (15 restaurantes,

@@ -2,6 +2,7 @@ import type { ConnectionDto, SyncRunDto } from '@appinity/shared';
 import { useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import type { TFunction } from 'i18next';
 import { useEffect, useRef, useState } from 'react';
@@ -87,6 +88,13 @@ function ConnectionRow({
       // En desarrollo Google solo puede volver a localhost: el teléfono no llegaría a la API.
       if (result.localOnly && Platform.OS !== 'web') {
         setNotice({ text: t('sources.localOnlyNotice'), tone: 'error' });
+        return;
+      }
+      // En la web, página completa (ida y vuelta) en lugar de ventana emergente: Google corta el vínculo con la ventana
+      // de origen (Cross-Origin-Opener-Policy), así que la emergente nunca podía cerrarse ni avisar a la app. El
+      // resultado llega en la URL de vuelta y lo muestra SourcesCard.
+      if (Platform.OS === 'web') {
+        window.location.assign(result.authorizationUrl);
         return;
       }
       const auth = await WebBrowser.openAuthSessionAsync(result.authorizationUrl, returnUrl);
@@ -276,9 +284,22 @@ export function SourcesCard() {
   const connections = useConnections();
   const me = useMe();
   const isDemoUser = me.data?.user.dataset !== 'live';
+  const c = usePalette();
+  const router = useRouter();
+  // Vuelta de una conexión web (página completa): la API añade el resultado a la URL.
+  const params = useLocalSearchParams<{ source?: string; result?: string; message?: string }>();
+  const returned = params.source && params.result ? { ok: params.result === 'connected', message: params.message ?? '' } : null;
   return (
     <Card>
       <Title style={{ fontSize: 16 }}>{t('sources.title')}</Title>
+      {returned ? (
+        <View style={{ gap: spacing.xs }}>
+          <Small style={{ color: returned.ok ? c.ok : c.danger, fontWeight: '700' }}>
+            {returned.ok ? t('sources.connectedResult') : t('sources.errorResult', { message: returned.message })}
+          </Small>
+          <Button label={t('common.close')} variant="secondary" onPress={() => router.setParams({ source: undefined, result: undefined, message: undefined })} />
+        </View>
+      ) : null}
       <Small>{t('sources.help')}</Small>
       {sources.isLoading || connections.isLoading ? <Loading /> : null}
       {sources.isError ? <ErrorCard error={sources.error} onRetry={() => void sources.refetch()} /> : null}

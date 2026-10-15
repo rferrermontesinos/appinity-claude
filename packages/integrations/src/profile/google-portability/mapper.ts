@@ -1,6 +1,8 @@
 import { frequencyPreference, normalizeRating } from '@appinity/algorithms';
 import type { NormalizeContext, NormalizedObservation } from '@appinity/shared';
 import {
+  FOOD_MIN_VISITS_FOR_PREFERENCE,
+  FOOD_PREFERENCE_CONFIDENCE,
   GOOGLE_MAPPER_VERSION,
   OBSERVATION_KIND,
   STAR_SCALE,
@@ -25,6 +27,9 @@ const round4 = (v: number) => Math.round(v * 10_000) / 10_000;
  * - YouTube (fase 4): escuchas agregadas por artista o programa → consumido; desde 3 escuchas, preferencia inferida
  *   `min(1, log1p(n) / log1p(p95 del usuario en esa categoría))` con confianza 0,6 (conducta, no voto). Suscripción y
  *   biblioteca de YouTube Music → conocido, no consumido, preferencia NULL (§5: seguir o guardar no prueba escucha).
+ * - Fase 11: biblioteca de Play → conocido (poseído), no consumido, preferencia NULL. Lugar guardado en colecciones →
+ *   conocido, no consumido, NULL. Pedidos y reservas → conocido y consumido; desde 2 visitas, preferencia por frecuencia
+ *   (base `attendance`, confianza 0,5).
  * La confianza de la identificación multiplica las confianzas: una identificación dudosa pesa menos y no oculta el
  * objeto en Home (umbral 0,8). Nunca se guarda el texto de las reseñas.
  */
@@ -33,7 +38,12 @@ export function mapGoogleRecord(raw: unknown, context: NormalizeContext): Normal
   const id = identified.confidence;
   const kind = OBSERVATION_KIND[record.group];
   // El CID de Google identifica el mismo lugar entre usuarios aunque OSM no lo tenga (o cambie su elemento).
-  const cid = record.group === 'maps.reviews' || record.group === 'maps.starred_places' ? googlePlaceIds(record.place.mapsUrl).cid : undefined;
+  const cid =
+    record.group === 'maps.reviews' || record.group === 'maps.starred_places'
+      ? googlePlaceIds(record.place.mapsUrl).cid
+      : record.group === 'saved.collections'
+        ? googlePlaceIds(record.mapsUrl).cid
+        : undefined;
   const base = {
     userId: context.userId,
     source: 'google_portability' as const,
@@ -125,5 +135,35 @@ export function mapGoogleRecord(raw: unknown, context: NormalizeContext): Normal
           engagement: { type: 'saved', value: record.songs, unit: 'library_songs' },
         },
       ];
+    case 'play.library':
+      return [{ ...base, knownConfidence: known, consumedConfidence: 0, preferenceScore: null, preferenceConfidence: null, preferenceBasis: null, engagement: { type: 'owned', unit: 'play_library' } }];
+    case 'saved.collections':
+      return [
+        {
+          ...base,
+          knownConfidence: known,
+          consumedConfidence: 0,
+          preferenceScore: null,
+          preferenceConfidence: null,
+          preferenceBasis: null,
+          engagement: { type: 'saved', value: record.lists, unit: 'collections' },
+        },
+      ];
+    case 'order_reserve.purchases_reservations': {
+      const visits = record.orders + record.reservations;
+      const score = frequencyPreference(visits, context.stats?.food_visits_p95 ?? null, FOOD_MIN_VISITS_FOR_PREFERENCE);
+      return [
+        {
+          ...base,
+          knownConfidence: known,
+          consumedConfidence: known,
+          preferenceScore: score,
+          preferenceConfidence: score === null ? null : round4(FOOD_PREFERENCE_CONFIDENCE * id),
+          preferenceBasis: score === null ? null : 'attendance',
+          engagement: { type: 'attendance', value: visits, unit: 'orders_and_reservations' },
+          metadata: { ...base.metadata, orders: record.orders, reservations: record.reservations },
+        },
+      ];
+    }
   }
 }

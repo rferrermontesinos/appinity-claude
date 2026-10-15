@@ -126,6 +126,38 @@ export real.
 | Permisos nuevos | La API compara los scopes que pide el adapter con los concedidos (`missingScopes`) y la app pide renovar el permiso para importar YouTube |
 | Tests | `packages/integrations/test/youtube.test.ts` (CSV, extracción, límites, fusión, Wikidata y mapper), `packages/ingestion/test/google.int.test.ts` (pipeline con YouTube) y `apps/api/test/google-local.int.test.ts` (permisos que faltan) |
 
+## Google Data Portability · fase 11 (Google Play, pedidos y guardados)
+
+Mismo consentimiento de Google: los tres grupos se añaden a los que pide el alta. Google no admite autorización
+incremental, así que en las cuentas ya conectadas basta un «Renovar permiso».
+
+### Ficha (verificada el 2026-10-14)
+
+| Grupo | Comprobado en la documentación oficial |
+|---|---|
+| `play.library` (Sensitive) | [Esquema de Play](https://developers.google.com/data-portability/schema-reference/play): objeto `Library` con `doc` (JSON: «título y tipo de documento») y `acquisitionTime`. El esquema no detalla `doc`. Se aceptan `title` y `documentType`/`docType` y, si aparece, el ID de paquete. Pendiente de confirmar con un export real; el worker registra los tipos vistos |
+| `order_reserve.purchases_reservations` (Sensitive) | [Esquema de compras y reservas](https://developers.google.com/data-portability/schema-reference/my_orders): JSON. Pedidos con `transactionMerchant.name`, `creationTime`, `orderStatus`, `lineItem` y `paymentInfo`. Reservas con `merchantName`, `address`, `startTime`, `partySize` y `canceled` |
+| `saved.collections` (Sensitive) | [Esquema de guardados](https://developers.google.com/data-portability/schema-reference/save): un CSV por colección (`Title`, `Note`, `URL`, `Tags`, `Comment`), con la descripción opcional de la colección en la primera línea |
+
+### Implementación
+
+| Pieza | Detalle |
+|---|---|
+| Extracción | `profile/google-portability/play-orders-saved.ts` |
+| Biblioteca de Play | Libros, apps, películas y series. La música no se usa: el artista sale de YouTube Music |
+| Pedidos y reservas | Se agregan por comercio: por nombre, y la dirección solo separa locales distintos de una cadena. Los cancelados y las reservas futuras no cuentan |
+| Guardados | Solo cuentan los enlaces de Maps |
+| Minimización | Nunca se guardan platos, importes, pagos, notas ni comentarios |
+| Identificación de Play | Apps con ID de paquete: búsqueda exacta por P3418 (ID de Google Play Store) en Wikidata, por lotes. Solo se aceptan videojuegos; el resto de apps queda fuera de categoría |
+| Identificación por título | Libros, películas, series y apps sin ID, limitado a su categoría (`identifyWork({ categories })`) |
+| Identificación de lugares | Lugares sin coordenadas: **Nominatim** (dirección y, si falla, nombre + ciudad; sin dirección, el nombre) y, con esa posición, la misma regla OSM de nombre y tipo a ≤ 100 m. Confianza × 0,9. Si el enlace de Maps trae `@lat,lng`, va directo a OSM |
+| Normalización | Play: conocido (`owned`), no consumido, preferencia NULL. Pedidos y reservas: conocido y consumido; desde 2 visitas, preferencia `min(1, log1p(n)/log1p(p95))` con base `attendance` y confianza 0,5. Guardado: conocido, no consumido, NULL |
+| Avisos | Lo descartado a propósito (cancelado, futuro, no es un lugar, música) **no** cuenta como «datos incompletos» |
+| Topes por sync | 400 objetos de Play (los más recientes) y 150 lugares sin coordenadas |
+| Nominatim | [Política](https://operations.osmfoundation.org/policies/nominatim/): ≤ 1 consulta/s, User-Agent identificable, caché obligatoria, nada de uso masivo o periódico. Endpoint configurable con `NOMINATIM_URL`. Con muchos usuarios: instancia propia (software libre, datos ODbL) |
+| Prueba real (2026-10-14) | Con los servicios públicos: Can Culleretes y Museu Picasso (por dirección) y Sagrada Família (por nombre) identificados (0,855; 0,855; 0,63). Wikidata (consultas directas, porque la API rechazaba con `maxlag`): P3418 devuelve Monument Valley y Clash Royale como videojuegos (Q7889) y WhatsApp como no videojuego (fuera de categoría) |
+| Tests | `packages/integrations/test/google-phase11.test.ts` (12) y `packages/ingestion/test/google.int.test.ts` (ampliado) |
+
 ## Fuentes reales previstas
 
 Revisión del 2026-10-08: análisis de más de 60 plataformas en [fuentes-de-datos.md](fuentes-de-datos.md). Se muestran

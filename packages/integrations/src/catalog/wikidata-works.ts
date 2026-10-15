@@ -49,6 +49,9 @@ const PODCAST_TYPES = new Set(['Q24634210']);
 /** Canales por consulta de búsqueda (`haswbstatement:P2397=A|P2397=B…`, comprobado el 2026-10-13). */
 const CHANNEL_BATCH = 40;
 const CHANNEL_ID = /^UC[\w-]{22}$/;
+/** Apps de Google Play por consulta (`haswbstatement:P3418=…`, mismo mecanismo que los canales). */
+const APP_BATCH = 40;
+const PACKAGE_NAME = /^[A-Za-z]\w*(\.\w+)+$/;
 /** Obras musicales que se atribuyen a su intérprete. */
 const MUSIC_WORKS = new Set(['Q482994', 'Q208569', 'Q134556', 'Q7366', 'Q105543609']);
 /** Ocupaciones (P106) que hacen de una persona (Q5) un artista musical. */
@@ -156,6 +159,8 @@ export class WikidataWorkIdentifier {
   private readonly sleep: (ms: number) => Promise<void>;
   private readonly cache = new Map<string, IdentifiedEntity | null>();
   private readonly channelCache = new Map<string, Identification>();
+  /** Hasta cuándo se omite maxlag tras detectar un retraso persistente (evita esperar en cada consulta). */
+  private noMaxlagUntil = 0;
 
   constructor(private readonly options: WikidataWorkIdentifierOptions) {
     this.fetchImpl = options.fetchImpl ?? fetch;
@@ -163,11 +168,11 @@ export class WikidataWorkIdentifier {
   }
 
   /** `artistsOnly`: solo grupos y personas músicos (sin obras musicales ni otros tipos). */
-  async identifyWork(work: { title: string; languages?: string[]; artistsOnly?: boolean }): Promise<IdentifiedEntity | null> {
+  async identifyWork(work: { title: string; languages?: string[]; artistsOnly?: boolean; categories?: Category[] }): Promise<IdentifiedEntity | null> {
     const languages = work.languages?.length ? work.languages : ['es', 'en'];
     const wanted = normalizeTitle(work.title);
     if (!wanted) return null;
-    const cacheKey = `${work.artistsOnly ? 'artist' : 'work'}:${languages.join(',')}:${wanted}`;
+    const cacheKey = `${work.artistsOnly ? 'artist' : 'work'}:${work.categories?.join('|') ?? '*'}:${languages.join(',')}:${wanted}`;
     if (this.cache.has(cacheKey)) return this.cache.get(cacheKey)!;
 
     const found = new Set<string>();
@@ -180,14 +185,14 @@ export class WikidataWorkIdentifier {
         if (texts.some((t) => normalizeTitle(t) === wanted)) found.add(hit.id);
       }
     }
-    const result = found.size ? await this.choose([...found], languages, work.artistsOnly ?? false) : null;
+    const result = found.size ? await this.choose([...found], languages, work.artistsOnly ?? false, work.categories) : null;
     if (this.cache.size > 5_000) this.cache.clear();
     this.cache.set(cacheKey, result);
     return result;
   }
 
   /** Clasifica los candidatos por su tipo y elige uno solo si es inequívoco. */
-  private async choose(qids: string[], languages: string[], artistsOnly: boolean): Promise<IdentifiedEntity | null> {
+  private async choose(qids: string[], languages: string[], artistsOnly: boolean, categories?: Category[]): Promise<IdentifiedEntity | null> {
     const entities = await this.entities(qids, languages);
     const typed: Array<{ entity: Entity; qid: string; kind: { category: Category; itemType: string }; sitelinks: number; musicWork: boolean }> = [];
     for (const qid of qids) {
@@ -197,6 +202,7 @@ export class WikidataWorkIdentifier {
       // Los podcasts solo se identifican por su canal: un título suelto es demasiado ambiguo.
       if (!found || found.kind.category === 'podcasts') continue;
       if (artistsOnly && (found.musicWork || found.kind.category !== 'music')) continue;
+      if (categories && (found.musicWork || !categories.includes(found.kind.category))) continue;
       typed.push({ entity, qid, ...found, sitelinks: Object.keys(entity.sitelinks ?? {}).length });
     }
     if (!typed.length) return null;
@@ -288,6 +294,74 @@ export class WikidataWorkIdentifier {
     return channels.map((c) => this.channelCache.get(c.channelId) ?? { entity: null, reason: 'no_match' });
   }
 
+  /**
+   * Apps de Google Play por su ID de paquete: búsqueda exacta por P3418 en lotes. Solo se aceptan videojuegos (0,95);
+   * el resto de apps queda fuera de las categorías de APPINITY. Varios videojuegos con el mismo ID: ambiguo.
+   */
+  async identifyApps(packageNames: string[], onProgress?: (done: number, total: number) => void): Promise<Identification[]> {
+    const languages = ['es', 'en'];
+    const pending = [...new Set(packageNames.filter((p) => !this.channelCache.has(`app:${p}`)))];
+    for (let start = 0; start < pending.length; start += APP_BATCH) {
+      const batch = pending.slice(start, start + APP_BATCH);
+      const valid = batch.filter((p) => PACKAGE_NAME.test(p));
+      const byPackage = new Map<string, Array<{ qid: string; entity: Entity }>>();
+      if (valid.length) {
+        const found = textSearchSchema.parse(
+          await this.get({
+            action: 'query',
+            list: 'search',
+            srsearch: `haswbstatement:${valid.map((p) => `P3418=${p}`).join('|')}`,
+            srnamespace: '0',
+            srlimit: '50',
+            srprop: '',
+          }),
+        );
+        const qids = (found.query?.search ?? []).map((hit) => hit.title).filter((t) => /^Q\d+$/.test(t));
+        const entities = qids.length ? await this.entities(qids, languages) : {};
+        for (const [qid, entity] of Object.entries(entities)) {
+          for (const pkg of strings(entity, 'P3418')) byPackage.set(pkg, [...(byPackage.get(pkg) ?? []), { qid, entity }]);
+        }
+      }
+      for (const pkg of batch) {
+        if (this.channelCache.size > 20_000) this.channelCache.clear();
+        this.channelCache.set(`app:${pkg}`, classifyApp(byPackage.get(pkg) ?? [], languages));
+      }
+      onProgress?.(Math.min(start + APP_BATCH, pending.length), pending.length);
+    }
+    return packageNames.map((p) => this.channelCache.get(`app:${p}`) ?? { entity: null, reason: 'no_match' });
+  }
+
+  /**
+   * Coordenadas (P625) de un lugar por su nombre exacto (etiqueta o alias en inglés o español). Solo sitúa: la
+   * identificación la hace después OSM. Varios candidatos con coordenadas: el de más enlaces si domina claramente.
+   */
+  async locatePlace(name: string): Promise<{ latitude: number; longitude: number } | null> {
+    const wanted = normalizeTitle(name);
+    if (!wanted) return null;
+    const found = new Set<string>();
+    for (const language of ['en', 'es']) {
+      const data = searchSchema.parse(await this.get({ action: 'wbsearchentities', search: name, language, uselang: language, type: 'item', limit: '10' }));
+      for (const hit of data.search) {
+        const texts = [hit.match?.text, hit.label, ...(hit.aliases ?? [])].filter((t): t is string => Boolean(t));
+        if (texts.some((t) => normalizeTitle(t) === wanted)) found.add(hit.id);
+      }
+    }
+    if (!found.size) return null;
+    const entities = await this.entities([...found], ['en', 'es']);
+    const located = Object.values(entities)
+      .map((entity) => {
+        const value = entity.claims?.P625?.[0]?.mainsnak.datavalue?.value as { latitude?: number; longitude?: number } | undefined;
+        return value?.latitude !== undefined && value.longitude !== undefined
+          ? { latitude: value.latitude, longitude: value.longitude, sitelinks: Object.keys(entity.sitelinks ?? {}).length }
+          : null;
+      })
+      .filter((v): v is { latitude: number; longitude: number; sitelinks: number } => v !== null)
+      .sort((a, b) => b.sitelinks - a.sitelinks);
+    const [first, second] = located;
+    if (!first || (second && first.sitelinks < 2 * Math.max(1, second.sitelinks))) return null;
+    return { latitude: first.latitude, longitude: first.longitude };
+  }
+
   /** Artistas por nombre exacto (solo grupos y personas músicos). */
   async identifyArtists(names: string[], onProgress?: (done: number, total: number) => void): Promise<Identification[]> {
     const unique = [...new Set(names)];
@@ -318,7 +392,8 @@ export class WikidataWorkIdentifier {
 
   private async get(params: Record<string, string>): Promise<unknown> {
     const url = new URL(this.options.endpoint ?? WIKIDATA_API);
-    for (const [k, v] of Object.entries({ ...params, format: 'json', maxlag: '5' })) url.searchParams.set(k, v);
+    const maxlag = Date.now() >= this.noMaxlagUntil ? { maxlag: '5' } : {};
+    for (const [k, v] of Object.entries({ ...params, format: 'json', ...maxlag })) url.searchParams.set(k, v);
     // Esperas de 2, 4, 8, 16 y 32 s (o lo que pida Retry-After): aguanta cortes de ~1 min sin aplazar el sync.
     const wait = async (attempt: number, problem: string, retryAfter?: string | null) => {
       const ms = Number(retryAfter ?? '0') * 1000 || 2_000 * 2 ** attempt;
@@ -343,6 +418,14 @@ export class WikidataWorkIdentifier {
       const data = (await response.json().catch(() => null)) as { error?: { code?: string } } | null;
       if (!data) {
         await wait(attempt, 'respuesta ilegible');
+        continue;
+      }
+      // maxlag: el retraso que mide Wikidata es sobre todo del servicio de consultas y puede durar horas (2026-10-15).
+      // Es una cortesía pensada para escrituras; estas son lecturas. Tras un reintento con espera, se sigue sin él.
+      if (data.error?.code === 'maxlag' && url.searchParams.has('maxlag') && attempt >= 1) {
+        this.options.log?.('Wikidata con retraso persistente (maxlag): se continúa sin ese parámetro (solo lectura)');
+        url.searchParams.delete('maxlag');
+        this.noMaxlagUntil = Date.now() + 10 * 60_000;
         continue;
       }
       // maxlag (réplicas atrasadas) o búsqueda saturada: errores pasajeros que Wikidata devuelve con HTTP 200.
@@ -380,6 +463,27 @@ function classifyChannel(channelId: string, matches: Array<{ qid: string; entity
       canonicalIds: { 'wikidata:entity': first!.qid, 'youtube:channel': channelId },
       confidence: 0.95,
       method: 'wikidata_canal_youtube',
+    },
+  };
+}
+
+/** Una app de Play con su entidad: solo videojuegos (un único candidato). */
+function classifyApp(matches: Array<{ qid: string; entity: Entity }>, languages: string[]): Identification {
+  if (!matches.length) return { entity: null, reason: 'no_match' };
+  const games = matches.filter((m) => kindOf(m.entity)?.kind.category === 'games');
+  if (!games.length) return { entity: null, reason: 'out_of_scope', scope: 'app' };
+  if (games.length > 1) return { entity: null, reason: 'ambiguous' };
+  const { qid, entity } = games[0]!;
+  const releaseYear = year(entity, 'P577');
+  return {
+    entity: {
+      category: 'games',
+      itemType: 'game',
+      title: label(entity, languages) ?? qid,
+      canonicalIds: { 'wikidata:entity': qid },
+      ...(releaseYear ? { releaseYear } : {}),
+      confidence: 0.95,
+      method: 'wikidata_id_google_play',
     },
   };
 }

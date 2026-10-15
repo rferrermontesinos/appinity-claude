@@ -19,9 +19,81 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 8 | **Aceptado en el teléfono** (2026-10-14) | Entrega 2026-10-14 · fase 8 (rama `fase-8-home`, basada en `fase-7-recomendador`) |
 | 9 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-14 · fase 9 (rama `fase-9-categories`, basada en `fase-8-home`). Incluye el feed continuo pedido por el usuario |
 | 10 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-14 · fase 10 (rama `fase-10-people`, basada en `fase-9-categories`). Contactos: pendiente (fase 13) |
-| 11 | Pendiente | Fuentes adicionales viables, una por tarea |
+| 11 | **Paso 1 implementado** (Google: Play, pedidos y guardados), comprobado automáticamente y en parte con servicios reales; falta un export real | Entrega 2026-10-14 · fase 11 (rama `fase-11-fuentes`). Análisis en [source-candidates.md](source-candidates.md) |
 | 12 | **12A (chat) implementada, comprobada automáticamente y verificada en la vista web**; 12B (Premium/RevenueCat) y 12C (push) pendientes | Entrega 2026-10-14 · fase 12A (rama `fase-12a-chat`, basada en `fase-10-people`) |
 | 13 | Pendiente | Preparación y prueba de beta |
+
+---
+
+## Entrega 2026-10-14 · fase 11, paso 1 (Google ampliado: Play, pedidos y guardados)
+
+### Qué se ha hecho
+
+- Tres grupos nuevos de Google Data Portability **en el mismo consentimiento**:
+  - biblioteca de Google Play (libros, juegos, películas y series);
+  - pedidos y reservas de comida;
+  - colecciones guardadas.
+- Identificación:
+  - apps de Play por su ID en Wikidata (P3418), solo videojuegos;
+  - títulos limitados a su categoría;
+  - lugares sin coordenadas mediante Nominatim y la regla OSM existente.
+- Normalización y avisos honestos: los cancelados, las reservas futuras y los enlaces que no son lugares no cuentan como
+  datos incompletos.
+- Textos: manifest de Google y aviso «Renovar permiso» con los datos nuevos. `NOMINATIM_URL` en `.env.example`.
+
+### Comandos ejecutados y resultados (Windows 11, 2026-10-14)
+
+| Comando | Resultado |
+|---|---|
+| `pnpm lint` / `pnpm typecheck` | 0 errores / OK |
+| `pnpm test` | **25 ficheros, 294 tests OK** (12 nuevos de la fase 11; integración de Google ampliada a 11 grupos y 16 registros) |
+| Prueba real (script local, servicios públicos) | Nominatim + Overpass: 3/3 lugares identificados (2 por dirección, 1 por nombre). La primera estrategia (nombre + dirección juntos) no encontraba nada y se cambió. Wikidata (consultas directas por `maxlag`): P3418 identifica Monument Valley y Clash Royale como videojuegos y deja fuera WhatsApp |
+
+### Pasos para probarlo con tu cuenta
+
+1. T1 (`pnpm api`) y T2 (`pnpm worker`): reinícialos con Ctrl+C y vuelve a lanzarlos (no hay migraciones).
+2. T5: vista web del PC (`pnpm --filter @appinity/mobile web`, puerto 8092) → Perfil → Google → **«Renovar permiso»**.
+   Marca los datos nuevos. Google no permite ampliar un permiso ya concedido; un usuario nuevo lo acepta todo de una vez
+   al registrarse.
+3. T2 (worker): espera a que Google prepare los exports. Verás líneas `[google] export play.library: …` con la
+   estructura real, sin datos personales. Pégame esas líneas: sirven para confirmar el formato de `doc` en Play.
+
+### Sync real con la cuenta del usuario (2026-10-15)
+
+**115 evidencias de Google** (antes, 82):
+- YouTube: 50 artistas o programas y 2 suscripciones.
+- Maps: 33 reseñas y 1 sitio con estrella.
+- **Colecciones guardadas: 29**, de 166 consultadas; el resto, en syncs posteriores por el tope de 150.
+- Play: 9 apps, ninguna es un videojuego.
+- Pedidos y reservas: Google rechaza exportarlos para esta cuenta, aunque concede el permiso.
+
+Incidencias reales resueltas por el camino:
+- `prompt=consent` rechazado por Google.
+- Sin refresh token: se guarda el access token de 1 h.
+- Ventana emergente sin vínculo (COOP): ahora es una página completa.
+- 409 y 400 por grupo, sin bloquear el resto.
+- `maxlag` persistente de Wikidata.
+- Los exports se conservan al renovar.
+
+Mejora de precisión tras el sync, con nombres reales:
+- Nominatim por nombre solo acepta sitios concretos, no ciudades ni calles homónimas.
+- Se busca sin el descriptor de marketing.
+- Wikidata (P625) como segundo localizador.
+
+Muestra de 7 lugares reales: de 2 a 3 identificados. El resto falla por títulos descriptivos de Google («Abandoned Village of Kayaköy»), sin un nombre exacto en los catálogos.
+
+### Limitaciones
+
+- Google no entrega refresh token: el acceso dura 1 h y los syncs automáticos posteriores requieren renovar el permiso. Pendiente de investigar.
+- El formato interno de `doc` en Play no está documentado. Se contrastará con tu primer export real.
+- Nominatim público solo vale para desarrollo y volúmenes pequeños.
+- Pedidos y reservas solo existen si se usó «Pedir con Google» o «Reservar con Google».
+
+### Siguiente paso
+
+- Validar con tu export real.
+- Después, otras fuentes según [source-candidates.md](source-candidates.md): APIs DMA europeas (requieren el alta del
+  titular) y Twitch (condiciones por verificar).
 
 ---
 
