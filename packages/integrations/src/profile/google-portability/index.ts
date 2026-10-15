@@ -5,12 +5,12 @@ import { GooglePortabilityClient, type GoogleClientOptions } from './client.js';
 import { ALL_RESOURCE_GROUPS, OBSERVATION_KIND, PORTABILITY_SCOPE_PREFIX, isResourceGroup, type ResourceGroup } from './constants.js';
 import { GOOGLE_PORTABILITY_MANIFEST } from './manifest.js';
 import { mapGoogleRecord } from './mapper.js';
-import { syncPortability } from './sync.js';
+import { accessTokenFor, syncPortability } from './sync.js';
 
 export { GOOGLE_PORTABILITY_MANIFEST } from './manifest.js';
 export { GooglePortabilityClient, ExportLimitError, createPkce, scopesToGroups } from './client.js';
 export { readArchive, extractRecords, parseStars, urlPattern, type ArchiveSummary } from './archive.js';
-export { syncPortability, readState, recordIdOf } from './sync.js';
+export { syncPortability, readState, recordIdOf, accessTokenFor } from './sync.js';
 export { mapGoogleRecord } from './mapper.js';
 export { isLocalRedirect } from './auth.js';
 export * from './constants.js';
@@ -49,20 +49,20 @@ export function createGooglePortabilityAdapter(options: GooglePortabilityAdapter
     },
     normalize: async (record, context) => mapGoogleRecord(record, context),
     async releaseGrantBeforeRenewal(_connection, credentials) {
-      const refreshToken = credentials?.refreshToken;
-      if (!refreshToken) return;
+      if (!credentials) return;
       // Si el permiso ya caducó o se revocó, no queda nada que liberar.
-      const accessToken = await client.refresh(refreshToken).catch(() => null);
+      const accessToken = await accessTokenFor(client, credentials, new Date()).catch(() => null);
       if (accessToken) await client.reset(accessToken).catch(() => undefined);
-      await client.revoke(refreshToken).catch(() => undefined);
+      const token = credentials.refreshToken ?? accessToken;
+      if (token) await client.revoke(token).catch(() => undefined);
     },
     async disconnect(_connection, credentials) {
-      const refreshToken = credentials?.refreshToken;
-      if (!refreshToken) return;
-      // Revoca todos los permisos de Data Portability de APPINITY en esa cuenta y después el propio refresh token.
-      const accessToken = await client.refresh(refreshToken);
+      if (!credentials) return;
+      // Revoca todos los permisos de Data Portability de APPINITY en esa cuenta y después el propio token.
+      const accessToken = await accessTokenFor(client, credentials, new Date());
+      if (!accessToken) return;
       await client.reset(accessToken);
-      await client.revoke(refreshToken).catch(() => undefined);
+      await client.revoke(credentials.refreshToken ?? accessToken).catch(() => undefined);
     },
   };
 }

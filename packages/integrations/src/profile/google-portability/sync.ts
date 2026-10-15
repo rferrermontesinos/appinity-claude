@@ -77,6 +77,16 @@ const writeState = (state: PortabilityState) => ({
   exportedAt: JSON.stringify(state.exportedAt),
 });
 
+/**
+ * Token de acceso vigente: con refresh token se pide uno nuevo; si Google no lo entregó, el access token guardado
+ * mientras le quede al menos un minuto. Null si no hay forma de acceder.
+ */
+export async function accessTokenFor(client: GooglePortabilityClient, credentials: Record<string, string>, now: Date): Promise<string | null> {
+  if (credentials.refreshToken) return client.refresh(credentials.refreshToken);
+  const expires = Date.parse(credentials.accessTokenExpiresAt ?? '');
+  return credentials.accessToken && expires - now.getTime() > 60_000 ? credentials.accessToken : null;
+}
+
 /** Identificador estable del registro (no depende de la identificación, que puede mejorar con el tiempo). */
 export function recordIdOf(record: ExportRecord): string {
   if (record.group === 'maps.reviews' || record.group === 'maps.starred_places') {
@@ -119,13 +129,20 @@ export async function syncPortability(
   options: PortabilitySyncOptions,
 ): Promise<SyncBatch> {
   const credentials = context.credentials;
-  if (!credentials?.refreshToken) {
-    throw new SourceError('verification_failed', 'La conexión con Google está incompleta: vuelve a autorizarla', false);
+  const now = context.now;
+  const accessToken = credentials ? await accessTokenFor(client, credentials, now) : null;
+  if (!credentials || !accessToken) {
+    throw new SourceError(
+      'verification_failed',
+      credentials?.accessToken
+        ? 'El acceso de Google (sin renovación automática) ha caducado: renueva el permiso para volver a importar'
+        : 'La conexión con Google está incompleta: vuelve a autorizarla',
+      false,
+    );
   }
+  options.onProgress?.(credentials.refreshToken ? 'acceso con renovación automática' : `acceso sin renovación hasta ${credentials.accessTokenExpiresAt}`);
   const state = readState(credentials);
   const persist = async () => context.saveState?.(writeState(state));
-  const accessToken = await client.refresh(credentials.refreshToken);
-  const now = context.now;
   const partialErrors: SyncPartialError[] = [];
   const completed = new Map<ResourceGroup, string[]>();
   let retryAfterMs: number | null = null;

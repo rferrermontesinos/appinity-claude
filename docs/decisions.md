@@ -869,3 +869,16 @@ gente con la que tienes afinidad, igual que en Tinder cuando haces match»).
 - **Apps**: solo cuentan los videojuegos (P3418 en Wikidata, o el título limitado a juegos). WhatsApp, Gmail y similares
   quedan fuera de categoría y se informan como tales, no como «no identificados».
 - **Minimización**: ni platos, ni importes, ni pagos, ni notas o comentarios de las colecciones.
+
+## 2026-10-15 · Conexión de Google: incidencias reales y arreglos
+
+- **`prompt=consent` retirado**: Google lo rechaza con 400 invalid_request para este cliente. Se aisló probando cada
+  parámetro por separado: los 11 permisos, `access_type=offline` y PKCE funcionan; `prompt=consent` no.
+- **Sin refresh token, se conecta igualmente**: con un consentimiento real mostrado y aceptado, Google no entregó
+  refresh token. Se guarda el access token cifrado con su caducidad (≈ 1 h). Basta para iniciar los exports en el
+  primer sync, que la API lanza al conectar. Cuando caduca, la conexión pide renovar el permiso. El worker registra qué
+  tipo de acceso dio Google («con renovación automática» o «sin renovación hasta …») para seguir investigándolo sin
+  pruebas aparte.
+- **Vista web: página completa en vez de ventana emergente**: Google corta el vínculo con la ventana de origen
+  (Cross-Origin-Opener-Policy), así que la emergente no podía cerrarse ni avisar a la app y se acumulaban ventanas. La
+  API vuelve a `/profile?source=…&result=…&message=…` y la tarjeta de fuentes muestra el resultado.

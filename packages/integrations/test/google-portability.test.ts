@@ -101,11 +101,24 @@ describe('autorización de Google Data Portability', () => {
     expect(google.revoked).toHaveLength(1);
   });
 
-  it('sin refresh token (Google recordaba el permiso): libera la concesión para que el siguiente intento pida consentimiento', async () => {
+  it('sin refresh token: conecta con el access token y su caducidad; el sync funciona mientras es válido', async () => {
     const { google, client } = setup({ omitRefreshToken: true });
-    await expect(connect(google, client)).rejects.toMatchObject({ code: 'verification_failed', message: expect.stringMatching(/Renovar permiso/) });
-    expect(google.resets()).toBe(1);
-    expect(google.revoked).toEqual([expect.stringMatching(/^access-/)]);
+    const done = await connect(google, client);
+    expect(done.credentials).toMatchObject({ accessToken: expect.stringMatching(/^access-/), accessTokenExpiresAt: expect.any(String) });
+    expect(done.credentials!.refreshToken).toBeUndefined();
+    expect(google.revoked).toEqual([]);
+    const { identifier } = createFakeIdentifier();
+    const progress: string[] = [];
+    const first = await syncPortability(client, syncContext({ ...done.credentials! }), { identifier, onProgress: (m) => progress.push(m) });
+    expect(first.records.length).toBeGreaterThan(0);
+    expect(google.calls.some((c) => c.endsWith(':initiate'))).toBe(true);
+    expect(progress[0]).toMatch(/^acceso sin renovación hasta /);
+    // Caducado: no se puede seguir y se pide renovar.
+    const later = new Date(Date.now() + 2 * 3600_000);
+    await expect(syncPortability(client, syncContext({ ...done.credentials! }, later), { identifier })).rejects.toMatchObject({
+      code: 'verification_failed',
+      message: expect.stringMatching(/caducado/),
+    });
   });
 });
 
