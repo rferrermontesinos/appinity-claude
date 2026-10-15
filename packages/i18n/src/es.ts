@@ -348,6 +348,15 @@ export const es = {
     rateLimited: 'Vas demasiado rápido. Espera un momento.',
     pollingNote: 'Los mensajes nuevos se actualizan cada pocos segundos. Las notificaciones push llegarán en la fase 12C.',
   },
+  premium: {
+    title: 'Premium',
+    active: 'Premium activo',
+    activeUntil: 'Premium activo hasta el {{date}}',
+    inactive: 'Sin Premium',
+    includes: 'Incluye explorar hasta 200 almas gemelas (en lugar de 50) y escribir sin match cuando se active. Las recomendaciones de consenso siguen usando tus 50 almas gemelas más afines.',
+    notPurchasable: 'Todavía no se puede comprar desde la app: falta configurar las tiendas y RevenueCat, y una versión de la app con compras (Expo Go no las admite).',
+    sandbox: 'Entorno de pruebas: solo cuentan compras de prueba (sandbox).',
+  },
   profile: {
     title: 'Perfil',
     identity: 'Identidad',

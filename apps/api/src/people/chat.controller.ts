@@ -42,8 +42,8 @@ export class ChatController {
   ) {}
 
   @Get('config')
-  config(): ChatConfigDto {
-    return this.policy.config();
+  config(@CurrentUser() auth: AuthContext): Promise<ChatConfigDto> {
+    return this.policy.config(auth.userId);
   }
 
   @Get()

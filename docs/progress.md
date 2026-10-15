@@ -20,8 +20,51 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 9 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-14 · fase 9 (rama `fase-9-categories`, basada en `fase-8-home`). Incluye el feed continuo pedido por el usuario |
 | 10 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-14 · fase 10 (rama `fase-10-people`, basada en `fase-9-categories`). Contactos: pendiente (fase 13) |
 | 11 | **Paso 1 implementado** (Google: Play, pedidos y guardados), comprobado automáticamente y en parte con servicios reales; falta un export real | Entrega 2026-10-14 · fase 11 (rama `fase-11-fuentes`). Análisis en [source-candidates.md](source-candidates.md) |
-| 12 | **12A (chat) implementada, comprobada automáticamente y verificada en la vista web**; 12B (Premium/RevenueCat) y 12C (push) pendientes | Entrega 2026-10-14 · fase 12A (rama `fase-12a-chat`, basada en `fase-10-people`) |
+| 12 | **12B (Premium, servidor) implementada y comprobada automáticamente**; compra en la app pendiente de cuentas y build de desarrollo · **12A (chat) implementada, comprobada automáticamente y verificada en la vista web**; 12B (Premium/RevenueCat) y 12C (push) pendientes | Entrega 2026-10-14 · fase 12A (rama `fase-12a-chat`, basada en `fase-10-people`) |
 | 13 | Pendiente | Preparación y prueba de beta |
+
+---
+
+## Entrega 2026-10-15 · fase 12B (Premium con RevenueCat, lado servidor)
+
+### Qué se ha hecho
+
+- **Migración 0010**: `entitlements` (por usuario, entitlement y entorno) y `revenuecat_events` (idempotencia).
+- **Webhook** `POST /v1/webhooks/revenuecat`:
+  - cabecera Authorization en tiempo constante;
+  - sin duplicados;
+  - eventos fuera de orden ignorados;
+  - `EXPIRATION` retira el acceso; `CANCELLATION` no;
+  - transferencias;
+  - sandbox y producción por separado.
+- **`GET /v1/me/premium`**: estado verificado en servidor.
+- **Premium**: ranking de 200 almas gemelas (consenso siempre Top 50) y chat directo si su flag está activo.
+- Flag `CHAT_SOULMATES_PREMIUM` (desactivado): chat con almas gemelas solo con Premium; con amigos, siempre.
+- **App**: tarjeta Premium en Perfil con el estado real. Indica que aún no se puede comprar, sin simular nada.
+
+### Comandos ejecutados y resultados (Windows 11, 2026-10-15)
+
+| Comando | Resultado |
+|---|---|
+| `pnpm lint` / `pnpm typecheck` | 0 errores / OK |
+| `pnpm test` | **27 ficheros, 310 tests OK**. Nuevos: 7 de dominio (compra, duplicado, cancelación frente a caducidad, evento tardío, entornos, transferencia, otros eventos) + flag de chat Premium, y 3 HTTP (401/400, compra aplicada una vez, ranking de 200, entorno) |
+| `pnpm db:migrate` | 0010 aplicada en la BD de desarrollo |
+
+### Lo que tienes que configurar para probar una compra real (sandbox)
+
+1. **RevenueCat** (plan gratuito hasta cierto volumen de ingresos; revisar sus condiciones antes de crear la cuenta): proyecto, apps iOS y Android y entitlement `premium`.
+2. **App Store Connect** (Apple Developer Program, 99 $/año) y **Google Play Console** (pago único de 25 $): una suscripción
+   (p. ej., `appinity_premium_monthly`) asociada al entitlement en RevenueCat.
+3. **Webhook** en RevenueCat → URL pública de la API (`/v1/webhooks/revenuecat`). En local no hay URL pública: se
+   necesitará un despliegue o un túnel. Cabecera Authorization = valor aleatorio largo, guardado con
+   `pnpm secret:set REVENUECAT_WEBHOOK_AUTH`.
+4. **Build de desarrollo** de la app (EAS) con `react-native-purchases`: Expo Go no admite compras.
+
+Ninguno de estos pasos lo he hecho: implican cuentas y pagos que requieren tu decisión.
+
+### Siguiente paso
+
+12C (notificaciones push) o 13 (registro real y beta).
 
 ---
 

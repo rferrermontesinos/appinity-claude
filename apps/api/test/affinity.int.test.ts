@@ -247,7 +247,7 @@ describe('Chat (fase 12A)', () => {
 
   it('configuración: EARLY_ACCESS activo y nadie es Premium sin RevenueCat', async () => {
     const config = (await (await call(token, 'GET', '/v1/me/chats/config')).json()) as ChatConfigDto;
-    expect(config).toMatchObject({ earlyAccess: true, premium: false, premiumSource: 'none' });
+    expect(config).toMatchObject({ earlyAccess: true, premium: false, premiumSource: 'revenuecat' });
     const iris = DEMO_USERS.find((u) => u.handle === 'demo_iris')!;
     expect((await call(token, 'POST', '/v1/me/chats/direct', { userId: iris.id, body: 'hola' })).status).toBe(403);
   });
