@@ -60,7 +60,9 @@ export interface MeDto {
   };
   settings: SettingsDto;
   /** Tipo de sesión. En esta fase solo existe la identidad de desarrollo. */
-  authKind: 'dev';
+  authKind: 'dev' | 'user';
+  /** Falta el alta (mayoría de edad y condiciones). */
+  needsOnboarding: boolean;
 }
 
 export interface DevSessionDto {
@@ -223,6 +225,20 @@ export type ChatStateDto =
   | { state: 'request_sent'; kind: 'interest' | 'direct' }
   | { state: 'request_received'; requestId: string; kind: 'interest' | 'direct'; firstMessage: string | null }
   | { state: 'matched'; conversationId: string };
+
+/** Autenticación de producción (fase 13). */
+export interface AuthProvidersDto {
+  google: boolean;
+  dev: boolean;
+}
+
+export interface AuthSessionDto {
+  accessToken: string;
+  expiresAt: string;
+  refreshToken: string;
+  isNew: boolean;
+  needsOnboarding: boolean;
+}
 
 /** Notificaciones (fase 12C): dispositivos registrados y último resumen. */
 export interface NotificationsStatusDto {

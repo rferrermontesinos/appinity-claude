@@ -53,9 +53,9 @@ export const es = {
     banner: 'DEMO · actividad de usuarios simulada',
     bannerDetail:
       'Los usuarios y su actividad son simulados (DEMO_MODE). Los objetos del catálogo y sus imágenes son reales (Wikidata y Wikimedia Commons).',
-    liveBanner: 'DATOS REALES · cuenta local de desarrollo',
+    liveBanner: 'DATOS REALES · tu cuenta',
     liveBannerDetail:
-      'Lo que ves procede de tus fuentes reales conectadas (p. ej. Steam). Se guarda solo en la base de datos local de este PC. La sesión es de desarrollo, no de producción.',
+      'Lo que ves procede de las fuentes reales que has conectado. Nadie más ve tu historial: solo tu nombre, tu país y vuestras afinidades.',
   },
   home: {
     title: 'Inicio',
@@ -356,6 +356,34 @@ export const es = {
     includes: 'Incluye explorar hasta 200 almas gemelas (en lugar de 50) y escribir sin match cuando se active. Las recomendaciones de consenso siguen usando tus 50 almas gemelas más afines.',
     notPurchasable: 'Todavía no se puede comprar desde la app: falta configurar las tiendas y RevenueCat, y una versión de la app con compras (Expo Go no las admite).',
     sandbox: 'Entorno de pruebas: solo cuentan compras de prueba (sandbox).',
+  },
+  auth: {
+    title: 'Iniciando sesión',
+    failed: 'No se pudo iniciar sesión.',
+    back: 'Volver',
+    signInTitle: 'Entrar en APPINITY',
+    signInIntro: 'Con tu cuenta de Google. Solo se usa tu identidad (nombre y email verificado); tus gustos se conectan aparte, en el alta.',
+    google: 'Continuar con Google',
+    devPhoneNote: 'En desarrollo, Google solo vuelve a localhost: inicia sesión desde la vista web del PC. En producción (https) funcionará también en el teléfono.',
+  },
+  onboarding: {
+    title: 'Bienvenida a APPINITY',
+    intro: 'Un único paso de consentimiento: confirma estos dos puntos y, a continuación, conecta las fuentes de tus gustos. No te pediremos nada más después.',
+    namePlaceholder: 'Tu nombre visible (opcional)',
+    adult: 'Tengo 18 años o más',
+    terms: 'Acepto las condiciones y la política de privacidad',
+    consentNote: 'Tus gustos solo salen de las fuentes que conectes. Nadie ve tu historial: solo tu nombre, tu país y vuestras afinidades.',
+    continue: 'Continuar y conectar mis fuentes',
+  },
+  account: {
+    title: 'Cuenta',
+    googleIdentity: 'Cuenta de Google',
+    logout: 'Cerrar sesión',
+    delete: 'Eliminar mi cuenta',
+    deleteConfirm: 'Se revocarán los permisos concedidos (Google, Steam…) y se borrará todo: perfil, gustos importados, afinidades, amistades y chats. No se puede deshacer. Escribe ELIMINAR para confirmar.',
+    deleteType: 'Escribe ELIMINAR',
+    deleteFinal: 'Eliminar definitivamente',
+    deleteNote: 'Las copias de seguridad cifradas se renuevan y la cuenta desaparece también de ellas al caducar (ver la documentación de operación).',
   },
   profile: {
     title: 'Perfil',

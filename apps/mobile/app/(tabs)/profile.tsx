@@ -9,6 +9,7 @@ import { useMe, useUpdateSettings, type SettingsPatch } from '../../src/api/quer
 import { CreditsCard } from '../../src/components/CreditsCard';
 import { DataBanner } from '../../src/components/DataBanner';
 import { Diagnostics } from '../../src/components/Diagnostics';
+import { AccountCard } from '../../src/components/AccountCard';
 import { PremiumCard } from '../../src/components/PremiumCard';
 import { SourcesCard } from '../../src/components/SourcesCard';
 import {
@@ -207,12 +208,17 @@ export default function ProfileScreen() {
             <Row label={me.data.user.displayName} value={`@${me.data.user.handle}`} />
             <Row label={t('profile.country')} value={me.data.user.countryCode ?? '—'} />
             <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-              <Badge label={t('profile.devIdentity')} color={c.demo} />
+              {me.data.authKind === 'dev' ? <Badge label={t('profile.devIdentity')} color={c.demo} /> : <Badge label={t('account.googleIdentity')} color={c.ok} />}
               <Badge label={`dataset: ${me.data.user.dataset}`} color={c.textMuted} />
             </View>
-            <Small>{t('profile.devIdentityHelp')}</Small>
-            <Button label={t('profile.switchUser')} variant="secondary" icon="account-switch" onPress={() => void clear()} />
+            {me.data.authKind === 'dev' ? (
+              <>
+                <Small>{t('profile.devIdentityHelp')}</Small>
+                <Button label={t('profile.switchUser')} variant="secondary" icon="account-switch" onPress={() => void clear()} />
+              </>
+            ) : null}
           </Card>
+          <AccountCard me={me.data} />
           <SourcesCard />
           <PremiumCard />
           <SettingsCard settings={me.data.settings} />
