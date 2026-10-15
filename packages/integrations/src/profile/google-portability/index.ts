@@ -35,6 +35,8 @@ export function createGooglePortabilityAdapter(options: GooglePortabilityAdapter
   return {
     manifest: GOOGLE_PORTABILITY_MANIFEST,
     supportsRenewal: true,
+    // Exports ya pedidos (y su fecha): Google solo admite uno por grupo cada 24 h; se siguen esperando tras renovar.
+    credentialsKeptOnRenewal: ['jobs', 'exportedAt'],
     requestedScopes: groups.map((g) => `${PORTABILITY_SCOPE_PREFIX}${g}`),
     snapshotObservationKinds: groups.map((g) => OBSERVATION_KIND[g]),
     connect: async (context) => startPortabilityConnect(client, groups, context),

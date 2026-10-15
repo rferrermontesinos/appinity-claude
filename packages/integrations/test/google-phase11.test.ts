@@ -234,3 +234,18 @@ describe('fase 11 · sync', () => {
     expect(unidentified).toEqual([expect.stringMatching(/^1 de 3 objetos de la biblioteca de Google Play no se importan: 1 son apps que no son videojuegos fuera de las categorías de APPINITY \(app\)/)]);
   });
 });
+
+describe('Wikidata con retraso persistente', () => {
+  it('maxlag continuo: tras un reintento sigue sin el parámetro (solo lectura) en vez de aplazar el sync', async () => {
+    const urls: URL[] = [];
+    const fetchImpl = (async (input: string | URL | Request) => {
+      const url = new URL(input.toString());
+      urls.push(url);
+      if (url.searchParams.has('maxlag')) return new Response(JSON.stringify({ error: { code: 'maxlag' } }));
+      return new Response(JSON.stringify({ search: [] }));
+    }) as typeof fetch;
+    const wd = new WikidataWorkIdentifier({ userAgent: 'APPINITY-test', fetchImpl, sleep: async () => undefined });
+    expect(await wd.identifyWork({ title: 'Título sin coincidencias', languages: ['es'] })).toBeNull();
+    expect(urls.map((u) => u.searchParams.has('maxlag'))).toEqual([true, true, false]);
+  });
+});

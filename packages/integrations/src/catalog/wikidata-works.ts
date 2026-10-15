@@ -386,6 +386,13 @@ export class WikidataWorkIdentifier {
         await wait(attempt, 'respuesta ilegible');
         continue;
       }
+      // maxlag: el retraso que mide Wikidata es sobre todo del servicio de consultas y puede durar horas (2026-10-15).
+      // Es una cortesía pensada para escrituras; estas son lecturas. Tras un reintento con espera, se sigue sin él.
+      if (data.error?.code === 'maxlag' && url.searchParams.has('maxlag') && attempt >= 1) {
+        this.options.log?.('Wikidata con retraso persistente (maxlag): se continúa sin ese parámetro (solo lectura)');
+        url.searchParams.delete('maxlag');
+        continue;
+      }
       // maxlag (réplicas atrasadas) o búsqueda saturada: errores pasajeros que Wikidata devuelve con HTTP 200.
       if (data.error?.code === 'maxlag' || data.error?.code === 'search-error' || data.error?.code === 'internal_api_error_DBQueryTimeoutError') {
         await wait(attempt, data.error.code);

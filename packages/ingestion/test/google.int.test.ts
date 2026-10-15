@@ -232,6 +232,9 @@ describe('sync de Google', () => {
     expect(connection).toMatchObject({ id: connectionId, status: 'active', lastError: null });
     const after = await credentialsOf(connectionId);
     expect(after!.refreshToken).not.toBe(before!.refreshToken);
+    // Los exports ya pedidos y su fecha se conservan (Google solo admite uno por grupo cada 24 h).
+    expect(after!.exportedAt).toBe(before!.exportedAt);
+    expect(after!.jobs).toBe(before!.jobs);
     const kept = await database.db.select().from(userItemObservations).where(eq(userItemObservations.connectionId, connectionId));
     expect(kept).toHaveLength(15);
   });

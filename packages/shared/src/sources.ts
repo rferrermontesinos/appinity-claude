@@ -211,6 +211,11 @@ export interface ProfileSourceAdapter {
   disconnect(connection: UserConnection, credentials?: SourceCredentials): Promise<void>;
   /** Ampliación: el usuario puede renovar la autorización sobre la misma conexión sin perder lo importado. */
   supportsRenewal?: boolean;
+  /**
+   * Claves de las credenciales que una renovación conserva de las anteriores (p. ej., los exports de Google ya pedidos:
+   * Google solo deja pedir uno por grupo cada 24 h y sus ids se perderían al sustituir las credenciales).
+   */
+  credentialsKeptOnRenewal?: string[];
 }
 
 /**

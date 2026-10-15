@@ -196,7 +196,17 @@ export async function syncPortability(
       }
     }
 
-    const archive = await client.state(accessToken, job.id);
+    let archive;
+    try {
+      archive = await client.state(accessToken, job.id);
+    } catch (error) {
+      // Export pedido con un permiso anterior que Google ya no deja consultar: se olvida y se pedirá de nuevo.
+      if (!isSourceError(error) || error.retryable) throw error;
+      delete state.jobs[group];
+      await persist();
+      partialErrors.push({ code: 'export_lost', message: `El export anterior de ${GROUP_LABEL[group]} ya no está disponible; se pedirá de nuevo`, blocking: false });
+      continue;
+    }
     if (archive.state === 'COMPLETE') {
       completed.set(group, archive.urls ?? []);
       continue;
