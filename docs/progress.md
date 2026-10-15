@@ -25,6 +25,34 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-15 · fase 11C (Google Books y Trakt)
+
+### Qué se ha hecho
+
+- **Google Books**:
+  - lee las estanterías del usuario;
+  - en el alta va dentro del consentimiento de «Continuar con Google»;
+  - las cuentas ya creadas tienen una conexión aparte.
+- **Trakt**:
+  - valoraciones, vistos, favoritos y pendientes de cine y series, con PKCE;
+  - el refresh token rotado se guarda en cada sync.
+- **Identificación exacta en Wikidata**: Google Books por P675; Trakt por IMDb y TMDB.
+- `pnpm secret:set` acepta `TRAKT_CLIENT_ID` y `TRAKT_CLIENT_SECRET`.
+
+### Comprobaciones
+
+- `pnpm test`: 32 ficheros y 335 tests OK.
+- `pnpm lint` limpio.
+- Consultas reales a Wikidata:
+  - P675 `WXIoqjLSaaoC` → Q27102283;
+  - tt0111161 → Q172241;
+  - tt0903747 y TMDB 1396 → Q1079.
+- **Sin validar con cuentas reales**: Books necesita activar la API y autorizar su URL de vuelta, y Trakt necesita que el titular cree la app.
+
+### Siguiente paso
+
+Conectar ambas fuentes con cuentas reales. Después, AniList.
+
 ## Entrega 2026-10-15 · fase 13 (preparación de la beta)
 
 ### Qué se ha hecho
