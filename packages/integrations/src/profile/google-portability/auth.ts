@@ -57,9 +57,20 @@ export async function completePortabilityConnect(
   const token = await client.exchangeCode(params.code, verifier);
   if (!token.refresh_token) {
     // Google recordaba una concesión anterior y se saltó el consentimiento: sin refresh token no hay sync programado.
-    // Revocar el token recibido libera esa concesión, así que el siguiente intento vuelve a mostrar el consentimiento.
+    // Data Portability libera sus concesiones con authorization:reset (revocar el token no basta, comprobado el
+    // 2026-10-15); además se revoca el token. Así el siguiente intento vuelve a mostrar el consentimiento.
+    const released = await client.reset(token.access_token).then(
+      () => true,
+      () => false,
+    );
     await client.revoke(token.access_token).catch(() => undefined);
-    throw new SourceError('verification_failed', 'Google recordaba un permiso anterior y no entregó un acceso continuado. Lo hemos liberado: pulsa de nuevo «Renovar permiso».', false);
+    throw new SourceError(
+      'verification_failed',
+      released
+        ? 'Google recordaba un permiso anterior y no entregó un acceso continuado. Lo hemos liberado: pulsa de nuevo «Renovar permiso».'
+        : 'Google recordaba un permiso anterior y no entregó un acceso continuado, y no se pudo liberar desde APPINITY.',
+      false,
+    );
   }
   const granted = scopesToGroups(token.scope).filter((g): g is ResourceGroup => (requested as readonly string[]).includes(g));
   if (!granted.length) {

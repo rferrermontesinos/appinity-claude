@@ -104,6 +104,7 @@ describe('autorización de Google Data Portability', () => {
   it('sin refresh token (Google recordaba el permiso): libera la concesión para que el siguiente intento pida consentimiento', async () => {
     const { google, client } = setup({ omitRefreshToken: true });
     await expect(connect(google, client)).rejects.toMatchObject({ code: 'verification_failed', message: expect.stringMatching(/Renovar permiso/) });
+    expect(google.resets()).toBe(1);
     expect(google.revoked).toEqual([expect.stringMatching(/^access-/)]);
   });
 });
