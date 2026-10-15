@@ -68,11 +68,11 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 - Pedidos y reservas: Google rechaza exportarlos para esta cuenta, aunque concede el permiso.
 
 Incidencias reales resueltas por el camino:
--  rechazado por Google.
+- `prompt=consent` rechazado por Google.
 - Sin refresh token: se guarda el access token de 1 h.
 - Ventana emergente sin vínculo (COOP): ahora es una página completa.
 - 409 y 400 por grupo, sin bloquear el resto.
--  persistente de Wikidata.
+- `maxlag` persistente de Wikidata.
 - Los exports se conservan al renovar.
 
 Mejora de precisión tras el sync, con nombres reales:
@@ -85,7 +85,7 @@ Muestra de 7 lugares reales: de 2 a 3 identificados. El resto falla por títulos
 ### Limitaciones
 
 - Google no entrega refresh token: el acceso dura 1 h y los syncs automáticos posteriores requieren renovar el permiso. Pendiente de investigar.
-- El formato interno de  en Play no está documentado. Se contrastará con tu primer export real.
+- El formato interno de `doc` en Play no está documentado. Se contrastará con tu primer export real.
 - Nominatim público solo vale para desarrollo y volúmenes pequeños.
 - Pedidos y reservas solo existen si se usó «Pedir con Google» o «Reservar con Google».
 
