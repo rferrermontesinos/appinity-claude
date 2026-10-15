@@ -21,6 +21,7 @@ Implementación independiente de APPINITY construida desde cero a partir de
 - Fase 7 (recomendador y Trending local) **implementada**.
 - Fase 8 (Home) **aceptada en el teléfono**: Inicio muestra las recomendaciones con descartar, conservar, deshacer y NEW.
 - Fase 11: análisis de fuentes en `docs/source-candidates.md`. Paso 1 hecho: Google amplía a la biblioteca de Google Play, los pedidos y reservas de comida y las colecciones guardadas (mismo consentimiento).
+- Fase 12C (notificaciones) **implementada en el servidor**: resumen según frecuencia y zona horaria, sin duplicados, con Expo push. En Android hace falta una build de desarrollo (Expo Go no admite push).
 - Fase 12B (Premium) **implementada en el servidor** (webhooks de RevenueCat verificados, sandbox y producción separados). La compra en la app espera a la configuración de cuentas y a una build de desarrollo.
 - Fase 12A (Chat) **implementada** y aceptada en el teléfono, adelantada a la fase 11. Funciona como un match de Tinder: interés, aceptación o
   interés mutuo, y conversación en Personas → Chats. Premium (12B) y push (12C) están pendientes.

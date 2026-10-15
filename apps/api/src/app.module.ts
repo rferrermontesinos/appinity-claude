@@ -17,6 +17,7 @@ import { HealthController } from './health/health.controller.js';
 import { InfraModule } from './infra/infra.module.js';
 import { PipelineModule } from './infra/pipeline.module.js';
 import { MeController } from './me/me.controller.js';
+import { NotificationsController } from './me/notifications.controller.js';
 import { MeService } from './me/me.service.js';
 import { ChatController } from './people/chat.controller.js';
 import { PremiumController } from './premium/premium.controller.js';
@@ -49,6 +50,7 @@ export class AppModule {
         HealthController,
         DevAuthController,
         MeController,
+        NotificationsController,
         SourcesController,
         ConnectionsController,
         ConnectCallbackController,

@@ -224,6 +224,12 @@ export type ChatStateDto =
   | { state: 'request_received'; requestId: string; kind: 'interest' | 'direct'; firstMessage: string | null }
   | { state: 'matched'; conversationId: string };
 
+/** Notificaciones (fase 12C): dispositivos registrados y último resumen. */
+export interface NotificationsStatusDto {
+  devices: number;
+  lastDelivery: { localDate: string; status: 'sent' | 'empty' | 'no_tokens' | 'failed'; createdAt: string } | null;
+}
+
 /** Premium (fase 12B): estado verificado en servidor a partir de RevenueCat. */
 export interface PremiumDto {
   premium: boolean;

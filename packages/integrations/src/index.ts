@@ -12,3 +12,4 @@ export { createCatalogIdentifier, identifyPlacesByText, GEOCODED_CONFIDENCE_FACT
 export { NominatimGeocoder, geocodeQueries, NOMINATIM_DEFAULT_URL } from './catalog/nominatim.js';
 export { OsmPlaceIdentifier, classifyOsmTags, pickPlace } from './catalog/osm-places.js';
 export { WikidataWorkIdentifier } from './catalog/wikidata-works.js';
+export { ExpoPushSender, EXPO_PUSH_URL, type ExpoPushMessage, type ExpoTicket } from './push/expo.js';
