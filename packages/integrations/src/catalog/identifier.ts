@@ -48,6 +48,7 @@ export function createCatalogIdentifier(options: CatalogIdentifierOptions): Enti
     identifyPlacesByText: (list, onProgress) => identifyPlacesByText(list, chained, (points) => places.identifyPlaces(points), onProgress),
     identifyApps: (packages, onProgress) => works.identifyApps(packages, onProgress),
     identifyGoogleBooksVolume: (volumeId) => works.identifyGoogleBooksVolume(volumeId),
+    identifyByExternalIds: (items) => works.identifyByExternalIds(items),
     identifyPlace: (place) => places.identifyPlace(place),
     identifyPlaces: (list, onProgress) => places.identifyPlaces(list, onProgress),
     identifyWork: (work) => works.identifyWork(work),

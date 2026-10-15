@@ -169,6 +169,18 @@ incremental, así que en las cuentas ya conectadas basta un «Renovar permiso».
 | Normalización (`google-books-v1`) | Reseña con estrellas: valoración explícita. Favorito: me gusta +0,8. Leído, leyendo o reseñado: consumido. Por leer, comprado o eBook: solo conocido |
 | Tests | `packages/integrations/test/google-books.test.ts` (5) y OIDC con Books en `apps/api/test/auth.int.test.ts` |
 
+## Trakt · fase 11
+
+| Aspecto | Detalle |
+|---|---|
+| Condiciones | [API Use Policy](https://developer.trakt.tv/docs/api-use-policy) (22/09/2026): autorización del usuario; caché permitida para sus funciones; prohibido vender datos o copiar el catálogo. Confirmar con Trakt el uso comercial antes de la beta pública |
+| OAuth | PKCE en `https://auth.trakt.tv/oauth/authorize` y `/oauth/token` (el secreto de cliente está obsoleto para usuarios). Access token de 7 días; **cada renovación entrega un refresh token nuevo** que sustituye al anterior: se guarda en cuanto llega |
+| API | `https://api.trakt.tv` con las cabeceras `trakt-api-key` y `trakt-api-version: 2`. Rutas de la especificación OpenAPI oficial (`developer.trakt.tv/openapi.json`): `/sync/ratings/{type}`, `/sync/watched/{type}`, `/sync/favorites/{type}/rank/asc` y `/sync/watchlist/{type}/rank/asc`, para películas y series. Hasta 2.000 por lista |
+| Identificación | Exacta en Wikidata por IMDb (P345) y, si falta, TMDB (P4947/P4983), en lotes. La categoría debe coincidir con la de Trakt. **Prueba real**: tt0111161 → Q172241 (1994); tt0903747 y TMDB 1396 → Q1079 |
+| Normalización (`trakt-v1`) | Valoración 1–10: explícita. Favorito: me gusta +0,8. Visto: consumido. Pendiente: solo conocido |
+| Configuración | `TRAKT_CLIENT_ID` (y, opcionalmente, `TRAKT_CLIENT_SECRET`) de una app creada en Trakt (requiere una cuenta de GitHub verificada); URL de vuelta `http://localhost:3100/v1/connect/trakt/callback` |
+| Tests | `packages/integrations/test/trakt.test.ts` (5) |
+
 ## Fuentes reales previstas
 
 Revisión del 2026-10-08: análisis de más de 60 plataformas en [fuentes-de-datos.md](fuentes-de-datos.md). Se muestran

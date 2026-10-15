@@ -8,6 +8,7 @@ import {
 } from './profile/google-portability/index.js';
 import { GOOGLE_BOOKS_MANIFEST, createGoogleBooksAdapter, type GoogleBooksOptions } from './profile/google-books/index.js';
 import { STEAM_MANIFEST, createSteamAdapter, type SteamAdapterOptions } from './profile/steam/index.js';
+import { TRAKT_MANIFEST, createTraktAdapter, type TraktOptions } from './profile/trakt/index.js';
 
 export type VisibleManifest = ProfileSourceManifest & {
   connectable: boolean;
@@ -32,6 +33,8 @@ export interface RegistryOptions {
   google?: Partial<GooglePortabilityAdapterOptions>;
   /** Google Books: mismo cliente OAuth, con su propia URL de vuelta. */
   googleBooks?: Partial<GoogleBooksOptions>;
+  /** Trakt: solo si el servidor tiene TRAKT_CLIENT_ID. */
+  trakt?: Partial<TraktOptions>;
 }
 
 /** Fuente real implementada pero sin su configuración de servidor: visible, no conectable y con el motivo. */
@@ -59,6 +62,8 @@ export function createAdapterRegistry(options: RegistryOptions): AdapterRegistry
   if (books?.clientId && books.clientSecret && books.redirectUri) {
     map.set('google_books', createGoogleBooksAdapter({ ...books, clientId: books.clientId, clientSecret: books.clientSecret, redirectUri: books.redirectUri }));
   }
+  const trakt = options.trakt;
+  if (trakt?.clientId && trakt.redirectUri) map.set('trakt', createTraktAdapter({ ...trakt, clientId: trakt.clientId, redirectUri: trakt.redirectUri }));
   return {
     get: (key) => map.get(key),
     adapters: () => [...map.values()],
@@ -70,6 +75,7 @@ export function createAdapterRegistry(options: RegistryOptions): AdapterRegistry
         GOOGLE_PORTABILITY_MANIFEST,
         'Falta el cliente OAuth de Google en el .env del servidor (ver README, «Conectar tu cuenta de Google»)',
       ),
+      ...unconfigured(map, TRAKT_MANIFEST, 'Falta TRAKT_CLIENT_ID en el .env del servidor (crea la app en Trakt)'),
       ...unconfigured(map, GOOGLE_BOOKS_MANIFEST, 'Falta el cliente OAuth de Google en el .env del servidor'),
       ...PLANNED_MANIFESTS.filter((p) => !map.has(p.key) && p.key !== 'google_portability' && p.key !== 'google_books').map((p) => ({ ...p, connectable: false })),
     ],

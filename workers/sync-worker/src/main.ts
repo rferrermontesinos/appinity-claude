@@ -28,6 +28,17 @@ const catalogIdentifier = createCatalogIdentifier({
 const registry = createAdapterRegistry({
   demoMode: env.demoMode,
   ...(env.steamApiKey ? { steam: { apiKey: env.steamApiKey } } : {}),
+  ...(process.env.TRAKT_CLIENT_ID?.trim()
+    ? {
+        trakt: {
+          clientId: process.env.TRAKT_CLIENT_ID.trim(),
+          redirectUri: process.env.TRAKT_REDIRECT_URI?.trim() || 'http://localhost:3100/v1/connect/trakt/callback',
+          ...(process.env.TRAKT_CLIENT_SECRET?.trim() ? { clientSecret: process.env.TRAKT_CLIENT_SECRET.trim() } : {}),
+          identifier: catalogIdentifier,
+          userAgent: env.catalogUserAgent,
+        },
+      }
+    : {}),
   ...(env.google
     ? {
         google: {

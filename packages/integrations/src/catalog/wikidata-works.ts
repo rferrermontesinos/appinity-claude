@@ -404,6 +404,65 @@ export class WikidataWorkIdentifier {
     return result;
   }
 
+  /**
+   * Películas y series por sus IDs externos, en lotes: IMDb (P345) y, si falta, TMDB (P4947 película, P4983 serie).
+   * Solo se acepta un único candidato de la categoría pedida; confianza 0,95. Mismo orden que la entrada.
+   */
+  async identifyByExternalIds(items: Array<{ imdb?: string; tmdb?: number; kind: 'movie' | 'show' }>): Promise<Array<IdentifiedEntity | null>> {
+    const languages = ['es', 'en'];
+    const queries = items.map((i) =>
+      // tt0000000: ID de relleno que algunas entidades tienen por error en Wikidata.
+      i.imdb && /^tt\d{5,10}$/.test(i.imdb) && !/^tt0+$/.test(i.imdb) ? `P345=${i.imdb}` : i.tmdb ? `${i.kind === 'movie' ? 'P4947' : 'P4983'}=${i.tmdb}` : null,
+    );
+    const pending = [...new Set(queries.filter((q): q is string => q !== null && !this.cache.has(`ext:${q}`)))];
+    for (let start = 0; start < pending.length; start += APP_BATCH) {
+      const batch = pending.slice(start, start + APP_BATCH);
+      const found = textSearchSchema.parse(
+        await this.get({ action: 'query', list: 'search', srsearch: `haswbstatement:${batch.join('|')}`, srnamespace: '0', srlimit: '50', srprop: '' }),
+      );
+      const qids = (found.query?.search ?? []).map((hit) => hit.title).filter((t) => /^Q\d+$/.test(t));
+      const entities = qids.length ? await this.entities(qids, languages) : {};
+      const byQuery = new Map<string, Array<{ qid: string; entity: Entity }>>();
+      for (const [qid, entity] of Object.entries(entities)) {
+        for (const property of ['P345', 'P4947', 'P4983']) {
+          for (const value of strings(entity, property)) {
+            const key = `${property}=${value}`;
+            byQuery.set(key, [...(byQuery.get(key) ?? []), { qid, entity }]);
+          }
+        }
+      }
+      for (const query of batch) {
+        const matches = byQuery.get(query) ?? [];
+        let result: IdentifiedEntity | null = null;
+        if (matches.length === 1) {
+          const { qid, entity } = matches[0]!;
+          const kind = kindOf(entity)?.kind;
+          if (kind && (kind.category === 'movies' || kind.category === 'series')) {
+            const releaseYear = year(entity, 'P577', 'P580');
+            result = {
+              category: kind.category,
+              itemType: kind.itemType,
+              title: label(entity, languages) ?? qid,
+              canonicalIds: { 'wikidata:entity': qid },
+              ...(releaseYear ? { releaseYear } : {}),
+              confidence: 0.95,
+              method: query.startsWith('P345') ? 'wikidata_imdb' : 'wikidata_tmdb',
+            };
+          }
+        }
+        if (this.cache.size > 5_000) this.cache.clear();
+        this.cache.set(`ext:${query}`, result);
+      }
+    }
+    return items.map((item, i) => {
+      const query = queries[i];
+      const entity = query ? (this.cache.get(`ext:${query}`) ?? null) : null;
+      // La categoría debe coincidir con lo que Trakt dice que es (película o serie).
+      if (!entity || entity.category !== (item.kind === 'movie' ? 'movies' : 'series')) return null;
+      return entity;
+    });
+  }
+
   /** Artistas por nombre exacto (solo grupos y personas músicos). */
   async identifyArtists(names: string[], onProgress?: (done: number, total: number) => void): Promise<Identification[]> {
     const unique = [...new Set(names)];
