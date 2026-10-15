@@ -135,7 +135,7 @@ export async function syncPortability(
     throw new SourceError(
       'verification_failed',
       credentials?.accessToken
-        ? 'El acceso de Google (sin renovación automática) ha caducado: renueva el permiso para volver a importar'
+        ? 'El acceso de Google era temporal (Google ya tenía una autorización anterior de APPINITY y no dio acceso continuado). Quita APPINITY en myaccount.google.com/connections y vuelve a conectar Google: así el acceso se renueva solo'
         : 'La conexión con Google está incompleta: vuelve a autorizarla',
       false,
     );

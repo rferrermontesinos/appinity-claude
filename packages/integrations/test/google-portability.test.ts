@@ -117,7 +117,7 @@ describe('autorización de Google Data Portability', () => {
     const later = new Date(Date.now() + 2 * 3600_000);
     await expect(syncPortability(client, syncContext({ ...done.credentials! }, later), { identifier })).rejects.toMatchObject({
       code: 'verification_failed',
-      message: expect.stringMatching(/caducado/),
+      message: expect.stringContaining('myaccount.google.com/connections'),
     });
   });
 });
