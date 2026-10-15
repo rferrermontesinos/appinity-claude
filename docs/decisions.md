@@ -944,7 +944,8 @@ gente con la que tienes afinidad, igual que en Tinder cuando haces match»).
   (14 días) caducan después.
 - **Producción blindada**: la API no arranca con `DEMO_MODE`/`DEV_AUTH_ENABLED` ni sin `AUTH_SECRET`. Imagen sin root ni
   secretos. API solo en 127.0.0.1, detrás de un proxy HTTPS.
-- **Pendiente con justificación**:
-  - «Iniciar sesión con Apple» (iOS; requiere Apple Developer Program);
-  - detección de reutilización del refresh token (hoy, un token rotado simplemente deja de valer);
-  - recibos de Expo push.
+- **Reutilización del refresh token** (migración 0013): se guarda el hash del token anterior. Si alguien lo presenta
+  después de rotarlo, lo tienen dos partes y se revoca la sesión entera (OAuth 2.0 Security BCP).
+- **Recibos de Expo push**: ~15 min después del envío se consulta si FCM o APNs aceptaron cada notificación.
+  DeviceNotRegistered desactiva el token. Sin recibo todavía, se vuelve a mirar, como mucho hasta las 23 h.
+- **Pendiente con justificación**: «Iniciar sesión con Apple» (iOS; requiere Apple Developer Program, de pago).

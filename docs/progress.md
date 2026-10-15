@@ -55,6 +55,12 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | Pila `docker-compose.prod.yml` en local (puerto 3111) | Migraciones desde cero; `/health` en producción con BD, PostGIS, Redis y worker correctos; `/v1/dev/session` → 404; `/v1/me` → 401 |
 | `pnpm db:backup` + `pg_restore` | Copia de 95 KB restaurada completa (13 migraciones, PostGIS) |
 
+### Añadido después (mismo día)
+
+- **Reutilización del refresh token**: un token ya rotado revoca la sesión entera. Migración 0013.
+- **Recibos de Expo push**: los tokens dados de baja por FCM/APNs se desactivan.
+- `pnpm test`: **30 ficheros, 325 tests OK**.
+
 ### Limitaciones
 
 - El inicio de sesión con Google real no se ha probado: falta autorizar la URL de vuelta (paso del usuario) y, para el teléfono, un dominio HTTPS.

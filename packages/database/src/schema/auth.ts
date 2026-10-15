@@ -36,10 +36,16 @@ export const authSessions = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     refreshTokenHash: text('refresh_token_hash').notNull(),
+    /** Hash del refresh token anterior: si alguien lo vuelve a presentar, el token se ha filtrado y se revoca la sesión. */
+    previousRefreshTokenHash: text('previous_refresh_token_hash'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     lastUsedAt: timestamp('last_used_at', { withTimezone: true }).notNull().defaultNow(),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
     revokedAt: timestamp('revoked_at', { withTimezone: true }),
   },
-  (t) => [uniqueIndex('auth_sessions_refresh_unique').on(t.refreshTokenHash), index('auth_sessions_user_idx').on(t.userId)],
+  (t) => [
+    uniqueIndex('auth_sessions_refresh_unique').on(t.refreshTokenHash),
+    index('auth_sessions_previous_refresh_idx').on(t.previousRefreshTokenHash),
+    index('auth_sessions_user_idx').on(t.userId),
+  ],
 );

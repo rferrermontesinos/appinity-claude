@@ -78,7 +78,10 @@ export async function createSession(db: Database, userId: string, now = new Date
   return { sessionId: session!.id, refreshToken, expiresAt };
 }
 
-/** Renueva la sesión: el refresh token usado deja de valer (rotación) y se entrega otro. */
+/**
+ * Renueva la sesión: el refresh token usado deja de valer (rotación) y se entrega otro. Si alguien presenta un token
+ * ya rotado, se ha filtrado (lo tienen dos partes): se revoca la sesión entera, como recomienda OAuth 2.0 Security BCP.
+ */
 export async function rotateSession(
   db: Database,
   refreshToken: string,
@@ -87,10 +90,16 @@ export async function rotateSession(
   const next = randomBytes(32).toString('base64url');
   const [session] = await db
     .update(authSessions)
-    .set({ refreshTokenHash: sha256(next), lastUsedAt: now })
+    .set({ refreshTokenHash: sha256(next), previousRefreshTokenHash: sha256(refreshToken), lastUsedAt: now })
     .where(and(eq(authSessions.refreshTokenHash, sha256(refreshToken)), isNull(authSessions.revokedAt), gt(authSessions.expiresAt, now)))
     .returning({ id: authSessions.id, userId: authSessions.userId, expiresAt: authSessions.expiresAt });
-  if (!session) throw new NotFoundError('Sesión no válida o caducada');
+  if (!session) {
+    await db
+      .update(authSessions)
+      .set({ revokedAt: now })
+      .where(and(eq(authSessions.previousRefreshTokenHash, sha256(refreshToken)), isNull(authSessions.revokedAt)));
+    throw new NotFoundError('Sesión no válida o caducada');
+  }
   return { userId: session.userId, sessionId: session.id, refreshToken: next, expiresAt: session.expiresAt };
 }
 

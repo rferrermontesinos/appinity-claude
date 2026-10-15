@@ -11,7 +11,7 @@
 | Chat, amigos, bloqueo, reporte | Implementados | Fases 10 y 12A, aceptadas en el teléfono |
 | Desconexión y eliminación de cuenta | **Implementado** | Test HTTP y vista web: eliminar borra usuario, identidad y sesiones, y vuelve al login |
 | Premium | Servidor listo | Webhooks probados con eventos simulados; sin compra real |
-| Notificaciones | Servidor listo | Envío simulado; sin entrega real |
+| Notificaciones | Servidor listo, con recibos | Envío y recibos simulados; sin entrega real |
 | Despliegue | Preparado | Pila de producción levantada en local; copia de seguridad y restauración probadas |
 
 ## Lo que falta antes de una beta real (requiere tus cuentas o decisiones)

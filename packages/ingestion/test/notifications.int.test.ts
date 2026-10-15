@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { testEnv, truncateAll } from '../../../test/helpers.js';
 import {
   ConflictError,
+  checkDigestReceipts,
   DEMO_USERS,
   isDigestDue,
   localParts,
@@ -115,5 +116,31 @@ describe('envío de resúmenes', () => {
       .from(notificationDeliveries)
       .where(and(eq(notificationDeliveries.userId, laura.id), eq(notificationDeliveries.localDate, '2026-10-20')));
     expect(delivery).toMatchObject({ status: 'failed' });
+  });
+});
+
+describe('recibos de Expo', () => {
+  it('a los 15 min: DeviceNotRegistered desactiva el token; sin recibo todavía, se vuelve a mirar después', async () => {
+    const TOKEN = 'ExponentPushToken[recibos-simulado-01]';
+    const sam = DEMO_USERS.find((u) => u.handle === 'demo_sam')!;
+    await registerPushToken(database.db, sam.id, TOKEN, 'android');
+    await database.db.update(userSettings).set({ notificationFrequency: 'daily', timeZone: 'Europe/Madrid' }).where(eq(userSettings.userId, sam.id));
+    const sentAt = new Date('2026-10-23T17:30:00Z');
+    const { sender } = fakeSender(() => ({ status: 'ok', id: 'ticket-recibo-1' }));
+    await sendDueDigests(database.db, sender, { now: sentAt });
+    let answer: Record<string, { status: 'ok' } | { status: 'error'; message: string; error?: string }> = {};
+    const withReceipts = { ...sender, receipts: async () => answer };
+    // Antes de 15 min no se consulta nada.
+    expect(await checkDigestReceipts(database.db, withReceipts, { now: new Date(sentAt.getTime() + 5 * 60_000) })).toEqual({ checked: 0, errors: 0 });
+    // Aún sin recibo: no se marca como revisado.
+    await checkDigestReceipts(database.db, withReceipts, { now: new Date(sentAt.getTime() + 20 * 60_000) });
+    let [delivery] = await database.db.select().from(notificationDeliveries).where(and(eq(notificationDeliveries.userId, sam.id), eq(notificationDeliveries.localDate, '2026-10-23')));
+    expect(delivery!.receiptsCheckedAt).toBeNull();
+    answer = { 'ticket-recibo-1': { status: 'error', message: 'gone', error: 'DeviceNotRegistered' } };
+    expect(await checkDigestReceipts(database.db, withReceipts, { now: new Date(sentAt.getTime() + 40 * 60_000) })).toMatchObject({ errors: 1 });
+    [delivery] = await database.db.select().from(notificationDeliveries).where(and(eq(notificationDeliveries.userId, sam.id), eq(notificationDeliveries.localDate, '2026-10-23')));
+    expect(delivery).toMatchObject({ receiptErrors: 1 });
+    const [token] = await database.db.select().from(pushTokens).where(eq(pushTokens.token, TOKEN));
+    expect(token!.disabledAt).not.toBeNull();
   });
 });

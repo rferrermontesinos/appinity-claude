@@ -93,7 +93,7 @@ describe('sesiones de producción (fase 13)', () => {
     expect((await call('GET', '/v1/auth/google/callback?state=estado-inventado-0123456789&code=x')).status).toBe(400);
   });
 
-  it('código de un solo uso → sesión; alta; renovación con rotación; cierre de sesión', async () => {
+  it('código de un solo uso → sesión; alta; renovación con rotación y detección de reutilización', async () => {
     const { code } = await handoff('sub-ana');
     const session = (await (await call('POST', '/v1/auth/exchange', undefined, { code })).json()) as AuthSessionDto;
     expect(session).toMatchObject({ isNew: true, needsOnboarding: true });
@@ -108,11 +108,19 @@ describe('sesiones de producción (fase 13)', () => {
 
     const rotated = (await (await call('POST', '/v1/auth/refresh', undefined, { refreshToken: session.refreshToken })).json()) as AuthSessionDto;
     expect(rotated.refreshToken).not.toBe(session.refreshToken);
+    expect((await call('GET', '/v1/me', rotated.accessToken)).status).toBe(200);
+    // Reutilizar el token ya rotado delata una filtración: se revoca la sesión entera (también el token nuevo).
     expect((await call('POST', '/v1/auth/refresh', undefined, { refreshToken: session.refreshToken })).status).toBe(401);
-
-    expect((await call('POST', '/v1/auth/logout', rotated.accessToken)).status).toBe(204);
     expect((await call('GET', '/v1/me', rotated.accessToken)).status).toBe(401);
     expect((await call('POST', '/v1/auth/refresh', undefined, { refreshToken: rotated.refreshToken })).status).toBe(401);
+  });
+
+  it('cerrar sesión la invalida al momento', async () => {
+    const { code } = await handoff('sub-dani');
+    const session = (await (await call('POST', '/v1/auth/exchange', undefined, { code })).json()) as AuthSessionDto;
+    expect((await call('POST', '/v1/auth/logout', session.accessToken)).status).toBe(204);
+    expect((await call('GET', '/v1/me', session.accessToken)).status).toBe(401);
+    expect((await call('POST', '/v1/auth/refresh', undefined, { refreshToken: session.refreshToken })).status).toBe(401);
   });
 
   it('la misma identidad de Google vuelve a la misma cuenta', async () => {
