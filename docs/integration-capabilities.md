@@ -162,12 +162,12 @@ incremental, así que en las cuentas ya conectadas basta un «Renovar permiso».
 
 | Aspecto | Detalle |
 |---|---|
-| API | Oficial y gratuita:  con scope  ([docs](https://developers.google.com/books/docs/v1/using), consultadas el 2026-10-15). Hay que activar la «Books API» en el proyecto de Google Cloud |
-| Consentimiento | **Alta**: va en el mismo consentimiento de «Continuar con Google» (con ), así que la fuente queda conectada sin pasos extra. Google deja desmarcarlo. **Cuentas ya creadas**: conexión normal con su URL de vuelta () |
-| Estanterías | Favoritos (0), Comprados (1), Por leer (2), Leyendo (3), Leídos (4), Reseñados (5) y Mis eBooks (7). Las de recomendaciones y el historial (6, 8, 9) no se usan: no son gustos. Hasta 400 libros por estantería |
-| Identificación | ID de Google Books en Wikidata (P675, exacto; una edición se atribuye a su obra con P629). Si no, título exacto limitado a libros. Si Wikidata no tiene etiqueta en español o inglés, se usa el título de Google. **Prueba real**: P675  → Q27102283 |
-| Normalización () | Reseña con estrellas: valoración explícita. Favorito: me gusta +0,8. Leído, leyendo o reseñado: consumido. Por leer, comprado o eBook: solo conocido |
-| Tests |  (5) y OIDC con Books en  |
+| API | Oficial y gratuita: `GET /books/v1/mylibrary/bookshelves/{id}/volumes` con el scope `https://www.googleapis.com/auth/books` ([docs](https://developers.google.com/books/docs/v1/using), consultadas el 2026-10-15). Hay que activar la «Books API» en el proyecto de Google Cloud |
+| Consentimiento | **Alta**: va en el mismo consentimiento de «Continuar con Google» (con `access_type=offline`), así que la fuente queda conectada sin pasos extra. Google deja desmarcarlo. **Cuentas ya creadas**: conexión normal con su propia URL de vuelta (`GOOGLE_BOOKS_REDIRECT_URI`) |
+| Estanterías | Favoritos (0), Comprados (1), Por leer (2), Leyendo (3), Leídos (4), Reseñados (5) y Mis eBooks (7). Las de recomendaciones y el historial (6, 8 y 9) no se usan: no son gustos. Hasta 400 libros por estantería |
+| Identificación | ID de Google Books en Wikidata (P675, exacto); una edición se atribuye a su obra (P629). Si no, título exacto limitado a libros. Si Wikidata no tiene etiqueta en español ni en inglés, se usa el título de Google. **Prueba real**: P675 `WXIoqjLSaaoC` → Q27102283 |
+| Normalización (`google-books-v1`) | Reseña con estrellas: valoración explícita. Favorito: me gusta +0,8. Leído, leyendo o reseñado: consumido. Por leer, comprado o eBook: solo conocido |
+| Tests | `packages/integrations/test/google-books.test.ts` (5) y OIDC con Books en `apps/api/test/auth.int.test.ts` |
 
 ## Fuentes reales previstas
 
