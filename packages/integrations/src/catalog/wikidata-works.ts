@@ -3,6 +3,7 @@ import {
   normalizeTitle,
   type Category,
   type ChannelToIdentify,
+  type ExternalIdQuery,
   type IdentifiedEntity,
   type Identification,
 } from '@appinity/shared';
@@ -39,6 +40,9 @@ const TYPES: Record<string, { category: Category; itemType: string }> = {
   Q571: { category: 'books', itemType: 'book' }, // libro
   Q49084: { category: 'books', itemType: 'book' }, // relato
   Q725377: { category: 'books', itemType: 'book' }, // novela gráfica
+  Q21198342: { category: 'books', itemType: 'book' }, // serie de manga
+  Q8274: { category: 'books', itemType: 'book' }, // manga
+  Q747381: { category: 'books', itemType: 'book' }, // novela ligera
   Q215380: { category: 'music', itemType: 'artist' }, // grupo musical
   Q5741069: { category: 'music', itemType: 'artist' }, // grupo de rock
   Q2088357: { category: 'music', itemType: 'artist' }, // agrupación musical
@@ -143,6 +147,31 @@ function kindOf(entity: Entity): { kind: { category: Category; itemType: string 
 /** Categorías que se aceptan para un canal de YouTube: artistas musicales y programas de podcast. */
 const isChannelKind = (k: { category: Category; itemType: string }) =>
   (k.category === 'music' && k.itemType === 'artist') || k.category === 'podcasts';
+
+/** Propiedades de IDs externos de obras y método de identificación que dejan constancia. */
+const EXTERNAL_ID_METHODS: Record<string, string> = {
+  P345: 'wikidata_imdb',
+  P4947: 'wikidata_tmdb',
+  P4983: 'wikidata_tmdb',
+  P8729: 'wikidata_anilist',
+  P8731: 'wikidata_anilist',
+  P4086: 'wikidata_mal',
+  P4087: 'wikidata_mal',
+};
+const EXPECTED_CATEGORIES: Record<ExternalIdQuery['kind'], Category[]> = {
+  movie: ['movies'],
+  show: ['series'],
+  anime: ['movies', 'series'],
+  manga: ['books'],
+};
+function externalQuery(i: ExternalIdQuery): string | null {
+  // tt0000000: ID de relleno que algunas entidades tienen por error en Wikidata.
+  if (i.imdb && /^tt\d{5,10}$/.test(i.imdb) && !/^tt0+$/.test(i.imdb)) return `P345=${i.imdb}`;
+  if (i.tmdb && (i.kind === 'movie' || i.kind === 'show')) return `${i.kind === 'movie' ? 'P4947' : 'P4983'}=${i.tmdb}`;
+  if (i.anilist && (i.kind === 'anime' || i.kind === 'manga')) return `${i.kind === 'anime' ? 'P8729' : 'P8731'}=${i.anilist}`;
+  if (i.mal && (i.kind === 'anime' || i.kind === 'manga')) return `${i.kind === 'anime' ? 'P4086' : 'P4087'}=${i.mal}`;
+  return null;
+}
 
 export interface WikidataWorkIdentifierOptions {
   userAgent: string;
@@ -405,15 +434,13 @@ export class WikidataWorkIdentifier {
   }
 
   /**
-   * Películas y series por sus IDs externos, en lotes: IMDb (P345) y, si falta, TMDB (P4947 película, P4983 serie).
-   * Solo se acepta un único candidato de la categoría pedida; confianza 0,95. Mismo orden que la entrada.
+   * Obras por sus IDs externos, en lotes. Prioridad: IMDb (P345); TMDB (P4947 película, P4983 serie); AniList (P8729
+   * anime, P8731 manga); MyAnimeList (P4086 anime, P4087 manga). Solo se acepta un único candidato y de la categoría
+   * que corresponde al tipo de origen; confianza 0,95. Mismo orden que la entrada.
    */
-  async identifyByExternalIds(items: Array<{ imdb?: string; tmdb?: number; kind: 'movie' | 'show' }>): Promise<Array<IdentifiedEntity | null>> {
+  async identifyByExternalIds(items: ExternalIdQuery[]): Promise<Array<IdentifiedEntity | null>> {
     const languages = ['es', 'en'];
-    const queries = items.map((i) =>
-      // tt0000000: ID de relleno que algunas entidades tienen por error en Wikidata.
-      i.imdb && /^tt\d{5,10}$/.test(i.imdb) && !/^tt0+$/.test(i.imdb) ? `P345=${i.imdb}` : i.tmdb ? `${i.kind === 'movie' ? 'P4947' : 'P4983'}=${i.tmdb}` : null,
-    );
+    const queries = items.map(externalQuery);
     const pending = [...new Set(queries.filter((q): q is string => q !== null && !this.cache.has(`ext:${q}`)))];
     for (let start = 0; start < pending.length; start += APP_BATCH) {
       const batch = pending.slice(start, start + APP_BATCH);
@@ -424,7 +451,7 @@ export class WikidataWorkIdentifier {
       const entities = qids.length ? await this.entities(qids, languages) : {};
       const byQuery = new Map<string, Array<{ qid: string; entity: Entity }>>();
       for (const [qid, entity] of Object.entries(entities)) {
-        for (const property of ['P345', 'P4947', 'P4983']) {
+        for (const property of Object.keys(EXTERNAL_ID_METHODS)) {
           for (const value of strings(entity, property)) {
             const key = `${property}=${value}`;
             byQuery.set(key, [...(byQuery.get(key) ?? []), { qid, entity }]);
@@ -437,7 +464,7 @@ export class WikidataWorkIdentifier {
         if (matches.length === 1) {
           const { qid, entity } = matches[0]!;
           const kind = kindOf(entity)?.kind;
-          if (kind && (kind.category === 'movies' || kind.category === 'series')) {
+          if (kind && (kind.category === 'movies' || kind.category === 'series' || kind.category === 'books')) {
             const releaseYear = year(entity, 'P577', 'P580');
             result = {
               category: kind.category,
@@ -446,7 +473,7 @@ export class WikidataWorkIdentifier {
               canonicalIds: { 'wikidata:entity': qid },
               ...(releaseYear ? { releaseYear } : {}),
               confidence: 0.95,
-              method: query.startsWith('P345') ? 'wikidata_imdb' : 'wikidata_tmdb',
+              method: EXTERNAL_ID_METHODS[query.slice(0, query.indexOf('='))]!,
             };
           }
         }
@@ -457,8 +484,8 @@ export class WikidataWorkIdentifier {
     return items.map((item, i) => {
       const query = queries[i];
       const entity = query ? (this.cache.get(`ext:${query}`) ?? null) : null;
-      // La categoría debe coincidir con lo que Trakt dice que es (película o serie).
-      if (!entity || entity.category !== (item.kind === 'movie' ? 'movies' : 'series')) return null;
+      // La categoría debe coincidir con lo que dice el origen (película, serie, anime o manga).
+      if (!entity || !EXPECTED_CATEGORIES[item.kind].includes(entity.category)) return null;
       return entity;
     });
   }

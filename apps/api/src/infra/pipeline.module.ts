@@ -23,6 +23,9 @@ import { ADAPTER_REGISTRY, DATABASE, ENTITY_RESOLVER, QUEUES, STORAGE } from './
           ...(env.TRAKT_CLIENT_ID
             ? { trakt: { clientId: env.TRAKT_CLIENT_ID, redirectUri: env.TRAKT_REDIRECT_URI, ...(env.TRAKT_CLIENT_SECRET ? { clientSecret: env.TRAKT_CLIENT_SECRET } : {}) } }
             : {}),
+          ...(env.ANILIST_CLIENT_ID && env.ANILIST_CLIENT_SECRET
+            ? { anilist: { clientId: env.ANILIST_CLIENT_ID, clientSecret: env.ANILIST_CLIENT_SECRET, redirectUri: env.ANILIST_REDIRECT_URI } }
+            : {}),
           // La API solo conecta y desconecta Google; la identificación de catálogo la hace el worker al sincronizar.
           ...(env.GOOGLE_OAUTH_CLIENT_ID && env.GOOGLE_OAUTH_CLIENT_SECRET
             ? {
