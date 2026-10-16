@@ -181,6 +181,18 @@ incremental, así que en las cuentas ya conectadas basta un «Renovar permiso».
 | Configuración | `TRAKT_CLIENT_ID` (y, opcionalmente, `TRAKT_CLIENT_SECRET`) de una app creada en Trakt (requiere una cuenta de GitHub verificada); URL de vuelta `http://localhost:3100/v1/connect/trakt/callback` |
 | Tests | `packages/integrations/test/trakt.test.ts` (5) |
 
+## AniList · fase 11
+
+| Aspecto | Detalle |
+|---|---|
+| Condiciones | Gratis por debajo de 150 $ al mes de ingresos; no copiar el catálogo. APPINITY guarda solo la evidencia del usuario |
+| OAuth | «Authorization code grant» ([docs](https://docs.anilist.co/guide/auth/), consultadas el 2026-10-16): `anilist.co/api/v2/oauth/authorize` y `/oauth/token` con el secreto en el servidor. Sin scopes. **El token dura 1 año y no hay refresh token**: al caducar, el usuario vuelve a conectar. No hay revocación por API |
+| API | GraphQL en `https://graphql.anilist.co`: `Viewer { id }` y `MediaListCollection(userId, type: ANIME/MANGA)` por bloques de 500, con `score(format: POINT_100)`, estado, fechas e `isFavourite`. **Prueba real** con listas públicas: anime TV, MOVIE, OVA, ONA, SPECIAL y TV_SHORT; manga MANGA, NOVEL y ONE_SHOT |
+| Identificación | Exacta en Wikidata por AniList (P8729 anime, P8731 manga) o MyAnimeList (P4086, P4087). Si no hay ID, título exacto. Anime película → cine; resto del anime → series; manga y novela ligera → libros. **Prueba real**: AniList 21 → Q710324 (serie), 30013 → Q28667972 (manga), 199 → Q155653 (película), MAL 13 → Q28667972. En una lista real de anime se identificaron 22 de 40 obras (12 por ID y 10 por título); el resto se avisa como no identificado |
+| Normalización (`anilist-v1`) | Puntuación 1–100: explícita. Favorito: me gusta +0,8. Completado, en curso, en pausa o abandonado: consumido con preferencia NULL. Planeado: solo conocido |
+| Configuración | `ANILIST_CLIENT_ID` y `ANILIST_CLIENT_SECRET` de una app creada en anilist.co/settings/developer; URL de vuelta `http://localhost:3100/v1/connect/anilist/callback` |
+| Tests | `packages/integrations/test/anilist.test.ts` (6) |
+
 ## Fuentes reales previstas
 
 Revisión del 2026-10-08: análisis de más de 60 plataformas en [fuentes-de-datos.md](fuentes-de-datos.md). Se muestran

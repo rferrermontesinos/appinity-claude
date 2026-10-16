@@ -25,6 +25,7 @@ export const PLANNED_SOURCE_KEYS = [
   'google_portability',
   'google_books',
   'trakt',
+  'anilist',
   'apple_music',
   'device_calendar',
   'itchio',
@@ -33,6 +34,14 @@ export const PLANNED_SOURCE_KEYS = [
   'meetup',
   'swarm',
 ] as const;
+/** IDs externos de una obra; `kind` es lo que el origen dice que es. */
+export interface ExternalIdQuery {
+  imdb?: string;
+  tmdb?: number;
+  anilist?: number;
+  mal?: number;
+  kind: 'movie' | 'show' | 'anime' | 'manga';
+}
 export type PlannedSourceKey = (typeof PLANNED_SOURCE_KEYS)[number];
 
 export type ProfileSourceKey = FixtureSourceKey | PlannedSourceKey;
@@ -246,8 +255,8 @@ export interface EntityIdentifier {
   identifyWork(work: { title: string; languages?: string[]; categories?: Category[] }): Promise<IdentifiedEntity | null>;
   /** Libro por su ID de Google Books (P675 en Wikidata; una edición se atribuye a su obra). Opcional. */
   identifyGoogleBooksVolume?(volumeId: string): Promise<IdentifiedEntity | null>;
-  /** Películas y series por IMDb o TMDB (Wikidata P345, P4947, P4983). Opcional. Mismo orden que la entrada. */
-  identifyByExternalIds?(items: Array<{ imdb?: string; tmdb?: number; kind: 'movie' | 'show' }>): Promise<Array<IdentifiedEntity | null>>;
+  /** Obras por IMDb, TMDB, AniList o MyAnimeList (Wikidata). Opcional. Mismo orden que la entrada. */
+  identifyByExternalIds?(items: ExternalIdQuery[]): Promise<Array<IdentifiedEntity | null>>;
   /**
    * Lugares sin coordenadas (pedidos, reservas y guardados de Google): se geocodifican por nombre y dirección y después
    * pasan por la misma comprobación que `identifyPlaces` (nombre y tipo del elemento de OSM). Mismo orden.

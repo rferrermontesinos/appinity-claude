@@ -75,6 +75,9 @@ const envSchema = z
     TRAKT_CLIENT_ID: z.string().optional().transform((v) => (v ? v.trim() : undefined)),
     TRAKT_CLIENT_SECRET: z.string().optional().transform((v) => (v ? v.trim() : undefined)),
     TRAKT_REDIRECT_URI: z.url().default('http://localhost:3100/v1/connect/trakt/callback'),
+    ANILIST_CLIENT_ID: z.string().optional().transform((v) => (v ? v.trim() : undefined)),
+    ANILIST_CLIENT_SECRET: z.string().optional().transform((v) => (v ? v.trim() : undefined)),
+    ANILIST_REDIRECT_URI: z.url().default('http://localhost:3100/v1/connect/anilist/callback'),
     GOOGLE_OAUTH_REDIRECT_URI: z.url().default('http://localhost:3100/v1/connect/google_portability/callback'),
   })
   .superRefine((env, ctx) => {
