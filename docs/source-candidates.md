@@ -129,3 +129,25 @@ una verificación anti-bots en su página general de condiciones; se usó su pol
 1. **Google Books**: va en el consentimiento del alta; casi sin coste de identificación (ISBN e IDs de volumen).
 2. **Trakt**: cine y series con valoraciones explícitas; identificación exacta por IMDb/TMDB → Wikidata (P345/P4947).
 3. **AniList**: nicho grande de anime y manga; identificación por MyAnimeList o AniList → Wikidata (P4086/P8729).
+
+## Revisión 2026-10-16 · fuentes tipo Trakt, AniList o Steam
+
+Criterio: conocidas en todo el mundo, OAuth o consentimiento del propio usuario, gratis y con uso comercial permitido.
+
+| Fuente | Categorías | Veredicto | Motivo | Fuente consultada |
+|---|---|---|---|---|
+| Hardcover | books | **Candidata; confirmar por escrito** | OAuth con PKCE, scopes y refresh token (desde agosto de 2026). API GraphQL en beta. No publica condiciones de API: las URL de términos dan 404 | [API](https://docs.hardcover.app/api/getting-started/), [OAuth](https://docs.hardcover.app/api/oauth/) |
+| Mixcloud | music, podcasts | **Candidata; revisar condiciones generales** | OAuth con el secreto en el servidor; `/me/` con favoritos, seguidos y escuchas. Las condiciones no mencionan la API | [Developers](https://www.mixcloud.com/developers/) |
+| RetroAchievements | games (retro) | Posible, de nicho | Clave de API de la cuenta del desarrollador; perfiles públicos por nombre de usuario. Sin OAuth ni cláusula comercial | [API](https://api-docs.retroachievements.org/) |
+| Kitsu | series, books | Por confirmar | Las condiciones no mencionan la API; una fuente secundaria antigua dice «no comercial» | — |
+| Simkl | movies, series, anime | **Bloqueada** sin licencia | «Free-for-non-commercial»; el uso comercial requiere licencia | [api.simkl.org](https://api.simkl.org/) |
+| MyAnimeList | series, books | **Bloqueada** | Prohíbe guardar datos de usuario en el servidor; uso comercial solo con autorización escrita | [API License](https://myanimelist.net/static/apiagreement.html) |
+| setlist.fm | culture (conciertos) | **Bloqueada** | «Only free for non-commercial projects» | [API](https://api.setlist.fm/docs/1.0/index.html) |
+| TIDAL | music | **Bloqueada** | Developer Terms 1.0: solo ofertas no comerciales | [Developer Terms](https://developer.tidal.com/documentation/guidelines-developer-terms-1_0) |
+| BoardGameGeek | culture (juegos de mesa) | **Bloqueada** | Licencia «strictly non-commercial»; la comercial se negocia caso a caso | [XML API](https://boardgamegeek.com/using_the_xml_api) |
+
+Conclusión: las grandes plataformas de consumo exigen licencia comercial. Lo integrable gratis sigue siendo:
+
+- Google, con un solo consentimiento;
+- Steam, Trakt y AniList (ya integradas);
+- Hardcover y Mixcloud, si se confirman sus condiciones.
