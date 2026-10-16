@@ -25,7 +25,7 @@ const ALLOWED = {
   },
   TRAKT_CLIENT_ID: { pattern: /^[A-Za-z0-9_-]{20,128}$/, description: 'el Client ID de tu app de Trakt (letras, números, - y _)' },
   TRAKT_CLIENT_SECRET: { pattern: /^[A-Za-z0-9_-]{20,128}$/, description: 'el Client Secret de tu app de Trakt (letras, números, - y _)' },
-  ANILIST_CLIENT_ID: { pattern: /^d{1,10}$/, description: 'el Client ID de tu app de AniList (solo números)' },
+  ANILIST_CLIENT_ID: { pattern: /^\d{1,10}$/, description: 'el Client ID de tu app de AniList (solo números)' },
   ANILIST_CLIENT_SECRET: { pattern: /^[A-Za-z0-9_-]{20,128}$/, description: 'el Client Secret de tu app de AniList (letras y números)' },
   REVENUECAT_WEBHOOK_AUTH: {
     pattern: /^[!-~][ -~]{22,}[!-~]$/,
