@@ -50,7 +50,7 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
   - IDs conocidos: OK;
   - una lista real de anime: 22 de 40 obras;
   - una lista de manga poco conocido: 9 de 60 por ID.
-- **Sin validar con una cuenta real**: falta que el titular cree la app de AniList.
+- **Validado con la cuenta real** (2026-10-16): sync de AniList con 3 obras recibidas y 3 identificadas, sin errores. Una por ID de AniList y dos por título exacto; 2 mangas y 1 anime.
 
 ### Siguiente paso
 
