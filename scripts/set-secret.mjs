@@ -23,6 +23,8 @@ const ALLOWED = {
     hint: (value) =>
       value.endsWith('.apps.googleusercontent.com') ? 'Eso es el ID de cliente: guárdalo con GOOGLE_OAUTH_CLIENT_ID.' : undefined,
   },
+  TRAKT_CLIENT_ID: { pattern: /^[A-Za-z0-9_-]{20,128}$/, description: 'el Client ID de tu app de Trakt (letras, números, - y _)' },
+  TRAKT_CLIENT_SECRET: { pattern: /^[A-Za-z0-9_-]{20,128}$/, description: 'el Client Secret de tu app de Trakt (letras, números, - y _)' },
   REVENUECAT_WEBHOOK_AUTH: {
     pattern: /^[!-~][ -~]{22,}[!-~]$/,
     description: 'el valor exacto de la cabecera Authorization del webhook de RevenueCat (mín. 24 caracteres imprimibles)',

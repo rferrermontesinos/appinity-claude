@@ -13,7 +13,15 @@ export const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 export const GOOGLE_JWKS_URL = 'https://www.googleapis.com/oauth2/v3/certs';
 const GOOGLE_ISSUERS = ['https://accounts.google.com', 'accounts.google.com'];
 
-const tokenSchema = z.object({ id_token: z.string().min(20) });
+const tokenSchema = z.object({
+  id_token: z.string().min(20),
+  access_token: z.string(),
+  refresh_token: z.string().optional(),
+  expires_in: z.number().optional(),
+  scope: z.string().optional(),
+});
+export type GoogleSignInTokens = Omit<z.infer<typeof tokenSchema>, 'id_token'>;
+export const GOOGLE_BOOKS_SCOPE = 'https://www.googleapis.com/auth/books';
 
 export interface GoogleOidcOptions {
   clientId: string;
@@ -45,14 +53,19 @@ export class GoogleOidc {
   }
 
   /** URL de autorización y lo que hay que guardar (servidor) hasta la vuelta. */
-  start(state: string): { url: string; pending: PendingSignIn } {
+  /**
+   * Con `books`, el mismo consentimiento pide también Google Books (acceso continuado): es el alta, el único momento
+   * en que se piden permisos. Google deja a la persona desmarcarlo (consentimiento granular).
+   */
+  start(state: string, options: { books?: boolean } = {}): { url: string; pending: PendingSignIn } {
     const codeVerifier = randomBytes(48).toString('base64url');
     const nonce = randomBytes(16).toString('base64url');
     const url = new URL(GOOGLE_AUTHORIZE_URL);
     url.searchParams.set('client_id', this.options.clientId);
     url.searchParams.set('redirect_uri', this.options.redirectUri);
     url.searchParams.set('response_type', 'code');
-    url.searchParams.set('scope', 'openid email profile');
+    url.searchParams.set('scope', options.books ? `openid email profile ${GOOGLE_BOOKS_SCOPE}` : 'openid email profile');
+    if (options.books) url.searchParams.set('access_type', 'offline');
     url.searchParams.set('state', state);
     url.searchParams.set('nonce', nonce);
     url.searchParams.set('code_challenge', createHash('sha256').update(codeVerifier).digest('base64url'));
@@ -61,7 +74,7 @@ export class GoogleOidc {
   }
 
   /** Canjea el código y verifica el ID token. Lanza si algo no cuadra. */
-  async complete(code: string, pending: PendingSignIn): Promise<GoogleIdentity> {
+  async complete(code: string, pending: PendingSignIn): Promise<GoogleIdentity & { tokens: GoogleSignInTokens }> {
     const response = await this.fetchImpl(GOOGLE_TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -76,8 +89,8 @@ export class GoogleOidc {
       signal: AbortSignal.timeout(15_000),
     });
     if (!response.ok) throw new Error(`Google rechazó el código (HTTP ${response.status})`);
-    const { id_token } = tokenSchema.parse(await response.json());
-    return this.verifyIdToken(id_token, pending.nonce);
+    const { id_token, ...tokens } = tokenSchema.parse(await response.json());
+    return { ...(await this.verifyIdToken(id_token, pending.nonce)), tokens };
   }
 
   async verifyIdToken(idToken: string, nonce: string): Promise<GoogleIdentity> {
