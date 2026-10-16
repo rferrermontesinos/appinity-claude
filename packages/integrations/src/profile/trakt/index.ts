@@ -205,6 +205,7 @@ export function createTraktAdapter(options: TraktOptions): ProfileSourceAdapter 
     'Content-Type': 'application/json',
     'trakt-api-key': options.clientId,
     'trakt-api-version': '2',
+    // Cloudflare de Trakt rechaza (403) los User-Agent que contienen «Claude»: no usar el del catálogo.
     'User-Agent': options.userAgent ?? 'APPINITY/0.1',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   });

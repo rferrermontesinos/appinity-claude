@@ -35,7 +35,6 @@ const registry = createAdapterRegistry({
           redirectUri: process.env.TRAKT_REDIRECT_URI?.trim() || 'http://localhost:3100/v1/connect/trakt/callback',
           ...(process.env.TRAKT_CLIENT_SECRET?.trim() ? { clientSecret: process.env.TRAKT_CLIENT_SECRET.trim() } : {}),
           identifier: catalogIdentifier,
-          userAgent: env.catalogUserAgent,
         },
       }
     : {}),
