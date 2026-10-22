@@ -55,9 +55,12 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 - **Verificación de Google**: 2 de los 11 scopes de Data Portability son restringidos y requieren una evaluación CASA de pago. Producción los omite por defecto con `GOOGLE_RESTRICTED_SCOPES`. Preparado docs/google-verification.md.
 - `pnpm test`: 34 ficheros y 347 tests OK; lint y typecheck limpios.
 
+- **Fusión de cuentas** (2026-10-22): las 130 observaciones de la cuenta local antigua (Steam y Google) pasan a la cuenta de «Continuar con Google». La cuenta antigua queda vacía, sin borrar, y hay una copia en backups/. Ahora son 141 observaciones y 138 gustos.
+- **Diagnóstico completo y fases de diseño**: docs/diagnostico-2026-10-22.md.
+
 ### Siguiente paso
 
-Decidir el dominio para la portada y la política de privacidad: propio o GitHub Pages, que es gratuito.
+Recomendador por contenido para el arranque en frío; después imágenes del catálogo real y la ciudad en el alta (docs/diagnostico-2026-10-22.md, §3).
 
 ## Entrega 2026-10-16 · fase 11D (AniList) y arreglo de Trakt
 
