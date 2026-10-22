@@ -4,7 +4,14 @@
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 if (-not $env:ANDROID_HOME) { $env:ANDROID_HOME = Join-Path $env:LOCALAPPDATA 'Android\Sdk' }
-if (-not $env:JAVA_HOME) { $env:JAVA_HOME = 'C:\Program Files\Android\Android Studio\jbr' }
+# JDK 17 o 21: con el JDK 25 de Android Studio, su aviso de «restricted method» hace fallar el CMake de React Native.
+if (-not $env:JAVA_HOME) {
+  $jdk = Get-ChildItem (Join-Path $env:USERPROFILE '.gradle\jdks') -Directory -ErrorAction SilentlyContinue |
+    Where-Object { $_.Name -match '-(17|21)-' -and (Test-Path (Join-Path $_.FullName 'bin\java.exe')) } |
+    Select-Object -First 1
+  $env:JAVA_HOME = if ($jdk) { $jdk.FullName } else { 'C:\Program Files\Android\Android Studio\jbr' }
+}
+Write-Output "JDK: $env:JAVA_HOME"
 if (-not (Test-Path $env:ANDROID_HOME)) { throw "No se encuentra el SDK de Android en $env:ANDROID_HOME" }
 if (-not (Test-Path (Join-Path $env:JAVA_HOME 'bin\java.exe'))) { throw "No se encuentra el JDK en $env:JAVA_HOME" }
 Set-Location (Join-Path $root 'apps\mobile')
