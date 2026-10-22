@@ -89,3 +89,15 @@ describe('Google Calendar · sync', () => {
     expect(googleBooksConnection({ access_token: 'a', refresh_token: 'r' })).not.toMatchObject({ credentials: { sharedGrant: '1' } });
   });
 });
+
+describe('Google Data Portability · scopes restringidos', () => {
+  it('sin CASA (producción) se piden solo los grupos sensibles', async () => {
+    const { portabilityGroups, RESTRICTED_RESOURCE_GROUPS } = await import('../src/profile/google-portability/constants.js');
+    expect(portabilityGroups(true)).toEqual(expect.arrayContaining([...RESTRICTED_RESOURCE_GROUPS]));
+    const sensitive = portabilityGroups(false);
+    expect(sensitive).not.toContain('myactivity.youtube');
+    expect(sensitive).not.toContain('maps.starred_places');
+    expect(sensitive).toEqual(expect.arrayContaining(['maps.reviews', 'youtube.music', 'youtube.subscriptions', 'saved.collections']));
+    expect(sensitive).toHaveLength(portabilityGroups(true).length - 2);
+  });
+});

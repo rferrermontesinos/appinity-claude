@@ -992,3 +992,9 @@ El acuerdo de desarrolladores de Twitch exige permiso escrito para guardar sus d
 - **Títulos**: solo con un prefijo o sufijo explícito («Concierto: X», «Cine: X»). Un título libre no se interpreta, para no inventar gustos.
 - **Ubicaciones**: no se envían a geocodificar las direcciones sin nombre, los lugares privados ni las ubicaciones en línea.
 - **Revocación**: un permiso compartido con el inicio de sesión no se revoca al desconectar una fuente (`sharedGrant`).
+
+## 2026-10-22 · Scopes restringidos de Google
+
+- `myactivity.youtube` y `maps.starred_places` son restringidos: en producción exigen una evaluación CASA anual de pago.
+- Sin pagos, `GOOGLE_RESTRICTED_SCOPES` es false por defecto en producción y solo se piden los scopes sensibles, cuya verificación es gratuita. En desarrollo se piden todos.
+- Detalle en docs/google-verification.md.

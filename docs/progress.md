@@ -49,9 +49,15 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
   - ningún título de evento guardado.
 - **Arreglo**: la vista web usa siempre la API de localhost y el móvil la IP de Metro, porque la IP local del .env caducaba.
 
+### Fase 13 · comprobaciones y verificación de Google
+
+- **§19 de la especificación**: añadidos los casos que faltaban. Un artista antiguo entra en Trending por votos de este año, y un voto duplicado desde otra fuente no cuenta dos veces. La afinidad simétrica es una decisión expresa del titular (affinity-v3).
+- **Verificación de Google**: 2 de los 11 scopes de Data Portability son restringidos y requieren una evaluación CASA de pago. Producción los omite por defecto con `GOOGLE_RESTRICTED_SCOPES`. Preparado docs/google-verification.md.
+- `pnpm test`: 34 ficheros y 347 tests OK; lint y typecheck limpios.
+
 ### Siguiente paso
 
-Siguiente fase según la especificación.
+Decidir el dominio para la portada y la política de privacidad: propio o GitHub Pages, que es gratuito.
 
 ## Entrega 2026-10-16 · fase 11D (AniList) y arreglo de Trakt
 

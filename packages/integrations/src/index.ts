@@ -17,3 +17,4 @@ export { GOOGLE_CALENDAR_MANIFEST, GOOGLE_CALENDAR_SCOPE, createGoogleCalendarAd
 export { GOOGLE_BOOKS_MANIFEST, GOOGLE_BOOKS_SCOPE, createGoogleBooksAdapter, googleBooksConnection, collectBooks, mapBook, parseReviewRating, type BookRecord } from './profile/google-books/index.js';
 export { ANILIST_MANIFEST, createAniListAdapter, collectAniList, mapAniList, aniListCategories, type AniListItem } from './profile/anilist/index.js';
 export { TRAKT_MANIFEST, createTraktAdapter, collectTrakt, mapTrakt, type TraktItem } from './profile/trakt/index.js';
+export { RESTRICTED_RESOURCE_GROUPS, portabilityGroups } from './profile/google-portability/constants.js';
