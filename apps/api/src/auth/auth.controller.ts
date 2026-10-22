@@ -17,7 +17,7 @@ import { DATABASE, REDIS } from '../infra/tokens.js';
 import type { AuthContext } from './auth.types.js';
 import { CurrentUser } from './current-user.decorator.js';
 import { DevAuthService } from './dev-auth.service.js';
-import { GOOGLE_BOOKS_SCOPE, GoogleOidc, type PendingSignIn } from './google-oidc.js';
+import { GOOGLE_BOOKS_SCOPE, GOOGLE_CALENDAR_SCOPE, GoogleOidc, type PendingSignIn } from './google-oidc.js';
 import { SessionTokensService } from './session-tokens.service.js';
 
 const STATE_TTL = 10 * 60;
@@ -79,7 +79,10 @@ export class AuthController {
     if (!this.google) throw new ServiceUnavailableException('Inicio de sesión con Google no configurado');
     const state = randomBytes(24).toString('base64url');
     // Google Books en el mismo consentimiento del alta, si el servidor tiene esa fuente.
-    const { url, pending } = this.google.start(state, { books: this.connections.hasSource('google_books') });
+    const { url, pending } = this.google.start(state, {
+      books: this.connections.hasSource('google_books'),
+      calendar: this.connections.hasSource('google_calendar'),
+    });
     await this.redis.set(this.key('state', state), JSON.stringify({ ...pending, returnUrl: query.returnUrl } satisfies SignInState), 'EX', STATE_TTL);
     res.setHeader('Cache-Control', 'no-store');
     res.redirect(302, url);
@@ -111,9 +114,15 @@ export class AuthController {
       const identity = await this.google.complete(query.code, pending);
       const { userId, isNew } = await findOrCreateUserForIdentity(this.database.db, { provider: 'google', ...identity });
       // Google Books concedido en este mismo consentimiento: la fuente queda conectada y empieza su primer sync.
-      if ((identity.tokens.scope ?? '').split(' ').includes(GOOGLE_BOOKS_SCOPE)) {
+      const granted = (identity.tokens.scope ?? '').split(' ');
+      if (granted.includes(GOOGLE_BOOKS_SCOPE)) {
         await this.connections.attachGoogleBooks(userId, identity.tokens).catch((error: Error) => {
           this.logger.warn(`Google Books no se pudo conectar en el alta: ${error.message.slice(0, 160)}`);
+        });
+      }
+      if (granted.includes(GOOGLE_CALENDAR_SCOPE)) {
+        await this.connections.attachGoogleCalendar(userId, identity.tokens).catch((error: Error) => {
+          this.logger.warn(`Google Calendar no se pudo conectar en el alta: ${error.message.slice(0, 160)}`);
         });
       }
       const session = await createSession(this.database.db, userId);

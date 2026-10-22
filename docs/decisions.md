@@ -984,3 +984,11 @@ El acuerdo de desarrolladores de Twitch exige permiso escrito para guardar sus d
 - En AniList, «abandonado» cuenta como consumido con preferencia NULL. No se trata como rechazo, porque AniList no dice el motivo.
 - Anime película va a cine y el resto del anime a series. Manga y novela ligera van a libros: no se crea una novena categoría.
 - Las fuentes detrás de Cloudflare no reciben el User-Agent del catálogo, que contiene «Claude» y se bloquea como bot.
+
+## 2026-10-22 · Google Calendar
+
+- **Sin conexión aparte**: el calendario solo se concede en «Continuar con Google» (un único momento de permisos). Una cuenta ya creada lo obtiene al volver a entrar.
+- **Semántica §6**: un evento es intención, no asistencia. Conocido 0,8, consumido 0 y preferencia NULL, también para los eventos pasados.
+- **Títulos**: solo con un prefijo o sufijo explícito («Concierto: X», «Cine: X»). Un título libre no se interpreta, para no inventar gustos.
+- **Ubicaciones**: no se envían a geocodificar las direcciones sin nombre, los lugares privados ni las ubicaciones en línea.
+- **Revocación**: un permiso compartido con el inicio de sesión no se revoca al desconectar una fuente (`sharedGrant`).

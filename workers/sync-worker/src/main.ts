@@ -65,6 +65,7 @@ const registry = createAdapterRegistry({
           redirectUri: process.env.GOOGLE_BOOKS_REDIRECT_URI?.trim() || 'http://localhost:3100/v1/connect/google_books/callback',
           identifier: catalogIdentifier,
         },
+        googleCalendar: { clientId: env.google.clientId, clientSecret: env.google.clientSecret, identifier: catalogIdentifier },
       }
     : {}),
 });

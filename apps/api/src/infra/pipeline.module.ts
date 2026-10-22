@@ -39,6 +39,7 @@ import { ADAPTER_REGISTRY, DATABASE, ENTITY_RESOLVER, QUEUES, STORAGE } from './
                   clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET,
                   redirectUri: env.GOOGLE_BOOKS_REDIRECT_URI,
                 },
+                googleCalendar: { clientId: env.GOOGLE_OAUTH_CLIENT_ID, clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET },
               }
             : {}),
         }),
