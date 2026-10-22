@@ -998,3 +998,26 @@ El acuerdo de desarrolladores de Twitch exige permiso escrito para guardar sus d
 - `myactivity.youtube` y `maps.starred_places` son restringidos: en producción exigen una evaluación CASA anual de pago.
 - Sin pagos, `GOOGLE_RESTRICTED_SCOPES` es false por defecto en producción y solo se piden los scopes sensibles, cuya verificación es gratuita. En desarrollo se piden todos.
 - Detalle en docs/google-verification.md.
+
+## 2026-10-22 · Arranque en frío
+
+- **Relaciones de contenido**: son datos públicos de Wikidata (CC0) y no se guarda qué usuario las originó. Pesos
+  propuestos sin calibrar:
+
+  | Relación | Peso |
+  |---|---|
+  | Saga o secuela | 1 |
+  | Director, creador o autor | 0,8 |
+  | Influencia | 0,7 |
+  | Guionista o estudio | 0,6 |
+  | Géneros | 0,4–0,6 |
+
+- **Diversidad**: como mucho 3 recomendaciones por gusto de origen. Dos relaciones desde el mismo gusto no suman dos
+  veces.
+- **Imágenes**: solo licencias libres de Commons, con autoría guardada. Para los restaurantes no se busca «una foto
+  cerca», que podría ser de otro sitio.
+- **Invitaciones**: compartir el enlace es el consentimiento de quien invita y aceptarlo, el de quien recibe; por eso se
+  crea la amistad directamente. Todas las rutas requieren sesión.
+- **Ciudad en el alta**: opcional y aproximada. Se geocodifica antes de completar el alta para no dejarla a medias.
+- **Build de desarrollo**: local con Gradle, sin EAS (sin coste). La carpeta `android/` se genera con prebuild y no se
+  versiona.

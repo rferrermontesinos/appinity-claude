@@ -25,6 +25,70 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-22 · fase 14 (arranque en frío y prioridades del diagnóstico)
+
+### Qué se ha hecho
+
+1. **Recomendador por contenido** (bloque `content`, «porque te gusta X»):
+   - relaciones públicas de Wikidata: saga, secuela, director, guionista, creador, autor, estudio, influencias y
+     géneros (`catalog_relations`, migración 0014);
+   - una consulta SPARQL por relación, porque la UNION tardaba 65 s y cada una por separado menos de 1,5 s;
+   - en series se usa el creador y no el director, que en las series son los de cada episodio;
+   - en música, artistas del mismo tipo (grupo o solista) con 2 géneros en común o influencias;
+   - el bloque va antes de comunidad y explorar, y solo lo generan gustos claros (≥ 0,3); un disgusto nunca recomienda
+     lo relacionado.
+2. **Imágenes del catálogo real** desde Wikidata (P18 y P154) y Commons, con licencia libre y autoría. El job
+   `enrich-catalog` del worker las añade cada 6 h y al arrancar.
+3. **Ciudad opcional en el alta**: Nominatim, solo poblaciones; un nombre de calle o un texto inventado se rechazan.
+   Se guarda aproximada.
+4. **Invitaciones por enlace** (migración 0015):
+   - código aleatorio de 10 caracteres, 30 días y 20 usos;
+   - aceptar crea la amistad y abre el chat;
+   - respetan bloqueos y datasets; la invitación propia no sirve.
+5. **Diseño D0**: dirección y principios en docs/design/D0-direccion.md.
+6. **CI**: GitHub Actions con PostGIS y Redis (lint, typecheck y tests); repositorio público, sin coste.
+7. **Build de desarrollo local**: `expo-dev-client` y `pnpm android:build`, que genera un APK en este PC con el SDK y
+   el JDK de Android Studio, sin EAS.
+
+También: fusión de cuentas (la antigua queda vacía, no se ha borrado) y ciudad «Barcelona» en la cuenta real, deducida
+de los lugares de su calendario y modificable en Perfil.
+
+### Resultados reales con la cuenta del titular
+
+| Métrica | Antes | Después |
+|---|---|---|
+| Recomendaciones | 3 (explorar) | **47** «porque te gusta X» |
+| Objetos del catálogo real con imagen | 9 % | **55 %** del catálogo de entonces; +109 de los objetos nuevos |
+| Trending | «sin ubicación» | «votos insuficientes» (falta gente en la zona) |
+
+Ejemplos de recomendaciones:
+- *2010* y *El resplandor*, por *2001: A Space Odyssey*;
+- *The Cranberries*, por La Oreja de Van Gogh;
+- Michael Jackson, por Beyoncé.
+
+Endpoints comprobados por HTTP con una sesión temporal: recomendaciones con su motivo e imagen, crear invitación y
+rechazo de la invitación propia.
+
+### Comprobaciones
+
+- `pnpm test`: 36 ficheros y 357 tests OK; lint y typecheck limpios.
+- Tests nuevos:
+  - algoritmo por contenido (3);
+  - consultas y relacionados de Wikidata (2);
+  - bloque «por contenido» de extremo a extremo (1);
+  - invitaciones (4).
+
+### Limitaciones conocidas
+
+- La calidad de las relaciones musicales es irregular: Wikidata tiene pocas influencias y los géneros son amplios.
+- Las fotos de restaurantes siguen con fallback: no hay fotos libres fiables de cada local.
+- Sin otros usuarios reales, consenso, descubrimiento y Trending siguen vacíos. Las invitaciones son la vía.
+
+### Siguiente paso
+
+D1, el sistema de diseño, con los plugins (disponibles en la próxima sesión), e instalar el APK de desarrollo en el
+teléfono.
+
 ## Entrega 2026-10-22 · fase 11E (Google Calendar)
 
 ### Qué se ha hecho
