@@ -41,11 +41,17 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 - `pnpm test`: 34 ficheros y 346 tests OK.
 - `pnpm lint` y `pnpm typecheck` limpios.
 - Prueba real con OSM y Wikidata sobre eventos de ejemplo: 6 de 10 planes identificados y ningún título guardado.
-- **Sin probar con un calendario real**: falta activar la Google Calendar API y que el titular vuelva a entrar con Google para conceder el permiso.
+- **Validado con el calendario real** (2026-10-22):
+  - 607 eventos leídos, 82 con ubicación y 23 lugares candidatos;
+  - **5 identificados**: 3 restaurantes, un teatro y la Sagrada Familia (dos con 2 eventos);
+  - 59 ubicaciones descartadas antes de buscar, casi todas reuniones en línea recurrentes;
+  - 16 lugares sin coincidencia exacta en OSM;
+  - ningún título de evento guardado.
+- **Arreglo**: la vista web usa siempre la API de localhost y el móvil la IP de Metro, porque la IP local del .env caducaba.
 
 ### Siguiente paso
 
-Activar la API, volver a entrar con Google y revisar el primer sync.
+Siguiente fase según la especificación.
 
 ## Entrega 2026-10-16 · fase 11D (AniList) y arreglo de Trakt
 
