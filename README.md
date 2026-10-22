@@ -369,15 +369,19 @@ Comprobaciones esperadas:
 | `pnpm user:local --handle h --name "N"` | Crea o regenera una cuenta local real (dataset `live`) y muestra su código una vez |
 | `pnpm secret:set STEAM_WEB_API_KEY [--clipboard]` | Guarda la clave de Steam en `.env` sin mostrarla (escrita o desde el portapapeles) |
 | `pnpm secret:set GOOGLE_OAUTH_CLIENT_ID --clipboard` y `pnpm secret:set GOOGLE_OAUTH_CLIENT_SECRET --clipboard` | Guardan el cliente OAuth de Google en `.env` sin mostrarlo |
-| `pnpm api` / `pnpm worker` | API NestJS en `0.0.0.0:3100` / worker BullMQ (syncs, syncs programados cada hora, exports de Google aplazados y caché de imágenes) |
+| `pnpm api` / `pnpm worker` | API NestJS en `0.0.0.0:3100` / worker BullMQ (syncs, syncs programados cada hora, exports de Google aplazados, caché de imágenes y, cada 6 h, relaciones por contenido e imágenes de Wikimedia) |
 | `pnpm dev` | Compilación en modo watch + API + worker |
 | `pnpm mobile` | Metro/Expo en el puerto 8091 |
 | `pnpm --filter @appinity/mobile web` | Vista web de desarrollo en el puerto 8092 (solo verificación; no sustituye al teléfono) |
+| `pnpm android:build` | Build de desarrollo de Android en este PC (sin EAS): APK en `apps/mobile/android/app/build/outputs/apk/debug/` |
+| `pnpm db:backup` | Copia de la base de datos de desarrollo en `backups/` (ignorada por Git) |
 | `pnpm doctor` | Diagnóstico de servicios y red |
 | `pnpm lint` | ESLint (incluye la regla que impide importar proveedores en `packages/algorithms`) |
 | `pnpm typecheck` | `tsc` de paquetes, tests y app móvil |
 | `pnpm test` | Compila y ejecuta los tests unitarios y de integración (requiere `pnpm services:up`) |
 | `pnpm fixtures:catalog` | Regenera la instantánea de catálogo desde Wikidata/Commons (requiere red; tarea manual) |
+
+La CI de GitHub Actions (`.github/workflows/ci.yml`) ejecuta lint, typecheck y tests en cada push, con PostGIS y Redis propios.
 
 Los tests de integración usan la base de datos `appinity_claude_test` y la vacían en cada ejecución. Nunca tocan
 `appinity_claude`.
