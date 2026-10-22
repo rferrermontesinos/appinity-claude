@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Inject, Logger, Post, Query, Res, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, HttpCode, Inject, Logger, Post, Query, Res, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { users, type DatabaseHandle } from '@appinity/database';
 import { completeOnboarding, createSession, findOrCreateUserForIdentity, revokeSession, rotateSession } from '@appinity/ingestion';
 import type { AuthProvidersDto, AuthSessionDto } from '@appinity/shared';
@@ -17,6 +17,8 @@ import { DATABASE, REDIS } from '../infra/tokens.js';
 import type { AuthContext } from './auth.types.js';
 import { CurrentUser } from './current-user.decorator.js';
 import { DevAuthService } from './dev-auth.service.js';
+import { geocodeCity } from '@appinity/integrations';
+import { MeService } from '../me/me.service.js';
 import { GOOGLE_BOOKS_SCOPE, GOOGLE_CALENDAR_SCOPE, GoogleOidc, type PendingSignIn } from './google-oidc.js';
 import { SessionTokensService } from './session-tokens.service.js';
 
@@ -26,7 +28,11 @@ const HANDOFF_TTL = 120;
 const startSchema = z.object({ returnUrl: z.string().max(512).refine(isAllowedReturnUrl, 'URL de vuelta no permitida') }).strict();
 const codeSchema = z.object({ code: z.string().regex(/^[\w-]{20,64}$/) }).strict();
 const refreshSchema = z.object({ refreshToken: z.string().min(20).max(200) }).strict();
-const onboardingSchema = z.object({ adult: z.literal(true), termsAccepted: z.literal(true), displayName: z.string().trim().min(1).max(60).optional() }).strict();
+const onboardingSchema = z
+  .object({ adult: z.literal(true), termsAccepted: z.literal(true), displayName: z.string().trim().min(1).max(60).optional(), city: z.string().trim().min(2).max(80).optional() })
+  .strict();
+/** Identificación ante Nominatim (OSM). Sin «Claude»: algunos servicios tras Cloudflare lo bloquean. */
+const GEOCODER_USER_AGENT = 'APPINITY/0.1 (+https://github.com/rferrermontesinos/appinity-claude)';
 const deleteSchema = z.object({ confirm: z.literal('ELIMINAR') }).strict();
 
 interface SignInState extends PendingSignIn {
@@ -55,6 +61,7 @@ export class AuthController {
     private readonly tokens: SessionTokensService,
     private readonly devAuth: DevAuthService,
     private readonly connections: ConnectionsService,
+    private readonly me: MeService,
   ) {
     const clientId = env.GOOGLE_OAUTH_CLIENT_ID;
     const clientSecret = env.GOOGLE_OAUTH_CLIENT_SECRET;
@@ -172,7 +179,17 @@ export class AuthController {
   @Post('v1/me/onboarding')
   @HttpCode(204)
   async onboarding(@CurrentUser() auth: AuthContext, @Body(new ZodPipe(onboardingSchema)) body: z.infer<typeof onboardingSchema>): Promise<void> {
+    // Ciudad (opcional): activa Trending y los lugares cercanos sin pedir el GPS. Se guarda aproximada, como siempre.
+    // Se geocodifica antes de completar el alta: una ciudad que no existe no deja el alta a medias.
+    const city = body.city
+      ? await geocodeCity(body.city, { userAgent: GEOCODER_USER_AGENT }).catch((error: Error) => {
+          this.logger.warn(`No se pudo geocodificar la ciudad del alta: ${error.message.slice(0, 120)}`);
+          return null;
+        })
+      : null;
+    if (body.city && !city) throw new BadRequestException({ code: 'city_not_found', message: 'No encontramos esa ciudad: prueba con otro nombre o déjala en blanco' });
     await completeOnboarding(this.database.db, auth.userId, { adult: body.adult, termsAccepted: body.termsAccepted, ...(body.displayName ? { displayName: body.displayName } : {}) });
+    if (city) await this.me.updateSettings(auth.userId, { location: { label: city.label, latitude: city.latitude, longitude: city.longitude, source: 'manual' } });
   }
 
   /**

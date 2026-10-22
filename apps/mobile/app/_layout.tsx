@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, usePathname, useRouter, useSegments } from 'expo-router';
+import { rememberInvite, takePendingInvite } from '../src/invite';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
@@ -17,6 +18,7 @@ WebBrowser.maybeCompleteAuthSession();
 function SessionGate() {
   const { hydrated, session, hydrate } = useSession();
   const segments = useSegments();
+  const pathname = usePathname();
   const router = useRouter();
   const me = useMe();
   const { i18n: i18next } = useTranslation();
@@ -31,15 +33,22 @@ function SessionGate() {
     const onLogin = segments[0] === 'dev-login';
     // /auth recibe la vuelta de Google antes de que haya sesión.
     const onAuthReturn = segments[0] === 'auth';
+    // Un enlace de invitación sin sesión se recuerda y se retoma después de entrar (o del alta).
+    const inviteCode = /^\/invite\/([a-z0-9]{10})$/i.exec(pathname)?.[1];
+    if (!session && inviteCode) rememberInvite(inviteCode.toLowerCase());
     if (!session && !onLogin && !onAuthReturn) router.replace('/dev-login');
     if (session && onLogin) router.replace('/');
-  }, [hydrated, session, segments, router]);
+  }, [hydrated, session, segments, router, pathname]);
 
   // Alta pendiente (cuenta real nueva): primero mayoría de edad y condiciones.
   const needsOnboarding = me.data?.needsOnboarding ?? false;
   useEffect(() => {
     if (session && needsOnboarding && segments[0] !== 'onboarding') router.replace('/onboarding');
-  }, [session, needsOnboarding, segments, router]);
+    if (session && me.data && !needsOnboarding && segments[0] !== 'invite') {
+      const invite = takePendingInvite();
+      if (invite) router.replace(`/invite/${invite}`);
+    }
+  }, [session, needsOnboarding, segments, router, me.data]);
 
   // El idioma guardado en los ajustes del usuario prevalece sobre el del sistema.
   const locale = me.data?.settings.locale;

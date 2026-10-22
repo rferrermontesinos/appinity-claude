@@ -354,7 +354,7 @@ export interface BlockedPersonDto {
  * Bloques principales (70/20/10) y respaldos cuando se agotan (fase 9): comunidad (valorado por varias personas de
  * APPINITY), conservados en otra sesión y explorar (sin señales todavía). Cada tarjeta dice de dónde sale.
  */
-export type RecommendationBlockDto = 'consensus' | 'discovery' | 'trending' | 'community' | 'kept' | 'explore';
+export type RecommendationBlockDto = 'consensus' | 'discovery' | 'trending' | 'content' | 'community' | 'kept' | 'explore';
 
 /**
  * Motivo verificable de una tarjeta (§2 y §12): para el consenso, cuántas almas gemelas la apoyan (nunca quiénes); para
@@ -367,6 +367,8 @@ export interface RecommendationReasonDto {
   contributor?: { userId: string; displayName: string };
   positiveVoters?: number;
   totalVoters?: number;
+  /** Por contenido: el gusto propio que lleva a esta tarjeta y la relación (misma saga, mismo director…). */
+  because?: { itemId: string; title: string; relation: string };
 }
 
 export interface RecommendationDto {
@@ -454,4 +456,24 @@ export interface ApiErrorDto {
   error: string;
   message: string;
   details?: unknown;
+}
+
+/** Invitación por enlace (crecimiento por grupos de amigos). */
+export interface InvitationDto {
+  code: string;
+  expiresAt: string;
+  /** Abre la app instalada. */
+  appUrl: string;
+  /** Vista web, si el servidor la tiene configurada. */
+  webUrl?: string;
+}
+
+export interface InvitationPreviewDto {
+  inviterId: string;
+  inviterName: string;
+}
+
+export interface InvitationAcceptDto {
+  inviterId: string;
+  state: 'friends';
 }

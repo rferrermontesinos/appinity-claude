@@ -3,6 +3,7 @@ import {
   RECOMMENDATION_PARAMS_V1,
   RECOMMENDATION_VERSION,
   communityCandidates,
+  contentCandidates,
   consensusCandidates,
   currentYear,
   exploreOrder,
@@ -20,6 +21,7 @@ import {
 } from '@appinity/algorithms';
 import {
   catalogItems,
+  catalogRelations,
   categoryAffinities,
   homeDismissals,
   recommendationActions,
@@ -31,6 +33,7 @@ import {
 } from '@appinity/database';
 import { isCategory, type Category } from '@appinity/shared';
 import { and, eq, gte, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
+import { itemTitles } from './content.js';
 import { unseenItems } from './home.js';
 import { CONSENSUS_SOULMATES, topSoulmates } from './soulmates.js';
 
@@ -73,6 +76,7 @@ export interface RecommendationItem {
   discovery?: { contributorId: string; contributorName: string; contributorAffinity: number };
   trending?: { positiveVoters: number; totalVoters: number; averageScore: number };
   community?: { supporters: number };
+  content?: { becauseItemId: string; becauseTitle: string; relation: string };
 }
 
 export type TrendingStatus = 'ok' | 'no_location' | 'insufficient_votes';
@@ -269,10 +273,42 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
   });
 
   // Respaldos, en este orden y solo si los bloques principales no llenan la página.
-  const available = { consensus: consensus.length, discovery: discovery.length, trending: trending.length, community: 0, kept: 0, explore: 0 };
+  const available = { consensus: consensus.length, discovery: discovery.length, trending: trending.length, content: 0, community: 0, kept: 0, explore: 0 };
   if (options.includeFallbacks !== false && items.length < limit && viewer) {
     const used = new Set(items.map((i) => i.itemId));
     const take = (itemId: string) => !used.has(itemId) && items.length < limit && (used.add(itemId), true);
+
+    // Por contenido (arranque en frío): obras relacionadas con lo que a esta persona le gusta (Wikidata, CC0).
+    const likes = await db
+      .select({ itemId: userItemProfiles.catalogItemId, score: userItemProfiles.preferenceScore, confidence: userItemProfiles.preferenceConfidence })
+      .from(userItemProfiles)
+      .where(and(eq(userItemProfiles.userId, userId), gte(userItemProfiles.preferenceScore, 0.3)));
+    if (likes.length) {
+      const relations = await db
+        .select({ sourceItemId: catalogRelations.sourceItemId, targetItemId: catalogRelations.targetItemId, relation: catalogRelations.relation, weight: catalogRelations.weight })
+        .from(catalogRelations)
+        .where(inArray(catalogRelations.sourceItemId, likes.map((l) => l.itemId)));
+      const targets = [...new Set(relations.map((r) => r.targetItemId))].filter((id) => !meta.has(id));
+      for (const [id, m] of await itemMeta(db, targets, userId, hasLocation, radiusM)) meta.set(id, m);
+      const list = contentCandidates(
+        likes.map((l) => ({ itemId: l.itemId, score: l.score ?? 0, confidence: l.confidence ?? 0 })),
+        relations,
+      ).filter((c) => eligible(c.itemId));
+      available.content = list.length;
+      const titles = await itemTitles(db, [...new Set(list.map((c) => c.becauseItemId))]);
+      for (const c of list) {
+        if (take(c.itemId)) {
+          items.push({
+            itemId: c.itemId,
+            block: 'content',
+            fillsFor: null,
+            score: c.score,
+            isNew: false,
+            content: { becauseItemId: c.becauseItemId, becauseTitle: titles.get(c.becauseItemId) ?? '—', relation: c.relation },
+          });
+        }
+      }
+    }
 
     // Comunidad: cualquier persona elegible del dataset (sin afinidad ni zona), una persona = un voto.
     const community = await db.execute<{ user_id: string; item_id: string; score: number; confidence: number }>(sql`

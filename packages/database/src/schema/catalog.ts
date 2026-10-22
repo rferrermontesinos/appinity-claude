@@ -7,6 +7,7 @@ import {
   doublePrecision,
   index,
   integer,
+  primaryKey,
   jsonb,
   pgTable,
   text,
@@ -146,3 +147,41 @@ export const catalogImages = pgTable(
     check('catalog_images_size_positive', sql`(${t.width} IS NULL OR ${t.width} > 0) AND (${t.height} IS NULL OR ${t.height} > 0)`),
   ],
 );
+
+/**
+ * Relaciones públicas entre objetos del catálogo (fase de arranque en frío, 2026-10-22): misma saga, mismo director,
+ * autor o estudio, influencias musicales… Salen de Wikidata (CC0), no de ningún usuario: sirven para recomendar «porque
+ * te gusta X» aunque todavía no haya almas gemelas. `weight` en [0, 1].
+ */
+export const catalogRelations = pgTable(
+  'catalog_relations',
+  {
+    sourceItemId: uuid('source_item_id')
+      .notNull()
+      .references(() => catalogItems.id, { onDelete: 'cascade' }),
+    targetItemId: uuid('target_item_id')
+      .notNull()
+      .references(() => catalogItems.id, { onDelete: 'cascade' }),
+    relation: text('relation').notNull(),
+    weight: doublePrecision('weight').notNull(),
+    provider: text('provider').notNull().default('wikidata'),
+    version: text('version').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.sourceItemId, t.targetItemId, t.relation] }),
+    index('catalog_relations_source_idx').on(t.sourceItemId),
+    check('catalog_relations_weight_range', sql`${t.weight} > 0 AND ${t.weight} <= 1`),
+    check('catalog_relations_not_self', sql`${t.sourceItemId} <> ${t.targetItemId}`),
+  ],
+);
+
+/** Objetos cuyas relaciones ya se consultaron (y cuándo), para no repetir la consulta en cada ejecución. */
+export const catalogRelationChecks = pgTable('catalog_relation_checks', {
+  catalogItemId: uuid('catalog_item_id')
+    .primaryKey()
+    .references(() => catalogItems.id, { onDelete: 'cascade' }),
+  version: text('version').notNull(),
+  relationsFound: integer('relations_found').notNull().default(0),
+  checkedAt: timestamp('checked_at', { withTimezone: true }).notNull().defaultNow(),
+});

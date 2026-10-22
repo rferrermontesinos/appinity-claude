@@ -19,6 +19,7 @@ export default function OnboardingScreen() {
   const [adult, setAdult] = useState(false);
   const [terms, setTerms] = useState(false);
   const [name, setName] = useState('');
+  const [city, setCity] = useState('');
   const [error, setError] = useState<unknown>(null);
   const [saving, setSaving] = useState(false);
 
@@ -26,7 +27,7 @@ export default function OnboardingScreen() {
     setSaving(true);
     setError(null);
     try {
-      await apiRequest('/v1/me/onboarding', { method: 'POST', body: { adult: true, termsAccepted: true, ...(name.trim() ? { displayName: name.trim() } : {}) } });
+      await apiRequest('/v1/me/onboarding', { method: 'POST', body: { adult: true, termsAccepted: true, ...(name.trim() ? { displayName: name.trim() } : {}), ...(city.trim() ? { city: city.trim() } : {}) } });
       await queryClient.invalidateQueries({ queryKey: ['me'] });
       router.replace('/profile');
     } catch (e) {
@@ -57,6 +58,17 @@ export default function OnboardingScreen() {
           maxLength={60}
           style={{ color: c.text, borderWidth: 1, borderColor: c.border, borderRadius: radius.sm, padding: spacing.md }}
         />
+        <TextInput
+          value={city}
+          onChangeText={setCity}
+          placeholder={t('onboarding.cityPlaceholder')}
+          placeholderTextColor={c.textMuted}
+          accessibilityLabel={t('onboarding.cityPlaceholder')}
+          autoComplete="off"
+          maxLength={80}
+          style={{ color: c.text, borderWidth: 1, borderColor: c.border, borderRadius: radius.sm, padding: spacing.md }}
+        />
+        <Small>{t('onboarding.cityNote')}</Small>
         {row(t('onboarding.adult'), adult, setAdult)}
         {row(t('onboarding.terms'), terms, setTerms)}
         <Small>{t('onboarding.consentNote')}</Small>

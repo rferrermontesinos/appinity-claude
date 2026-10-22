@@ -20,6 +20,8 @@ export function reasonText(t: (key: string, options?: Record<string, unknown>) =
       return t('home.reasonDiscovery', { name: r.reason.contributor?.displayName ?? '—' });
     case 'trending':
       return t('home.reasonTrending', { count: r.reason.positiveVoters ?? 0 });
+    case 'content':
+      return t(`home.reasonContent.${r.reason.because?.relation ?? 'other'}`, { title: r.reason.because?.title ?? '—', defaultValue: t('home.reasonContent.other', { title: r.reason.because?.title ?? '—' }) });
     case 'community':
       return t('home.reasonCommunity', { count: r.reason.supporters ?? 0 });
     case 'kept':
@@ -33,6 +35,7 @@ const REASON_ICON = {
   consensus: 'account-group',
   discovery: 'account-heart',
   trending: 'map-marker-radius',
+  content: 'link-variant',
   community: 'account-multiple-outline',
   kept: 'heart-outline',
   explore: 'compass-outline',

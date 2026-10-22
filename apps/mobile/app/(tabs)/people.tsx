@@ -6,6 +6,7 @@ import { Pressable, Text, View } from 'react-native';
 import { useChatInbox, useSoulmates } from '../../src/api/queries';
 import { ChatInbox } from '../../src/components/ChatInbox';
 import { FriendsCard } from '../../src/components/FriendsCard';
+import { InviteCard } from '../../src/components/InviteCard';
 import { PersonAvatar, formatAffinity } from '../../src/components/PersonAvatar';
 import { Badge, Body, Card, ErrorCard, Loading, Screen, Small, Title } from '../../src/components/ui';
 import { spacing, usePalette } from '../../src/theme';
@@ -98,6 +99,7 @@ function SoulmatesAndFriends() {
   const soulmates = useSoulmates();
   return (
     <>
+      <InviteCard />
       <Card>
         <Title>{t('people.soulmates')}</Title>
         <Body muted>{t('people.soulmatesIntro')}</Body>
