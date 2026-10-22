@@ -71,6 +71,8 @@ const envSchema = z
     GOOGLE_SIGNIN_REDIRECT_URI: z.url().default('http://localhost:3100/v1/auth/google/callback'),
     /** Vuelta de la conexión de Google Books (cuentas ya creadas). Debe estar autorizada en el cliente OAuth. */
     GOOGLE_BOOKS_REDIRECT_URI: z.url().default('http://localhost:3100/v1/connect/google_books/callback'),
+    /** Scopes restringidos de Data Portability (YouTube y destacados de Maps): exigen CASA de pago en producción. */
+    GOOGLE_RESTRICTED_SCOPES: z.enum(['true', 'false']).optional(),
     /** Trakt (fase 11): client_id de la app creada en Trakt; el secreto es opcional (PKCE). */
     TRAKT_CLIENT_ID: z.string().optional().transform((v) => (v ? v.trim() : undefined)),
     TRAKT_CLIENT_SECRET: z.string().optional().transform((v) => (v ? v.trim() : undefined)),

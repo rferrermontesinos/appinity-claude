@@ -25,6 +25,43 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-22 · fase 11E (Google Calendar)
+
+### Qué se ha hecho
+
+- **Google Calendar** va en el mismo consentimiento de «Continuar con Google»:
+  - restaurantes, museos y teatros por la ubicación del evento;
+  - conciertos y películas por el título, solo con un prefijo explícito;
+  - guarda solo lo identificado como «conocido» (intención), sin preferencia y sin títulos de eventos.
+- **Permiso compartido**: ni Calendar ni Books conectado en el alta revocan el permiso al desconectar. Revocarlo cerraría también la sesión de Google.
+- **Mixcloud descartada**: sus condiciones solo permiten un uso personal y no comercial de la API.
+
+### Comprobaciones
+
+- `pnpm test`: 34 ficheros y 346 tests OK.
+- `pnpm lint` y `pnpm typecheck` limpios.
+- Prueba real con OSM y Wikidata sobre eventos de ejemplo: 6 de 10 planes identificados y ningún título guardado.
+- **Validado con el calendario real** (2026-10-22):
+  - 607 eventos leídos, 82 con ubicación y 23 lugares candidatos;
+  - **5 identificados**: 3 restaurantes, un teatro y la Sagrada Familia (dos con 2 eventos);
+  - 59 ubicaciones descartadas antes de buscar, casi todas reuniones en línea recurrentes;
+  - 16 lugares sin coincidencia exacta en OSM;
+  - ningún título de evento guardado.
+- **Arreglo**: la vista web usa siempre la API de localhost y el móvil la IP de Metro, porque la IP local del .env caducaba.
+
+### Fase 13 · comprobaciones y verificación de Google
+
+- **§19 de la especificación**: añadidos los casos que faltaban. Un artista antiguo entra en Trending por votos de este año, y un voto duplicado desde otra fuente no cuenta dos veces. La afinidad simétrica es una decisión expresa del titular (affinity-v3).
+- **Verificación de Google**: 2 de los 11 scopes de Data Portability son restringidos y requieren una evaluación CASA de pago. Producción los omite por defecto con `GOOGLE_RESTRICTED_SCOPES`. Preparado docs/google-verification.md.
+- `pnpm test`: 34 ficheros y 347 tests OK; lint y typecheck limpios.
+
+- **Fusión de cuentas** (2026-10-22): las 130 observaciones de la cuenta local antigua (Steam y Google) pasan a la cuenta de «Continuar con Google». La cuenta antigua queda vacía, sin borrar, y hay una copia en backups/. Ahora son 141 observaciones y 138 gustos.
+- **Diagnóstico completo y fases de diseño**: docs/diagnostico-2026-10-22.md.
+
+### Siguiente paso
+
+Recomendador por contenido para el arranque en frío; después imágenes del catálogo real y la ciudad en el alta (docs/diagnostico-2026-10-22.md, §3).
+
 ## Entrega 2026-10-16 · fase 11D (AniList) y arreglo de Trakt
 
 ### Qué se ha hecho

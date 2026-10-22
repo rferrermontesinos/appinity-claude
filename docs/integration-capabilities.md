@@ -193,6 +193,19 @@ incremental, así que en las cuentas ya conectadas basta un «Renovar permiso».
 | Configuración | `ANILIST_CLIENT_ID` y `ANILIST_CLIENT_SECRET` de una app creada en anilist.co/settings/developer; URL de vuelta `http://localhost:3100/v1/connect/anilist/callback` |
 | Tests | `packages/integrations/test/anilist.test.ts` (6) |
 
+## Google Calendar · fase 11
+
+| Aspecto | Detalle |
+|---|---|
+| Consentimiento | Scope `calendar.events.readonly` en el **mismo consentimiento** de «Continuar con Google», junto con Books. No hay conexión aparte: una cuenta ya creada lo concede al volver a entrar con Google. Es un scope sensible: en producción requiere la verificación de la app, que es gratuita |
+| API | `GET /calendar/v3/calendars/primary/events` con `singleEvents`, `eventTypes=default` y `fromGmail` (las reservas que añade Gmail). Ventana de 2 años atrás a 6 meses adelante. Solo se piden `id`, `status`, `summary`, `location`, `eventType` y `start`; ni descripción ni asistentes. Requiere activar la «Google Calendar API» en el proyecto |
+| Qué se extrae | **Lugar**: la primera parte de `location`, geocodificada con OSM y Nominatim. Se ignoran ubicaciones en línea, direcciones sin nombre y lugares privados. **Concierto**: «Concierto: X», «Concierto de X», «X en concierto»… → artista. **Película**: «Cine: X» → película. El resto de títulos no se usa |
+| Privacidad | Se procesa en memoria. Solo se guarda el objeto identificado, el número de eventos y la fecha del último; nunca títulos, descripciones ni asistentes |
+| Normalización (`google-calendar-v1`) | Intención, no asistencia (especificación §6): conocido 0,8 × confianza de identificación, consumido 0, preferencia NULL |
+| Desconexión | No revoca el permiso, porque es el mismo del inicio de sesión y de Books. Se borran las credenciales; el permiso se retira en myaccount.google.com/connections. Books conectado en el alta tampoco revoca |
+| Prueba real | Google simulado, con OSM y Wikidata reales, sobre 13 eventos de ejemplo. Se identificaron 6 de 10 planes: Casa Lucio (2 eventos, 1 observación), Teatro Real, Rosalía, Coldplay, Vetusta Morla y Oppenheimer. Los eventos en línea, privados, cancelados y de cumpleaños se ignoraron. Ningún título de evento se guardó. **Falta probar con un calendario real** |
+| Tests | `packages/integrations/test/google-calendar.test.ts` (5) |
+
 ## Fuentes reales previstas
 
 Revisión del 2026-10-08: análisis de más de 60 plataformas en [fuentes-de-datos.md](fuentes-de-datos.md). Se muestran

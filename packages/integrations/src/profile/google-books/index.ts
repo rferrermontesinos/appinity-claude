@@ -328,6 +328,7 @@ export function createGoogleBooksAdapter(options: GoogleBooksOptions): ProfileSo
     },
     normalize: async (record, context) => mapBook(record, context),
     async disconnect(_connection, credentials) {
+      if (credentials?.sharedGrant) return;
       const token = credentials?.refreshToken ?? credentials?.accessToken;
       if (token) await client.revoke(token).catch(() => undefined);
     },
@@ -335,14 +336,18 @@ export function createGoogleBooksAdapter(options: GoogleBooksOptions): ProfileSo
 }
 
 /** Credenciales de una conexión de Google Books a partir de la respuesta de token (también desde el inicio de sesión). */
-export function googleBooksConnection(token: { access_token: string; refresh_token?: string; expires_in?: number; scope?: string }): AuthResult {
+/**
+ * `shared`: el permiso viene de «Continuar con Google» y lo comparten el inicio de sesión y otras fuentes de Google; al
+ * desconectar no se revoca (revocarlo las cortaría todas).
+ */
+export function googleBooksConnection(token: { access_token: string; refresh_token?: string; expires_in?: number; scope?: string }, options: { shared?: boolean } = {}): AuthResult {
   if (token.scope && !token.scope.split(' ').includes(GOOGLE_BOOKS_SCOPE)) {
     throw new SourceError('verification_failed', 'No se concedió el permiso de Google Books', false);
   }
   const credentials: Record<string, string> = token.refresh_token
     ? { refreshToken: token.refresh_token }
     : { accessToken: token.access_token, accessTokenExpiresAt: new Date(Date.now() + (token.expires_in ?? 3600) * 1000).toISOString() };
-  return { kind: 'connected', credentials, scopes: [GOOGLE_BOOKS_SCOPE] };
+  return { kind: 'connected', credentials: options.shared ? { ...credentials, sharedGrant: '1' } : credentials, scopes: [GOOGLE_BOOKS_SCOPE] };
 }
 
 /** ID de Google Books en Wikidata (P675) y, si no, título exacto limitado a libros. */
