@@ -1021,3 +1021,17 @@ El acuerdo de desarrolladores de Twitch exige permiso escrito para guardar sus d
 - **Ciudad en el alta**: opcional y aproximada. Se geocodifica antes de completar el alta para no dejarla a medias.
 - **Build de desarrollo**: local con Gradle, sin EAS (sin coste). La carpeta `android/` se genera con prebuild y no se
   versiona.
+
+## 2026-10-23 · affinity-v4 (encogimiento parcial por categoría)
+
+- **Problema detectado por el titular**: Clara tenía un 86 % global y ninguna categoría pasaba de 50. Cada categoría se
+  penalizaba solo con su propia evidencia, mientras la global sumaba la de todas. Era coherente con la fórmula, pero
+  contradictorio a la vista.
+- **Solución**: dentro de la global, cada categoría se encoge hacia la calidad global de la pareja (Q) según su
+  evidencia, en vez de hacia 0: `categoría = 100 · E · (w · calidad_c + (1 − w) · Q)` con `w = 1 − exp(−n_eff/tau)`.
+- **Propiedades**:
+  - la global queda siempre entre la menor y la mayor categoría;
+  - con mucha evidencia, el desacuerdo real llega a ~0;
+  - con una sola categoría comparable, el resultado coincide con v3;
+  - sigue sin haber cifras altas con poca evidencia, porque E las limita a todas.
+- **Resultado** (Laura ↔ Clara, demo): la global se mantiene en 86 y las categorías pasan de 31–49 a 85–87.

@@ -3,6 +3,7 @@ import { Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useChatInbox } from '../../src/api/queries';
 import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fonts, usePalette } from '../../src/theme';
 
 type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
@@ -19,6 +20,8 @@ export default function TabsLayout() {
   const { t } = useTranslation();
   const c = usePalette();
   const badge = useChatInbox().data?.badge ?? 0;
+  // Android dibuja la app bajo la barra de gestos/botones (edge-to-edge): la barra inferior suma ese margen.
+  const insets = useSafeAreaInsets();
   return (
     <Tabs
       screenOptions={{
@@ -28,7 +31,7 @@ export default function TabsLayout() {
         headerTitleStyle: { fontFamily: fonts.display, fontSize: 22 },
         headerTitleAlign: 'left',
         sceneStyle: { backgroundColor: c.background },
-        tabBarStyle: { backgroundColor: c.surface, borderTopColor: c.hairline, height: 68, paddingTop: 6 },
+        tabBarStyle: { backgroundColor: c.surface, borderTopColor: c.hairline, height: 62 + insets.bottom, paddingTop: 6, paddingBottom: Math.max(insets.bottom, 8) },
         tabBarActiveTintColor: c.text,
         tabBarInactiveTintColor: c.textSubtle,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
