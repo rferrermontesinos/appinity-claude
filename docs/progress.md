@@ -25,6 +25,28 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-23 · observaciones del titular en el teléfono y D4 en el resto de pestañas
+
+### Qué se ha hecho
+
+- **Afinidad (`affinity-v4`)**: Clara tenía un 86 % global y ninguna categoría pasaba de 50. Ahora cada categoría se
+  encoge hacia la calidad global de la pareja según su propia evidencia, así que la global queda siempre entre la menor
+  y la mayor categoría. Laura ↔ Clara: global 86, categorías 85–87. Afinidades recalculadas; API y worker reiniciados.
+- **Barra inferior**: ya no se solapa con los botones de Android (edge-to-edge); su altura suma el margen del sistema.
+- **People**: abre en «Almas gemelas» (primer segmento). La invitación va arriba solo si aún no hay almas gemelas.
+- **Categorías**: sin el nombre repetido y con títulos en Space Grotesk.
+- **Perfil**: las acciones de cada fuente son pequeñas y van en fila (`Button size="small"`).
+- `web-screenshot.mjs`: sesión de demo creada por la API y `--tabs` para varias capturas en una misma sesión.
+
+### Comprobaciones
+
+- `pnpm test`: 36 ficheros y 358 tests OK. Tests nuevos de v4: la global queda entre la menor y la mayor categoría, y
+  el desacuerdo con evidencia llega a ~0.
+- Lint y typecheck limpios.
+- Capturas de Inicio, Personas, Categorías y Perfil en la vista web.
+- **Pendiente de ver en el teléfono**: la barra inferior sobre los botones de Android (en la web no hay margen del
+  sistema).
+
 ## Entrega 2026-10-23 · diseño D1 y D4 (sistema de diseño y primera aplicación en la app)
 
 ### Qué se ha hecho
