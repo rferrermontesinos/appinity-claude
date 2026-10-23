@@ -83,7 +83,8 @@ export function Button({
 }) {
   const c = usePalette();
   const bg = variant === 'primary' ? c.accent : 'transparent';
-  const fg = variant === 'primary' ? c.accentText : variant === 'danger' ? c.danger : c.accent;
+  // Sistema de diseño: píldora; contained en violeta, outlined con borde neutro y texto violeta apto para texto.
+  const fg = variant === 'primary' ? c.accentText : variant === 'danger' ? c.danger : c.primaryInk;
   return (
     <Pressable
       accessibilityRole="button"
@@ -92,9 +93,10 @@ export function Button({
       disabled={disabled || loading}
       style={({ pressed }) => ({
         backgroundColor: bg,
-        borderRadius: radius.sm,
+        borderRadius: radius.full,
+        minHeight: 48,
         borderWidth: variant === 'primary' ? 0 : 1,
-        borderColor: fg,
+        borderColor: variant === 'danger' ? c.danger : c.border,
         paddingVertical: spacing.md,
         paddingHorizontal: spacing.lg,
         flexDirection: 'row',
