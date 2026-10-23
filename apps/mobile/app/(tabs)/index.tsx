@@ -5,7 +5,7 @@ import { Pressable, View } from 'react-native';
 import { useMe } from '../../src/api/queries';
 import { DataBanner } from '../../src/components/DataBanner';
 import { RecommendationCard } from '../../src/components/RecommendationCard';
-import { Body, Button, Card, ErrorCard, Loading, Screen, Small, Title } from '../../src/components/ui';
+import { Button, Card, EmptyState, ErrorCard, Loading, Screen, Small, Title } from '../../src/components/ui';
 import { useHomeDeck } from '../../src/state/homeDeck';
 import { spacing, usePalette } from '../../src/theme';
 
@@ -90,13 +90,13 @@ function HomeDeckSection() {
         </View>
       ) : null}
       {!deck.loading && !deck.current && !deck.error && deck.exhausted ? (
-        <Card>
-          <Title>{t('home.emptyTitle')}</Title>
-          <Body muted>{emptyReason}</Body>
-          {deck.canUndo ? <Button label={t('home.undo')} icon="undo" variant="secondary" onPress={() => void deck.undo()} /> : null}
-          <Button label={t('home.openSources')} icon="link-variant" variant="secondary" onPress={() => router.push('/profile')} />
-          <Button label={t('home.reload')} icon="refresh" variant="secondary" onPress={deck.reload} />
-        </Card>
+        <EmptyState
+          icon={deck.meta?.localFilter === 'no_location' ? 'map-marker-outline' : 'compass-outline'}
+          title={t('home.emptyTitle')}
+          body={emptyReason}
+          action={{ label: t('home.openSources'), icon: 'link-variant', onPress: () => router.push('/profile') }}
+          secondary={deck.canUndo ? { label: t('home.undo'), icon: 'undo', onPress: () => void deck.undo() } : { label: t('home.reload'), icon: 'refresh', onPress: deck.reload }}
+        />
       ) : null}
     </>
   );

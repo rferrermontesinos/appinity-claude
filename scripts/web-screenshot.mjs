@@ -2,8 +2,8 @@
 // Captura de la vista web (8092) con Edge/Chrome sin interfaz, por el protocolo DevTools (sin dependencias).
 // Uso: node scripts/web-screenshot.mjs --out shot.png [--path /] [--demo "Laura"] [--light] [--wait 5000] [--log] [--reload] [--eval "expr"] [--width 412 --height 915]
 // --demo pulsa en la pantalla inicial el botón cuyo texto contiene ese nombre (usuarios de la demo). Solo localhost.
-import { spawn } from 'node:child_process';
-import { existsSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { spawn, spawnSync } from 'node:child_process';
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
@@ -28,7 +28,7 @@ if (!browser) throw new Error('No se encuentra Edge ni Chrome');
 
 const port = 9333 + Math.floor(Math.random() * 500);
 const profile = mkdtempSync(join(tmpdir(), 'appinity-shot-'));
-const proc = spawn(browser, ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--no-first-run', '--disable-gpu', `--window-size=${width},${height}`, 'about:blank'], { stdio: 'ignore' });
+const proc = spawn(browser, ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--no-first-run', 'about:blank'], { stdio: 'ignore' });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 try {
   let target;
@@ -57,11 +57,12 @@ try {
   });
   const send = (method, params = {}) => new Promise((resolve) => { const n = ++id; pending.set(n, resolve); ws.send(JSON.stringify({ id: n, method, params })); });
   const evaluate = async (expression) => (await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true })).result?.result?.value;
-  await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 2, mobile: true });
   if (light) await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }] });
   await send('Page.enable');
-  await send('Runtime.enable');
-  await send('Network.enable');
+  if (process.argv.includes('--log')) {
+    await send('Runtime.enable');
+    await send('Network.enable');
+  }
   await send('Page.navigate', { url: base + '/' });
   await sleep(6000);
   if (demo) {
@@ -86,7 +87,9 @@ try {
     await send('Page.reload');
     await sleep(6000);
   }
-  await sleep(wait);
+  // Emulación de móvil al final: activarla antes de cargar rompía la sesión guardada en las rutas directas.
+  await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 2, mobile: true });
+  await sleep(Math.max(wait, 2500));
   const expr = arg('eval', null);
   if (expr) console.log('eval:', JSON.stringify(await evaluate(expr)));
   const shot = await send('Page.captureScreenshot', { format: 'png' });
@@ -99,7 +102,7 @@ try {
     for (const spec of String(tabs).split(',')) {
       const [file, label] = spec.split(':');
       const clicked = await evaluate(
-        `(() => { const el = [...document.querySelectorAll('a,[role=tab],[role=button],[role=link]')].find(e => e.innerText && e.innerText.trim().split('\\n').pop() === ${JSON.stringify(label)}); if (!el) return false; el.click(); return true; })()`,
+        `(() => { const el = [...document.querySelectorAll('a,[role=tab],[role=button],[role=link]')].filter(e => e.innerText && e.innerText.includes(${JSON.stringify(label)})).sort((x, y) => x.innerText.length - y.innerText.length)[0]; if (!el) return false; el.click(); return true; })()`,
       );
       if (!clicked) console.error(`No se encontró la pestaña ${label}`);
       await sleep(Math.max(wait, 3000));
@@ -112,5 +115,18 @@ try {
   if (process.argv.includes('--log')) console.log(log.join('\n'));
   ws.close();
 } finally {
-  proc.kill();
+  // Edge abre procesos hijos: se cierra el árbol entero (en Windows, proc.kill solo cerraba el padre y quedaban cientos
+  // de procesos y perfiles de ~250 MB en %TEMP%, que llegaron a llenar el disco). Después se borra el perfil temporal.
+  // En Windows el lanzador de Edge termina enseguida y sus hijos quedan sueltos: se cierran por la ruta del perfil.
+  if (process.platform === 'win32') {
+    const name = profile.split(/[\\/]/).pop();
+    spawnSync('powershell', ['-NoProfile', '-Command', `Get-CimInstance Win32_Process -Filter "Name='msedge.exe' OR Name='chrome.exe'" | Where-Object { $_.CommandLine -match '${name}' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`], { stdio: 'ignore' });
+  }
+  else proc.kill('SIGKILL');
+  await sleep(500);
+  try {
+    rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 });
+  } catch {
+    // Si sigue bloqueado, Windows lo limpiará con el resto de %TEMP%.
+  }
 }

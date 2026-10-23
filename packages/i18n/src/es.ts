@@ -181,7 +181,7 @@ export const es = {
   sources: {
     title: 'Fuentes',
     help:
-      'Las fuentes «Demo» son simuladas: leen actividad ficticia de archivos del repositorio, sin OAuth ni proveedores reales. Las reales llegarán en sus fases.',
+      'Las fuentes «Demo» son simuladas: leen actividad ficticia de archivos del repositorio, sin OAuth ni proveedores reales. Las reales se conectan con tu propia cuenta.',
     connect: 'Conectar',
     sync: 'Sincronizar',
     fullSync: 'Resincronizar todo',
@@ -268,6 +268,8 @@ export const es = {
     friends: 'Amigos',
     soulmatesIntro:
       'Personas con más afinidad contigo según los gustos importados de vuestras fuentes. Versión gratuita: las 50 primeras.',
+    soulmatesEmptyTitle: 'Aún no hay almas gemelas',
+    connectSources: 'Conectar fuentes',
     soulmatesEmpty:
       'Todavía no hay personas con gustos comparables a los tuyos. Conecta fuentes en Perfil: hacen falta al menos 3 preferencias y algún objeto en común.',
     soulmatesCount: '{{count}} de un máximo de {{limit}}',
@@ -306,8 +308,7 @@ export const es = {
     blocked: 'Personas bloqueadas',
     unblock: 'Desbloquear',
     contacts: 'Buscar a mis contactos',
-    contactsPending:
-      'Pendiente: necesita una identidad verificada (teléfono o email), que llega con la autenticación de producción (fase 13). Solo se hará con tu permiso, sin subir tu agenda completa.',
+    contactsPending: 'Pendiente: necesita verificar tu teléfono o tu email. Solo se hará con tu permiso y sin subir tu agenda completa.',
     affinityUnknown: 'Afinidad: —',
   },
   invite: {
@@ -371,7 +372,8 @@ export const es = {
     blockConfirm: '¿Bloquear? Se cerrará el chat y dejaréis de veros en APPINITY.',
     reportHint: 'El reporte se hace desde su perfil.',
     rateLimited: 'Vas demasiado rápido. Espera un momento.',
-    pollingNote: 'Los mensajes nuevos se actualizan cada pocos segundos. Las notificaciones push llegarán en la fase 12C.',
+    openProfile: 'Ver el perfil de {{name}}',
+    pollingNote: 'Los mensajes nuevos se actualizan cada pocos segundos.',
   },
   premium: {
     title: 'Premium',
@@ -418,8 +420,7 @@ export const es = {
     country: 'País',
     currentArea: 'Zona actual',
     devIdentity: 'Identidad de desarrollo',
-    devIdentityHelp:
-      'Sesión de desarrollo firmada por la API solo con DEMO_MODE. No es la autenticación de producción (Google, Apple o email), que llegará antes de la beta.',
+    devIdentityHelp: 'Sesión de desarrollo firmada por la API, solo con DEMO_MODE. Las cuentas reales entran con «Continuar con Google».',
     switchUser: 'Cambiar de usuario de demo',
     signOut: 'Cerrar sesión',
     sources: 'Fuentes conectadas',
@@ -453,7 +454,7 @@ export const es = {
     notificationsExpoGo: 'En Android, Expo Go no admite notificaciones push (desde el SDK 53): llegarán con la versión de desarrollo de la app, que pedirá el permiso al registrarte.',
     privacy: 'Privacidad',
     subscription: 'Suscripción',
-    subscriptionPending: 'Premium y Early Access llegan en la fase 12.',
+    subscriptionPending: 'Premium y Early Access ya funcionan en el servidor; la compra desde la app llega con la versión para las tiendas.',
     diagnostics: 'Diagnóstico',
   },
   devLogin: {

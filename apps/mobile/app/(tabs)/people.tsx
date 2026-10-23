@@ -8,7 +8,7 @@ import { ChatInbox } from '../../src/components/ChatInbox';
 import { FriendsCard } from '../../src/components/FriendsCard';
 import { InviteCard } from '../../src/components/InviteCard';
 import { PersonAvatar, formatAffinity } from '../../src/components/PersonAvatar';
-import { Badge, Body, Card, ErrorCard, Loading, Screen, Small, Title } from '../../src/components/ui';
+import { Badge, Body, Card, ErrorCard, Loading, Screen, Small, Title, EmptyState } from '../../src/components/ui';
 import { spacing, usePalette } from '../../src/theme';
 
 function SoulmateRow({ person }: { person: SoulmateDto }) {
@@ -98,6 +98,7 @@ export default function PeopleScreen() {
 function SoulmatesAndFriends() {
   const { t } = useTranslation();
   const soulmates = useSoulmates();
+  const router = useRouter();
   // Sin almas gemelas, invitar es lo primero; con ellas, la lista manda y la invitación queda debajo.
   const hasSoulmates = Boolean(soulmates.data?.items.length);
   return (
@@ -108,7 +109,9 @@ function SoulmatesAndFriends() {
         <Body muted>{t('people.soulmatesIntro')}</Body>
         {soulmates.isLoading ? <Loading /> : null}
         {soulmates.error ? <ErrorCard error={soulmates.error} onRetry={() => void soulmates.refetch()} /> : null}
-        {soulmates.data && !soulmates.data.items.length ? <Body muted>{t('people.soulmatesEmpty')}</Body> : null}
+        {soulmates.data && !soulmates.data.items.length ? (
+          <EmptyState icon="account-heart-outline" title={t('people.soulmatesEmptyTitle')} body={t('people.soulmatesEmpty')} action={{ label: t('people.connectSources'), icon: 'link-variant', onPress: () => router.push('/profile') }} />
+        ) : null}
         {soulmates.data?.items.length ? (
           <>
             <Small>{t('people.soulmatesCount', { count: soulmates.data.items.length, limit: soulmates.data.limit })}</Small>

@@ -1,4 +1,4 @@
-import { CATEGORY_META, type ObservationDto } from '@appinity/shared';
+import type { ObservationDto } from '@appinity/shared';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import type { TFunction } from 'i18next';
 import * as WebBrowser from 'expo-web-browser';
@@ -6,10 +6,11 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 import { useItemProfileDetail } from '../../src/api/queries';
 import { CatalogImage } from '../../src/components/CatalogImage';
+import { CategoryChipOnImage, ImageVeil } from '../../src/components/ImageVeil';
 import { Dimensions, formatPreference } from '../../src/components/Dimensions';
-import { Badge, Body, Card, ErrorCard, Loading, Row, Screen, Small, Title } from '../../src/components/ui';
+import { Body, Card, ErrorCard, Loading, Row, Screen, Small, Title } from '../../src/components/ui';
 import { DataBanner } from '../../src/components/DataBanner';
-import { radius, spacing, usePalette } from '../../src/theme';
+import { fonts, onImage, radius, spacing, usePalette } from '../../src/theme';
 
 /** Abre enlaces externos solo si son https (validación de enlaces). */
 function openExternal(url: string) {
@@ -90,18 +91,19 @@ export default function ItemScreen() {
       {detail.isError ? <ErrorCard error={detail.error} onRetry={() => void detail.refetch()} /> : null}
       {item ? (
         <>
-          <CatalogImage
-            image={item.primaryImage}
-            category={item.category}
-            contentFit="contain"
-            style={{ width: '100%', height: 320, borderRadius: radius.md, backgroundColor: c.surfaceAlt }}
-          />
-          <Card>
-            <Title>{item.title}</Title>
-            <View style={{ flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' }}>
-              <Badge label={t(`categories.${item.category}`)} color={CATEGORY_META[item.category].color} />
-              <Badge label={item.itemType} color={c.textMuted} />
+          {/* Cabecera a sangre (sistema de diseño): imagen, velo, categoría y título en display sobre la imagen. */}
+          <View style={{ width: '100%', aspectRatio: 0.9, borderRadius: radius.xl, overflow: 'hidden', backgroundColor: c.surfaceAlt }}>
+            <CatalogImage image={item.primaryImage} category={item.category} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+            <ImageVeil height="55%" />
+            <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: spacing.lg, gap: spacing.sm }}>
+              <CategoryChipOnImage category={item.category} />
+              <Text style={{ color: onImage.text, fontFamily: fonts.display, fontSize: 28, lineHeight: 31, letterSpacing: -0.4 }} numberOfLines={3}>
+                {item.title}
+              </Text>
+              {item.releaseDate ? <Text style={{ color: onImage.muted, fontSize: 14 }}>{item.releaseDate.slice(0, 4)}</Text> : null}
             </View>
+          </View>
+          <Card>
             {item.description ? <Body muted>{item.description}</Body> : null}
             {item.releaseDate ? (
               <Row

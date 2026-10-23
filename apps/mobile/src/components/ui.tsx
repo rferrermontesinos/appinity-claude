@@ -14,7 +14,7 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
-import { radius, spacing, usePalette } from '../theme';
+import { fonts, radius, spacing, usePalette } from '../theme';
 
 export function Screen({
   children,
@@ -231,5 +231,40 @@ export function ErrorCard({ error, onRetry }: { error: unknown; onRetry?: () => 
       <Body muted>{error instanceof Error ? error.message : String(error)}</Body>
       {onRetry ? <Button label={t('common.retry')} variant="secondary" onPress={onRetry} /> : null}
     </Card>
+  );
+}
+
+/**
+ * Estado vacío / arranque en frío (sistema de diseño): icono en el contenedor violeta, título en display, explicación y
+ * UNA acción principal (más, como mucho, una secundaria pequeña). Explica por qué está vacío; nunca inventa contenido.
+ */
+export function EmptyState({
+  icon,
+  title,
+  body,
+  action,
+  secondary,
+}: {
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  title: string;
+  body: string;
+  action?: { label: string; icon?: keyof typeof MaterialCommunityIcons.glyphMap; onPress: () => void };
+  secondary?: { label: string; icon?: keyof typeof MaterialCommunityIcons.glyphMap; onPress: () => void };
+}) {
+  const c = usePalette();
+  return (
+    <View
+      style={{ alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xxl, paddingHorizontal: spacing.xl, borderRadius: radius.lg, borderWidth: 1, borderStyle: 'dashed', borderColor: c.border }}
+    >
+      <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: c.primaryContainer, alignItems: 'center', justifyContent: 'center' }}>
+        <MaterialCommunityIcons name={icon} size={32} color={c.onPrimaryContainer} />
+      </View>
+      <Text style={{ color: c.text, fontFamily: fonts.display, fontSize: 20, textAlign: 'center' }} accessibilityRole="header">
+        {title}
+      </Text>
+      <Text style={{ color: c.textMuted, fontSize: 14, lineHeight: 21, textAlign: 'center' }}>{body}</Text>
+      {action ? <Button label={action.label} icon={action.icon} onPress={action.onPress} /> : null}
+      {secondary ? <Button label={secondary.label} icon={secondary.icon} variant="secondary" size="small" onPress={secondary.onPress} /> : null}
+    </View>
   );
 }

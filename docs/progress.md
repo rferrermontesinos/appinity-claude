@@ -25,6 +25,40 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-23 · D4 (ficha, estados vacíos y textos) y D5 (accesibilidad, primera pasada)
+
+### Qué se ha hecho
+
+- **Ficha de una obra**: cabecera a sangre con la imagen, el velo, la categoría y el título en display; sin la
+  etiqueta técnica de tipo («artist»).
+- **`ImageVeil` y `CategoryChipOnImage`**: componentes compartidos por la tarjeta y la ficha.
+- **`EmptyState`**: icono, título, explicación y una acción, como en el sistema de diseño. Se usa al final del mazo de
+  Inicio (conectar fuentes, con deshacer o recargar como secundaria) y en «Aún no hay almas gemelas».
+- **Textos**: se retiran las referencias a fases ya terminadas (chat, fuentes, contactos, sesión de desarrollo y
+  Premium).
+- **Accesibilidad**: auditoría automática de los `Pressable`. La burbuja de reintento del chat y la cabecera con el
+  perfil no tenían rol ni etiqueta; ahora sí. Los demás pulsables con rol leen su texto visible.
+
+### Incidencia: disco lleno (resuelta)
+
+- **Causa**: `scripts/web-screenshot.mjs` dejaba perfiles temporales de Edge en `%TEMP%` (unos 250 MB cada uno) y
+  293 procesos sin interfaz vivos. En Windows, el lanzador de Edge termina enseguida y sus hijos quedan sueltos.
+- **Efecto**: el disco llegó a 0 GB libres y se cayó la vista web. Metro (8091), la API y PostgreSQL siguieron bien y
+  el registro de PostgreSQL no tiene errores de escritura.
+- **Arreglo**: se borraron los 40 perfiles y se cerraron los procesos, con lo que quedaron 18 GB libres. El script cierra
+  ahora los procesos por la ruta de su perfil y borra el perfil al terminar. Comprobado: tras una captura quedan
+  0 procesos y 0 perfiles.
+
+### Comprobaciones
+
+- `pnpm test`: 36 ficheros y 358 tests OK; lint y typecheck limpios.
+- Capturas reales: ficha de Vetusta Morla (foto de Commons, licencia CC BY-SA 4.0) y conversación de chat.
+
+### Siguiente paso
+
+Revisión en el teléfono (barra inferior, tarjeta y perfil); después, D5 con lector de pantalla y textos grandes en el
+propio dispositivo.
+
 ## Entrega 2026-10-23 · observaciones del titular en el teléfono y D4 en el resto de pestañas
 
 ### Qué se ha hecho

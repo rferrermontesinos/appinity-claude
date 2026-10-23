@@ -183,7 +183,7 @@ export const en: TranslationResources = {
   sources: {
     title: 'Sources',
     help:
-      '"Demo" sources are simulated: they read fictitious activity from repository files, with no OAuth or real providers. Real sources arrive in their phases.',
+      '"Demo" sources are simulated: they read fictitious activity from repository files, with no OAuth or real providers. Real sources connect with your own account.',
     connect: 'Connect',
     sync: 'Sync',
     fullSync: 'Full resync',
@@ -268,6 +268,8 @@ export const en: TranslationResources = {
     soulmates: 'Soulmates',
     friends: 'Friends',
     soulmatesIntro: 'People with the highest affinity with you, based on the tastes imported from your sources. Free version: the top 50.',
+    soulmatesEmptyTitle: 'No soulmates yet',
+    connectSources: 'Connect sources',
     soulmatesEmpty:
       'There is nobody with tastes comparable to yours yet. Connect sources in Profile: at least 3 preferences and some item in common are needed.',
     soulmatesCount: '{{count}} out of a maximum of {{limit}}',
@@ -306,8 +308,7 @@ export const en: TranslationResources = {
     blocked: 'Blocked people',
     unblock: 'Unblock',
     contacts: 'Find my contacts',
-    contactsPending:
-      'Pending: it needs a verified identity (phone or email), which arrives with production authentication (phase 13). It will only happen with your permission, without uploading your whole address book.',
+    contactsPending: 'Pending: needs a verified phone number or email. It will only happen with your permission and without uploading your whole address book.',
     affinityUnknown: 'Affinity: —',
   },
   invite: {
@@ -371,7 +372,8 @@ export const en: TranslationResources = {
     blockConfirm: 'Block? The chat will close and you will no longer see each other on APPINITY.',
     reportHint: 'Reports are made from their profile.',
     rateLimited: 'You are going too fast. Wait a moment.',
-    pollingNote: 'New messages refresh every few seconds. Push notifications arrive in phase 12C.',
+    openProfile: "Open {{name}}'s profile",
+    pollingNote: 'New messages refresh every few seconds.',
   },
   premium: {
     title: 'Premium',
@@ -418,8 +420,7 @@ export const en: TranslationResources = {
     country: 'Country',
     currentArea: 'Current area',
     devIdentity: 'Development identity',
-    devIdentityHelp:
-      'Development session signed by the API only in DEMO_MODE. This is not production authentication (Google, Apple or email), which arrives before the beta.',
+    devIdentityHelp: 'Development session signed by the API, only with DEMO_MODE. Real accounts sign in with “Continue with Google”.',
     switchUser: 'Switch demo user',
     signOut: 'Sign out',
     sources: 'Connected sources',
@@ -453,7 +454,7 @@ export const en: TranslationResources = {
     notificationsExpoGo: 'On Android, Expo Go does not support push notifications (since SDK 53): they will arrive with the development build of the app, which will ask for permission when you sign up.',
     privacy: 'Privacy',
     subscription: 'Subscription',
-    subscriptionPending: 'Premium and Early Access arrive in phase 12.',
+    subscriptionPending: 'Premium and Early Access already work on the server; buying from the app arrives with the store release.',
     diagnostics: 'Diagnostics',
   },
   devLogin: {

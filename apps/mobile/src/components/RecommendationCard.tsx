@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Animated, PanResponder, Pressable, Text, View } from 'react-native';
 import { fonts, onImage, radius, spacing, usePalette } from '../theme';
 import { CatalogImage } from './CatalogImage';
+import { ImageVeil } from './ImageVeil';
 
 /** A partir de esta distancia, soltar la tarjeta cuenta como deslizar (izquierda: descartar; derecha: conservar). */
 const SWIPE_THRESHOLD = 110;
@@ -29,9 +30,6 @@ export function reasonText(t: (key: string, options?: Record<string, unknown>) =
       return t('home.reasonExplore');
   }
 }
-
-/** Velo de 16 bandas en curva (sin degradados nativos): de transparente a 0,9 sin escalones visibles. */
-const VEIL = Array.from({ length: 16 }, (_, i) => Math.round(0.9 * (i / 15) ** 1.6 * 1000) / 1000);
 
 const REASON_ICON = {
   consensus: 'account-group',
@@ -95,12 +93,7 @@ export function RecommendationCard({
       }}
     >
       <CatalogImage image={item.primaryImage} category={item.category} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
-      {/* Velo: capas escalonadas (sin dependencias nativas) que oscurecen la mitad inferior. */}
-      <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '62%' }}>
-        {VEIL.map((opacity, i) => (
-          <View key={i} style={{ flex: 1, backgroundColor: `rgba(18,17,16,${opacity})` }} />
-        ))}
-      </View>
+      <ImageVeil />
       <View style={{ position: 'absolute', top: spacing.md, left: spacing.md, right: spacing.md, flexDirection: 'row', justifyContent: 'space-between' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: onImage.glass, borderRadius: radius.full, paddingVertical: 5, paddingLeft: spacing.sm, paddingRight: spacing.md }}>
           <MaterialCommunityIcons name={meta.icon as never} size={16} color={meta.color} />
