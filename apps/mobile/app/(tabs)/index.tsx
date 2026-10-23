@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useMe } from '../../src/api/queries';
 import { DataBanner } from '../../src/components/DataBanner';
 import { RecommendationCard } from '../../src/components/RecommendationCard';

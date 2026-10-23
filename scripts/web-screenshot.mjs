@@ -49,7 +49,10 @@ try {
     if (msg.method === 'Runtime.exceptionThrown') log.push('excepción: ' + (msg.params.exceptionDetails.exception?.description ?? msg.params.exceptionDetails.text).slice(0, 300));
     if (msg.method === 'Runtime.consoleAPICalled' && ['error', 'warning'].includes(msg.params.type)) log.push(msg.params.type + ': ' + msg.params.args.map((a) => a.value ?? a.description ?? '').join(' ').slice(0, 300));
     if (msg.method === 'Network.requestWillBeSent' && msg.params.request.url.includes(':3100')) requests.set(msg.params.requestId, msg.params.request.method + ' ' + msg.params.request.url.replace(/^https?:\/\/[^/]+/, ''));
-    if (msg.method === 'Network.responseReceived' && requests.has(msg.params.requestId)) answered.add(msg.params.requestId), log.push('api ' + msg.params.response.status + ' ' + requests.get(msg.params.requestId));
+    if (msg.method === 'Network.responseReceived' && requests.has(msg.params.requestId)) {
+      answered.add(msg.params.requestId);
+      log.push('api ' + msg.params.response.status + ' ' + requests.get(msg.params.requestId));
+    }
     if (msg.method === 'Network.loadingFailed' && requests.has(msg.params.requestId)) log.push('api FALLO ' + msg.params.errorText + ' ' + requests.get(msg.params.requestId));
   });
   const send = (method, params = {}) => new Promise((resolve) => { const n = ++id; pending.set(n, resolve); ws.send(JSON.stringify({ id: n, method, params })); });
