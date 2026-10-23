@@ -74,8 +74,9 @@ try {
     await sleep(6000);
   }
   if (path !== '/') {
-    await evaluate(`history.pushState({}, '', ${JSON.stringify(path)}); dispatchEvent(new PopStateEvent('popstate'))`);
-    await sleep(5000);
+    // Carga completa de la ruta: la sesión queda guardada en el navegador tras entrar.
+    await send('Page.navigate', { url: base + path });
+    await sleep(6000);
   }
   await sleep(wait);
   const expr = arg('eval', null);
