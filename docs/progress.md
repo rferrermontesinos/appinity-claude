@@ -25,6 +25,45 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-23 · diseño D1 y D4 (sistema de diseño y primera aplicación en la app)
+
+### Qué se ha hecho
+
+- **Teléfono**:
+  - la app de desarrollo (APK) conecta tras abrir en el cortafuegos de Windows los puertos 3100 y 8091 para redes
+    privadas (acción del titular);
+  - acceso sin Google con un código local de un solo uso para la cuenta real (`pnpm user:local` conserva los datos).
+- **D1 · sistema de diseño «Noche de cine»** (`docs/design/design-system/`):
+  - tokens oscuro y claro;
+  - 44 componentes (38 de Material + MUI y 6 propios);
+  - guía viva con Dev Mode y «Copiar como prompt»;
+  - concepto de dos pantallas y 43 iconos propios.
+- **D4 · en la app**:
+  - tema con los tokens, oscuro por defecto;
+  - Space Grotesk en titulares y cifras;
+  - barra inferior con píldora;
+  - tarjeta de recomendación a sangre con velo, categoría y motivo;
+  - botones del mazo y botones en píldora;
+  - perfil de persona con la cifra grande y barras por categoría.
+- **Arreglo**: tras entrar (con código local o con Google), el inicio se quedaba cargando hasta recargar. La caché se
+  vaciaba después de cambiar la sesión y se llevaba por delante la consulta `/v1/me`.
+- `scripts/web-screenshot.mjs`: capturas de la vista web con Edge sin interfaz (DevTools), sin dependencias.
+
+### Comprobaciones
+
+- `pnpm test`: 36 ficheros y 357 tests OK; lint y typecheck limpios.
+- Contraste AA calculado con la fórmula WCAG para todos los pares de tokens, en ambos temas.
+- Capturas reales en la vista web: inicio con tarjeta y perfil de una alma gemela. La guía y el concepto se
+  revisaron en oscuro y en claro.
+- **Pendiente de comprobar en el teléfono**: el aspecto en el APK de desarrollo. La fuente se carga en JavaScript y no
+  hace falta otro APK.
+
+### Siguiente paso
+
+- D4 en el resto de pantallas: Categorías, People con la fila de persona, Perfil con la tarjeta de fuente y los
+  estados vacíos.
+- D5: accesibilidad (lector de pantalla y tamaños) y revisión en el teléfono.
+
 ## Entrega 2026-10-22 · fase 14 (arranque en frío y prioridades del diagnóstico)
 
 ### Qué se ha hecho

@@ -46,7 +46,12 @@ Abrir: doble clic en `index.html` (funciona con `file://`). Tras editar `src/`: 
   en `src/index.src.html`, una entrada en `SPECS` y el enlace en la barra lateral. Después, ejecuta `build.mjs`.
 - **Otro tema**: cambia solo la capa de tokens; la guía y el concepto lo reflejan sin tocar los componentes.
 
-## Siguiente fase (D4)
+## Estado de D4 (2026-10-23)
 
-Llevar los tokens al tema de la app (`apps/mobile/src/theme.ts`) y las extensiones a componentes de React Native:
-primero la tarjeta de recomendación, el medidor de afinidad y la fila de persona.
+- **Hecho**:
+  - tokens en `apps/mobile/src/theme.ts`, con oscuro por defecto;
+  - Space Grotesk y barra inferior con píldora;
+  - tarjeta de recomendación y botones del mazo;
+  - botones en píldora;
+  - cifra de afinidad y barras por categoría (`Affinity.tsx`).
+- **Pendiente**: Categorías, People (fila de persona), Perfil (tarjeta de fuente) y estados vacíos.
