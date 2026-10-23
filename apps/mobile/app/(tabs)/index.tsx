@@ -9,8 +9,12 @@ import { Body, Button, Card, ErrorCard, Loading, Screen, Small, Title } from '..
 import { useHomeDeck } from '../../src/state/homeDeck';
 import { spacing, usePalette } from '../../src/theme';
 
-function DeckButton({ icon, label, onPress, disabled, color }: { icon: 'close' | 'undo' | 'heart-outline'; label: string; onPress: () => void; disabled: boolean; color: string }) {
+/** Botones del mazo (sistema de diseño): descartar y conservar grandes; conservar relleno en violeta; deshacer pequeño. */
+function DeckButton({ icon, label, onPress, disabled, kind }: { icon: 'close' | 'undo' | 'heart'; label: string; onPress: () => void; disabled: boolean; kind: 'dismiss' | 'undo' | 'keep' }) {
   const c = usePalette();
+  const size = kind === 'undo' ? 48 : 64;
+  const bg = kind === 'keep' ? c.accent : c.surfaceAlt;
+  const fg = kind === 'keep' ? c.accentText : kind === 'dismiss' ? c.danger : c.onSurfaceAlt;
   return (
     <Pressable
       accessibilityRole="button"
@@ -18,12 +22,12 @@ function DeckButton({ icon, label, onPress, disabled, color }: { icon: 'close' |
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => ({ alignItems: 'center', gap: 4, opacity: disabled ? 0.35 : pressed ? 0.7 : 1, minWidth: 72 })}
+      hitSlop={kind === 'undo' ? 8 : 0}
+      style={({ pressed }) => ({ alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.35 : pressed ? 0.75 : 1, transform: [{ scale: pressed ? 0.94 : 1 }] })}
     >
-      <View style={{ width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: color, alignItems: 'center', justifyContent: 'center', backgroundColor: c.surface }}>
-        <MaterialCommunityIcons name={icon} size={26} color={color} />
+      <View style={{ width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: bg }}>
+        <MaterialCommunityIcons name={icon} size={kind === 'undo' ? 22 : 30} color={fg} />
       </View>
-      <Text style={{ color: c.text, fontSize: 12, fontWeight: '600' }}>{label}</Text>
     </Pressable>
   );
 }
@@ -72,15 +76,15 @@ function HomeDeckSection() {
               // Borde decorativo del mazo: indica que hay más tarjetas sin mostrar (ni leer) la siguiente antes de tiempo.
               <View
                 pointerEvents="none"
-                style={{ position: 'absolute', left: spacing.lg, right: spacing.lg, top: 8, bottom: -8, borderRadius: 18, backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.border }}
+                style={{ position: 'absolute', left: spacing.lg, right: spacing.lg, top: 12, bottom: -12, borderRadius: 28, backgroundColor: c.surfaceAlt, opacity: 0.7 }}
               />
             ) : null}
             <RecommendationCard key={deck.current.item.id} recommendation={deck.current} onDismiss={() => void deck.dismiss()} onKeep={() => void deck.keep()} interactive={!deck.busy} />
           </View>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-evenly' }}>
-            <DeckButton icon="close" label={t('home.dismiss')} onPress={() => void deck.dismiss()} disabled={deck.busy} color={c.danger} />
-            <DeckButton icon="undo" label={t('home.undo')} onPress={() => void deck.undo()} disabled={!deck.canUndo} color={c.textMuted} />
-            <DeckButton icon="heart-outline" label={t('home.keep')} onPress={() => void deck.keep()} disabled={deck.busy} color={c.ok} />
+          <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing.xl }}>
+            <DeckButton icon="close" kind="dismiss" label={t('home.dismiss')} onPress={() => void deck.dismiss()} disabled={deck.busy} />
+            <DeckButton icon="undo" kind="undo" label={t('home.undo')} onPress={() => void deck.undo()} disabled={!deck.canUndo} />
+            <DeckButton icon="heart" kind="keep" label={t('home.keep')} onPress={() => void deck.keep()} disabled={deck.busy} />
           </View>
           <Small style={{ textAlign: 'center' }}>{t('home.gestureHint')}</Small>
         </View>

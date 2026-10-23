@@ -2,7 +2,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useChatInbox } from '../../src/api/queries';
-import { usePalette } from '../../src/theme';
+import { View } from 'react-native';
+import { fonts, usePalette } from '../../src/theme';
 
 type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
 
@@ -21,11 +22,16 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: c.surface },
+        headerStyle: { backgroundColor: c.background },
+        headerShadowVisible: false,
         headerTintColor: c.text,
-        tabBarStyle: { backgroundColor: c.surface, borderTopColor: c.border },
-        tabBarActiveTintColor: c.accent,
-        tabBarInactiveTintColor: c.textMuted,
+        headerTitleStyle: { fontFamily: fonts.display, fontSize: 22 },
+        headerTitleAlign: 'left',
+        sceneStyle: { backgroundColor: c.background },
+        tabBarStyle: { backgroundColor: c.surface, borderTopColor: c.hairline, height: 68, paddingTop: 6 },
+        tabBarActiveTintColor: c.text,
+        tabBarInactiveTintColor: c.textSubtle,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       }}
     >
       {TABS.map((tab) => (
@@ -36,8 +42,13 @@ export default function TabsLayout() {
             title: t(tab.titleKey),
             tabBarAccessibilityLabel: tab.name === 'people' && badge ? `${t(tab.titleKey)} (${badge})` : t(tab.titleKey),
             tabBarBadge: tab.name === 'people' && badge ? badge : undefined,
-            tabBarBadgeStyle: { backgroundColor: c.accent, color: c.accentText },
-            tabBarIcon: ({ color, size }) => <MaterialCommunityIcons name={tab.icon} color={color} size={size} />,
+            tabBarBadgeStyle: { backgroundColor: c.danger, color: c.background, fontSize: 11 },
+            // Píldora en la pestaña seleccionada (sistema de diseño: bottom navigation).
+            tabBarIcon: ({ color, focused }) => (
+              <View style={{ width: 56, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: focused ? c.primaryContainer : 'transparent' }}>
+                <MaterialCommunityIcons name={tab.icon} color={focused ? c.onPrimaryContainer : color} size={22} />
+              </View>
+            ),
           }}
         />
       ))}

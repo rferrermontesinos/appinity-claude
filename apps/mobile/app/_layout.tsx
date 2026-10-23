@@ -9,7 +9,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useMe } from '../src/api/queries';
 import { initI18n } from '../src/i18n';
 import { useSession } from '../src/state/session';
-import { usePalette } from '../src/theme';
+import { SpaceGrotesk_500Medium, SpaceGrotesk_700Bold, useFonts } from '@expo-google-fonts/space-grotesk';
+import { fonts, usePalette, useThemeMode } from '../src/theme';
 
 const i18n = initI18n();
 // Cierra la ventana de autenticación al volver del proveedor (necesario en web; inocuo en iOS/Android).
@@ -64,16 +65,21 @@ export default function RootLayout() {
     () => new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 30_000 } } }),
   );
   const c = usePalette();
+  const mode = useThemeMode((s) => s.mode);
+  // Space Grotesk se carga sin bloquear: hasta entonces, los titulares usan la fuente del sistema.
+  useFonts({ SpaceGrotesk_500Medium, SpaceGrotesk_700Bold });
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: c.background }}>
       <I18nextProvider i18n={i18n}>
         <QueryClientProvider client={queryClient}>
-          <StatusBar style="auto" />
+          <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
           <SessionGate />
           <Stack
             screenOptions={{
-              headerStyle: { backgroundColor: c.surface },
+              headerStyle: { backgroundColor: c.background },
+              headerShadowVisible: false,
               headerTintColor: c.text,
+              headerTitleStyle: { fontFamily: fonts.display },
               contentStyle: { backgroundColor: c.background },
             }}
           >

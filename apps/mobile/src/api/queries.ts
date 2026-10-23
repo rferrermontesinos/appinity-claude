@@ -67,8 +67,10 @@ export function useDevLogin() {
     mutationFn: ({ handle, code }: { handle: string; code?: string }) =>
       apiRequest<DevSessionDto>('/v1/dev/session', { method: 'POST', body: code ? { handle, code } : { handle }, auth: false }),
     onSuccess: async (data) => {
-      await setSession({ token: data.token, expiresAt: data.expiresAt, handle: data.me.user.handle });
+      // Primero se vacía la caché y después se cambia la sesión: al revés, el vaciado se llevaba por delante la consulta
+      // /v1/me ya lanzada con el token nuevo y la pantalla de inicio se quedaba cargando hasta recargar la app.
       queryClient.clear();
+      await setSession({ token: data.token, expiresAt: data.expiresAt, handle: data.me.user.handle });
     },
   });
 }
