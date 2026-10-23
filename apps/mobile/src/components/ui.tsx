@@ -14,7 +14,7 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
-import { radius, spacing, usePalette } from '../theme';
+import { fonts, radius, spacing, usePalette } from '../theme';
 
 export function Screen({
   children,
@@ -73,30 +73,37 @@ export function Button({
   disabled,
   loading,
   icon,
+  size = 'medium',
 }: {
   label: string;
   onPress: () => void;
   variant?: 'primary' | 'secondary' | 'danger';
+  /** small: 36 de alto (acciones secundarias en fila, p. ej. en las fuentes); el área táctil sigue siendo ≥ 44. */
+  size?: 'small' | 'medium';
   disabled?: boolean;
   loading?: boolean;
   icon?: keyof typeof MaterialCommunityIcons.glyphMap;
 }) {
   const c = usePalette();
   const bg = variant === 'primary' ? c.accent : 'transparent';
-  const fg = variant === 'primary' ? c.accentText : variant === 'danger' ? c.danger : c.accent;
+  // Sistema de diseño: píldora; contained en violeta, outlined con borde neutro y texto violeta apto para texto.
+  const fg = variant === 'primary' ? c.accentText : variant === 'danger' ? c.danger : c.primaryInk;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
       disabled={disabled || loading}
+      hitSlop={size === 'small' ? 6 : 0}
       style={({ pressed }) => ({
         backgroundColor: bg,
-        borderRadius: radius.sm,
+        borderRadius: radius.full,
+        minHeight: size === 'small' ? 36 : 48,
+        ...(size === 'small' ? { alignSelf: 'flex-start' as const } : {}),
         borderWidth: variant === 'primary' ? 0 : 1,
-        borderColor: fg,
-        paddingVertical: spacing.md,
-        paddingHorizontal: spacing.lg,
+        borderColor: variant === 'danger' ? c.danger : c.border,
+        paddingVertical: size === 'small' ? spacing.xs : spacing.md,
+        paddingHorizontal: size === 'small' ? spacing.md : spacing.lg,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -105,7 +112,7 @@ export function Button({
       })}
     >
       {loading ? <ActivityIndicator color={fg} /> : icon ? <MaterialCommunityIcons name={icon} size={18} color={fg} /> : null}
-      <Text style={{ color: fg, fontWeight: '600', fontSize: 15 }}>{label}</Text>
+      <Text style={{ color: fg, fontWeight: '600', fontSize: size === 'small' ? 13 : 15 }}>{label}</Text>
     </Pressable>
   );
 }
@@ -224,5 +231,40 @@ export function ErrorCard({ error, onRetry }: { error: unknown; onRetry?: () => 
       <Body muted>{error instanceof Error ? error.message : String(error)}</Body>
       {onRetry ? <Button label={t('common.retry')} variant="secondary" onPress={onRetry} /> : null}
     </Card>
+  );
+}
+
+/**
+ * Estado vacío / arranque en frío (sistema de diseño): icono en el contenedor violeta, título en display, explicación y
+ * UNA acción principal (más, como mucho, una secundaria pequeña). Explica por qué está vacío; nunca inventa contenido.
+ */
+export function EmptyState({
+  icon,
+  title,
+  body,
+  action,
+  secondary,
+}: {
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  title: string;
+  body: string;
+  action?: { label: string; icon?: keyof typeof MaterialCommunityIcons.glyphMap; onPress: () => void };
+  secondary?: { label: string; icon?: keyof typeof MaterialCommunityIcons.glyphMap; onPress: () => void };
+}) {
+  const c = usePalette();
+  return (
+    <View
+      style={{ alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xxl, paddingHorizontal: spacing.xl, borderRadius: radius.lg, borderWidth: 1, borderStyle: 'dashed', borderColor: c.border }}
+    >
+      <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: c.primaryContainer, alignItems: 'center', justifyContent: 'center' }}>
+        <MaterialCommunityIcons name={icon} size={32} color={c.onPrimaryContainer} />
+      </View>
+      <Text style={{ color: c.text, fontFamily: fonts.display, fontSize: 20, textAlign: 'center' }} accessibilityRole="header">
+        {title}
+      </Text>
+      <Text style={{ color: c.textMuted, fontSize: 14, lineHeight: 21, textAlign: 'center' }}>{body}</Text>
+      {action ? <Button label={action.label} icon={action.icon} onPress={action.onPress} /> : null}
+      {secondary ? <Button label={secondary.label} icon={secondary.icon} variant="secondary" size="small" onPress={secondary.onPress} /> : null}
+    </View>
   );
 }

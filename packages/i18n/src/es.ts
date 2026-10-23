@@ -72,6 +72,18 @@ export const es = {
     reasonConsensus_one: '{{count}} de tus almas gemelas lo valoró muy bien',
     reasonConsensus_other: '{{count}} de tus almas gemelas lo valoraron muy bien',
     reasonDiscovery: 'Descubierto a través de {{name}}',
+    reasonContent: {
+      same_series: 'De la misma saga que {{title}}, que te gusta',
+      sequel: 'Continúa o precede a {{title}}, que te gusta',
+      same_director: 'Del director de {{title}}, que te gusta',
+      same_writer: 'Del guionista de {{title}}, que te gusta',
+      same_creator: 'Del creador de {{title}}, que te gusta',
+      same_author: 'Del autor de {{title}}, que te gusta',
+      same_developer: 'Del estudio de {{title}}, que te gusta',
+      influence: 'Relacionado por influencias con {{title}}, que te gusta',
+      shared_genres: 'Mismo estilo que {{title}}, que te gusta',
+      other: 'Porque te gusta {{title}}',
+    },
     reasonCommunity_one: 'Lo valoró muy bien {{count}} persona de APPINITY',
     reasonCommunity_other: 'Lo valoraron muy bien {{count}} personas de APPINITY',
     reasonKept: 'Lo conservaste en otra sesión',
@@ -169,7 +181,7 @@ export const es = {
   sources: {
     title: 'Fuentes',
     help:
-      'Las fuentes «Demo» son simuladas: leen actividad ficticia de archivos del repositorio, sin OAuth ni proveedores reales. Las reales llegarán en sus fases.',
+      'Las fuentes «Demo» son simuladas: leen actividad ficticia de archivos del repositorio, sin OAuth ni proveedores reales. Las reales se conectan con tu propia cuenta.',
     connect: 'Conectar',
     sync: 'Sincronizar',
     fullSync: 'Resincronizar todo',
@@ -256,6 +268,8 @@ export const es = {
     friends: 'Amigos',
     soulmatesIntro:
       'Personas con más afinidad contigo según los gustos importados de vuestras fuentes. Versión gratuita: las 50 primeras.',
+    soulmatesEmptyTitle: 'Aún no hay almas gemelas',
+    connectSources: 'Conectar fuentes',
     soulmatesEmpty:
       'Todavía no hay personas con gustos comparables a los tuyos. Conecta fuentes en Perfil: hacen falta al menos 3 preferencias y algún objeto en común.',
     soulmatesCount: '{{count}} de un máximo de {{limit}}',
@@ -294,9 +308,21 @@ export const es = {
     blocked: 'Personas bloqueadas',
     unblock: 'Desbloquear',
     contacts: 'Buscar a mis contactos',
-    contactsPending:
-      'Pendiente: necesita una identidad verificada (teléfono o email), que llega con la autenticación de producción (fase 13). Solo se hará con tu permiso, sin subir tu agenda completa.',
+    contactsPending: 'Pendiente: necesita verificar tu teléfono o tu email. Solo se hará con tu permiso y sin subir tu agenda completa.',
     affinityUnknown: 'Afinidad: —',
+  },
+  invite: {
+    title: 'Invita a tus amigos',
+    intro: 'APPINITY funciona mejor con gente a la que conoces: al aceptar tu enlace os hacéis amigos y podéis comparar gustos y chatear.',
+    share: 'Compartir enlace',
+    copy: 'Copiar enlace',
+    copied: 'Enlace copiado: pégalo en WhatsApp, Telegram o donde quieras.',
+    expires: 'El enlace caduca el {{date}}.',
+    message: 'Te invito a APPINITY, para descubrir qué gustos compartimos: {{url}}',
+    acceptTitle: 'Invitación',
+    acceptIntro: '{{name}} te invita a ser amigos en APPINITY. Al aceptar, podréis ver vuestra afinidad y chatear.',
+    accept: 'Aceptar',
+    later: 'Ahora no',
   },
   chat: {
     tabChats: 'Chats',
@@ -346,7 +372,8 @@ export const es = {
     blockConfirm: '¿Bloquear? Se cerrará el chat y dejaréis de veros en APPINITY.',
     reportHint: 'El reporte se hace desde su perfil.',
     rateLimited: 'Vas demasiado rápido. Espera un momento.',
-    pollingNote: 'Los mensajes nuevos se actualizan cada pocos segundos. Las notificaciones push llegarán en la fase 12C.',
+    openProfile: 'Ver el perfil de {{name}}',
+    pollingNote: 'Los mensajes nuevos se actualizan cada pocos segundos.',
   },
   premium: {
     title: 'Premium',
@@ -370,6 +397,8 @@ export const es = {
     title: 'Bienvenida a APPINITY',
     intro: 'Un único paso de consentimiento: confirma estos dos puntos y, a continuación, conecta las fuentes de tus gustos. No te pediremos nada más después.',
     namePlaceholder: 'Tu nombre visible (opcional)',
+    cityPlaceholder: 'Tu ciudad (opcional, p. ej. Barcelona)',
+    cityNote: 'Solo la ciudad, para Trending y los sitios cercanos. Se guarda aproximada y puedes cambiarla en Perfil.',
     adult: 'Tengo 18 años o más',
     terms: 'Acepto las condiciones y la política de privacidad',
     consentNote: 'Tus gustos solo salen de las fuentes que conectes. Nadie ve tu historial: solo tu nombre, tu país y vuestras afinidades.',
@@ -391,8 +420,7 @@ export const es = {
     country: 'País',
     currentArea: 'Zona actual',
     devIdentity: 'Identidad de desarrollo',
-    devIdentityHelp:
-      'Sesión de desarrollo firmada por la API solo con DEMO_MODE. No es la autenticación de producción (Google, Apple o email), que llegará antes de la beta.',
+    devIdentityHelp: 'Sesión de desarrollo firmada por la API, solo con DEMO_MODE. Las cuentas reales entran con «Continuar con Google».',
     switchUser: 'Cambiar de usuario de demo',
     signOut: 'Cerrar sesión',
     sources: 'Fuentes conectadas',
@@ -426,7 +454,7 @@ export const es = {
     notificationsExpoGo: 'En Android, Expo Go no admite notificaciones push (desde el SDK 53): llegarán con la versión de desarrollo de la app, que pedirá el permiso al registrarte.',
     privacy: 'Privacidad',
     subscription: 'Suscripción',
-    subscriptionPending: 'Premium y Early Access llegan en la fase 12.',
+    subscriptionPending: 'Premium y Early Access ya funcionan en el servidor; la compra desde la app llega con la versión para las tiendas.',
     diagnostics: 'Diagnóstico',
   },
   devLogin: {

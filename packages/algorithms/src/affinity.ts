@@ -21,14 +21,24 @@ import { CATEGORIES, type Category } from '@appinity/shared';
  *   calidad_c = agreement · dataConfidenceFactor        peso_c = log1p(n_eff_c)
  *   global = 100 · (Σ peso_c · calidad_c / Σ peso_c) · (1 − exp(−Σ_c n_eff_c / tau_c))
  *
+ * Cifra por categoría dentro de la global (encogimiento parcial, `affinity-v4`): con poca evidencia en una categoría,
+ * su cifra se acerca a la calidad global de la pareja (Q) en vez de a 0; con mucha, manda su propio acuerdo:
+ *
+ *   w_c = 1 − exp(−n_eff_c / tau_c)      categoría_c = 100 · E · (w_c · calidad_c + (1 − w_c) · Q)
+ *
+ * Así la global queda siempre entre la menor y la mayor de las categorías, y sigue sin haber cifras altas con poca
+ * evidencia (E limita todas). Con una sola categoría comparable coincide con la fórmula por categoría.
+ *
  * Historia (docs/decisions.md):
  * - `affinity-v1`: §11 con suelo 0,75 en la confianza de datos (la literal limitaba al ~50 % los gustos idénticos
  *   inferidos de conducta).
  * - `affinity-v2`: la evidencia de varias categorías se suma (antes, coincidir en 4 categorías puntuaba menos que en 1).
  * - `affinity-v3`: sin el factor de cobertura de §11 y con pesos por evidencia común. La afinidad pasa a ser SIMÉTRICA
  *   (A → B = B → A): la «direccionalidad» de §4 venía solo de penalizar lo que el otro no conoce.
+ * - `affinity-v4`: encogimiento parcial de cada categoría hacia la calidad global (antes, una pareja podía tener 86 de
+ *   global y ninguna categoría por encima de 50, porque cada categoría se penalizaba solo con su propia evidencia).
  */
-export const AFFINITY_VERSION = 'affinity-v3';
+export const AFFINITY_VERSION = 'affinity-v4';
 
 export interface AffinityParams {
   /** Evidencia efectiva con la que evidenceFactor llega al 63 % (1 − 1/e). Depende del tamaño típico de la categoría. */
@@ -170,6 +180,13 @@ export function affinity(source: PreferenceIndex, target: PreferenceIndex, param
   if (!compared || weightSum <= 0) return { score: null, confidence: 0, categoriesCompared: 0, commonItems, categories };
   // La evidencia de varias categorías se suma: más categorías comparables, más evidencia y más confianza.
   const evidence = 1 - Math.exp(-units);
+  const globalQuality = qualitySum / weightSum;
+  for (const category of CATEGORIES) {
+    const c = categories[category];
+    if (c.score === null || c.quality === null) continue;
+    const own = 1 - Math.exp(-c.effectiveEvidence / params.tau[category]);
+    categories[category] = { ...c, score: round(100 * evidence * (own * c.quality + (1 - own) * globalQuality), 2) };
+  }
   return {
     score: round(100 * (qualitySum / weightSum) * evidence, 2),
     confidence: round(evidence * (dataSum / weightSum)),

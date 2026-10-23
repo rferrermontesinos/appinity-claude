@@ -998,3 +998,40 @@ El acuerdo de desarrolladores de Twitch exige permiso escrito para guardar sus d
 - `myactivity.youtube` y `maps.starred_places` son restringidos: en producción exigen una evaluación CASA anual de pago.
 - Sin pagos, `GOOGLE_RESTRICTED_SCOPES` es false por defecto en producción y solo se piden los scopes sensibles, cuya verificación es gratuita. En desarrollo se piden todos.
 - Detalle en docs/google-verification.md.
+
+## 2026-10-22 · Arranque en frío
+
+- **Relaciones de contenido**: son datos públicos de Wikidata (CC0) y no se guarda qué usuario las originó. Pesos
+  propuestos sin calibrar:
+
+  | Relación | Peso |
+  |---|---|
+  | Saga o secuela | 1 |
+  | Director, creador o autor | 0,8 |
+  | Influencia | 0,7 |
+  | Guionista o estudio | 0,6 |
+  | Géneros | 0,4–0,6 |
+
+- **Diversidad**: como mucho 3 recomendaciones por gusto de origen. Dos relaciones desde el mismo gusto no suman dos
+  veces.
+- **Imágenes**: solo licencias libres de Commons, con autoría guardada. Para los restaurantes no se busca «una foto
+  cerca», que podría ser de otro sitio.
+- **Invitaciones**: compartir el enlace es el consentimiento de quien invita y aceptarlo, el de quien recibe; por eso se
+  crea la amistad directamente. Todas las rutas requieren sesión.
+- **Ciudad en el alta**: opcional y aproximada. Se geocodifica antes de completar el alta para no dejarla a medias.
+- **Build de desarrollo**: local con Gradle, sin EAS (sin coste). La carpeta `android/` se genera con prebuild y no se
+  versiona.
+
+## 2026-10-23 · affinity-v4 (encogimiento parcial por categoría)
+
+- **Problema detectado por el titular**: Clara tenía un 86 % global y ninguna categoría pasaba de 50. Cada categoría se
+  penalizaba solo con su propia evidencia, mientras la global sumaba la de todas. Era coherente con la fórmula, pero
+  contradictorio a la vista.
+- **Solución**: dentro de la global, cada categoría se encoge hacia la calidad global de la pareja (Q) según su
+  evidencia, en vez de hacia 0: `categoría = 100 · E · (w · calidad_c + (1 − w) · Q)` con `w = 1 − exp(−n_eff/tau)`.
+- **Propiedades**:
+  - la global queda siempre entre la menor y la mayor categoría;
+  - con mucha evidencia, el desacuerdo real llega a ~0;
+  - con una sola categoría comparable, el resultado coincide con v3;
+  - sigue sin haber cifras altas con poca evidencia, porque E las limita a todas.
+- **Resultado** (Laura ↔ Clara, demo): la global se mantiene en 86 y las categorías pasan de 31–49 a 85–87.

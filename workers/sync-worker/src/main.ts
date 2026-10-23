@@ -1,6 +1,6 @@
-import { EntityResolver, LocalDiskStorage, WikidataSnapshotProvider, cacheCatalogImage } from '@appinity/catalog';
+import { EntityResolver, LocalDiskStorage, WikidataSnapshotProvider, WikimediaImages, cacheCatalogImage, enrichImagesFromWikidata } from '@appinity/catalog';
 import { createDatabase } from '@appinity/database';
-import { createProducerQueues, enqueueAffinity, enqueueSync, recomputeAffinities, runConnectionSync, scheduleDueSyncs, sendDueDigests, checkDigestReceipts } from '@appinity/ingestion';
+import { buildContentRelations, createProducerQueues, enqueueAffinity, enqueueImage, enqueueSync, recomputeAffinities, runConnectionSync, scheduleDueSyncs, sendDueDigests, checkDigestReceipts } from '@appinity/ingestion';
 import { ExpoPushSender, createAdapterRegistry, createCatalogIdentifier, portabilityGroups } from '@appinity/integrations';
 import {
   QUEUES,
@@ -97,6 +97,16 @@ const workers: Worker[] = [
         if (receipts.checked) console.log(`[push] recibos: ${JSON.stringify(receipts)}`);
         return { ...result, receipts };
       }
+      // Enriquecimiento del catálogo real (prioridad 2 del diagnóstico): imágenes libres de Wikidata y Commons.
+      if (job.name === 'enrich-catalog') {
+        // Primero las relaciones por contenido (crean objetos nuevos); después, sus imágenes.
+        const relations = await buildContentRelations(database.db, resolver, { relatedWorks: (qid, category) => catalogIdentifier.relatedWorks?.(qid, category) ?? Promise.resolve([]) }, { log: (m) => console.log(`[catálogo] ${m}`) });
+        if (relations.relations) console.log(`[catálogo] relaciones por contenido: ${JSON.stringify(relations)}`);
+        const images = await enrichImagesFromWikidata(database.db, new WikimediaImages({ userAgent: env.catalogUserAgent }));
+        for (const id of images.imageIds) await enqueueImage(producer, id);
+        if (images.inserted) console.log(`[catálogo] ${images.inserted} imágenes nuevas de Wikimedia (${images.candidates} objetos sin imagen con QID)`);
+        return { relations, images: { ...images, imageIds: images.imageIds.length } };
+      }
       return { pong: `${job.data.requestedAt} → ${new Date().toISOString()}` };
     },
     { connection, prefix: env.queuePrefix, concurrency: 1 },
@@ -180,6 +190,9 @@ const heartbeat = setInterval(beat, 10_000);
 // Revisión horaria de syncs pendientes (idempotente: el programador se registra con un id fijo).
 const systemQueue = new Queue(QUEUES.system, { connection, prefix: env.queuePrefix });
 await systemQueue.upsertJobScheduler('schedule-syncs', { every: 60 * 60 * 1000 }, { name: 'schedule-syncs', data: { requestedAt: 'scheduler' } });
+// Catálogo: imágenes (y relaciones por contenido) cada 6 h; la primera ejecución, al arrancar.
+await systemQueue.upsertJobScheduler('enrich-catalog', { every: 6 * 60 * 60 * 1000 }, { name: 'enrich-catalog', data: { requestedAt: 'scheduler' } });
+await systemQueue.add('enrich-catalog', { requestedAt: 'startup' }, { removeOnComplete: true });
 await systemQueue.upsertJobScheduler('send-digests', { every: 30 * 60 * 1000 }, { name: 'send-digests', data: { requestedAt: 'scheduler' } });
 // Recálculo completo diario de afinidades (cubre cambios no ligados a un sync, como un usuario que deja de ser elegible).
 const affinityQueue = new Queue<AffinityJob>(QUEUES.affinity, { connection, prefix: env.queuePrefix });

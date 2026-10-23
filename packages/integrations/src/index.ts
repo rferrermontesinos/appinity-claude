@@ -9,7 +9,7 @@ export * as googlePortability from './profile/google-portability/index.js';
 export { createGooglePortabilityAdapter, GOOGLE_PORTABILITY_MANIFEST } from './profile/google-portability/index.js';
 export * as googleFixtures from './profile/google-portability/fixtures/fake-google.js';
 export { createCatalogIdentifier, identifyPlacesByText, GEOCODED_CONFIDENCE_FACTOR, type CatalogIdentifierOptions } from './catalog/identifier.js';
-export { NominatimGeocoder, geocodeQueries, NOMINATIM_DEFAULT_URL } from './catalog/nominatim.js';
+export { NominatimGeocoder, geocodeCity, geocodeQueries, NOMINATIM_DEFAULT_URL, type GeocodedCity } from './catalog/nominatim.js';
 export { OsmPlaceIdentifier, classifyOsmTags, pickPlace } from './catalog/osm-places.js';
 export { WikidataWorkIdentifier } from './catalog/wikidata-works.js';
 export { ExpoPushSender, EXPO_PUSH_URL, EXPO_RECEIPTS_URL, type ExpoPushMessage, type ExpoReceipt, type ExpoTicket } from './push/expo.js';
@@ -18,3 +18,4 @@ export { GOOGLE_BOOKS_MANIFEST, GOOGLE_BOOKS_SCOPE, createGoogleBooksAdapter, go
 export { ANILIST_MANIFEST, createAniListAdapter, collectAniList, mapAniList, aniListCategories, type AniListItem } from './profile/anilist/index.js';
 export { TRAKT_MANIFEST, createTraktAdapter, collectTrakt, mapTrakt, type TraktItem } from './profile/trakt/index.js';
 export { RESTRICTED_RESOURCE_GROUPS, portabilityGroups } from './profile/google-portability/constants.js';
+export { RELATION_WEIGHTS, relatedQueries, relationWeight, type RelatedWork, type RelationKind, type RelatedQuery } from "./catalog/wikidata-relations.js";

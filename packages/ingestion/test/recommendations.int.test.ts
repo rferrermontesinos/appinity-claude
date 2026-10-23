@@ -1,5 +1,6 @@
 import {
   catalogItems,
+  catalogRelations,
   createDatabase,
   homeDismissals,
   recommendationImpressions,
@@ -320,5 +321,31 @@ describe('feed continuo: respaldos honestos (fase 9)', () => {
     expect(food.items.every((r) => categoryOf.get(r.itemId) === 'food')).toBe(true);
     // En Home, el descarte sí se aplica.
     expect((await recommendFor(database.db, viewer, { now: NOW, limit: 50, category: 'food' })).items.map((r) => r.itemId)).not.toContain(items.cerca);
+  });
+});
+
+describe('por contenido: arranque en frío sin almas gemelas', () => {
+  it('«porque te gusta X»: relacionado con un gusto, sin lo ya conocido ni lo relacionado con un disgusto', async () => {
+    await item('relacionado', 'movies');
+    await item('deDisgusto', 'movies');
+    await item('odiada', 'movies');
+    const solo = await person('test_rec_solitario', null);
+    await like(solo, 'base0', 1);
+    await like(solo, 'odiada', -1);
+    await like(solo, 'conocido', 0, 0.9, 0.9);
+    await database.db.insert(catalogRelations).values([
+      { sourceItemId: items.base0!, targetItemId: items.relacionado!, relation: 'same_director', weight: 0.8, version: 'test' },
+      { sourceItemId: items.base0!, targetItemId: items.conocido!, relation: 'same_series', weight: 1, version: 'test' },
+      { sourceItemId: items.odiada!, targetItemId: items.deDisgusto!, relation: 'same_series', weight: 1, version: 'test' },
+    ]);
+    const result = await recommendFor(database.db, solo, { now: NOW, limit: 200 });
+    const content = result.items.filter((r) => r.block === 'content');
+    expect(content).toEqual([expect.objectContaining({ itemId: items.relacionado, content: { becauseItemId: items.base0, becauseTitle: 'Sintético base0', relation: 'same_director' } })]);
+    const ids = result.items.map((r) => r.itemId);
+    // Lo relacionado con un disgusto no sale «por contenido» (puede salir en explorar, sin señales); lo conocido, nunca.
+    expect(result.items.find((r) => r.itemId === items.deDisgusto)?.block).not.toBe('content');
+    expect(ids).not.toContain(items.conocido);
+    // El bloque por contenido va antes que comunidad y explorar.
+    expect(ids.indexOf(items.relacionado!)).toBeLessThan(result.items.findIndex((r) => r.block === 'explore'));
   });
 });

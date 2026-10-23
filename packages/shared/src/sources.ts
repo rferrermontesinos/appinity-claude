@@ -256,6 +256,8 @@ export interface EntityIdentifier {
   identifyWork(work: { title: string; languages?: string[]; categories?: Category[] }): Promise<IdentifiedEntity | null>;
   /** Libro por su ID de Google Books (P675 en Wikidata; una edición se atribuye a su obra). Opcional. */
   identifyGoogleBooksVolume?(volumeId: string): Promise<IdentifiedEntity | null>;
+  /** Obras y artistas relacionados (misma saga, director, autor, estudio, influencias). Opcional. */
+  relatedWorks?(qid: string, category: Category): Promise<Array<{ entity: IdentifiedEntity; relation: string; weight: number }>>;
   /** Obras por IMDb, TMDB, AniList o MyAnimeList (Wikidata). Opcional. Mismo orden que la entrada. */
   identifyByExternalIds?(items: ExternalIdQuery[]): Promise<Array<IdentifiedEntity | null>>;
   /**

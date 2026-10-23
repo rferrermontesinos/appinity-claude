@@ -25,6 +25,165 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-23 · D4 (ficha, estados vacíos y textos) y D5 (accesibilidad, primera pasada)
+
+### Qué se ha hecho
+
+- **Ficha de una obra**: cabecera a sangre con la imagen, el velo, la categoría y el título en display; sin la
+  etiqueta técnica de tipo («artist»).
+- **`ImageVeil` y `CategoryChipOnImage`**: componentes compartidos por la tarjeta y la ficha.
+- **`EmptyState`**: icono, título, explicación y una acción, como en el sistema de diseño. Se usa al final del mazo de
+  Inicio (conectar fuentes, con deshacer o recargar como secundaria) y en «Aún no hay almas gemelas».
+- **Textos**: se retiran las referencias a fases ya terminadas (chat, fuentes, contactos, sesión de desarrollo y
+  Premium).
+- **Accesibilidad**: auditoría automática de los `Pressable`. La burbuja de reintento del chat y la cabecera con el
+  perfil no tenían rol ni etiqueta; ahora sí. Los demás pulsables con rol leen su texto visible.
+
+### Incidencia: disco lleno (resuelta)
+
+- **Causa**: `scripts/web-screenshot.mjs` dejaba perfiles temporales de Edge en `%TEMP%` (unos 250 MB cada uno) y
+  293 procesos sin interfaz vivos. En Windows, el lanzador de Edge termina enseguida y sus hijos quedan sueltos.
+- **Efecto**: el disco llegó a 0 GB libres y se cayó la vista web. Metro (8091), la API y PostgreSQL siguieron bien y
+  el registro de PostgreSQL no tiene errores de escritura.
+- **Arreglo**: se borraron los 40 perfiles y se cerraron los procesos, con lo que quedaron 18 GB libres. El script cierra
+  ahora los procesos por la ruta de su perfil y borra el perfil al terminar. Comprobado: tras una captura quedan
+  0 procesos y 0 perfiles.
+
+### Comprobaciones
+
+- `pnpm test`: 36 ficheros y 358 tests OK; lint y typecheck limpios.
+- Capturas reales: ficha de Vetusta Morla (foto de Commons, licencia CC BY-SA 4.0) y conversación de chat.
+
+### Siguiente paso
+
+Revisión en el teléfono (barra inferior, tarjeta y perfil); después, D5 con lector de pantalla y textos grandes en el
+propio dispositivo.
+
+## Entrega 2026-10-23 · observaciones del titular en el teléfono y D4 en el resto de pestañas
+
+### Qué se ha hecho
+
+- **Afinidad (`affinity-v4`)**: Clara tenía un 86 % global y ninguna categoría pasaba de 50. Ahora cada categoría se
+  encoge hacia la calidad global de la pareja según su propia evidencia, así que la global queda siempre entre la menor
+  y la mayor categoría. Laura ↔ Clara: global 86, categorías 85–87. Afinidades recalculadas; API y worker reiniciados.
+- **Barra inferior**: ya no se solapa con los botones de Android (edge-to-edge); su altura suma el margen del sistema.
+- **People**: abre en «Almas gemelas» (primer segmento). La invitación va arriba solo si aún no hay almas gemelas.
+- **Categorías**: sin el nombre repetido y con títulos en Space Grotesk.
+- **Perfil**: las acciones de cada fuente son pequeñas y van en fila (`Button size="small"`).
+- `web-screenshot.mjs`: sesión de demo creada por la API y `--tabs` para varias capturas en una misma sesión.
+
+### Comprobaciones
+
+- `pnpm test`: 36 ficheros y 358 tests OK. Tests nuevos de v4: la global queda entre la menor y la mayor categoría, y
+  el desacuerdo con evidencia llega a ~0.
+- Lint y typecheck limpios.
+- Capturas de Inicio, Personas, Categorías y Perfil en la vista web.
+- **Pendiente de ver en el teléfono**: la barra inferior sobre los botones de Android (en la web no hay margen del
+  sistema).
+
+## Entrega 2026-10-23 · diseño D1 y D4 (sistema de diseño y primera aplicación en la app)
+
+### Qué se ha hecho
+
+- **Teléfono**:
+  - la app de desarrollo (APK) conecta tras abrir en el cortafuegos de Windows los puertos 3100 y 8091 para redes
+    privadas (acción del titular);
+  - acceso sin Google con un código local de un solo uso para la cuenta real (`pnpm user:local` conserva los datos).
+- **D1 · sistema de diseño «Noche de cine»** (`docs/design/design-system/`):
+  - tokens oscuro y claro;
+  - 44 componentes (38 de Material + MUI y 6 propios);
+  - guía viva con Dev Mode y «Copiar como prompt»;
+  - concepto de dos pantallas y 43 iconos propios.
+- **D4 · en la app**:
+  - tema con los tokens, oscuro por defecto;
+  - Space Grotesk en titulares y cifras;
+  - barra inferior con píldora;
+  - tarjeta de recomendación a sangre con velo, categoría y motivo;
+  - botones del mazo y botones en píldora;
+  - perfil de persona con la cifra grande y barras por categoría.
+- **Arreglo**: tras entrar (con código local o con Google), el inicio se quedaba cargando hasta recargar. La caché se
+  vaciaba después de cambiar la sesión y se llevaba por delante la consulta `/v1/me`.
+- `scripts/web-screenshot.mjs`: capturas de la vista web con Edge sin interfaz (DevTools), sin dependencias.
+
+### Comprobaciones
+
+- `pnpm test`: 36 ficheros y 357 tests OK; lint y typecheck limpios.
+- Contraste AA calculado con la fórmula WCAG para todos los pares de tokens, en ambos temas.
+- Capturas reales en la vista web: inicio con tarjeta y perfil de una alma gemela. La guía y el concepto se
+  revisaron en oscuro y en claro.
+- **Pendiente de comprobar en el teléfono**: el aspecto en el APK de desarrollo. La fuente se carga en JavaScript y no
+  hace falta otro APK.
+
+### Siguiente paso
+
+- D4 en el resto de pantallas: Categorías, People con la fila de persona, Perfil con la tarjeta de fuente y los
+  estados vacíos.
+- D5: accesibilidad (lector de pantalla y tamaños) y revisión en el teléfono.
+
+## Entrega 2026-10-22 · fase 14 (arranque en frío y prioridades del diagnóstico)
+
+### Qué se ha hecho
+
+1. **Recomendador por contenido** (bloque `content`, «porque te gusta X»):
+   - relaciones públicas de Wikidata: saga, secuela, director, guionista, creador, autor, estudio, influencias y
+     géneros (`catalog_relations`, migración 0014);
+   - una consulta SPARQL por relación, porque la UNION tardaba 65 s y cada una por separado menos de 1,5 s;
+   - en series se usa el creador y no el director, que en las series son los de cada episodio;
+   - en música, artistas del mismo tipo (grupo o solista) con 2 géneros en común o influencias;
+   - el bloque va antes de comunidad y explorar, y solo lo generan gustos claros (≥ 0,3); un disgusto nunca recomienda
+     lo relacionado.
+2. **Imágenes del catálogo real** desde Wikidata (P18 y P154) y Commons, con licencia libre y autoría. El job
+   `enrich-catalog` del worker las añade cada 6 h y al arrancar.
+3. **Ciudad opcional en el alta**: Nominatim, solo poblaciones; un nombre de calle o un texto inventado se rechazan.
+   Se guarda aproximada.
+4. **Invitaciones por enlace** (migración 0015):
+   - código aleatorio de 10 caracteres, 30 días y 20 usos;
+   - aceptar crea la amistad y abre el chat;
+   - respetan bloqueos y datasets; la invitación propia no sirve.
+5. **Diseño D0**: dirección y principios en docs/design/D0-direccion.md.
+6. **CI**: GitHub Actions con PostGIS y Redis (lint, typecheck y tests); repositorio público, sin coste.
+7. **Build de desarrollo local**: `expo-dev-client` y `pnpm android:build`, que genera un APK en este PC con el SDK y
+   el JDK de Android Studio, sin EAS.
+
+También: fusión de cuentas (la antigua queda vacía, no se ha borrado) y ciudad «Barcelona» en la cuenta real, deducida
+de los lugares de su calendario y modificable en Perfil.
+
+### Resultados reales con la cuenta del titular
+
+| Métrica | Antes | Después |
+|---|---|---|
+| Recomendaciones | 3 (explorar) | **47** «porque te gusta X» |
+| Objetos del catálogo real con imagen | 9 % | **55 %** del catálogo de entonces; +109 de los objetos nuevos |
+| Trending | «sin ubicación» | «votos insuficientes» (falta gente en la zona) |
+
+Ejemplos de recomendaciones:
+- *2010* y *El resplandor*, por *2001: A Space Odyssey*;
+- *The Cranberries*, por La Oreja de Van Gogh;
+- Michael Jackson, por Beyoncé.
+
+Endpoints comprobados por HTTP con una sesión temporal: recomendaciones con su motivo e imagen, crear invitación y
+rechazo de la invitación propia.
+
+### Comprobaciones
+
+- `pnpm test`: 36 ficheros y 357 tests OK; lint y typecheck limpios.
+- Tests nuevos:
+  - algoritmo por contenido (3);
+  - consultas y relacionados de Wikidata (2);
+  - bloque «por contenido» de extremo a extremo (1);
+  - invitaciones (4).
+
+### Limitaciones conocidas
+
+- La calidad de las relaciones musicales es irregular: Wikidata tiene pocas influencias y los géneros son amplios.
+- Las fotos de restaurantes siguen con fallback: no hay fotos libres fiables de cada local.
+- Sin otros usuarios reales, consenso, descubrimiento y Trending siguen vacíos. Las invitaciones son la vía.
+
+### Siguiente paso
+
+D1, el sistema de diseño, con los plugins (disponibles en la próxima sesión), e instalar el APK de desarrollo en el
+teléfono.
+
 ## Entrega 2026-10-22 · fase 11E (Google Calendar)
 
 ### Qué se ha hecho
