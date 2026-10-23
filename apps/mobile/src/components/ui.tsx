@@ -73,10 +73,13 @@ export function Button({
   disabled,
   loading,
   icon,
+  size = 'medium',
 }: {
   label: string;
   onPress: () => void;
   variant?: 'primary' | 'secondary' | 'danger';
+  /** small: 36 de alto (acciones secundarias en fila, p. ej. en las fuentes); el área táctil sigue siendo ≥ 44. */
+  size?: 'small' | 'medium';
   disabled?: boolean;
   loading?: boolean;
   icon?: keyof typeof MaterialCommunityIcons.glyphMap;
@@ -91,14 +94,16 @@ export function Button({
       accessibilityLabel={label}
       onPress={onPress}
       disabled={disabled || loading}
+      hitSlop={size === 'small' ? 6 : 0}
       style={({ pressed }) => ({
         backgroundColor: bg,
         borderRadius: radius.full,
-        minHeight: 48,
+        minHeight: size === 'small' ? 36 : 48,
+        ...(size === 'small' ? { alignSelf: 'flex-start' as const } : {}),
         borderWidth: variant === 'primary' ? 0 : 1,
         borderColor: variant === 'danger' ? c.danger : c.border,
-        paddingVertical: spacing.md,
-        paddingHorizontal: spacing.lg,
+        paddingVertical: size === 'small' ? spacing.xs : spacing.md,
+        paddingHorizontal: size === 'small' ? spacing.md : spacing.lg,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -107,7 +112,7 @@ export function Button({
       })}
     >
       {loading ? <ActivityIndicator color={fg} /> : icon ? <MaterialCommunityIcons name={icon} size={18} color={fg} /> : null}
-      <Text style={{ color: fg, fontWeight: '600', fontSize: 15 }}>{label}</Text>
+      <Text style={{ color: fg, fontWeight: '600', fontSize: size === 'small' ? 13 : 15 }}>{label}</Text>
     </Pressable>
   );
 }

@@ -5,7 +5,7 @@
 import { spawn } from 'node:child_process';
 import { existsSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 const arg = (name, def) => {
   const i = process.argv.indexOf(`--${name}`);
@@ -65,17 +65,25 @@ try {
   await send('Page.navigate', { url: base + '/' });
   await sleep(6000);
   if (demo) {
-    const clicked = await evaluate(`(() => { const el = [...document.querySelectorAll('[role=button],button,div')].reverse().find(e => e.innerText && e.innerText.includes(${JSON.stringify(demo)}) && e.innerText.length < 200); if (!el) return false; el.click(); return true; })()`);
-    if (!clicked) console.error('No se encontró el usuario de demo');
-    await sleep(5000);
+    // Sesión de demo creada por la API de desarrollo y guardada como la guarda la app (sin pulsar botones).
+    const ok = await evaluate(`(async () => {
+      const users = await fetch('http://localhost:3100/v1/dev/users').then((r) => r.json());
+      const u = (users.users || users).find((x) => x.displayName.includes(${JSON.stringify(demo)}));
+      if (!u) return false;
+      const r = await fetch('http://localhost:3100/v1/dev/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle: u.handle }) });
+      const j = await r.json();
+      localStorage.setItem('appinity.devSession', JSON.stringify({ token: j.token, expiresAt: j.expiresAt, handle: u.handle }));
+      return r.ok;
+    })()`);
+    if (!ok) console.error('No se pudo crear la sesión de demo');
+    await send('Page.navigate', { url: base + path });
+    await sleep(6000);
+  } else if (path !== '/') {
+    await send('Page.navigate', { url: base + path });
+    await sleep(6000);
   }
   if (process.argv.includes('--reload')) {
     await send('Page.reload');
-    await sleep(6000);
-  }
-  if (path !== '/') {
-    // Carga completa de la ruta: la sesión queda guardada en el navegador tras entrar.
-    await send('Page.navigate', { url: base + path });
     await sleep(6000);
   }
   await sleep(wait);
@@ -84,6 +92,23 @@ try {
   const shot = await send('Page.captureScreenshot', { format: 'png' });
   writeFileSync(out, Buffer.from(shot.result.data, 'base64'));
   console.log(`Captura: ${out}`);
+  // --tabs "people.png:People,profile.png:Profile": más capturas en la MISMA sesión, pulsando la pestaña por su texto
+  // (la API de desarrollo limita las sesiones a 10 por minuto).
+  const tabs = arg('tabs', null);
+  if (tabs) {
+    for (const spec of String(tabs).split(',')) {
+      const [file, label] = spec.split(':');
+      const clicked = await evaluate(
+        `(() => { const el = [...document.querySelectorAll('a,[role=tab],[role=button],[role=link]')].find(e => e.innerText && e.innerText.trim().split('\\n').pop() === ${JSON.stringify(label)}); if (!el) return false; el.click(); return true; })()`,
+      );
+      if (!clicked) console.error(`No se encontró la pestaña ${label}`);
+      await sleep(Math.max(wait, 3000));
+      const s = await send('Page.captureScreenshot', { format: 'png' });
+      const target = join(dirname(out), file);
+      writeFileSync(target, Buffer.from(s.result.data, 'base64'));
+      console.log(`Captura: ${target}`);
+    }
+  }
   if (process.argv.includes('--log')) console.log(log.join('\n'));
   ws.close();
 } finally {

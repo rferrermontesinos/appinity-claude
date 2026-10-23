@@ -98,9 +98,11 @@ export default function PeopleScreen() {
 function SoulmatesAndFriends() {
   const { t } = useTranslation();
   const soulmates = useSoulmates();
+  // Sin almas gemelas, invitar es lo primero; con ellas, la lista manda y la invitación queda debajo.
+  const hasSoulmates = Boolean(soulmates.data?.items.length);
   return (
     <>
-      <InviteCard />
+      {!hasSoulmates ? <InviteCard /> : null}
       <Card>
         <Title>{t('people.soulmates')}</Title>
         <Body muted>{t('people.soulmatesIntro')}</Body>
@@ -117,6 +119,7 @@ function SoulmatesAndFriends() {
           </>
         ) : null}
       </Card>
+      {hasSoulmates ? <InviteCard /> : null}
       <FriendsCard />
     </>
   );

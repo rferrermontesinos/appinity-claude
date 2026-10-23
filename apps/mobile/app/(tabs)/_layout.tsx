@@ -31,7 +31,7 @@ export default function TabsLayout() {
         headerTitleStyle: { fontFamily: fonts.display, fontSize: 22 },
         headerTitleAlign: 'left',
         sceneStyle: { backgroundColor: c.background },
-        tabBarStyle: { backgroundColor: c.surface, borderTopColor: c.hairline, height: 62 + insets.bottom, paddingTop: 6, paddingBottom: Math.max(insets.bottom, 8) },
+        tabBarStyle: { backgroundColor: c.surface, borderTopColor: c.hairline, height: 70 + insets.bottom, paddingTop: 6, paddingBottom: insets.bottom + 10 },
         tabBarActiveTintColor: c.text,
         tabBarInactiveTintColor: c.textSubtle,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
