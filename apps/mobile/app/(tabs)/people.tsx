@@ -1,3 +1,4 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { SoulmateDto } from '@appinity/shared';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -8,9 +9,11 @@ import { ChatInbox } from '../../src/components/ChatInbox';
 import { FriendsCard } from '../../src/components/FriendsCard';
 import { InviteCard } from '../../src/components/InviteCard';
 import { PersonAvatar, formatAffinity } from '../../src/components/PersonAvatar';
-import { Badge, Body, Card, ErrorCard, Loading, Screen, Small, Title, EmptyState } from '../../src/components/ui';
-import { spacing, usePalette } from '../../src/theme';
+import { SoulmateHero } from '../../src/components/SoulmateHero';
+import { Badge, Card, ErrorCard, Loading, Screen, Small, Title, EmptyState } from '../../src/components/ui';
+import { fonts, spacing, usePalette } from '../../src/theme';
 
+/** Fila de alma gemela («Aura»): avatar con aro lima, nombre y país, cifra grande y acceso al perfil. */
 function SoulmateRow({ person }: { person: SoulmateDto }) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -21,19 +24,22 @@ function SoulmateRow({ person }: { person: SoulmateDto }) {
       accessibilityRole="button"
       accessibilityLabel={`${person.rank}. ${person.displayName}, ${t('people.affinity')} ${value ?? '—'}`}
       onPress={() => router.push(`/person/${person.userId}`)}
-      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm, opacity: pressed ? 0.7 : 1 })}
+      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm, minHeight: 64, opacity: pressed ? 0.7 : 1 })}
     >
-      <Text style={{ color: c.textMuted, width: 24, textAlign: 'right', fontWeight: '700' }}>{person.rank}</Text>
-      <PersonAvatar name={person.displayName} url={person.avatarUrl} />
+      <PersonAvatar name={person.displayName} url={person.avatarUrl} size={48} ring />
       <View style={{ flex: 1, gap: 2 }}>
-        <Text style={{ color: c.text, fontWeight: '700', fontSize: 15 }} numberOfLines={1}>
+        <Text style={{ color: c.text, fontWeight: '600', fontSize: 15 }} numberOfLines={1}>
           {person.displayName}
           {person.countryCode ? <Text style={{ color: c.textMuted, fontWeight: '400' }}> · {person.countryCode}</Text> : null}
         </Text>
         <Small>{t('people.categoriesCompared', { count: person.categoriesCompared })}</Small>
-        {person.exceptionalMutual ? <Badge label={t('people.exceptionalMutual')} color={c.ok} /> : null}
+        {person.exceptionalMutual ? <Badge label={t('people.exceptionalMutual')} color={c.affinity} /> : null}
       </View>
-      <Text style={{ color: c.accent, fontWeight: '800', fontSize: 18 }}>{value === null ? '—' : t('people.affinityValue', { value })}</Text>
+      <Text style={{ color: value === null ? c.textSubtle : c.text, fontFamily: fonts.displayHeavy, fontSize: 24, letterSpacing: -0.8 }}>
+        {value ?? '—'}
+        {value !== null ? <Text style={{ fontSize: 13, color: c.textMuted, letterSpacing: 0 }}> %</Text> : null}
+      </Text>
+      <MaterialCommunityIcons name="chevron-right" size={22} color={c.textSubtle} />
     </Pressable>
   );
 }
@@ -101,27 +107,34 @@ function SoulmatesAndFriends() {
   const router = useRouter();
   // Sin almas gemelas, invitar es lo primero; con ellas, la lista manda y la invitación queda debajo.
   const hasSoulmates = Boolean(soulmates.data?.items.length);
+  const c = usePalette();
+  const [top, ...rest] = soulmates.data?.items ?? [];
   return (
     <>
       {!hasSoulmates ? <InviteCard /> : null}
-      <Card>
-        <Title>{t('people.soulmates')}</Title>
-        <Body muted>{t('people.soulmatesIntro')}</Body>
-        {soulmates.isLoading ? <Loading /> : null}
-        {soulmates.error ? <ErrorCard error={soulmates.error} onRetry={() => void soulmates.refetch()} /> : null}
-        {soulmates.data && !soulmates.data.items.length ? (
+      {soulmates.isLoading ? <Loading /> : null}
+      {soulmates.error ? <ErrorCard error={soulmates.error} onRetry={() => void soulmates.refetch()} /> : null}
+      {soulmates.data && !soulmates.data.items.length ? (
+        <Card>
+          <Title>{t('people.soulmates')}</Title>
           <EmptyState icon="account-heart-outline" title={t('people.soulmatesEmptyTitle')} body={t('people.soulmatesEmpty')} action={{ label: t('people.connectSources'), icon: 'link-variant', onPress: () => router.push('/profile') }} />
-        ) : null}
-        {soulmates.data?.items.length ? (
-          <>
+        </Card>
+      ) : null}
+      {top ? <SoulmateHero person={top} /> : null}
+      {soulmates.data && rest.length ? (
+        <View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginTop: spacing.sm, marginBottom: spacing.xs }}>
+            <Text accessibilityRole="header" style={{ color: c.text, fontFamily: fonts.display, fontSize: 20, letterSpacing: -0.4 }}>
+              {t('people.moreSoulmates')}
+            </Text>
             <Small>{t('people.soulmatesCount', { count: soulmates.data.items.length, limit: soulmates.data.limit })}</Small>
-            {soulmates.data.items.map((p) => (
-              <SoulmateRow key={p.userId} person={p} />
-            ))}
-            <Small>{t('people.affinityHint')}</Small>
-          </>
-        ) : null}
-      </Card>
+          </View>
+          {rest.map((p) => (
+            <SoulmateRow key={p.userId} person={p} />
+          ))}
+        </View>
+      ) : null}
+      {top ? <Small>{t('people.affinityHint')}</Small> : null}
       {hasSoulmates ? <InviteCard /> : null}
       <FriendsCard />
     </>

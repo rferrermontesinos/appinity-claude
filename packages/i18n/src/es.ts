@@ -297,6 +297,13 @@ export const es = {
     itemCount_other: '{{count}} objetos',
   },
   people: {
+    heroWith: '{{name}} y tú',
+    heroKicker: 'Vuestra afinidad',
+    heroVersion: 'Calculada con vuestras fuentes · {{version}}. La de {{name}} hacia ti puede ser distinta.',
+    heroCommon_one: 'Tenéis {{count}} gusto en común',
+    heroCommon_other: 'Tenéis {{count}} gustos en común',
+    heroCta: 'Ver perfil',
+    moreSoulmates: 'Más almas gemelas',
     title: 'Personas',
     soulmates: 'Almas gemelas',
     friends: 'Amigos',

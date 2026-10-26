@@ -298,6 +298,13 @@ export const en: TranslationResources = {
     itemCount_other: '{{count}} items',
   },
   people: {
+    heroWith: '{{name}} and you',
+    heroKicker: 'Your affinity',
+    heroVersion: 'Calculated from both your sources · {{version}}. {{name}}’s affinity towards you may differ.',
+    heroCommon_one: 'You share {{count}} taste',
+    heroCommon_other: 'You share {{count}} tastes',
+    heroCta: 'View profile',
+    moreSoulmates: 'More soulmates',
     title: 'People',
     soulmates: 'Soulmates',
     friends: 'Friends',

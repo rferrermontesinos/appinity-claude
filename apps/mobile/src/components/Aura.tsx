@@ -15,7 +15,7 @@ export function mixHex(a: string, b: string, t: number): string {
  * Brillo radial sin degradados nativos: círculos concéntricos casi transparentes que se acumulan hacia el centro
  * (como el velo de bandas de la tarjeta). El grano encima disimula los escalones.
  */
-function Glow({ color, size, x, y, strength }: { color: string; size: number; x: number; y: number; strength: number }) {
+export function Glow({ color, size, x, y, strength }: { color: string; size: number; x: number; y: number; strength: number }) {
   const steps = 18;
   return (
     <>

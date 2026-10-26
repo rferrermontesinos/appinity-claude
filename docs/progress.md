@@ -25,6 +25,32 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-26 (6) · «Aura» en Personas (momento Wrapped)
+
+### Qué se ha hecho
+
+- **Tarjeta de afinidad** (`SoulmateHero.tsx`): el alma gemela n.º 1 con la cifra enorme, que cuenta al aparecer; sus 3
+  categorías más afines, con barras que crecen; «Tenéis N gustos en común», que suma `commonItems` (solo el recuento,
+  nunca cuáles); la versión del cálculo y el aviso de que la afinidad de la otra persona hacia ti puede ser distinta;
+  «Afinidad mutua excepcional» si procede, y «Ver perfil». Datos reales de `/v1/people/:id`. No se inventan obras en
+  común: la maqueta las nombraba, pero la API no las expone (privacidad).
+- **Filas** del resto del Top 50: avatar con aro lima, cifra en Bricolage y flecha. Avatar sin foto con un color
+  estable según el nombre, solo decorativo.
+- Textos nuevos en es/en. Respeta «reducir movimiento» (sin conteo ni crecimiento).
+
+### Comprobaciones
+
+- Contraste calculado en el peor caso (brillo lima al máximo y acento más claro): texto 7,62:1, texto atenuado 5,39:1
+  y lima 6,79:1; inicial del avatar ≥ 6,66:1.
+- `pnpm lint` y `pnpm typecheck` limpios; `pnpm test`: 37 ficheros y 366 tests OK.
+- Vista web (390×844, demo): «Clara (demo) y tú», 86 %, Películas, Libros y Restaurantes, 10 gustos en común.
+- Nota: la vista web lee `packages/i18n/dist`; tras añadir textos hay que ejecutar `pnpm build`.
+
+### Pendiente
+
+- Ver Inicio y Personas en el teléfono (recargar la app).
+- Categorías, Perfil, ficha de persona, barra inferior y guía del sistema de diseño.
+
 ## Entrega 2026-10-26 (5) · «Aura» en tokens y en Inicio
 
 ### Qué se ha hecho
