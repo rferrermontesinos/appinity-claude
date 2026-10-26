@@ -21,9 +21,38 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 10 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-14 · fase 10 (rama `fase-10-people`, basada en `fase-9-categories`). Contactos: pendiente (fase 13) |
 | 11 | **Paso 1 implementado** (Google: Play, pedidos y guardados), comprobado automáticamente y en parte con servicios reales; falta un export real | Entrega 2026-10-14 · fase 11 (rama `fase-11-fuentes`). Análisis en [source-candidates.md](source-candidates.md) |
 | 12 | **12C (push, servidor) implementada y comprobada automáticamente**; envío real pendiente de build de desarrollo y FCM · **12B (Premium, servidor) implementada y comprobada automáticamente**; compra en la app pendiente de cuentas y build de desarrollo · **12A (chat) implementada, comprobada automáticamente y verificada en la vista web**; 12B (Premium/RevenueCat) y 12C (push) pendientes | Entrega 2026-10-14 · fase 12A (rama `fase-12a-chat`, basada en `fase-10-people`) |
-| 13 | **Preparada**: auth de producción, alta, eliminación de cuenta y despliegue probados en local; beta real pendiente de dominio, servidor y cuentas ([beta.md](beta.md)) | Entrega 2026-10-15 · fase 13 (rama `fase-13-beta`) |
+| 13 | **Preparada**: auth de producción, alta, eliminación de cuenta y despliegue probados en local; beta real pendiente de dominio, servidor y cuentas ([beta.md](beta.md)) · auditoría de seguridad de la API hecha (2026-10-26) | Entrega 2026-10-15 · fase 13 (rama `fase-13-beta`) |
 
 ---
+
+## Entrega 2026-10-26 · Tus gustos, auditoría de seguridad, alta (D2/D3) y D5 con texto grande
+
+### Qué se ha hecho
+
+- **Incidencia**: el teléfono no cargaba tras reiniciar el PC: Metro (8091) no estaba en marcha y Expo Go probó con la
+  vista web (8092). Metro arrancado de nuevo; la app ya carga (confirmado por el titular).
+- **Tus gustos** (explicabilidad, diagnóstico §2.4): tarjeta en Perfil con el total, los gustos y disgustos claros
+  (±0,3), lo que no tiene opinión (NULL), el recuento por categoría y por fuente. El detalle se titula «Tus gustos» en
+  cuentas reales, nombra la fuente de cada obra y ordena primero los gustos claros. La guía de la demo de Inicio solo
+  aparece con datos simulados; fuera la tarjeta de suscripción duplicada.
+- **Auditoría de seguridad (fase 13)**: resultado en [beta.md](beta.md). Arreglado: detrás del proxy HTTPS el límite de
+  peticiones se habría repartido entre todos los usuarios; ahora `TRUST_PROXY` lee la IP real. Tests nuevos de acceso
+  a recursos ajenos (solicitudes y conversaciones).
+- **Alta (D2/D3)**: título en display, «Cómo funciona» en tres pasos y el campo de texto del sistema de diseño
+  (`TextField`, con etiqueta visible), también en el acceso local y en la eliminación de cuenta.
+- **D5**: las etiquetas de la barra inferior crecen con el texto del sistema hasta 1,3×. Lista de comprobación para el
+  teléfono: [D5-checklist-dispositivo.md](design/D5-checklist-dispositivo.md).
+
+### Comprobaciones
+
+- `pnpm test`: 36 ficheros y 360 tests OK (2 nuevos de configuración y más casos de acceso ajeno); lint y typecheck
+  limpios.
+- Vista web: Perfil con «Tus gustos» (Laura: 28 obras, 10 gustos y 3 disgustos) y la pantalla de alta.
+
+### Siguiente paso
+
+El titular pasa la lista D5 en el teléfono. Después: textos legales (condiciones y privacidad) y, con dominio y
+servidor, la beta (ver beta.md).
 
 ## Entrega 2026-10-23 · D4 (ficha, estados vacíos y textos) y D5 (accesibilidad, primera pasada)
 

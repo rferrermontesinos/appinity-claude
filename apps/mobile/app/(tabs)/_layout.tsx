@@ -2,7 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useChatInbox } from '../../src/api/queries';
-import { View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fonts, usePalette } from '../../src/theme';
 
@@ -34,7 +34,6 @@ export default function TabsLayout() {
         tabBarStyle: { backgroundColor: c.surface, borderTopColor: c.hairline, height: 70 + insets.bottom, paddingTop: 6, paddingBottom: insets.bottom + 10 },
         tabBarActiveTintColor: c.text,
         tabBarInactiveTintColor: c.textSubtle,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       }}
     >
       {TABS.map((tab) => (
@@ -45,6 +44,13 @@ export default function TabsLayout() {
             title: t(tab.titleKey),
             tabBarAccessibilityLabel: tab.name === 'people' && badge ? `${t(tab.titleKey)} (${badge})` : t(tab.titleKey),
             tabBarBadge: tab.name === 'people' && badge ? badge : undefined,
+            // La barra tiene altura fija: la etiqueta crece con el tamaño de texto del sistema solo hasta 1,3× (pauta de
+            // Material para la navegación inferior); el icono y la etiqueta accesible siguen ahí con cualquier tamaño.
+            tabBarLabel: ({ color, children }) => (
+              <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ color, fontSize: 11, fontWeight: '600' }}>
+                {children}
+              </Text>
+            ),
             tabBarBadgeStyle: { backgroundColor: c.danger, color: c.background, fontSize: 11 },
             // Píldora en la pestaña seleccionada (sistema de diseño: bottom navigation).
             tabBarIcon: ({ color, focused }) => (
