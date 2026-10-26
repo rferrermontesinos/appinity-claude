@@ -25,6 +25,29 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-26 (13) · «Aura» en Perfil
+
+### Qué se ha hecho
+
+- **Tu cartel** (`ProfileHero.tsx`, sobre `AuraCard`): avatar con aro lima, nombre, @usuario y país, y tres cifras
+  reales (fuentes activas, gustos claros y almas gemelas, esta en lima). Se tiñe con la categoría más presente en tus
+  gustos y lo dice («Lo que más hay en tus gustos: Películas»); sin gustos, invita a conectar una fuente.
+- **Orden**: cartel → identidad (insignias y cambio de usuario de demo) → **Fuentes** (el núcleo, ahora justo debajo)
+  → Tus gustos → Premium → Ajustes → Cuenta → Créditos → Diagnóstico.
+- **Ajustes**: chips en píldora (el elegido, en claro, con 40 de alto mínimo).
+- **Piezas comunes**: `Card` con radio 18 y borde fino, y `Title` en Bricolage. Afecta a todas las pantallas que las
+  usan.
+
+### Comprobaciones
+
+- `pnpm typecheck` y `pnpm lint` limpios.
+- Vista web (390×844, Laura demo): 5 fuentes activas, 10 gustos claros, 5 almas gemelas y Películas como categoría
+  principal; los ajustes con los chips nuevos.
+
+### Pendiente
+
+- Ver en el teléfono. Siguientes: barra inferior y guía del sistema de diseño (`docs/design/design-system/`).
+
 ## Entrega 2026-10-26 (12) · Ficha de objeto: dónde encontrarlo y diseño «Aura»
 
 ### Qué se ha hecho

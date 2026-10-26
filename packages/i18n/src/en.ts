@@ -504,6 +504,11 @@ export const en: TranslationResources = {
     deleteNote: 'Encrypted backups rotate and the account also disappears from them when they expire (see the operations documentation).',
   },
   profile: {
+    heroSources: 'active sources',
+    heroLikes: 'clear likes',
+    heroSoulmates: 'soulmates',
+    heroTop: 'Most of your tastes: {{category}}',
+    heroEmpty: 'Connect a source so APPINITY can learn your tastes.',
     title: 'Profile',
     identity: 'Identity',
     country: 'Country',

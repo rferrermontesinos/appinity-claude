@@ -504,6 +504,11 @@ export const es = {
     deleteNote: 'Las copias de seguridad cifradas se renuevan y la cuenta desaparece también de ellas al caducar (ver la documentación de operación).',
   },
   profile: {
+    heroSources: 'fuentes activas',
+    heroLikes: 'gustos claros',
+    heroSoulmates: 'almas gemelas',
+    heroTop: 'Lo que más hay en tus gustos: {{category}}',
+    heroEmpty: 'Conecta una fuente para que APPINITY conozca tus gustos.',
     title: 'Perfil',
     identity: 'Identidad',
     country: 'País',

@@ -7,7 +7,6 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -47,7 +46,7 @@ export function Card({ children, style }: { children: ReactNode; style?: StylePr
   return (
     <View
       style={[
-        { backgroundColor: c.surface, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, borderColor: c.border, padding: spacing.lg, gap: spacing.sm },
+        { backgroundColor: c.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: c.hairline, padding: spacing.lg, gap: spacing.sm },
         style,
       ]}
     >
@@ -58,7 +57,7 @@ export function Card({ children, style }: { children: ReactNode; style?: StylePr
 
 export function Title({ children, style }: { children: ReactNode; style?: StyleProp<TextStyle> }) {
   const c = usePalette();
-  return <Text style={[{ color: c.text, fontSize: 18, fontWeight: '700' }, style]}>{children}</Text>;
+  return <Text style={[{ color: c.text, fontSize: 18, fontFamily: fonts.display, letterSpacing: -0.3 }, style]}>{children}</Text>;
 }
 
 export function Body({ children, style, muted }: { children: ReactNode; style?: StyleProp<TextStyle>; muted?: boolean }) {

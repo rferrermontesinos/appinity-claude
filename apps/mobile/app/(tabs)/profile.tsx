@@ -12,6 +12,7 @@ import { Diagnostics } from '../../src/components/Diagnostics';
 import { AccountCard } from '../../src/components/AccountCard';
 import { TastesCard } from '../../src/components/TastesCard';
 import { PremiumCard } from '../../src/components/PremiumCard';
+import { ProfileHero } from '../../src/components/ProfileHero';
 import { SourcesCard } from '../../src/components/SourcesCard';
 import {
   Badge,
@@ -20,7 +21,6 @@ import {
   Card,
   ErrorCard,
   Loading,
-  Row,
   Screen,
   Small,
   Title,
@@ -51,13 +51,15 @@ function Chip({ label, selected, onPress }: { label: string; selected: boolean; 
       style={{
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.sm,
-        borderRadius: radius.lg,
+        minHeight: 40,
+        justifyContent: 'center',
+        borderRadius: radius.full,
         borderWidth: 1,
-        borderColor: selected ? c.accent : c.border,
-        backgroundColor: selected ? `${c.accent}22` : 'transparent',
+        borderColor: selected ? c.text : c.border,
+        backgroundColor: selected ? c.text : 'transparent',
       }}
     >
-      <Text style={{ color: selected ? c.accent : c.text, fontWeight: selected ? '700' : '500' }}>{label}</Text>
+      <Text style={{ color: selected ? c.background : c.text, fontWeight: selected ? '700' : '500' }}>{label}</Text>
     </Pressable>
   );
 }
@@ -203,26 +205,23 @@ export default function ProfileScreen() {
       {me.isError ? <ErrorCard error={me.error} onRetry={() => void me.refetch()} /> : null}
       {me.data ? (
         <>
-          <Card>
-            <Title style={{ fontSize: 16 }}>{t('profile.identity')}</Title>
-            <Row label={me.data.user.displayName} value={`@${me.data.user.handle}`} />
-            <Row label={t('profile.country')} value={me.data.user.countryCode ?? '—'} />
-            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <ProfileHero me={me.data} />
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm }}>
               {me.data.authKind === 'dev' ? <Badge label={t('profile.devIdentity')} color={c.demo} /> : <Badge label={t('account.googleIdentity')} color={c.ok} />}
               <Badge label={`dataset: ${me.data.user.dataset}`} color={c.textMuted} />
-            </View>
-            {me.data.authKind === 'dev' ? (
-              <>
-                <Small>{t('profile.devIdentityHelp')}</Small>
-                <Button label={t('profile.switchUser')} variant="secondary" icon="account-switch" onPress={() => void clear()} />
-              </>
-            ) : null}
-          </Card>
-          <TastesCard />
-          <AccountCard me={me.data} />
+          </View>
+          {me.data.authKind === 'dev' ? (
+            <Card>
+              <Small>{t('profile.devIdentityHelp')}</Small>
+              <Button label={t('profile.switchUser')} variant="secondary" icon="account-switch" onPress={() => void clear()} />
+            </Card>
+          ) : null}
+          {/* Las fuentes son el núcleo (los gustos solo vienen de ellas): justo debajo del cartel. */}
           <SourcesCard />
+          <TastesCard />
           <PremiumCard />
           <SettingsCard settings={me.data.settings} />
+          <AccountCard me={me.data} />
         </>
       ) : null}
       <CreditsCard />
