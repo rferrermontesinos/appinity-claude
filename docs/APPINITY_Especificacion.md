@@ -420,6 +420,8 @@ Se actualiza tras sync significativa y mediante jobs periódicos e incrementales
 
 ## 12 Recomendaciones de consenso y descubrimiento
 
+> **Cambio aprobado (2026-10-26, decisions.md):** la mezcla pasa a **70 % consenso, 10 % descubrimiento por alma gemela, 10 % personas que sigues (creadores y amigos) y 10 % Trending**. Los seguidos no votan en el consenso; si no sigues a nadie, su hueco vuelve al descubrimiento. A futuro se prevé un 10 % patrocinado, siempre marcado.
+
 La mezcla objetivo de Home es **70 % consenso de almas gemelas, 20 % descubrimiento individual y 10 % Trending**. Las cuotas se aplican a bloques o sesiones suficientemente largos; en una cola de 10 tarjetas completa se busca 7, 2 y 1. No se promete esa proporción exacta en tres tarjetas.
 
 El 70 % utiliza exclusivamente las Top 50 almas gemelas disponibles. Cada persona tiene el mismo peso dentro de esta parte. Se calculan número de apoyos positivos únicos, preferencia media y confianza de evidencia. Una misma persona no vota tres veces por conectar tres fuentes.

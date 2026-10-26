@@ -1109,3 +1109,18 @@ El acuerdo de desarrolladores de Twitch exige permiso escrito para guardar sus d
   o 0) y la puntuación y la confianza sobraban. Se retira la pestaña «Catálogo» de Categorías porque la
   especificación no la pide.
 
+
+## 2026-10-26 · Seguir a creadores y amigos (decisiones del titular)
+
+Propuesta en [propuesta-seguir-creadores.md](propuesta-seguir-creadores.md).
+
+- **A quién**: creadores (personas con «perfil público de creador» activado, que consienten que sus gustos sean
+  visibles) y amigos con amistad aceptada. No se crean perfiles de famosos sin cuenta.
+- **Mezcla de Inicio**: 70 consenso · 10 descubrimiento por alma gemela · 10 seguidos · 10 Trending (antes 70/20/10).
+  Si no sigues a nadie, el hueco vuelve al descubrimiento. Los seguidos **nunca votan** en el consenso del Top 50.
+- **Motivo combinado**: si una tarjeta de consenso o descubrimiento también le encanta a alguien que sigues, el motivo
+  lo dice («A Rosalía, a quien sigues, y a 34 de tus almas gemelas les encanta»). No cambia el orden.
+- **Lugares de los seguidos**: sin restricción (decisión del titular), como cualquier otra recomendación.
+- **Futuro**: a la larga, otro 10 % basado en publicidad (p. ej., un evento que quiere anunciarse), siempre marcado como
+  patrocinado. Queda anotado; no se implementa ahora.
+- Seguir nunca cambia gustos ni afinidades. Bloquear a alguien elimina el seguimiento en ambos sentidos.
