@@ -25,6 +25,28 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-26 (4) · Rediseño: dirección «Aura» y maqueta
+
+### Qué se ha hecho
+
+- `/creative` (design-superpowers, nivel L2: ya existía el sistema «Noche de cine»). El titular eligió **rehacer**
+  con tono vibrante y social (Spotify Wrapped, Hinge/Tinder) y, de tres variantes, la **B · «Aura»**
+  (decisions.md, 2026-10-26).
+- Maqueta HTML de **Inicio** (con selector cine / música / juegos para ver el halo y los tres tipos de motivo:
+  almas gemelas, consenso y trending) y **Personas** (afinidad como momento Wrapped, «—» sin datos):
+  `docs/design/aura/mockup.html`. Datos de ejemplo; portadas generadas.
+
+### Comprobaciones
+
+- Revisada en el navegador integrado: corregido el solape de los botones del mazo con la barra inferior.
+- Contraste calculado de los pares de texto nuevos (texto apagado `#8A867F` ≥ 5:1 sobre fondo y superficie;
+  chispa y lima con su texto ≥ 4,5:1). Falta comprobar el texto sobre el halo de Personas en el teléfono.
+
+### Siguiente paso
+
+- Aceptación de la maqueta por el titular. Después: paleta y tipografía completas (Palette Architect y Typography
+  Director), tokens en `styles.css` y `apps/mobile/src/theme.ts`, y aplicación pantalla a pantalla empezando por Inicio.
+
 ## Entrega 2026-10-26 (3) · Imágenes más representativas y siguiente paso de diseño
 
 ### Qué se ha hecho

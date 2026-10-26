@@ -1071,3 +1071,20 @@ El acuerdo de desarrolladores de Twitch exige permiso escrito para guardar sus d
   adicional); Stremio (Cinemeta) usa IDs de IMDb y sirve el arte desde MetaHub, derivado de esas mismas fuentes.
   Los pósteres reales exigen un acuerdo comercial con TMDb o TheTVDB: sigue siendo la decisión de negocio pendiente
   (2026-10-09).
+
+## 2026-10-26 · Rediseño visual: dirección «Aura» (/creative)
+
+- **Motivo (titular)**: la app parece genérica, no transmite «personas», las imágenes son pobres y le falta pulido.
+  Alcance elegido: **rehacer** la identidad. Tono: vibrante, social y juguetón. Referencias: Spotify Wrapped y
+  Hinge/Tinder.
+- **Elegida la B, «Aura»** (vibrante, cómplice, sobremesa), frente a «Bento» (segura) y «Fanzine» (neubrutalista).
+  Cada pantalla toma la luz de lo que muestra (halo degradado con grano), la afinidad es el gran momento y las personas
+  van delante de las obras.
+- **Se conserva**: datos reales, de ejemplo y pendientes distinguidos; «—» sin datos; contraste AA; icono y nombre en
+  cada categoría; botón alternativo para cada gesto; los 8 colores de categoría y los iconos propios.
+- **Se retira**: el violeta `#8E78F0` como único acento (aspecto genérico de «app de IA»), Space Grotesk (grotesca
+  de startup sin calidez), las superficies planas sin profundidad y el cartel de sustitución gris.
+- **Propuesta (sin aplicar aún en la app)**: acento «chispa» `#FF5E4D` solo para la acción principal; «lima»
+  `#D4F45A` solo para afinidad y almas gemelas; Bricolage Grotesque (Google Fonts, OFL) para titulares y cifras;
+  portadas generadas con color, icono y tipografía, rotuladas como tales (nunca imágenes inventadas por IA);
+  movimiento elástico que se apaga con «reducir movimiento». Maqueta: `docs/design/aura/mockup.html`.
