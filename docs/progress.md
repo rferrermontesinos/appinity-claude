@@ -25,6 +25,30 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-26 (10) · Detalle de categoría: listado único y sin catálogo (decisiones del titular)
+
+### Qué se ha hecho
+
+- **Listado único** (`RankedRow`): puesto, portada, título, motivo y sus cifras. Los 3 primeros, solo un poco más
+  destacados (puesto en lima, portada de 72 en lugar de 60 y superficie elevada). Se retira el podio con casillas.
+- **Solo dos cifras** en consenso: «N/M almas gemelas lo recomiendan» y «X % afinidad media contigo». Fuera «cuánto
+  les gusta» (en la práctica, 100, 50 o 0), la puntuación y la confianza. En los demás motivos, su equivalente:
+  afinidad de quien lo descubre, votos de la zona, personas de la comunidad o gustos tuyos. Se mantiene la línea
+  de «alma gemela excepcional» cuando la hay. El servidor sigue calculando el desglose completo; la app no lo muestra.
+- **Sin pestaña «Catálogo»**: la especificación (§3) no la pide y solo servía para revisar la demo. Se retiran el
+  selector, la cuadrícula, `useCatalog` y sus textos. El endpoint `/v1/catalog/items` sigue existiendo (lo usa la
+  pantalla del modelo de datos de la demo).
+
+### Comprobaciones
+
+- `pnpm lint`, `pnpm typecheck` y `pnpm test` (37 ficheros y 367 tests) OK.
+- Vista web (Restaurantes, demo): 1 Lasarte (2/3 · 57 %), 2 Alkimia (2/2 · 67 %) y 3 Cinc Sentits (2/3 · 57 %);
+  a partir del 4, «Para explorar» sin cifras.
+
+### Pendiente
+
+- Ver en el teléfono. Siguientes: Perfil, barra inferior y guía del sistema de diseño.
+
 ## Entrega 2026-10-26 (9) · Por qué está cada recomendación (detalle de categoría)
 
 ### Qué se ha hecho

@@ -1104,4 +1104,8 @@ El acuerdo de desarrolladores de Twitch exige permiso escrito para guardar sus d
   el objeto.
 - «Cuánto les gusta» es la preferencia positiva media × 100, no una nota en estrellas: las preferencias pueden venir
   de escuchas o de «me gusta», no solo de valoraciones.
+- **Revisión del titular (mismo día)**: el detalle es un listado; los 3 primeros, solo un poco más destacados. Solo se
+  muestran «almas gemelas que lo recomiendan» y «afinidad media contigo»: «cuánto les gusta» no discriminaba (100, 50
+  o 0) y la puntuación y la confianza sobraban. Se retira la pestaña «Catálogo» de Categorías porque la
+  especificación no la pide.
 

@@ -242,14 +242,6 @@ export function useDisconnect() {
   });
 }
 
-export function useCatalog(category: Category) {
-  return useQuery({
-    queryKey: dataKeys.catalog(category),
-    queryFn: () => apiRequest<Page<CatalogItemDto> & { total: number }>(`/v1/catalog/items?category=${category}&limit=100`),
-    enabled: useHasSession(),
-  });
-}
-
 export function useItemProfiles(category?: Category) {
   return useQuery({
     queryKey: dataKeys.profiles(category),
