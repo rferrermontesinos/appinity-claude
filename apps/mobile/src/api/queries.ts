@@ -1,5 +1,4 @@
 import type {
-  CatalogItemDto,
   ConnectStartDto,
   Category,
   ConnectionDto,
@@ -9,7 +8,6 @@ import type {
   ItemProfileDetailDto,
   ItemProfileDto,
   MeDto,
-  Page,
   PublicPersonDto,
   SoulmatesDto,
   BlockedPersonDto,
