@@ -5,9 +5,9 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Animated, PanResponder, Pressable, Text, View } from 'react-native';
 import { contextLine } from '../catalog/contextLine';
-import { fonts, onImage, radius, spacing, usePalette } from '../theme';
+import { fonts, motion, onImage, radius, spacing, usePalette } from '../theme';
+import { mixHex } from './Aura';
 import { CatalogImage } from './CatalogImage';
-import { ImageVeil } from './ImageVeil';
 
 /** A partir de esta distancia, soltar la tarjeta cuenta como deslizar (izquierda: descartar; derecha: conservar). */
 const SWIPE_THRESHOLD = 110;
@@ -69,7 +69,7 @@ export function RecommendationCard({
         onPanResponderRelease: (_, g) => {
           if (g.dx < -SWIPE_THRESHOLD) Animated.timing(x, { toValue: -500, duration: 160, useNativeDriver: false }).start(onDismiss);
           else if (g.dx > SWIPE_THRESHOLD) Animated.timing(x, { toValue: 500, duration: 160, useNativeDriver: false }).start(onKeep);
-          else Animated.spring(x, { toValue: 0, useNativeDriver: false }).start();
+          else Animated.spring(x, { toValue: 0, ...motion.spring, useNativeDriver: false }).start();
         },
         onPanResponderTerminate: () => Animated.spring(x, { toValue: 0, useNativeDriver: false }).start(),
       }),
@@ -79,8 +79,9 @@ export function RecommendationCard({
   const router = useRouter();
   const context = contextLine(item);
 
-  // Sistema de diseño (tarjeta de recomendación): imagen a sangre, velo inferior, categoría y NEW arriba, título en
-  // display y el motivo REAL en una cápsula translúcida. El texto va siempre en claro sobre el velo (contraste AA).
+  // «Aura» (docs/design/aura/): portada arriba (imagen o portada generada) y panel de texto debajo, sobre superficie
+  // (el texto nunca va sobre el halo ni sobre la imagen). La tarjeta brilla con el color de la categoría.
+  const peopleReason = recommendation.reason.code === 'consensus' || recommendation.reason.code === 'discovery' || recommendation.reason.code === 'community';
   return (
     <Animated.View
       {...(interactive ? responder.panHandlers : {})}
@@ -88,48 +89,49 @@ export function RecommendationCard({
       style={{
         transform: [{ translateX: x }, { rotate }],
         width: '100%',
-        aspectRatio: 0.72,
         borderRadius: radius.xl,
         overflow: 'hidden',
-        backgroundColor: c.surfaceAlt,
+        backgroundColor: c.surface,
+        borderWidth: 1,
+        borderColor: c.hairline,
+        boxShadow: `0px 24px 60px -24px ${meta.color}B3`,
       }}
     >
-      <CatalogImage image={item.primaryImage} category={item.category} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
-      <ImageVeil />
-      <View style={{ position: 'absolute', top: spacing.md, left: spacing.md, right: spacing.md, flexDirection: 'row', justifyContent: 'space-between' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: onImage.glass, borderRadius: radius.full, paddingVertical: 5, paddingLeft: spacing.sm, paddingRight: spacing.md }}>
-          <MaterialCommunityIcons name={meta.icon as never} size={16} color={meta.color} />
-          <Text style={{ color: onImage.text, fontSize: 12, fontWeight: '600' }}>{t(`categories.${item.category}`)}</Text>
-        </View>
-        {recommendation.isNew ? (
-          <View style={{ backgroundColor: c.secondary, borderRadius: radius.full, paddingHorizontal: spacing.sm, justifyContent: 'center' }}>
-            <Text style={{ color: c.onSecondary, fontSize: 11, fontWeight: '800', letterSpacing: 0.6 }}>{t('home.new')}</Text>
+      <View style={{ width: '100%', aspectRatio: 1.3 }}>
+        <CatalogImage image={item.primaryImage} category={item.category} title={item.title} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+        <View style={{ position: 'absolute', top: spacing.md, left: spacing.md, right: spacing.md, flexDirection: 'row', justifyContent: 'space-between' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: onImage.glass, borderRadius: radius.full, paddingVertical: 6, paddingLeft: spacing.sm, paddingRight: spacing.md }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: meta.color }} />
+            <MaterialCommunityIcons name={meta.icon as never} size={15} color={onImage.text} />
+            <Text style={{ color: onImage.text, fontSize: 12, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase' }}>{t(`categories.${item.category}`)}</Text>
           </View>
-        ) : null}
+          {recommendation.isNew ? (
+            <View style={{ backgroundColor: c.secondary, borderRadius: radius.full, paddingHorizontal: spacing.sm, justifyContent: 'center' }}>
+              <Text style={{ color: c.onSecondary, fontSize: 11, fontWeight: '800', letterSpacing: 0.6 }}>{t('home.new')}</Text>
+            </View>
+          ) : null}
+        </View>
       </View>
-      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: spacing.lg, gap: spacing.xs }}>
-        <Text style={{ color: onImage.text, fontSize: 26, lineHeight: 29, fontFamily: fonts.display, letterSpacing: -0.4 }} numberOfLines={2}>
+      <View style={{ paddingHorizontal: spacing.lg + 2, paddingTop: spacing.lg, paddingBottom: spacing.xs, gap: spacing.xs }}>
+        <Text style={{ color: c.text, fontSize: 28, lineHeight: 30, fontFamily: fonts.displayHeavy, letterSpacing: -0.7 }} numberOfLines={2}>
           {item.title}
         </Text>
         {context ? (
-          <Text style={{ color: onImage.muted, fontSize: 14 }} numberOfLines={1}>
+          <Text style={{ color: c.textMuted, fontSize: 14 }} numberOfLines={1}>
             {context}
           </Text>
         ) : null}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: spacing.sm,
-            marginTop: spacing.sm,
-            backgroundColor: onImage.glass,
-            borderRadius: radius.md,
-            paddingVertical: spacing.sm,
-            paddingHorizontal: spacing.md,
-          }}
-        >
-          <MaterialCommunityIcons name={REASON_ICON[recommendation.reason.code]} size={18} color={onImage.reasonIcon} />
-          <Text style={{ color: onImage.text, fontSize: 13, fontWeight: '500', flexShrink: 1 }}>{reasonText(t, recommendation)}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.sm, backgroundColor: c.surfaceRaised, borderRadius: radius.lg, padding: spacing.md }}>
+          {recommendation.reason.code === 'trending' ? (
+            <View style={{ borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: mixHex(meta.color, c.surfaceRaised, 0.7) }}>
+              <Text style={{ color: c.text, fontSize: 11, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase' }}>{t('home.trendingTag')}</Text>
+            </View>
+          ) : (
+            <View style={{ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: c.surfaceAlt }}>
+              <MaterialCommunityIcons name={REASON_ICON[recommendation.reason.code]} size={18} color={peopleReason ? c.affinity : c.textMuted} />
+            </View>
+          )}
+          <Text style={{ color: c.text, fontSize: 14, lineHeight: 19, flexShrink: 1 }}>{reasonText(t, recommendation)}</Text>
         </View>
         {/* La ficha reúne los enlaces externos; aquí, una acción clara y con área táctil de 48 dp. */}
         <Pressable
@@ -137,10 +139,10 @@ export function RecommendationCard({
           accessibilityLabel={t('home.openItem', { title: item.title })}
           onPress={() => router.push({ pathname: '/item/[id]', params: { id: item.id } })}
           hitSlop={8}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', minHeight: 48 }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', minHeight: 48 }}
         >
-          <Text style={{ color: onImage.text, fontSize: 14, fontWeight: '600' }}>{t('home.viewDetails')}</Text>
-          <MaterialCommunityIcons name="chevron-right" size={18} color={onImage.text} />
+          <Text style={{ color: c.text, fontSize: 14, fontWeight: '600' }}>{t('home.viewDetails')}</Text>
+          <MaterialCommunityIcons name="chevron-right" size={18} color={c.text} />
         </Pressable>
       </View>
     </Animated.View>

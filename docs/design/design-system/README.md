@@ -1,5 +1,8 @@
 # Sistema de diseño de APPINITY · «Noche de cine»
 
+> **Sustituido por «Aura»** (2026-10-26): tokens vigentes en `apps/mobile/src/theme.ts` y maqueta en
+> `docs/design/aura/mockup.html`. Esta guía se actualizará con los tokens nuevos.
+
 D1 de las fases de diseño (D0 en `../D0-direccion.md`). Guía de referencia: **Material (tokens) + MUI (catálogo y
 props `variant/size/color`)**, multiplataforma (Expo / React Native).
 

@@ -25,6 +25,40 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-26 (5) · «Aura» en tokens y en Inicio
+
+### Qué se ha hecho
+
+- **Tokens** (`apps/mobile/src/theme.ts`): neutros fríos-oscuros (`#0C0C0E` → `#17161B` → `#211F27`), chispa
+  `#FF5E4D` para la acción principal, token nuevo `affinity` (lima `#D4F45A`; oliva `#4D6A00` en claro) para afinidad
+  y almas gemelas, y `motion` (muelle y fundido de 0,5 s). Las claves antiguas siguen como alias: el resto de
+  pantallas cambia de color sin tocarlas. La cifra de afinidad (`Affinity.tsx`) pasa a lima.
+- **Tipografía**: Bricolage Grotesque 600/700/800 (`@expo-google-fonts/bricolage-grotesque`, OFL) en lugar de Space
+  Grotesk; `fonts.displayHeavy` para la marca, el título de la tarjeta y las cifras.
+- **Inicio**: marca «appinity.»; halo del color de la categoría de la tarjeta, que se funde al cambiar (sin
+  degradados nativos: círculos concéntricos y grano en `assets/grain.png`; nada de módulos nativos nuevos, no hace
+  falta otro APK); tarjeta con portada arriba y panel de texto debajo, brillo de su categoría, motivo en caja elevada
+  (icono lima si viene de personas, etiqueta «Trending» si es de la zona); botones con etiqueta y conservar en
+  chispa con brillo. Respeta «reducir movimiento».
+- **Portada generada** (`CatalogImage`): base teñida, brillo, banda diagonal, primera palabra del título enorme,
+  icono y rótulo «Portada generada». También en la ficha y en Categorías.
+
+### Comprobaciones
+
+- Contraste calculado (WCAG) de todos los pares nuevos en ambos temas: mínimo 4,76:1 (texto tenue sobre
+  `surfaceAlt`).
+- `pnpm typecheck` y `pnpm lint` limpios; `pnpm test`: 37 ficheros y 366 tests OK.
+- Vista web (8092, 390×844, demo): Inicio con halo, tarjeta y botones por encima de la barra; portada generada de
+  Radiolab en su ficha. Durante la prueba se descartó una tarjeta de la demo.
+
+### Pendiente
+
+- **Ver en el teléfono** (Expo Go o APK actual): recargar la app. Comprobar el halo, el grano y el brillo de la
+  tarjeta en Android (las sombras `boxShadow` necesitan la nueva arquitectura, activa en SDK 57).
+- La guía `docs/design/design-system/` sigue en «Noche de cine»: actualizarla con los tokens Aura.
+- Siguientes pantallas: Personas (momento Wrapped de la maqueta), Categorías y Perfil; la barra inferior aún usa la
+  píldora antigua.
+
 ## Entrega 2026-10-26 (4) · Rediseño: dirección «Aura» y maqueta
 
 ### Qué se ha hecho

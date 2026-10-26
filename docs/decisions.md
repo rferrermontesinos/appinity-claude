@@ -1088,3 +1088,7 @@ El acuerdo de desarrolladores de Twitch exige permiso escrito para guardar sus d
   `#D4F45A` solo para afinidad y almas gemelas; Bricolage Grotesque (Google Fonts, OFL) para titulares y cifras;
   portadas generadas con color, icono y tipografía, rotuladas como tales (nunca imágenes inventadas por IA);
   movimiento elástico que se apaga con «reducir movimiento». Maqueta: `docs/design/aura/mockup.html`.
+- **Aplicado en tokens e Inicio (2026-10-26)**: `theme.ts` con los valores de la maqueta y el token `affinity`;
+  Bricolage Grotesque sustituye a Space Grotesk. El halo se hace con capas de vistas y una textura de grano, sin
+  módulos nativos (mismo criterio que el velo de la tarjeta). La guía `docs/design/design-system/` queda desactualizada
+  hasta su revisión.

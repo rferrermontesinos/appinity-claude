@@ -156,7 +156,7 @@ function CategoryCatalog({ category }: { category: Category }) {
               borderColor: c.border,
             })}
           >
-            <CatalogImage image={item.primaryImage} category={item.category} style={{ width: '100%', aspectRatio: 2 / 3 }} />
+            <CatalogImage image={item.primaryImage} category={item.category} title={item.title} style={{ width: '100%', aspectRatio: 2 / 3 }} />
             <View style={{ padding: spacing.sm, gap: 2 }}>
               <Text style={{ color: c.text, fontWeight: '700', fontSize: 13 }} numberOfLines={2}>
                 {item.title}

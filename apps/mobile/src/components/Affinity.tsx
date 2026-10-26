@@ -16,7 +16,7 @@ export function AffinityFigure({ score, caption, size = 'lg' }: { score: number 
   const big = size === 'lg' ? 76 : 36;
   return (
     <View accessibilityLabel={`${t('people.affinity')} ${value === null ? '—' : t('people.affinityValue', { value })}`} style={{ alignItems: 'flex-end' }}>
-      <Text style={{ fontFamily: fonts.display, fontSize: big, lineHeight: big * 1.02, letterSpacing: -big * 0.04, color: value === null ? c.textMuted : c.primaryInk }}>
+      <Text style={{ fontFamily: fonts.display, fontSize: big, lineHeight: big * 1.02, letterSpacing: -big * 0.04, color: value === null ? c.textMuted : c.affinity }}>
         {value ?? '—'}
         {value !== null ? <Text style={{ fontSize: big * 0.42, letterSpacing: 0 }}>%</Text> : null}
       </Text>

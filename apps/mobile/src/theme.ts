@@ -2,10 +2,11 @@ import { Platform } from 'react-native';
 import { create } from 'zustand';
 
 /**
- * Tokens del sistema de diseño «Noche de cine» (docs/design/design-system/styles.css, fuente de verdad).
- * - El violeta es la única familia de interacción (afinidad y acción principal); el ámbar, lo nuevo.
- * - Cada relleno va con su texto (`on*`); todos los pares superan AA (4,5:1) en ambos temas.
- * - Oscuro por defecto (dirección A); el claro queda disponible con `useThemeMode`.
+ * Tokens de la dirección «Aura» (docs/design/aura/, decisions.md 2026-10-26).
+ * - Chispa (coral): solo la acción principal. Lima: solo afinidad y almas gemelas. Ámbar: NEW y datos de ejemplo.
+ * - Los 8 colores de categoría tiñen el halo y las portadas generadas; nunca son el fondo de un texto.
+ * - Cada relleno va con su texto (`on*`); todos los pares superan AA (4,5:1) en ambos temas (contraste calculado).
+ * - Oscuro por defecto; el claro queda disponible con `useThemeMode`.
  * Las claves antiguas (accent, textMuted, surfaceAlt…) se conservan como alias para no romper pantallas.
  */
 const light = {
@@ -20,11 +21,16 @@ const light = {
   border: '#E1DAD2',
   hairline: 'rgba(29,26,23,0.08)',
   scrim: 'rgba(29,26,23,0.48)',
-  accent: '#5B3FD9',
-  accentText: '#FFFFFF',
-  primaryInk: '#4A2FC4',
-  primaryContainer: '#E9E4FF',
-  onPrimaryContainer: '#2A1A78',
+  /** Chispa: relleno de la acción principal. */
+  accent: '#FF5E4D',
+  accentText: '#1A0806',
+  /** Chispa como texto o icono (botones secundarios, enlaces). */
+  primaryInk: '#B42318',
+  primaryContainer: '#FFE3DE',
+  onPrimaryContainer: '#6B1A12',
+  /** Lima: afinidad y almas gemelas (en claro, un verde oliva legible). */
+  affinity: '#4D6A00',
+  onAffinity: '#FFFFFF',
   secondary: '#9A5F00',
   onSecondary: '#FFFFFF',
   demo: '#9A5F00',
@@ -35,25 +41,29 @@ const light = {
   positive: '#1D7F4E',
   negative: '#C2362B',
   neutral: '#5F574F',
+  /** Fondo del halo: el color de la categoría se mezcla con esto. */
+  auraBase: '#F6F4F1',
 };
 
 const dark: typeof light = {
-  background: '#121110',
-  surface: '#1C1A18',
-  surfaceRaised: '#262320',
-  surfaceAlt: '#2A2724',
-  onSurfaceAlt: '#D2C9BF',
-  text: '#F3EEE8',
-  textMuted: '#B5ABA0',
-  textSubtle: '#8E857B',
-  border: '#3A3531',
-  hairline: 'rgba(243,238,232,0.08)',
-  scrim: 'rgba(8,7,6,0.64)',
-  accent: '#8E78F0',
-  accentText: '#120F1F',
-  primaryInk: '#B3A6F7',
-  primaryContainer: '#2C2547',
-  onPrimaryContainer: '#DCD5FF',
+  background: '#0C0C0E',
+  surface: '#17161B',
+  surfaceRaised: '#211F27',
+  surfaceAlt: '#26242C',
+  onSurfaceAlt: '#D6D2CC',
+  text: '#F5F3F0',
+  textMuted: '#B4B0AA',
+  textSubtle: '#938F88',
+  border: '#34323A',
+  hairline: 'rgba(255,255,255,0.08)',
+  scrim: 'rgba(5,5,6,0.66)',
+  accent: '#FF5E4D',
+  accentText: '#1A0806',
+  primaryInk: '#FF8A7D',
+  primaryContainer: '#3A1A17',
+  onPrimaryContainer: '#FFD5CF',
+  affinity: '#D4F45A',
+  onAffinity: '#141A02',
   secondary: '#E8B04B',
   onSecondary: '#1F1606',
   demo: '#E8B04B',
@@ -63,13 +73,14 @@ const dark: typeof light = {
   danger: '#FF7A70',
   positive: '#4CC38A',
   negative: '#FF7A70',
-  neutral: '#B5ABA0',
+  neutral: '#B4B0AA',
+  auraBase: '#0C0C0E',
 };
 
 export type Palette = typeof light;
 export type ThemeMode = 'dark' | 'light';
 
-/** Tema elegido (oscuro por defecto, dirección A). */
+/** Tema elegido (oscuro por defecto). */
 export const useThemeMode = create<{ mode: ThemeMode; setMode: (mode: ThemeMode) => void }>((set) => ({
   mode: 'dark',
   setMode: (mode) => set({ mode }),
@@ -80,14 +91,21 @@ export function usePalette(): Palette {
 }
 
 /** Texto e iconos sobre imagen: siempre claros, sobre el velo oscuro de la tarjeta (contraste garantizado). */
-export const onImage = { text: '#F3EEE8', muted: 'rgba(243,238,232,0.8)', glass: 'rgba(18,17,16,0.58)', reasonIcon: '#C9BEFF' };
+export const onImage = { text: '#F5F3F0', muted: 'rgba(245,243,240,0.82)', glass: 'rgba(12,12,14,0.66)', reasonIcon: '#D4F45A' };
 
-/** Space Grotesk solo para titulares, títulos de obras y cifras; el resto, la fuente del sistema. */
+/**
+ * Bricolage Grotesque (Google Fonts, OFL) solo para titulares, títulos de obras y cifras; el resto, la fuente del
+ * sistema. `displayHeavy` para la marca, el título de la tarjeta y las cifras grandes.
+ */
 export const fonts = {
-  display: 'SpaceGrotesk_700Bold',
-  displayMedium: 'SpaceGrotesk_500Medium',
+  display: 'BricolageGrotesque_700Bold',
+  displayHeavy: 'BricolageGrotesque_800ExtraBold',
+  displayMedium: 'BricolageGrotesque_600SemiBold',
   mono: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }),
 };
 
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };
-export const radius = { sm: 8, md: 12, lg: 18, xl: 28, full: 999 };
+export const radius = { sm: 8, md: 12, lg: 18, xl: 30, full: 999 };
+
+/** Movimiento: elástico al soltar (como en la maqueta); se omite si el sistema pide reducir movimiento. */
+export const motion = { spring: { friction: 6, tension: 70 }, auraFadeMs: 500 };

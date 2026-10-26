@@ -93,7 +93,7 @@ export default function ItemScreen() {
         <>
           {/* Cabecera a sangre (sistema de diseño): imagen, velo, categoría y título en display sobre la imagen. */}
           <View style={{ width: '100%', aspectRatio: 0.9, borderRadius: radius.xl, overflow: 'hidden', backgroundColor: c.surfaceAlt }}>
-            <CatalogImage image={item.primaryImage} category={item.category} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+            <CatalogImage image={item.primaryImage} category={item.category} title={item.title} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
             <ImageVeil height="55%" />
             <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: spacing.lg, gap: spacing.sm }}>
               <CategoryChipOnImage category={item.category} />
