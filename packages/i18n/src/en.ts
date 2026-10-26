@@ -76,6 +76,13 @@ export const en: TranslationResources = {
     reasonConsensus_one: '{{count}} of your soulmates rated it very highly',
     reasonConsensus_other: '{{count}} of your soulmates rated it very highly',
     reasonDiscovery: 'Discovered through {{name}}',
+    reasonFollowed: 'Recommended by {{name}}, who you follow',
+    reasonFollowedMore: 'Recommended by {{name}}, who you follow; {{followed}} loves it too',
+    reasonConsensusFollowed_one: '{{name}}, who you follow, and {{count}} of your soulmates love this',
+    reasonConsensusFollowed_other: '{{name}}, who you follow, and {{count}} of your soulmates love this',
+    reasonDiscoveryFollowed: 'Discovered through {{name}}; {{followed}}, who you follow, loves it too',
+    followedNames_one: '{{name}} and {{count}} more',
+    followedNames_other: '{{name}} and {{count}} more',
     reasonContent: {
       same_series: 'Same series as {{title}}, which you like',
       sequel: 'Sequel or prequel to {{title}}, which you like',

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { categoryAffinities, userAffinities, userProfiles, type DatabaseHandle } from '@appinity/database';
-import { AFFINITY_VERSION, FREE_SOULMATES_LIMIT, NotFoundError, PREMIUM_SOULMATES_LIMIT, canSeePerson, chatState, friendshipState, isExceptionalMutual, topSoulmates } from '@appinity/ingestion';
+import { categoryAffinities, userAffinities, userProfiles, userSettings, type DatabaseHandle } from '@appinity/database';
+import { AFFINITY_VERSION, FREE_SOULMATES_LIMIT, NotFoundError, PREMIUM_SOULMATES_LIMIT, canSeePerson, chatState, followState, friendshipState, isExceptionalMutual, topSoulmates } from '@appinity/ingestion';
 import { CATEGORIES, type AffinityDto, type PublicPersonDto, type SoulmatesDto } from '@appinity/shared';
 import { and, eq } from 'drizzle-orm';
 import { DATABASE } from '../infra/tokens.js';
@@ -82,6 +82,16 @@ export class PeopleService {
       affinity,
       friendship: await friendshipState(this.database.db, viewerId, targetId),
       chat: await chatState(this.database.db, viewerId, targetId),
+      follow: await followState(this.database.db, viewerId, targetId),
+      creator: await this.creatorOf(targetId),
     };
+  }
+
+  private async creatorOf(userId: string): Promise<{ public: boolean; verified: boolean }> {
+    const [s] = await this.database.db
+      .select({ creator: userSettings.publicCreator, verifiedAt: userSettings.creatorVerifiedAt })
+      .from(userSettings)
+      .where(eq(userSettings.userId, userId));
+    return { public: s?.creator ?? false, verified: Boolean(s?.creator && s.verifiedAt) };
   }
 }

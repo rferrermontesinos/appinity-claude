@@ -1,7 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import { createDatabase, userAffinities, userBlocks, users, type DatabaseHandle } from '@appinity/database';
 import { DEMO_USERS, recomputeAffinities, seedDemo } from '@appinity/ingestion';
-import { CATEGORIES, type AffinityDto, type ChatConfigDto, type ChatConversationDto, type ChatInboxDto, type ChatMatchResultDto, type FriendsDto, type PublicPersonDto, type RecommendationsDto, type SoulmatesDto } from '@appinity/shared';
+import { CATEGORIES, type AffinityDto, type ChatConfigDto, type ChatConversationDto, type ChatInboxDto, type ChatMatchResultDto, type FollowedPersonDto, type FriendsDto, type PublicPersonDto, type RecommendationsDto, type SoulmatesDto } from '@appinity/shared';
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { testEnv, truncateAll } from '../../../test/helpers.js';
@@ -95,7 +95,7 @@ describe('almas gemelas y perfil público (fase 6)', () => {
     const res = await get(`/v1/people/${byHandle('demo_clara').id}`);
     expect(res.status).toBe(200);
     const body = (await res.json()) as PublicPersonDto;
-    expect(Object.keys(body).sort()).toEqual(['affinity', 'avatarUrl', 'chat', 'countryCode', 'displayName', 'friendship', 'userId']);
+    expect(Object.keys(body).sort()).toEqual(['affinity', 'avatarUrl', 'chat', 'countryCode', 'creator', 'displayName', 'follow', 'friendship', 'userId']);
     expect(body.friendship).toEqual({ state: 'none', requestId: null });
     expect(body.chat).toEqual({ state: 'none' });
     expect(body.displayName).toBe('Clara (demo)');
@@ -119,7 +119,7 @@ describe('recomendaciones (fase 7)', () => {
     const res = await get('/v1/me/recommendations?limit=20');
     expect(res.status).toBe(200);
     const body = (await res.json()) as RecommendationsDto;
-    expect(body.algorithmVersion).toBe('recommendation-v1');
+    expect(body.algorithmVersion).toBe('recommendation-v2');
     expect(body.trending.year).toBe(new Date().getFullYear());
     for (const r of body.items) {
       expect(r.reason.code).toBe(r.block);
@@ -283,5 +283,69 @@ describe('Chat (fase 12A)', () => {
     expect((await call(irisToken, 'POST', '/v1/me/blocks', { userId: laura.id })).status).toBe(204);
     expect((await call(token, 'POST', `/v1/me/chats/${conv}/messages`, { body: '¿sigues ahí?' })).status).toBe(404);
     expect((await call(irisToken, 'DELETE', `/v1/me/blocks/${laura.id}`)).status).toBe(204);
+  });
+});
+
+describe('Seguir a creadores y amigos (2026-10-26)', () => {
+  async function tokenFor(handle: string) {
+    const res = await fetch(`${base}/v1/dev/session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle }) });
+    return ((await res.json()) as { token: string }).token;
+  }
+  const call = (tok: string, method: string, path: string, body?: unknown) =>
+    fetch(`${base}${path}`, { method, headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
+  const byHandle = (h: string) => DEMO_USERS.find((u) => u.handle === h)!;
+  const followingIds = async (tok: string) => ((await (await call(tok, 'GET', '/v1/me/following')).json()) as FollowedPersonDto[]).map((p) => p.userId);
+
+  it('solo se sigue a creadores con perfil público o a amigos; la amistad aceptada sigue en ambos sentidos; bloquear deja de seguir', async () => {
+    const jordi = byHandle('demo_jordi');
+    const leo = byHandle('demo_leo');
+    const jordiToken = await tokenFor(jordi.handle);
+    const leoToken = await tokenFor(leo.handle);
+    // Ni creador ni amigo: no se puede seguir.
+    expect((await call(token, 'POST', '/v1/me/follows', { userId: jordi.id })).status).toBe(403);
+    // Con el perfil público de creador, sí.
+    expect((await call(jordiToken, 'PATCH', '/v1/me/settings', { publicCreator: true })).status).toBe(200);
+    expect(await (await call(token, 'POST', '/v1/me/follows', { userId: jordi.id })).json()).toEqual({ state: 'following' });
+    const profile = (await (await call(token, 'GET', `/v1/people/${jordi.id}`)).json()) as PublicPersonDto;
+    expect(profile.follow).toEqual({ state: 'following', canFollow: true });
+    expect(profile.creator).toEqual({ public: true, verified: false });
+    expect(await followingIds(token)).toContain(jordi.id);
+    // Amistad aceptada: os seguís los dos; dejar de seguir no rompe la amistad.
+    await call(token, 'POST', '/v1/me/friends/requests', { userId: leo.id });
+    const incoming = ((await (await call(leoToken, 'GET', '/v1/me/friends')).json()) as FriendsDto).incoming;
+    await call(leoToken, 'POST', `/v1/me/friends/requests/${incoming.find((f) => f.userId === laura.id)!.requestId}/accept`);
+    expect(await followingIds(token)).toContain(leo.id);
+    expect(await followingIds(leoToken)).toContain(laura.id);
+    expect(await (await call(token, 'DELETE', `/v1/me/follows/${leo.id}`)).json()).toEqual({ state: 'not_following' });
+    expect(((await (await call(token, 'GET', '/v1/me/friends')).json()) as FriendsDto).friends.map((f) => f.userId)).toContain(leo.id);
+    // Bloquear deja de seguir en ambos sentidos (y desbloquear no lo restaura).
+    expect((await call(jordiToken, 'POST', '/v1/me/blocks', { userId: laura.id })).status).toBe(204);
+    expect((await call(jordiToken, 'DELETE', `/v1/me/blocks/${laura.id}`)).status).toBe(204);
+    expect(await followingIds(token)).not.toContain(jordi.id);
+    // Limpieza para los tests siguientes.
+    await call(token, 'DELETE', `/v1/me/friends/${leo.id}`);
+    await call(jordiToken, 'PATCH', '/v1/me/settings', { publicCreator: false });
+  });
+
+  it('seguir no altera el consenso de las almas gemelas: añade el bloque de seguidos y el motivo combinado', async () => {
+    const clara = byHandle('demo_clara');
+    const claraToken = await tokenFor(clara.handle);
+    const recs = async () => (await (await call(token, 'GET', '/v1/me/recommendations?limit=30')).json()) as RecommendationsDto;
+    const before = await recs();
+    expect(before.algorithmVersion).toBe('recommendation-v2');
+    await call(claraToken, 'PATCH', '/v1/me/settings', { publicCreator: true });
+    expect((await call(token, 'POST', '/v1/me/follows', { userId: clara.id })).status).toBe(200);
+    const after = await recs();
+    // Los 7 primeros de consenso, idénticos y con los mismos apoyos: los seguidos no votan en el consenso.
+    const head = (r: RecommendationsDto) => r.items.filter((i) => i.block === 'consensus').slice(0, 7).map((i) => [i.item.id, i.reason.supporters]);
+    expect(head(after)).toEqual(head(before));
+    // Clara aparece como autora de una tarjeta de seguidos o en el motivo combinado.
+    const credited = after.items.some(
+      (i) => (i.block === 'followed' && i.reason.contributor?.userId === clara.id) || i.reason.followedBy?.names.includes(clara.displayName),
+    );
+    expect(credited).toBe(true);
+    expect(before.items.some((i) => i.reason.followedBy)).toBe(false);
+    await call(token, 'DELETE', `/v1/me/follows/${clara.id}`);
+    await call(claraToken, 'PATCH', '/v1/me/settings', { publicCreator: false });
   });
 });

@@ -4,6 +4,7 @@ import { and, eq, gt, isNull, lt, or, sql } from 'drizzle-orm';
 import { openMatch } from './chat.js';
 import { NotFoundError } from './errors.js';
 import { canSeePerson } from './soulmates.js';
+import { followEachOther } from './follows.js';
 
 /**
  * Invitaciones por enlace (crecimiento por grupos, 2026-10-22). Un código aleatorio de 10 caracteres (≈ 50 bits) que
@@ -59,6 +60,7 @@ export async function acceptInvitation(db: Database, code: string, viewerId: str
     if (existing) await tx.update(friendships).set({ requesterId: row.inviterId, addresseeId: viewerId, status: 'accepted', respondedAt: now }).where(eq(friendships.id, existing.id));
     else await tx.insert(friendships).values({ requesterId: row.inviterId, addresseeId: viewerId, status: 'accepted', createdAt: now, respondedAt: now });
     await openMatch(tx, viewerId, row.inviterId, 'friendship', now, viewerId);
+    await followEachOther(tx, viewerId, row.inviterId, now);
     await tx.update(invitations).set({ uses: sql`${invitations.uses} + 1` }).where(eq(invitations.id, row.id));
   });
   return { inviterId: row.inviterId, state: 'friends' };
