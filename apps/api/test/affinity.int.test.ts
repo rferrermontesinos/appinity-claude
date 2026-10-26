@@ -1,7 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import { createDatabase, userAffinities, userBlocks, users, type DatabaseHandle } from '@appinity/database';
 import { DEMO_USERS, recomputeAffinities, seedDemo } from '@appinity/ingestion';
-import { CATEGORIES, type AffinityDto, type ChatConfigDto, type ChatConversationDto, type ChatInboxDto, type ChatMatchResultDto, type FollowedPersonDto, type FriendsDto, type PublicPersonDto, type RecommendationsDto, type SoulmatesDto } from '@appinity/shared';
+import { CATEGORIES, type AffinityDto, type CategoryRankingDto, type ChatConfigDto, type ChatConversationDto, type ChatInboxDto, type ChatMatchResultDto, type FollowedPersonDto, type FriendsDto, type PublicPersonDto, type RecommendationsDto, type SoulmatesDto } from '@appinity/shared';
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { testEnv, truncateAll } from '../../../test/helpers.js';
@@ -351,5 +351,20 @@ describe('Seguir a creadores y amigos (2026-10-26)', () => {
     expect(before.items.some((i) => i.reason.followedBy)).toBe(false);
     await call(token, 'DELETE', `/v1/me/follows/${clara.id}`);
     await call(claraToken, 'PATCH', '/v1/me/settings', { publicCreator: false });
+  });
+});
+
+describe('Orden personal de Categorías (2026-10-26)', () => {
+  it('ocho categorías ordenadas por afinidad y gusto propio; cada persona ve su propio orden', async () => {
+    const ranking = async (tok: string) => (await (await fetch(`${base}/v1/me/categories/ranking`, { headers: { Authorization: `Bearer ${tok}` } })).json()) as CategoryRankingDto;
+    const lauraRank = await ranking(token);
+    expect(lauraRank.version).toBe('category-ranking-v1');
+    expect(lauraRank.items.map((i) => i.category).sort()).toEqual([...CATEGORIES].sort());
+    const scores = lauraRank.items.map((i) => i.score);
+    expect([...scores].sort((a, b) => b - a)).toEqual(scores);
+    const res = await fetch(`${base}/v1/dev/session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle: 'demo_alex' }) });
+    const alexRank = await ranking(((await res.json()) as { token: string }).token);
+    expect(alexRank.items[0]!.category).not.toBe(lauraRank.items[0]!.category);
+    expect(['games', 'music']).toContain(alexRank.items[0]!.category);
   });
 });

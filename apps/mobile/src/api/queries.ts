@@ -14,6 +14,7 @@ import type {
   FriendsDto,
   FriendshipResultDto,
   FollowedPersonDto,
+  CategoryRankingDto,
   FollowResultDto,
   SettingsDto,
   SourceDto,
@@ -113,6 +114,11 @@ export const dataKeys = {
 };
 
 /** Amigos y solicitudes (enviadas y recibidas). */
+/** Orden personal del mosaico de categorías (afinidad con tus almas gemelas y gusto propio). */
+export function useCategoryRanking() {
+  return useQuery({ queryKey: ['categoryRanking'], queryFn: () => apiRequest<CategoryRankingDto>('/v1/me/categories/ranking'), enabled: useHasSession() });
+}
+
 /** Personas que sigues: creadores con perfil público y amigos (2026-10-26). */
 export function useFollowing() {
   return useQuery({ queryKey: dataKeys.following, queryFn: () => apiRequest<FollowedPersonDto[]>('/v1/me/following'), enabled: useHasSession() });

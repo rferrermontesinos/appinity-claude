@@ -319,6 +319,10 @@ export const en: TranslationResources = {
     google: 'Your Google data is imported with your permission through Google Data Portability and is never shared.',
   },
   categoriesScreen: {
+    orderHint: 'Sorted by your affinity with your soulmates in each one and by what you like.',
+    rankAffinity: '{{value}}% affinity',
+    rankLikes_one: 'You like {{count}}',
+    rankLikes_other: 'You like {{count}}',
     why: {
       consensus: 'Your soulmates agree',
       discovery: 'Discovered by {{name}}',

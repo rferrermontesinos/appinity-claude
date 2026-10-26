@@ -318,6 +318,10 @@ export const es = {
     google: 'Tus datos de Google se importan con tu autorización mediante Google Data Portability y nunca se comparten.',
   },
   categoriesScreen: {
+    orderHint: 'Ordenadas por tu afinidad con tus almas gemelas en cada una y por lo que te gusta.',
+    rankAffinity: 'Afinidad {{value}} %',
+    rankLikes_one: '{{count}} te gusta',
+    rankLikes_other: '{{count}} te gustan',
     why: {
       consensus: 'Consenso de tus almas gemelas',
       discovery: 'Lo descubre {{name}}',

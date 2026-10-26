@@ -226,6 +226,12 @@ export interface PublicPersonDto {
   creator: { public: boolean; verified: boolean };
 }
 
+/** Orden personal del mosaico de categorías: afinidad con tus almas gemelas en cada una y tu propio gusto. */
+export interface CategoryRankingDto {
+  version: string;
+  items: Array<{ category: Category; score: number; affinity: number | null; likes: number }>;
+}
+
 /** Persona que sigues: creador con perfil público o amigo. */
 export interface FollowedPersonDto {
   userId: string;

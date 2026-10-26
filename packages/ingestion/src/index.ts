@@ -22,3 +22,4 @@ export * from './content.js';
 export * from './invitations.js';
 export * from './contacts.js';
 export * from './follows.js';
+export * from './category-ranking.js';

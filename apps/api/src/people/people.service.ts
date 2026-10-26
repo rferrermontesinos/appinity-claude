@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { categoryAffinities, userAffinities, userProfiles, userSettings, type DatabaseHandle } from '@appinity/database';
-import { AFFINITY_VERSION, FREE_SOULMATES_LIMIT, NotFoundError, PREMIUM_SOULMATES_LIMIT, canSeePerson, chatState, followState, friendshipState, isExceptionalMutual, topSoulmates } from '@appinity/ingestion';
-import { CATEGORIES, type AffinityDto, type PublicPersonDto, type SoulmatesDto } from '@appinity/shared';
+import { AFFINITY_VERSION, FREE_SOULMATES_LIMIT, NotFoundError, PREMIUM_SOULMATES_LIMIT, CATEGORY_RANKING_VERSION, canSeePerson, categoryRankingFor, chatState, followState, friendshipState, isExceptionalMutual, topSoulmates } from '@appinity/ingestion';
+import { CATEGORIES, type AffinityDto, type CategoryRankingDto, type PublicPersonDto, type SoulmatesDto } from '@appinity/shared';
 import { and, eq } from 'drizzle-orm';
 import { DATABASE } from '../infra/tokens.js';
 import { PremiumService } from '../premium/premium.service.js';
@@ -85,6 +85,10 @@ export class PeopleService {
       follow: await followState(this.database.db, viewerId, targetId),
       creator: await this.creatorOf(targetId),
     };
+  }
+
+  async categoryRanking(userId: string): Promise<CategoryRankingDto> {
+    return { version: CATEGORY_RANKING_VERSION, items: await categoryRankingFor(this.database.db, userId) };
   }
 
   private async creatorOf(userId: string): Promise<{ public: boolean; verified: boolean }> {
