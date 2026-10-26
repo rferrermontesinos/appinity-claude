@@ -1057,3 +1057,17 @@ El acuerdo de desarrolladores de Twitch exige permiso escrito para guardar sus d
   minuto y 500 emails por petición.
 - **Bajo demanda**: el permiso de contactos del sistema solo se pide al pulsar «Buscar en mis contactos». Los
   resultados viven en memoria; de ahí se puede enviar una solicitud de amistad.
+
+## 2026-10-26 · Imágenes más representativas (sin licencias nuevas)
+
+- **Por categoría** (`IMAGE_CLAIMS`): en películas y series, cartel libre (P3383) y, si no hay, logotipo del título
+  (P154); nunca la imagen genérica (P18), que en cine suele ser una foto del reparto, de un estreno o de un rodaje. En
+  podcasts, logotipo antes que foto. Un SVG siempre es logotipo. Cada imagen guarda su tipo (`catalog_images.kind`).
+- **Revisión**: al arrancar, el worker reevalúa las imágenes de Commons ya guardadas con estas reglas (cambia,
+  reclasifica o quita). Solo toca objetos por los que Wikidata ha respondido.
+- **En la app**: un logotipo se muestra entero sobre un cartel del color de la categoría; sin imagen, un cartel de
+  diseño (fondo oscuro teñido y el icono grande) en lugar del recuadro pálido.
+- **Plex y Stremio** no usan fuentes libres: Plex toma pósteres sobre todo de TMDb y TheTVDB (y fanart.tv como agente
+  adicional); Stremio (Cinemeta) usa IDs de IMDb y sirve el arte desde MetaHub, derivado de esas mismas fuentes.
+  Los pósteres reales exigen un acuerdo comercial con TMDb o TheTVDB: sigue siendo la decisión de negocio pendiente
+  (2026-10-09).

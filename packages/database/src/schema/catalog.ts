@@ -133,6 +133,11 @@ export const catalogImages = pgTable(
     attributionRequired: boolean('attribution_required').notNull().default(false),
     descriptionUrl: text('description_url'),
     restrictions: text('restrictions'),
+    /**
+     * Qué representa la imagen: cartel, logotipo o foto. Decide cómo se pinta (un logotipo se muestra entero sobre un
+     * fondo, no recortado). NULL = desconocido (imágenes anteriores o de la demo): se trata como foto.
+     */
+    kind: text('kind', { enum: ['poster', 'logo', 'photo'] }),
     cacheStatus: text('cache_status', { enum: ['reference', 'cached', 'failed'] }).notNull().default('reference'),
     cacheError: text('cache_error'),
     fetchedAt: timestamp('fetched_at', { withTimezone: true }),

@@ -1,6 +1,6 @@
 import { catalogExternalIds, catalogImages, catalogItems, type Database } from '@appinity/database';
-import type { Dataset } from '@appinity/shared';
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import type { Category, Dataset, ImageKind } from '@appinity/shared';
+import { and, eq, isNull, or, sql } from 'drizzle-orm';
 
 /**
  * Imágenes del catálogo real desde Wikidata y Wikimedia Commons (gratis, con licencia libre y autoría).
@@ -13,6 +13,46 @@ const WIKIDATA_API = 'https://www.wikidata.org/w/api.php';
 const COMMONS_API = 'https://commons.wikimedia.org/w/api.php';
 const THUMB_WIDTH = 960;
 const ACCEPTED_LICENSE = /^(public domain|pd\b|pd-|cc0|cc[ -]by|cc-by|attribution|gfdl|l?gpl|no restrictions)/i;
+
+type WikidataClaims = Record<string, Array<{ mainsnak?: { datavalue?: { value?: unknown } } }>>;
+
+export interface ImageClaim {
+  file: string;
+  kind: ImageKind;
+}
+
+/**
+ * Propiedades de Wikidata que dan una imagen representativa, por orden de preferencia y categoría:
+ * - Películas y series: cartel (P3383) y, si no hay uno libre, logotipo del título (P154). Nunca la imagen genérica
+ *   (P18): suele ser una foto del reparto, de un estreno o de un rodaje, que no representa la obra.
+ * - Podcasts: logotipo antes que foto (P18 suele ser el presentador).
+ * - Resto: foto (P18) y, si falta, logotipo. En restaurantes y cultura no hay logotipo útil.
+ */
+export const IMAGE_CLAIMS: Record<Category, Array<[property: string, kind: ImageKind]>> = {
+  movies: [['P3383', 'poster'], ['P154', 'logo']],
+  series: [['P3383', 'poster'], ['P154', 'logo']],
+  podcasts: [['P154', 'logo'], ['P18', 'photo']],
+  books: [['P18', 'photo'], ['P154', 'logo']],
+  music: [['P18', 'photo'], ['P154', 'logo']],
+  games: [['P18', 'photo'], ['P154', 'logo']],
+  culture: [['P18', 'photo']],
+  food: [['P18', 'photo']],
+};
+
+/** Primer fichero de Commons disponible según `IMAGE_CLAIMS`. Un SVG siempre se trata como logotipo. */
+export function pickImageClaim(claims: WikidataClaims, category: Category): ImageClaim | null {
+  for (const [property, kind] of IMAGE_CLAIMS[category]) {
+    const value = claims[property]?.[0]?.mainsnak?.datavalue?.value;
+    if (typeof value === 'string' && value) return { file: value, kind: /\.svg$/i.test(value) ? 'logo' : kind };
+  }
+  return null;
+}
+
+/** Nombre de fichero comparable: sin «File:» y con espacios en lugar de guiones bajos. */
+const sameFile = (a: string, b: string) => {
+  const n = (s: string) => s.replace(/^File:/i, '').replace(/_/g, ' ').trim().toLowerCase();
+  return n(a) === n(b);
+};
 
 export interface CommonsImage {
   source: 'wikimedia_commons';
@@ -74,20 +114,18 @@ export class WikimediaImages {
     }
   }
 
-  /** Nombre del fichero de Commons de cada QID (P18 y, si falta, P154). */
-  async filesFor(qids: string[]): Promise<Map<string, string>> {
-    const out = new Map<string, string>();
-    for (const batch of chunk([...new Set(qids)], 50)) {
+  /** Fichero de Commons más representativo de cada QID según su categoría (ver `pickImageClaim`). */
+  async filesFor(entries: Array<{ qid: string; category: Category }>): Promise<Map<string, ImageClaim | null>> {
+    const categoryOf = new Map(entries.map((e) => [e.qid, e.category]));
+    // null = Wikidata respondió pero no hay imagen válida; sin clave = no se sabe (no se toca nada).
+    const out = new Map<string, ImageClaim | null>();
+    for (const batch of chunk([...categoryOf.keys()], 50)) {
       const url = `${WIKIDATA_API}?action=wbgetentities&format=json&props=claims&ids=${batch.join('|')}`;
-      const data = (await this.json(url)) as { entities?: Record<string, { claims?: Record<string, Array<{ mainsnak?: { datavalue?: { value?: unknown } } }>> }> };
+      const data = (await this.json(url)) as { entities?: Record<string, { claims?: WikidataClaims }> };
       for (const [qid, entity] of Object.entries(data.entities ?? {})) {
-        for (const property of ['P18', 'P154']) {
-          const value = entity.claims?.[property]?.[0]?.mainsnak?.datavalue?.value;
-          if (typeof value === 'string' && value) {
-            out.set(qid, value);
-            break;
-          }
-        }
+        const category = categoryOf.get(qid);
+        const claim = category ? pickImageClaim(entity.claims ?? {}, category) : null;
+        if (category) out.set(qid, claim);
       }
       await this.sleep(200);
     }
@@ -144,59 +182,113 @@ export interface ImageEnrichmentResult {
   candidates: number;
   withFile: number;
   inserted: number;
+  /** Con `refresh`: imágenes de Commons cambiadas por otra más representativa o reclasificadas. */
+  updated: number;
+  /** Con `refresh`: imágenes de Commons quitadas porque las reglas actuales no dan ninguna (queda la de sustitución). */
+  removed: number;
+  /** Imágenes nuevas o cambiadas, para que el worker las cachee. */
   imageIds: string[];
 }
 
 /**
  * Pone imagen a los objetos del catálogo que tienen QID de Wikidata y aún no tienen imagen. Idempotente: un objeto con
  * imagen no se toca (índice único por objeto y rol).
+ *
+ * Con `refresh`, además reevalúa las imágenes de Commons ya guardadas con las reglas actuales (`IMAGE_CLAIMS`): cambia
+ * las que ya no son la más representativa, guarda su tipo y quita las que no deberían estar (p. ej., la foto de un
+ * estreno como imagen de una película). Solo actúa sobre objetos por los que Wikidata ha respondido.
  */
 export async function enrichImagesFromWikidata(
   db: Database,
   images: WikimediaImages,
-  options: { dataset?: Dataset; limit?: number } = {},
+  options: { dataset?: Dataset; limit?: number; refresh?: boolean } = {},
 ): Promise<ImageEnrichmentResult> {
   const rows = await db
-    .select({ itemId: catalogItems.id, title: catalogItems.title, qid: catalogExternalIds.externalId })
+    .select({
+      itemId: catalogItems.id,
+      title: catalogItems.title,
+      category: catalogItems.category,
+      qid: catalogExternalIds.externalId,
+      imageId: catalogImages.id,
+      imageFile: catalogImages.sourceImageId,
+      imageKind: catalogImages.kind,
+    })
     .from(catalogItems)
     .innerJoin(catalogExternalIds, and(eq(catalogExternalIds.catalogItemId, catalogItems.id), eq(catalogExternalIds.provider, 'wikidata'), eq(catalogExternalIds.idType, 'entity')))
     .leftJoin(catalogImages, eq(catalogImages.catalogItemId, catalogItems.id))
-    .where(and(eq(catalogItems.dataset, options.dataset ?? 'live'), isNull(catalogImages.id), sql`${catalogExternalIds.externalId} ~ '^Q[0-9]+$'`))
+    .where(
+      and(
+        eq(catalogItems.dataset, options.dataset ?? 'live'),
+        options.refresh ? or(isNull(catalogImages.id), eq(catalogImages.source, 'wikimedia_commons')) : isNull(catalogImages.id),
+        sql`${catalogExternalIds.externalId} ~ '^Q[0-9]+$'`,
+      ),
+    )
     .limit(options.limit ?? 500);
-  const byQid = new Map<string, { itemId: string; title: string }>();
-  for (const r of rows) if (!byQid.has(r.qid)) byQid.set(r.qid, { itemId: r.itemId, title: r.title });
-  const files = await images.filesFor([...byQid.keys()]);
-  const found = await images.images([...files.values()]);
-  const imageIds: string[] = [];
-  for (const [qid, file] of files) {
-    const image = found.get(file);
-    const item = byQid.get(qid);
-    if (!image || !item) continue;
-    const [row] = await db
-      .insert(catalogImages)
-      .values({
-        catalogItemId: item.itemId,
-        role: 'primary',
-        source: image.source,
-        sourceImageId: image.sourceImageId,
-        url: image.url,
-        originalUrl: image.originalUrl,
-        mime: image.mime ?? null,
-        width: image.width ?? null,
-        height: image.height ?? null,
-        alt: item.title,
-        author: image.author ?? null,
-        license: image.license,
-        licenseUrl: image.licenseUrl ?? null,
-        attributionRequired: image.attributionRequired,
-        descriptionUrl: image.descriptionUrl ?? null,
-        restrictions: image.restrictions ?? null,
-        cacheStatus: 'reference',
-        fetchedAt: new Date(),
-      })
-      .onConflictDoNothing()
-      .returning({ id: catalogImages.id });
-    if (row) imageIds.push(row.id);
+  type Row = (typeof rows)[number];
+  const byQid = new Map<string, Row>();
+  for (const r of rows) if (!byQid.has(r.qid)) byQid.set(r.qid, r);
+  const claims = await images.filesFor([...byQid.values()].map((r) => ({ qid: r.qid, category: r.category as Category })));
+  const found = await images.images([...claims.values()].flatMap((c) => (c ? [c.file] : [])));
+
+  const result: ImageEnrichmentResult = { candidates: byQid.size, withFile: 0, inserted: 0, updated: 0, removed: 0, imageIds: [] };
+  for (const [qid, row] of byQid) {
+    if (!claims.has(qid)) continue; // Wikidata no respondió por este objeto: no se toca.
+    const claim = claims.get(qid) ?? null;
+    const image = claim ? found.get(claim.file) : undefined;
+    if (claim) result.withFile++;
+    const values = image
+      ? {
+          source: image.source,
+          sourceImageId: image.sourceImageId,
+          url: image.url,
+          originalUrl: image.originalUrl,
+          mime: image.mime ?? null,
+          width: image.width ?? null,
+          height: image.height ?? null,
+          alt: row.title,
+          author: image.author ?? null,
+          license: image.license,
+          licenseUrl: image.licenseUrl ?? null,
+          attributionRequired: image.attributionRequired,
+          descriptionUrl: image.descriptionUrl ?? null,
+          restrictions: image.restrictions ?? null,
+          kind: claim!.kind,
+          fetchedAt: new Date(),
+        }
+      : null;
+
+    if (!row.imageId) {
+      if (!values) continue;
+      const [inserted] = await db
+        .insert(catalogImages)
+        .values({ catalogItemId: row.itemId, role: 'primary', cacheStatus: 'reference', ...values })
+        .onConflictDoNothing()
+        .returning({ id: catalogImages.id });
+      if (inserted) {
+        result.inserted++;
+        result.imageIds.push(inserted.id);
+      }
+      continue;
+    }
+
+    // Revisión de una imagen de Commons ya guardada.
+    if (!values) {
+      await db.delete(catalogImages).where(eq(catalogImages.id, row.imageId));
+      result.removed++;
+    } else if (row.imageFile && sameFile(row.imageFile, values.sourceImageId)) {
+      if (row.imageKind !== values.kind) {
+        await db.update(catalogImages).set({ kind: values.kind, updatedAt: new Date() }).where(eq(catalogImages.id, row.imageId));
+        result.updated++;
+      }
+    } else {
+      // Otra imagen: vuelve a ser una referencia y el worker la cachea de nuevo.
+      await db
+        .update(catalogImages)
+        .set({ ...values, cacheStatus: 'reference', storageKey: null, cacheError: null, updatedAt: new Date() })
+        .where(eq(catalogImages.id, row.imageId));
+      result.updated++;
+      result.imageIds.push(row.imageId);
+    }
   }
-  return { candidates: byQid.size, withFile: files.size, inserted: imageIds.length, imageIds };
+  return result;
 }

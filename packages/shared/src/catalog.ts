@@ -11,7 +11,11 @@ export const datePrecisionSchema = z.enum(['day', 'month', 'year']);
  * Imagen de catálogo (contrato de la especificación §6).
  * `isFallback` indica la imagen de sustitución de la categoría: nunca una fotografía fabricada.
  */
+/** Qué representa una imagen del catálogo: cartel o portada, logotipo, o foto. */
+export type ImageKind = 'poster' | 'logo' | 'photo';
+
 export interface CatalogImage {
+  kind?: ImageKind;
   url: string;
   storageKey?: string;
   source: string;

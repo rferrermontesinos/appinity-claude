@@ -1,0 +1,1 @@
+ALTER TABLE "catalog_images" ADD COLUMN "kind" text;

@@ -102,9 +102,12 @@ const workers: Worker[] = [
         // Primero las relaciones por contenido (crean objetos nuevos); después, sus imágenes.
         const relations = await buildContentRelations(database.db, resolver, { relatedWorks: (qid, category) => catalogIdentifier.relatedWorks?.(qid, category) ?? Promise.resolve([]) }, { log: (m) => console.log(`[catálogo] ${m}`) });
         if (relations.relations) console.log(`[catálogo] relaciones por contenido: ${JSON.stringify(relations)}`);
-        const images = await enrichImagesFromWikidata(database.db, new WikimediaImages({ userAgent: env.catalogUserAgent }));
+        // Al arrancar se revisan también las imágenes ya guardadas con las reglas actuales (cartel o logotipo en cine).
+        const refresh = job.data.requestedAt === 'startup';
+        const images = await enrichImagesFromWikidata(database.db, new WikimediaImages({ userAgent: env.catalogUserAgent }), { refresh });
         for (const id of images.imageIds) await enqueueImage(producer, id);
-        if (images.inserted) console.log(`[catálogo] ${images.inserted} imágenes nuevas de Wikimedia (${images.candidates} objetos sin imagen con QID)`);
+        if (images.inserted || images.updated || images.removed)
+          console.log(`[catálogo] imágenes de Wikimedia: ${images.inserted} nuevas, ${images.updated} cambiadas, ${images.removed} quitadas (${images.candidates} revisadas)`);
         return { relations, images: { ...images, imageIds: images.imageIds.length } };
       }
       return { pong: `${job.data.requestedAt} → ${new Date().toISOString()}` };
