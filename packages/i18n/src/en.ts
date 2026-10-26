@@ -121,6 +121,7 @@ export const en: TranslationResources = {
     requested: 'Request sent',
     alreadyFriends: 'Already friends',
     wantsYou: 'Sent you a request',
+    unavailable: 'This version of the app cannot read contacts yet: install the new version.',
     mobileOnly: 'Searching your contacts is available in the mobile app.',
   },
   tastes: {
@@ -423,6 +424,8 @@ export const en: TranslationResources = {
   onboarding: {
     title: 'Welcome to APPINITY',
     intro: 'A single consent step: confirm these two points and then connect the sources of your tastes. We will not ask for anything else later.',
+    readTerms: 'Read the terms',
+    readPrivacy: 'Read the privacy policy',
     howTitle: 'How it works',
     steps: {
       connect: { title: 'Connect your sources', text: 'Steam, Google and more. Your tastes come only from there: swiping or chatting never changes them.' },

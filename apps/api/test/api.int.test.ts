@@ -77,6 +77,19 @@ describe('health', () => {
   });
 });
 
+describe('textos legales', () => {
+  it('condiciones y privacidad son públicas, en HTML y marcadas como borrador', async () => {
+    for (const path of ['/legal/condiciones', '/legal/privacidad']) {
+      const res = await fetch(`${base}${path}`);
+      expect(res.status).toBe(200);
+      expect(res.headers.get('content-type')).toMatch(/text\/html/);
+      expect(await res.text()).toMatch(/Borrador pendiente de revisión legal/);
+    }
+    // La verificación de Google exige la declaración de uso limitado en la política de privacidad.
+    expect(await (await fetch(`${base}/legal/privacidad`)).text()).toMatch(/requisitos de uso limitado/);
+  });
+});
+
 describe('rutas privadas', () => {
   it('rechazan peticiones sin sesión', async () => {
     expect((await get('/v1/me')).status).toBe(401);

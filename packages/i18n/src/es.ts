@@ -119,6 +119,7 @@ export const es = {
     requested: 'Solicitud enviada',
     alreadyFriends: 'Ya sois amigos',
     wantsYou: 'Te ha enviado una solicitud',
+    unavailable: 'Esta versión de la app aún no puede leer los contactos: instala la versión nueva.',
     mobileOnly: 'La búsqueda en tus contactos está en la app del móvil.',
   },
   tastes: {
@@ -423,6 +424,8 @@ export const es = {
   onboarding: {
     title: 'Bienvenida a APPINITY',
     intro: 'Un único paso de consentimiento: confirma estos dos puntos y, a continuación, conecta las fuentes de tus gustos. No te pediremos nada más después.',
+    readTerms: 'Leer las condiciones',
+    readPrivacy: 'Leer la privacidad',
     howTitle: 'Cómo funciona',
     steps: {
       connect: { title: 'Conecta tus fuentes', text: 'Steam, Google y otras. Tus gustos salen solo de ahí: deslizar o chatear no los cambia.' },

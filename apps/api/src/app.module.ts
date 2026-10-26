@@ -16,6 +16,7 @@ import { ConnectCallbackController } from './connections/connect-callback.contro
 import { ConnectionsController } from './connections/connections.controller.js';
 import { ConnectionsService } from './connections/connections.service.js';
 import { HealthController } from './health/health.controller.js';
+import { LegalController } from './legal/legal.controller.js';
 import { InfraModule } from './infra/infra.module.js';
 import { PipelineModule } from './infra/pipeline.module.js';
 import { MeController } from './me/me.controller.js';
@@ -51,6 +52,7 @@ export class AppModule {
       ],
       controllers: [
         HealthController,
+        LegalController,
         DevAuthController,
         AuthController,
         MeController,

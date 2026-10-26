@@ -1,10 +1,12 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Switch, Text, View } from 'react-native';
 import { apiRequest } from '../src/api/client';
+import { API } from '../src/config';
 import { Body, Button, Card, ErrorCard, Screen, Small, TextField, Title } from '../src/components/ui';
 import { fonts, spacing, usePalette } from '../src/theme';
 
@@ -98,6 +100,10 @@ export default function OnboardingScreen() {
         />
         {row(t('onboarding.adult'), adult, setAdult)}
         {row(t('onboarding.terms'), terms, setTerms)}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+          <Button label={t('onboarding.readTerms')} variant="secondary" size="small" icon="file-document-outline" onPress={() => void WebBrowser.openBrowserAsync(`${API.url}/legal/condiciones`)} />
+          <Button label={t('onboarding.readPrivacy')} variant="secondary" size="small" icon="shield-account-outline" onPress={() => void WebBrowser.openBrowserAsync(`${API.url}/legal/privacidad`)} />
+        </View>
         <Small>{t('onboarding.consentNote')}</Small>
         {error ? <ErrorCard error={error} /> : null}
         <Button label={t('onboarding.continue')} onPress={() => void submit()} disabled={!adult || !terms} loading={saving} />

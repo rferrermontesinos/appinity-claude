@@ -1,6 +1,4 @@
 import { CONTACT_HASH_BATCH_MAX, normalizeContactEmail, type ContactMatchDto } from '@appinity/shared';
-import { Contact, ContactField, requestPermissionsAsync } from 'expo-contacts';
-import { CryptoDigestAlgorithm, digestStringAsync } from 'expo-crypto';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,11 +15,28 @@ const MAX_BATCHES = 5;
 type State =
   | { step: 'idle' }
   | { step: 'denied' }
+  | { step: 'unavailable' }
   | { step: 'searching' }
   | { step: 'done'; matches: ContactMatchDto[]; emails: number; truncated: boolean };
 
+/**
+ * Módulos nativos cargados solo al pulsar: un APK de desarrollo anterior no los incluye, y un import normal haría
+ * fallar toda la pestaña. Si faltan, se avisa de que hay que instalar la versión nueva.
+ */
+async function nativeModules() {
+  try {
+    const [contacts, crypto] = await Promise.all([import('expo-contacts'), import('expo-crypto')]);
+    return { contacts, crypto };
+  } catch {
+    return null;
+  }
+}
+
+type Natives = NonNullable<Awaited<ReturnType<typeof nativeModules>>>;
+
 /** Lee los emails de la agenda (solo bajo demanda) y envía su SHA-256; nada sale del teléfono en claro ni se guarda. */
-async function hashedContactEmails(): Promise<{ hashes: string[]; truncated: boolean }> {
+async function hashedContactEmails({ contacts, crypto }: Natives): Promise<{ hashes: string[]; truncated: boolean }> {
+  const { Contact, ContactField } = contacts;
   const details = await Contact.getAllDetails([ContactField.EMAILS]);
   const emails = new Set<string>();
   for (const contact of details) {
@@ -32,7 +47,7 @@ async function hashedContactEmails(): Promise<{ hashes: string[]; truncated: boo
   }
   const limit = CONTACT_HASH_BATCH_MAX * MAX_BATCHES;
   const list = [...emails].slice(0, limit);
-  const hashes = await Promise.all(list.map((e) => digestStringAsync(CryptoDigestAlgorithm.SHA256, e)));
+  const hashes = await Promise.all(list.map((e) => crypto.digestStringAsync(crypto.CryptoDigestAlgorithm.SHA256, e)));
   return { hashes, truncated: emails.size > limit };
 }
 
@@ -50,14 +65,25 @@ export function ContactsFinder() {
 
   async function search() {
     setError(null);
-    const permission = await requestPermissionsAsync();
+    const natives = await nativeModules();
+    if (!natives) {
+      setState({ step: 'unavailable' });
+      return;
+    }
+    let permission;
+    try {
+      permission = await natives.contacts.requestPermissionsAsync();
+    } catch {
+      setState({ step: 'unavailable' });
+      return;
+    }
     if (!permission.granted) {
       setState({ step: 'denied' });
       return;
     }
     setState({ step: 'searching' });
     try {
-      const { hashes, truncated } = await hashedContactEmails();
+      const { hashes, truncated } = await hashedContactEmails(natives);
       const matches: ContactMatchDto[] = [];
       for (let i = 0; i < hashes.length; i += CONTACT_HASH_BATCH_MAX) {
         const batch = hashes.slice(i, i + CONTACT_HASH_BATCH_MAX);
@@ -74,6 +100,7 @@ export function ContactsFinder() {
     <View style={{ gap: spacing.sm }}>
       <Small style={{ fontWeight: '700' }}>{t('contacts.title')}</Small>
       <Small>{t('contacts.privacy')}</Small>
+      {state.step === 'unavailable' ? <Small style={{ color: c.warn }}>{t('contacts.unavailable')}</Small> : null}
       {state.step === 'denied' ? <Small style={{ color: c.warn }}>{t('contacts.denied')}</Small> : null}
       {error ? <ErrorCard error={error} /> : null}
       {state.step === 'done' ? (
