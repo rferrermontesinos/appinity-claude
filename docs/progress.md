@@ -44,6 +44,10 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
   tenue sobre fila destacada (4,12:1) solo se usa en el icono del motivo (mínimo 3:1).
 - `pnpm typecheck` y `pnpm lint` limpios (sin cambios de servidor).
 - Vista web (390×844): Restaurantes y la ficha de Alkimia.
+- Corregido (titular): el fondo se partía en una zona granulada y otra lisa. Había dos causas: el halo tenía altura
+  fija (360 px) y la barra nativa era lisa. Ahora el halo cubre toda la pantalla y el detalle no tiene barra nativa:
+  lleva un botón «Volver» propio sobre el fondo, con el margen del área segura. En Inicio, el halo cubre todo el
+  contenido desplazable.
 
 ### Pendiente
 

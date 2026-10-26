@@ -92,7 +92,7 @@ export default function HomeScreen() {
   const [aura, setAura] = useState<string | null>(null);
   return (
     <Screen>
-      {aura ? <AuraBackdrop color={aura} width={width} style={{ position: 'absolute', top: 0, left: 0, width, height: width * 2.2 }} /> : null}
+      {aura ? <AuraBackdrop color={aura} width={width} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, minHeight: width * 2.2 }} /> : null}
       <Text
         accessibilityRole="header"
         accessibilityLabel="APPINITY"
