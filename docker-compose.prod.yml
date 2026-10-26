@@ -15,6 +15,8 @@ x-app: &app
     DATABASE_URL: postgres://appinity_claude:${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD}@postgres:5432/appinity_claude
     REDIS_URL: redis://redis:6379
     STORAGE_DIR: /data/media
+    # El proxy HTTPS del servidor llega desde la red de Docker: se confía solo en rangos privados (para leer la IP real).
+    TRUST_PROXY: loopback, uniquelocal
   volumes:
     - appinity_media:/data/media
   restart: unless-stopped
