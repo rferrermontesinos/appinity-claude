@@ -173,7 +173,13 @@ export default function ChatScreen() {
   ].reverse();
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: c.background }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+    // Android 15+ dibuja la app de borde a borde: la ventana ya no se encoge con el teclado y «height» deja la caja de
+    // texto debajo. «padding» en ambas plataformas, desplazado por la cabecera (barra de estado + 56 dp o 44 pt).
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: c.background }}
+      behavior="padding"
+      keyboardVerticalOffset={insets.top + (Platform.OS === 'ios' ? 44 : 56)}
+    >
       <Stack.Screen
         options={{
           title: person?.displayName ?? t('chat.tabChats'),

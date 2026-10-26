@@ -9,6 +9,9 @@ import { Button, Card, EmptyState, ErrorCard, Loading, Screen, Small, Title } fr
 import { useHomeDeck } from '../../src/state/homeDeck';
 import { spacing, usePalette } from '../../src/theme';
 
+/** Tarjeta siguiente del mazo: solo se muestra, no responde a gestos. */
+const noop = () => undefined;
+
 /** Botones del mazo (sistema de diseño): descartar y conservar grandes; conservar relleno en violeta; deshacer pequeño. */
 function DeckButton({ icon, label, onPress, disabled, kind }: { icon: 'close' | 'undo' | 'heart'; label: string; onPress: () => void; disabled: boolean; kind: 'dismiss' | 'undo' | 'keep' }) {
   const c = usePalette();
@@ -63,7 +66,6 @@ export default function HomeScreen() {
 function HomeDeckSection() {
   const { t } = useTranslation();
   const router = useRouter();
-  const c = usePalette();
   const deck = useHomeDeck(true);
   const emptyReason =
     deck.meta?.localFilter === 'no_location' ? t('home.emptyNoLocation') : t('home.emptyNoSoulmates');
@@ -76,11 +78,18 @@ function HomeDeckSection() {
         <View style={{ gap: spacing.md }}>
           <View>
             {deck.next ? (
-              // Borde decorativo del mazo: indica que hay más tarjetas sin mostrar (ni leer) la siguiente antes de tiempo.
+              // La siguiente tarjeta, debajo y quieta: se descubre al deslizar la actual (como en Tinder). Sin gestos y
+              // oculta al lector de pantalla; la impresión solo se registra cuando pasa a ser la actual.
               <View
+                key={`next-${deck.next.item.id}`}
                 pointerEvents="none"
-                style={{ position: 'absolute', left: spacing.lg, right: spacing.lg, top: 12, bottom: -12, borderRadius: 28, backgroundColor: c.surfaceAlt, opacity: 0.7 }}
-              />
+                aria-hidden
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+                style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden', borderRadius: 28 }}
+              >
+                <RecommendationCard recommendation={deck.next} onDismiss={noop} onKeep={noop} interactive={false} />
+              </View>
             ) : null}
             <RecommendationCard key={deck.current.item.id} recommendation={deck.current} onDismiss={() => void deck.dismiss()} onKeep={() => void deck.keep()} interactive={!deck.busy} />
           </View>
