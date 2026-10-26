@@ -408,8 +408,16 @@ export const en: TranslationResources = {
   onboarding: {
     title: 'Welcome to APPINITY',
     intro: 'A single consent step: confirm these two points and then connect the sources of your tastes. We will not ask for anything else later.',
-    namePlaceholder: 'Your display name (optional)',
-    cityPlaceholder: 'Your city (optional, e.g. Barcelona)',
+    howTitle: 'How it works',
+    steps: {
+      connect: { title: 'Connect your sources', text: 'Steam, Google and more. Your tastes come only from there: swiping or chatting never changes them.' },
+      soulmates: { title: 'Find your soulmates', text: 'We work out who shares your tastes, category by category.' },
+      discover: { title: 'Discover', text: 'What they rate highly and you don’t know yet, with the reason for each recommendation.' },
+    },
+    nameLabel: 'Display name (optional)',
+    nameHelp: 'This is what others will see. Leave it empty to use your account name.',
+    cityLabel: 'City (optional)',
+    cityPlaceholder: 'e.g. Barcelona',
     cityNote: 'Just the city, for Trending and nearby places. Stored approximately; you can change it in Profile.',
     adult: 'I am 18 or older',
     terms: 'I accept the terms and the privacy policy',

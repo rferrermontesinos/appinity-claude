@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { CATEGORY_META, type Category } from '@appinity/shared';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -9,7 +9,9 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
+  type TextInputProps,
   type StyleProp,
   type TextStyle,
   type ViewStyle,
@@ -265,6 +267,55 @@ export function EmptyState({
       <Text style={{ color: c.textMuted, fontSize: 14, lineHeight: 21, textAlign: 'center' }}>{body}</Text>
       {action ? <Button label={action.label} icon={action.icon} onPress={action.onPress} /> : null}
       {secondary ? <Button label={secondary.label} icon={secondary.icon} variant="secondary" size="small" onPress={secondary.onPress} /> : null}
+    </View>
+  );
+}
+
+/**
+ * Campo de texto del sistema de diseño (variante «outlined»): etiqueta visible encima (no solo el placeholder, que
+ * desaparece al escribir), caja de 52 px, borde de acento al enfocar y texto de ayuda o de error debajo.
+ */
+export function TextField({
+  label,
+  help,
+  error,
+  style,
+  ...input
+}: Omit<TextInputProps, 'style'> & { label: string; help?: string; error?: string | null; style?: StyleProp<ViewStyle> }) {
+  const c = usePalette();
+  const [focused, setFocused] = useState(false);
+  const border = error ? c.danger : focused ? c.accent : c.border;
+  return (
+    <View style={[{ gap: 4 }, style]}>
+      <Text style={{ color: c.textMuted, fontSize: 13, fontWeight: '500' }}>{label}</Text>
+      <TextInput
+        placeholderTextColor={c.textSubtle}
+        accessibilityLabel={label}
+        accessibilityHint={error ?? help}
+        {...input}
+        onFocus={(e) => {
+          setFocused(true);
+          input.onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          setFocused(false);
+          input.onBlur?.(e);
+        }}
+        style={{
+          minHeight: 52,
+          // El borde de 2 px al enfocar se compensa en el relleno para que el texto no salte.
+          paddingHorizontal: spacing.md - (focused || error ? 1 : 0),
+          color: c.text,
+          fontSize: 16,
+          borderWidth: focused || error ? 2 : 1,
+          borderColor: border,
+          borderRadius: radius.md,
+          backgroundColor: c.surface,
+        }}
+      />
+      {error || help ? (
+        <Text style={{ color: error ? c.danger : c.textMuted, fontSize: 12, lineHeight: 17 }}>{error ?? help}</Text>
+      ) : null}
     </View>
   );
 }

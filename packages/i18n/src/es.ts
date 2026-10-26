@@ -408,8 +408,16 @@ export const es = {
   onboarding: {
     title: 'Bienvenida a APPINITY',
     intro: 'Un único paso de consentimiento: confirma estos dos puntos y, a continuación, conecta las fuentes de tus gustos. No te pediremos nada más después.',
-    namePlaceholder: 'Tu nombre visible (opcional)',
-    cityPlaceholder: 'Tu ciudad (opcional, p. ej. Barcelona)',
+    howTitle: 'Cómo funciona',
+    steps: {
+      connect: { title: 'Conecta tus fuentes', text: 'Steam, Google y otras. Tus gustos salen solo de ahí: deslizar o chatear no los cambia.' },
+      soulmates: { title: 'Encuentra a tus almas gemelas', text: 'Calculamos con quién compartes gustos, categoría a categoría.' },
+      discover: { title: 'Descubre', text: 'Lo que ellas valoran y tú aún no conoces, con el motivo de cada recomendación.' },
+    },
+    nameLabel: 'Nombre visible (opcional)',
+    nameHelp: 'Es lo que verán los demás. Si lo dejas vacío, usamos el de tu cuenta.',
+    cityLabel: 'Ciudad (opcional)',
+    cityPlaceholder: 'p. ej. Barcelona',
     cityNote: 'Solo la ciudad, para Trending y los sitios cercanos. Se guarda aproximada y puedes cambiarla en Perfil.',
     adult: 'Tengo 18 años o más',
     terms: 'Acepto las condiciones y la política de privacidad',

@@ -1,11 +1,19 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Switch, TextInput, View } from 'react-native';
+import { Switch, Text, View } from 'react-native';
 import { apiRequest } from '../src/api/client';
-import { Body, Button, Card, ErrorCard, Screen, Small, Title } from '../src/components/ui';
-import { radius, spacing, usePalette } from '../src/theme';
+import { Body, Button, Card, ErrorCard, Screen, Small, TextField, Title } from '../src/components/ui';
+import { fonts, spacing, usePalette } from '../src/theme';
+
+/** Cómo funciona APPINITY, en tres pasos: así se entiende por qué lo siguiente es conectar fuentes. */
+const STEPS = [
+  { icon: 'link-variant', key: 'connect' },
+  { icon: 'account-heart-outline', key: 'soulmates' },
+  { icon: 'cards-outline', key: 'discover' },
+] as const;
 
 /**
  * Alta (fase 13): el único momento de consentimiento. Mayoría de edad y condiciones aquí; justo después, en Perfil, se
@@ -46,29 +54,48 @@ export default function OnboardingScreen() {
 
   return (
     <Screen>
-      <Card>
-        <Title>{t('onboarding.title')}</Title>
+      <View style={{ gap: spacing.sm, paddingTop: spacing.md }}>
+        <Text accessibilityRole="header" style={{ color: c.text, fontFamily: fonts.display, fontSize: 28, lineHeight: 34 }}>
+          {t('onboarding.title')}
+        </Text>
         <Body muted>{t('onboarding.intro')}</Body>
-        <TextInput
-          value={name}
-          onChangeText={setName}
-          placeholder={t('onboarding.namePlaceholder')}
-          placeholderTextColor={c.textMuted}
-          accessibilityLabel={t('onboarding.namePlaceholder')}
-          maxLength={60}
-          style={{ color: c.text, borderWidth: 1, borderColor: c.border, borderRadius: radius.sm, padding: spacing.md }}
-        />
-        <TextInput
+      </View>
+      <Card>
+        <Title style={{ fontSize: 16 }}>{t('onboarding.howTitle')}</Title>
+        {STEPS.map((step, i) => (
+          <View key={step.key} style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' }}>
+            <View
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: c.primaryContainer,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <MaterialCommunityIcons name={step.icon} size={20} color={c.onPrimaryContainer} />
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Body style={{ fontWeight: '700' }}>{`${i + 1}. ${t(`onboarding.steps.${step.key}.title`)}`}</Body>
+              <Small>{t(`onboarding.steps.${step.key}.text`)}</Small>
+            </View>
+          </View>
+        ))}
+      </Card>
+      <Card>
+        <TextField label={t('onboarding.nameLabel')} help={t('onboarding.nameHelp')} value={name} onChangeText={setName} maxLength={60} />
+        <TextField
+          label={t('onboarding.cityLabel')}
+          help={t('onboarding.cityNote')}
+          placeholder={t('onboarding.cityPlaceholder')}
           value={city}
           onChangeText={setCity}
-          placeholder={t('onboarding.cityPlaceholder')}
-          placeholderTextColor={c.textMuted}
-          accessibilityLabel={t('onboarding.cityPlaceholder')}
           autoComplete="off"
           maxLength={80}
-          style={{ color: c.text, borderWidth: 1, borderColor: c.border, borderRadius: radius.sm, padding: spacing.md }}
         />
-        <Small>{t('onboarding.cityNote')}</Small>
         {row(t('onboarding.adult'), adult, setAdult)}
         {row(t('onboarding.terms'), terms, setTerms)}
         <Small>{t('onboarding.consentNote')}</Small>
