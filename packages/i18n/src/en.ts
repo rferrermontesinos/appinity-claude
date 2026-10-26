@@ -298,6 +298,7 @@ export const en: TranslationResources = {
     itemCount_other: '{{count}} items',
   },
   people: {
+    personKicker: 'Your affinity with {{name}}',
     heroWith: '{{name}} and you',
     heroKicker: 'Your affinity',
     heroVersion: 'Calculated from both your sources · {{version}}. {{name}}’s affinity towards you may differ.',

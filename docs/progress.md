@@ -25,6 +25,27 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-26 (7) · «Aura» en la ficha de persona
+
+### Qué se ha hecho
+
+- **Cartel de persona** (`AuraCard`, componente común con la tarjeta de Personas): avatar con aro lima, nombre, país,
+  «Tu afinidad con …» (direccional) con la cifra en 64, «Afinidad mutua excepcional» si procede y la aclaración de
+  cómo se calcula. Se tiñe con la categoría más afín de esa persona.
+- **Afinidad por categoría**: las ocho en orden canónico, con icono, nombre, recuento de objetos en común (solo el
+  número), cifra en Bricolage y barra del color de la categoría. Sin datos: «—» y barra vacía.
+- Se retira `AffinityFigure` (ya no se usaba). Texto nuevo `people.personKicker` (es/en).
+
+### Comprobaciones
+
+- `pnpm lint` y `pnpm typecheck` limpios; `pnpm test`: 37 ficheros y 366 tests OK.
+- Vista web (390×844, demo): ficha de Vera (demo), con 28 %, Películas con 2 objetos en común y el resto «—».
+  Personas sigue igual tras extraer `AuraCard`.
+
+### Pendiente
+
+- Ver en el teléfono. Siguientes: Categorías, Perfil, barra inferior y guía del sistema de diseño.
+
 ## Entrega 2026-10-26 (6) · «Aura» en Personas (momento Wrapped)
 
 ### Qué se ha hecho

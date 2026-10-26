@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Animated, Image, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import GRAIN from '../../assets/grain.png';
@@ -88,5 +88,26 @@ export function Grain({ opacity = 0.35 }: { opacity?: number }) {
       importantForAccessibility="no"
       style={[StyleSheet.absoluteFill, { width: '100%', height: '100%', opacity }]}
     />
+  );
+}
+
+/** Colores sobre un cartel `AuraCard` (fondo oscuro fijo en ambos temas): AA comprobado en el peor brillo. */
+export const onPoster = { base: '#141708', text: '#F5F3F0', muted: 'rgba(245,243,240,0.78)', lime: '#D4F45A', onLime: '#141A02' };
+
+/**
+ * Cartel de «Aura» para los momentos de persona: fondo oscuro teñido con `accent`, brillo lima arriba a la izquierda,
+ * brillo del acento abajo a la derecha y grano. El texto encima usa `onPoster`.
+ */
+export function AuraCard({ accent, children, style }: { accent: string; children: ReactNode; style?: StyleProp<ViewStyle> }) {
+  return (
+    <View style={[{ borderRadius: 30, overflow: 'hidden', padding: 18, gap: 4, backgroundColor: onPoster.base, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }, style]}>
+      <View pointerEvents="none" aria-hidden accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: mixHex(accent, onPoster.base, 0.88) }]} />
+        <Glow color={onPoster.lime} size={420} x={-40} y={-60} strength={0.012} />
+        <Glow color={accent} size={420} x={380} y={560} strength={0.014} />
+        <Grain opacity={0.22} />
+      </View>
+      {children}
+    </View>
   );
 }

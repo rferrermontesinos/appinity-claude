@@ -7,14 +7,12 @@ import { Animated, Pressable, Text, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { usePerson } from '../api/queries';
 import { fonts, radius, spacing, usePalette } from '../theme';
-import { Glow, Grain, mixHex } from './Aura';
+import { AuraCard, onPoster } from './Aura';
 import { PersonAvatar, formatAffinity } from './PersonAvatar';
 
-/** Fondo fijo de la tarjeta (oscuro siempre, como un cartel): el texto claro cumple AA sobre él y sobre los brillos. */
-const HERO_BASE = '#141708';
-const HERO_TEXT = '#F5F3F0';
-const HERO_MUTED = 'rgba(245,243,240,0.78)';
-const LIME = '#D4F45A';
+const HERO_TEXT = onPoster.text;
+const HERO_MUTED = onPoster.muted;
+const LIME = onPoster.lime;
 
 /** Cifra que cuenta hasta su valor al aparecer (se omite con «reducir movimiento»). */
 function useCountUp(target: number | null, reduce: boolean): number | null {
@@ -78,14 +76,7 @@ export function SoulmateHero({ person }: { person: SoulmateDto }) {
   const version = affinity?.algorithmVersion;
 
   return (
-    <View style={{ borderRadius: radius.xl, overflow: 'hidden', padding: spacing.lg + 2, gap: spacing.xs, backgroundColor: HERO_BASE, borderWidth: 1, borderColor: c.hairline }}>
-      <View pointerEvents="none" aria-hidden accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: mixHex(accent, HERO_BASE, 0.88) }} />
-        <Glow color={LIME} size={420} x={-40} y={-60} strength={0.012} />
-        <Glow color={accent} size={420} x={380} y={560} strength={0.014} />
-        <Grain opacity={0.22} />
-      </View>
-
+    <AuraCard accent={accent}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
         <PersonAvatar name={person.displayName} url={person.avatarUrl} size={36} ring={LIME} />
         <Text style={{ color: HERO_TEXT, fontSize: 15, flexShrink: 1 }} numberOfLines={1}>
@@ -140,6 +131,6 @@ export function SoulmateHero({ person }: { person: SoulmateDto }) {
         <Text style={{ color: '#141A02', fontSize: 15, fontWeight: '700' }}>{t('people.heroCta')}</Text>
         <MaterialCommunityIcons name="arrow-right" size={18} color="#141A02" />
       </Pressable>
-    </View>
+    </AuraCard>
   );
 }

@@ -297,6 +297,7 @@ export const es = {
     itemCount_other: '{{count}} objetos',
   },
   people: {
+    personKicker: 'Tu afinidad con {{name}}',
     heroWith: '{{name}} y tú',
     heroKicker: 'Vuestra afinidad',
     heroVersion: 'Calculada con vuestras fuentes · {{version}}. La de {{name}} hacia ti puede ser distinta.',
