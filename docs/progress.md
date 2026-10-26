@@ -25,6 +25,32 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-26 (17) · Túnel de Cloudflare y APK de prueba (preparados)
+
+### Qué se ha hecho
+
+- `pnpm tunnel:setup -Domain <dominio>` (`scripts/tunnel.ps1`): crea el túnel `appinity-claude`, el DNS `api.<dominio>`
+  y su configuración en `~/.cloudflared`, fuera de Git. **`/v1/dev` responde 404 en el túnel**: el acceso de
+  desarrollo del modo demo no se publica. Después ejecuta `pnpm public-url`.
+- `pnpm tunnel`: arranca el túnel.
+- `pnpm public-url <https://…>` (`scripts/set-public-url.mjs`): fija en `.env` `PUBLIC_API_URL`, las URL de vuelta de
+  Google y de las demás fuentes, y `TRUST_PROXY=loopback`. Imprime lo que hay que registrar en Google Cloud.
+  `--local` lo deshace.
+- `pnpm android:beta -ApiUrl <https://…>` (`scripts/android-beta-build.ps1`): APK release con la app empaquetada (no
+  necesita Metro) y la API pública, firmado con la clave de depuración, en `dist/appinity-beta.apk`.
+- Guía paso a paso (lo que hace el titular y lo que se hace después): [beta.md](beta.md).
+
+### Comprobaciones
+
+- Los argumentos llegan bien sin `--` (`pnpm android:beta -ApiUrl …`); con `--`, PowerShell los recibe mal. URL sin
+  https: rechazada por los dos scripts.
+- Compilación de prueba del APK con una URL de marcador: ver la entrada siguiente.
+
+### Pendiente (titular)
+
+- Comprar el dominio en Cloudflare, `cloudflared tunnel login`, `pnpm tunnel:setup` y los pasos de Google Cloud de
+  beta.md. Después: APK definitivo y prueba del alta desde el teléfono.
+
 ## Entrega 2026-10-26 (16) · Alta única: aceptar y empezar a importar todo Google
 
 ### Qué se ha hecho
