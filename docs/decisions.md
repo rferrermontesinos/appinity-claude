@@ -1124,3 +1124,6 @@ Propuesta en [propuesta-seguir-creadores.md](propuesta-seguir-creadores.md).
 - **Futuro**: a la larga, otro 10 % basado en publicidad (p. ej., un evento que quiere anunciarse), siempre marcado como
   patrocinado. Queda anotado; no se implementa ahora.
 - Seguir nunca cambia gustos ni afinidades. Bloquear a alguien elimina el seguimiento en ambos sentidos.
+- **Guía actualizada (2026-10-26)**: `docs/design/design-system/` pasa a «Aura» (tokens, tipografía y una sección con
+  los componentes nuevos). `theme.ts` sigue siendo la fuente de verdad en la app; la guía replica sus valores.
+

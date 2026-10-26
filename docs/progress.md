@@ -25,6 +25,29 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-26 (15) · Guía del sistema de diseño en «Aura»
+
+### Qué se ha hecho
+
+- `styles.css`: tokens de oscuro y claro con los valores de `theme.ts`. Chispa como `--primary` y lima como `--affinity`
+  (nuevo); también `--poster-*`, Bricolage Grotesque en `--font-display`, `--r-xl` 30, muelle y `--dur-aura`. El
+  medidor de afinidad pasa a lima. No queda violeta ni Space Grotesk.
+- Clases nuevas (solo tokens): `.aura-halo`, `.aura-poster`, `.rank-row` (`.is-top`) y `.src-links`.
+- `index.html`: cabecera y descripción de «Aura», y una sección **Aura** con sus demostraciones y ficha para el
+  inspector (Dev Mode). Las fuentes cargan Bricolage. Recompilado con `build.mjs`.
+- `README.md` de la guía reescrito: decisiones, contraste y estado de «Aura» en la app. Se quita el aviso de guía
+  desactualizada.
+
+### Comprobaciones
+
+- `node docs/design/design-system/src/build.mjs` → `ok: index.html, concept.html, icons.html (43 iconos)`.
+- Revisada en el servidor de la guía (8093): botones en chispa, cifras en Bricolage y la sección Aura (halo, carteles,
+  ranking y «Dónde encontrarlo»).
+
+### Pendiente
+
+- Aceptación de toda la dirección «Aura» en el teléfono.
+
 ## Entrega 2026-10-26 (14) · «Aura» en la barra inferior
 
 ### Qué se ha hecho

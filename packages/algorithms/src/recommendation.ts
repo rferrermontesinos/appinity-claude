@@ -11,27 +11,30 @@ import type { Category } from '@appinity/shared';
  * - Trending (10 %): votos explícitos de personas de la zona, sin peso por afinidad. Media bayesiana con los votos altos
  *   y los bajos (prior 0, peso 3), mínimo de votantes únicos y proporción de votos altos.
  */
-export const RECOMMENDATION_VERSION = 'recommendation-v1';
+export const RECOMMENDATION_VERSION = 'recommendation-v2';
 
 export interface RecommendationParams {
   /** Conocido a partir de este knownConfidence: no se recomienda en Home (§5). */
   knownThreshold: number;
   consensus: { positiveScore: number; positiveConfidence: number; minSupporters: number };
   discovery: { minAffinity: number; minScore: number; minConfidence: number };
+  /** Personas que sigues (creadores y amigos): sin umbral de afinidad, solo gustos fuertes. */
+  followed: { minScore: number; minConfidence: number };
   trending: { voteScore: number; voteConfidence: number; minVoters: number; priorWeight: number; priorMean: number; minAverage: number };
   /** Tarjetas de cada bloque en cada tanda de 10. */
-  mix: { consensus: number; discovery: number; trending: number };
+  mix: { consensus: number; discovery: number; followed: number; trending: number };
 }
 
 export const RECOMMENDATION_PARAMS_V1: RecommendationParams = {
   knownThreshold: 0.8,
   consensus: { positiveScore: 0.5, positiveConfidence: 0.5, minSupporters: 2 },
   discovery: { minAffinity: 50, minScore: 0.8, minConfidence: 0.7 },
+  followed: { minScore: 0.8, minConfidence: 0.6 },
   trending: { voteScore: 0.6, voteConfidence: 0.8, minVoters: 5, priorWeight: 3, priorMean: 0, minAverage: 0.3 },
-  mix: { consensus: 7, discovery: 2, trending: 1 },
+  mix: { consensus: 7, discovery: 1, followed: 1, trending: 1 },
 };
 
-export type RecommendationBlock = 'consensus' | 'discovery' | 'trending';
+export type RecommendationBlock = 'consensus' | 'discovery' | 'followed' | 'trending';
 
 export interface Opinion {
   userId: string;
@@ -111,6 +114,36 @@ export function discoveryCandidates(people: readonly DiscoveryPerson[], params: 
   return [...best.values()].sort((a, b) => b.score - a.score || a.itemId.localeCompare(b.itemId));
 }
 
+export interface FollowedPerson {
+  userId: string;
+  preferences: ReadonlyArray<{ itemId: string; score: number; confidence: number }>;
+}
+
+export interface FollowedCandidate {
+  itemId: string;
+  score: number;
+  contributorId: string;
+}
+
+/**
+ * Seguidos (decisiones 2026-10-26): gustos fuertes de personas que sigues, cada objeto atribuido a quien más lo
+ * respalda. No usa la afinidad (los sigues por elección) y nunca entra en el consenso del Top 50.
+ */
+export function followedCandidates(people: readonly FollowedPerson[], params: RecommendationParams = RECOMMENDATION_PARAMS_V1): FollowedCandidate[] {
+  const best = new Map<string, FollowedCandidate>();
+  for (const person of people) {
+    for (const p of person.preferences) {
+      if (p.score < params.followed.minScore || p.confidence < params.followed.minConfidence) continue;
+      const score = round(p.score * p.confidence);
+      const current = best.get(p.itemId);
+      if (!current || score > current.score || (score === current.score && person.userId < current.contributorId)) {
+        best.set(p.itemId, { itemId: p.itemId, score, contributorId: person.userId });
+      }
+    }
+  }
+  return [...best.values()].sort((a, b) => b.score - a.score || a.itemId.localeCompare(b.itemId));
+}
+
 export interface TrendingCandidate {
   itemId: string;
   score: number;
@@ -146,18 +179,31 @@ export interface MixedRecommendation<T extends { itemId: string }> {
 }
 
 /**
- * Mezcla por tandas de 10 (7/2/1). Si un bloque se queda sin candidatos, su hueco lo ocupa otro bloque, en el orden
- * consenso → descubrimiento → trending, marcado con `fillsFor`. Sin duplicados.
+ * Mezcla por tandas de 10 (7 consenso, 1 descubrimiento, 1 seguidos, 1 Trending). Si un bloque se queda sin
+ * candidatos, su hueco lo ocupa otro, marcado con `fillsFor`: el de seguidos, primero el descubrimiento (sin seguidos la
+ * mezcla queda como antes, 7/2/1); el resto, en el orden consenso → descubrimiento → seguidos → Trending. Sin duplicados.
  */
-export function mixRecommendations<C extends { itemId: string }, D extends { itemId: string }, T extends { itemId: string }>(
-  lists: { consensus: readonly C[]; discovery: readonly D[]; trending: readonly T[] },
+export function mixRecommendations<C extends { itemId: string }, D extends { itemId: string }, T extends { itemId: string }, F extends { itemId: string } = never>(
+  lists: { consensus: readonly C[]; discovery: readonly D[]; trending: readonly T[]; followed?: readonly F[] },
   limit: number,
   params: RecommendationParams = RECOMMENDATION_PARAMS_V1,
-): Array<MixedRecommendation<C | D | T>> {
-  const order: RecommendationBlock[] = ['consensus', 'discovery', 'trending'];
-  const queues = { consensus: [...lists.consensus], discovery: [...lists.discovery], trending: [...lists.trending] } as Record<RecommendationBlock, Array<C | D | T>>;
+): Array<MixedRecommendation<C | D | T | F>> {
+  type Any = C | D | T | F;
+  const order: RecommendationBlock[] = ['consensus', 'discovery', 'followed', 'trending'];
+  const fallbackOrder: Record<RecommendationBlock, RecommendationBlock[]> = {
+    consensus: ['discovery', 'followed', 'trending'],
+    discovery: ['consensus', 'followed', 'trending'],
+    followed: ['discovery', 'consensus', 'trending'],
+    trending: ['consensus', 'discovery', 'followed'],
+  };
+  const queues = {
+    consensus: [...lists.consensus],
+    discovery: [...lists.discovery],
+    followed: [...(lists.followed ?? [])],
+    trending: [...lists.trending],
+  } as Record<RecommendationBlock, Any[]>;
   const used = new Set<string>();
-  const next = (block: RecommendationBlock): (C | D | T) | undefined => {
+  const next = (block: RecommendationBlock): Any | undefined => {
     const queue = queues[block];
     while (queue.length) {
       const candidate = queue.shift()!;
@@ -165,15 +211,14 @@ export function mixRecommendations<C extends { itemId: string }, D extends { ite
     }
     return undefined;
   };
-  const out: Array<MixedRecommendation<C | D | T>> = [];
+  const out: Array<MixedRecommendation<Any>> = [];
   while (out.length < limit && order.some((b) => queues[b].some((c) => !used.has(c.itemId)))) {
     for (const block of order) {
       for (let slot = 0; slot < params.mix[block] && out.length < limit; slot++) {
         let candidate = next(block);
         let source: RecommendationBlock = block;
         if (!candidate) {
-          for (const other of order) {
-            if (other === block) continue;
+          for (const other of fallbackOrder[block]) {
             candidate = next(other);
             if (candidate) {
               source = other;
@@ -190,7 +235,6 @@ export function mixRecommendations<C extends { itemId: string }, D extends { ite
   return out;
 }
 
-/** Año actual en la zona horaria del usuario (nunca fijo). */
 export function currentYear(now: Date, timeZone: string): number {
   return Number(new Intl.DateTimeFormat('en-US', { timeZone, year: 'numeric' }).format(now));
 }
