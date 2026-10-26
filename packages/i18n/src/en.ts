@@ -106,6 +106,23 @@ export const en: TranslationResources = {
       'Add your area in Profile to see restaurants, places and what is highly rated near you. Meanwhile only non-located content is recommended.',
     testActions: 'Dismiss hides the card in Home (also after restarting); keep lets it come back another day; undo restores the last one.',
   },
+  contacts: {
+    title: 'From your contacts',
+    privacy:
+      'Find people who already use APPINITY by the emails in your address book. Only a fingerprint (SHA-256) of each email leaves your phone, it is not stored, and only people who allow it are shown.',
+    search: 'Search my contacts',
+    searchAgain: 'Search again',
+    denied: 'No permission to read contacts. You can grant it in your phone settings.',
+    result_one: '{{count}} person found among {{emails}} emails.',
+    result_other: '{{count}} people found among {{emails}} emails.',
+    truncated: 'Your address book is very large: the first 2,500 emails were checked.',
+    none: 'None of your contacts use APPINITY yet. You can invite them with a link.',
+    add: 'Add',
+    requested: 'Request sent',
+    alreadyFriends: 'Already friends',
+    wantsYou: 'Sent you a request',
+    mobileOnly: 'Searching your contacts is available in the mobile app.',
+  },
   tastes: {
     title: 'Your tastes',
     summary: '{{total}} titles and places: you like {{likes}} and dislike {{dislikes}}.',
@@ -319,8 +336,6 @@ export const en: TranslationResources = {
     reasons: { spam: 'Spam', harassment: 'Harassment', inappropriate: 'Inappropriate content', impersonation: 'Impersonation', other: 'Other reason' },
     blocked: 'Blocked people',
     unblock: 'Unblock',
-    contacts: 'Find my contacts',
-    contactsPending: 'Pending: needs a verified phone number or email. It will only happen with your permission and without uploading your whole address book.',
     affinityUnknown: 'Affinity: —',
   },
   invite: {

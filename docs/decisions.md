@@ -1044,3 +1044,16 @@ El acuerdo de desarrolladores de Twitch exige permiso escrito para guardar sus d
   «a través de X» en Inicio.
 - **La barra inferior sigue oculta en las pantallas de detalle** (perfil de persona, obra, categoría y chat), según el
   patrón de Material Design: se vuelve con la flecha atrás.
+
+## 2026-10-26 · Amigos desde los contactos (cierra la fase 10)
+
+- **Solo emails, y solo los verificados**: el servidor compara con el email que Google da como verificado en el inicio
+  de sesión. No hay teléfonos verificados, así que no se buscan teléfonos.
+- **SHA-256 en el móvil, no HMAC**: la propuesta anterior (HMAC «con clave del servidor» calculado en el dispositivo)
+  exigía meter la clave en la app, y entonces deja de ser secreta. El móvil envía el SHA-256 de cada email normalizado
+  (minúsculas, sin espacios); el servidor lo compara con `sha256(lower(email))` en la consulta y **no guarda** lo
+  recibido. Un hash no anonimiza a quien ya conoce el email: por eso solo responde con personas que tienen activado
+  «Permitir que mis contactos me encuentren», respeta los bloqueos y el dataset, y limita la ruta a 5 peticiones por
+  minuto y 500 emails por petición.
+- **Bajo demanda**: el permiso de contactos del sistema solo se pide al pulsar «Buscar en mis contactos». Los
+  resultados viven en memoria; de ahí se puede enviar una solicitud de amistad.

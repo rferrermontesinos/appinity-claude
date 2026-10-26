@@ -20,3 +20,4 @@ export * from './notifications.js';
 export * from './auth.js';
 export * from './content.js';
 export * from './invitations.js';
+export * from './contacts.js';

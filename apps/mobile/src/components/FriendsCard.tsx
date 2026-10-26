@@ -5,7 +5,8 @@ import { Pressable, Text, View } from 'react-native';
 import { useBlocked, useFriends, useSocialAction } from '../api/queries';
 import { spacing, usePalette } from '../theme';
 import { PersonAvatar, formatAffinity } from './PersonAvatar';
-import { Body, Button, Card, ErrorCard, Loading, PendingNotice, Small, Title } from './ui';
+import { ContactsFinder } from './ContactsFinder';
+import { Body, Button, Card, ErrorCard, Loading, Small, Title } from './ui';
 
 function PersonLine({ person, children }: { person: FriendDto; children?: React.ReactNode }) {
   const { t } = useTranslation();
@@ -35,7 +36,7 @@ function PersonLine({ person, children }: { person: FriendDto; children?: React.
   );
 }
 
-/** Amigos (§4): solicitudes, amigos con su afinidad (o «—»), bloqueos y el flujo de contactos (pendiente). */
+/** Amigos (§4): solicitudes, amigos con su afinidad (o «—»), bloqueos y la búsqueda en los contactos. */
 export function FriendsCard() {
   const { t } = useTranslation();
   const friends = useFriends();
@@ -71,7 +72,7 @@ export function FriendsCard() {
           ))}
         </View>
       ) : null}
-      <PendingNotice phase="13" text={`${t('people.contacts')}: ${t('people.contactsPending')}`} />
+      <ContactsFinder />
       {blocked.data?.length ? (
         <View style={{ gap: spacing.xs }}>
           <Small style={{ fontWeight: '700' }}>{t('people.blocked')}</Small>

@@ -104,6 +104,23 @@ export const es = {
       'Añade tu zona en Perfil para ver restaurantes, lugares y lo más valorado cerca de ti. Mientras tanto solo se recomiendan contenidos sin ubicación.',
     testActions: 'Descartar oculta la tarjeta en Inicio (también tras reiniciar); conservar la deja volver otro día; deshacer recupera la última.',
   },
+  contacts: {
+    title: 'Desde tus contactos',
+    privacy:
+      'Busca a quien ya usa APPINITY por los emails de tu agenda. Solo sale del teléfono una huella (SHA-256) de cada email, no se guarda y solo aparece quien lo permite.',
+    search: 'Buscar en mis contactos',
+    searchAgain: 'Buscar de nuevo',
+    denied: 'Sin permiso para leer los contactos. Puedes darlo en los ajustes del teléfono.',
+    result_one: '{{count}} persona encontrada entre {{emails}} emails.',
+    result_other: '{{count}} personas encontradas entre {{emails}} emails.',
+    truncated: 'Tu agenda es muy grande: se han revisado los primeros 2.500 emails.',
+    none: 'Nadie de tus contactos usa APPINITY todavía. Puedes invitarles con un enlace.',
+    add: 'Añadir',
+    requested: 'Solicitud enviada',
+    alreadyFriends: 'Ya sois amigos',
+    wantsYou: 'Te ha enviado una solicitud',
+    mobileOnly: 'La búsqueda en tus contactos está en la app del móvil.',
+  },
   tastes: {
     title: 'Tus gustos',
     summary: '{{total}} obras y lugares: {{likes}} te gustan y {{dislikes}} no.',
@@ -319,8 +336,6 @@ export const es = {
     reasons: { spam: 'Spam', harassment: 'Acoso', inappropriate: 'Contenido inapropiado', impersonation: 'Suplanta a otra persona', other: 'Otro motivo' },
     blocked: 'Personas bloqueadas',
     unblock: 'Desbloquear',
-    contacts: 'Buscar a mis contactos',
-    contactsPending: 'Pendiente: necesita verificar tu teléfono o tu email. Solo se hará con tu permiso y sin subir tu agenda completa.',
     affinityUnknown: 'Afinidad: —',
   },
   invite: {

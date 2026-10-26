@@ -345,6 +345,28 @@ export interface FriendshipResultDto {
   state: 'none' | 'pending_out' | 'pending_in' | 'friends';
 }
 
+/** Máximo de contactos (hashes) por petición de coincidencias. */
+export const CONTACT_HASH_BATCH_MAX = 500;
+
+/**
+ * Normalización de un email de la agenda antes de calcular su SHA-256 en el dispositivo. Debe coincidir con la del
+ * servidor: minúsculas y sin espacios. Devuelve null si no parece un email.
+ */
+export function normalizeContactEmail(raw: string): string | null {
+  const email = raw.trim().toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
+}
+
+/** Persona encontrada en los contactos: el mismo perfil mínimo que un amigo y el estado de la relación. */
+export interface ContactMatchDto {
+  userId: string;
+  displayName: string;
+  countryCode: string | null;
+  avatarUrl: string | null;
+  affinity: number | null;
+  friendship: FriendshipResultDto['state'];
+}
+
 export interface BlockedPersonDto {
   userId: string;
   displayName: string;
