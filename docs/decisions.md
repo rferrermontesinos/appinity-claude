@@ -1127,3 +1127,11 @@ Propuesta en [propuesta-seguir-creadores.md](propuesta-seguir-creadores.md).
 - **Guía actualizada (2026-10-26)**: `docs/design/design-system/` pasa a «Aura» (tokens, tipografía y una sección con
   los componentes nuevos). `theme.ts` sigue siendo la fuente de verdad en la app; la guía replica sus valores.
 
+## 2026-10-26 · Alta única: aceptar y empezar a importar (petición del titular)
+
+- Al aceptar las condiciones empieza la importación de todo Google sin conectar fuente a fuente. Google obliga a que
+  Data Portability sea una segunda pantalla suya, que se abre sola tras el alta.
+- **Nada se importa antes de aceptar las condiciones** (cuentas reales): los permisos de Books y Calendar del inicio
+  de sesión se guardan, pero su primer sync espera al alta. Conectar otra fuente también lo exige.
+- Steam, AniList, Trakt y Facebook siguen opcionales en Perfil (cada proveedor exige su inicio de sesión).
+

@@ -25,6 +25,31 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-26 (16) · Alta única: aceptar y empezar a importar todo Google
+
+### Qué se ha hecho
+
+- `POST /v1/me/connections/initial-import`: con las condiciones aceptadas, arranca el primer sync de lo conectado y
+  nunca sincronizado (Books y Calendar del inicio de sesión). Devuelve el consentimiento de Data Portability para
+  abrirlo a continuación.
+- **Consentimiento**: una cuenta real sin mayoría de edad ni condiciones no importa ni conecta nada
+  (`ConnectionsService.consentGiven`). Antes, Books y Calendar se sincronizaban al volver de Google, antes del alta.
+- **App**: el alta llama a la importación tras aceptar y abre el consentimiento de Google sin pasar por Perfil.
+  Botón «Aceptar y empezar a importar» y textos nuevos (es/en).
+
+### Comprobaciones
+
+- `apps/api/test/onboarding-import.int.test.ts` (2 tests):
+  - sin alta: ni sync, ni conexión, ni importación;
+  - con alta: 1 sync, consentimiento de Data Portability, sin duplicar al repetir;
+  - URL de vuelta ajena: rechazada.
+- `pnpm test`: ver el commit. Lint y typecheck limpios.
+
+### Bloqueos (decisiones del titular)
+
+- URL pública con HTTPS, usuarios de prueba en Google Cloud y un APK de prueba con la app empaquetada:
+  [beta.md](beta.md#prueba-con-amigos-y-familiares-alta-única-2026-10-26).
+
 ## Entrega 2026-10-26 (15) · Guía del sistema de diseño en «Aura»
 
 ### Qué se ha hecho

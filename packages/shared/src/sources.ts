@@ -1,5 +1,6 @@
 import type { Category } from './categories.js';
 import type { CatalogImage, CatalogItem, ExternalIdRef } from './catalog.js';
+import type { ConnectStartDto } from './api.js';
 import type { ExternalItemAttributes, NormalizedObservation } from './observation.js';
 
 /**
@@ -401,3 +402,15 @@ export interface CatalogProvider {
   resolve(candidate: ExternalItemCandidate): Promise<CatalogMatch | null>;
   getTrending?(context: TrendingContext): Promise<ProviderCatalogItem[]>;
 }
+
+/**
+ * Primera importación tras aceptar las condiciones (alta única): `started` = fuentes ya conectadas (Google Books y
+ * Calendar del inicio de sesión) cuyo primer sync arranca ahora; `next` = el consentimiento de Google Data Portability
+ * que la app abre a continuación (Google no deja pedirlo junto al inicio de sesión), o `null` si ya está conectado o
+ * el servidor no tiene esa fuente.
+ */
+export interface InitialImportDto {
+  started: number;
+  next: ConnectStartDto | null;
+}
+

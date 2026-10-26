@@ -1,10 +1,12 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
+import type { InitialImportDto } from '@appinity/shared';
+import * as Linking from 'expo-linking';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Switch, Text, View } from 'react-native';
+import { Platform, Switch, Text, View } from 'react-native';
 import { apiRequest } from '../src/api/client';
 import { API } from '../src/config';
 import { Body, Button, Card, ErrorCard, Screen, Small, TextField, Title } from '../src/components/ui';
@@ -18,8 +20,10 @@ const STEPS = [
 ] as const;
 
 /**
- * Alta (fase 13): el único momento de consentimiento. Mayoría de edad y condiciones aquí; justo después, en Perfil, se
- * conectan las fuentes (cada una pide su permiso una sola vez). Nada más se pedirá después.
+ * Alta única (fase 13): el único momento de consentimiento. Al aceptar mayoría de edad y condiciones empieza la
+ * importación de todo Google: Books y Calendar ya se concedieron al iniciar sesión (su primer sync arranca ahora, nunca
+ * antes de aceptar) y se abre en seguida el consentimiento de Data Portability (Maps, YouTube, Play, valoraciones…),
+ * que Google no deja pedir junto al inicio de sesión. Sin pasar por Perfil ni conectar fuente a fuente.
  */
 export default function OnboardingScreen() {
   const { t } = useTranslation();
@@ -39,6 +43,18 @@ export default function OnboardingScreen() {
     try {
       await apiRequest('/v1/me/onboarding', { method: 'POST', body: { adult: true, termsAccepted: true, ...(name.trim() ? { displayName: name.trim() } : {}), ...(city.trim() ? { city: city.trim() } : {}) } });
       await queryClient.invalidateQueries({ queryKey: ['me'] });
+      // Con las condiciones aceptadas, la importación arranca y Google pide su última confirmación (Data Portability).
+      const returnUrl = Linking.createURL('profile');
+      const imported = await apiRequest<InitialImportDto>('/v1/me/connections/initial-import', { method: 'POST', body: { returnUrl } });
+      const next = imported.next;
+      if (next?.kind === 'redirect' && !(next.localOnly && Platform.OS !== 'web')) {
+        if (Platform.OS === 'web') {
+          window.location.assign(next.authorizationUrl);
+          return;
+        }
+        await WebBrowser.openAuthSessionAsync(next.authorizationUrl, returnUrl);
+      }
+      for (const key of ['connections', 'profiles', 'profile']) await queryClient.invalidateQueries({ queryKey: [key] });
       router.replace('/profile');
     } catch (e) {
       setError(e);
@@ -105,6 +121,7 @@ export default function OnboardingScreen() {
           <Button label={t('onboarding.readPrivacy')} variant="secondary" size="small" icon="shield-account-outline" onPress={() => void WebBrowser.openBrowserAsync(`${API.url}/legal/privacidad`)} />
         </View>
         <Small>{t('onboarding.consentNote')}</Small>
+        <Small>{t('onboarding.googleNote')}</Small>
         {error ? <ErrorCard error={error} /> : null}
         <Button label={t('onboarding.continue')} onPress={() => void submit()} disabled={!adult || !terms} loading={saving} />
       </Card>

@@ -62,3 +62,41 @@ Revisión de todas las rutas de `apps/api` (sin herramientas externas):
   «confiar en todo».
 - **Pendiente con servidor real**: revisar las cabeceras del proxy (HSTS) y repetir la revisión con la evaluación CASA
   de Google.
+
+## Prueba con amigos y familiares: alta única (2026-10-26)
+
+### Qué hace ya la app
+
+1. **«Continuar con Google»**: crea la cuenta y concede Google Books y Calendar en el mismo consentimiento. Se guardan
+   los permisos, pero **no se importa nada** todavía.
+2. **Alta**: mayoría de edad y condiciones. Al pulsar «Aceptar y empezar a importar»:
+   - arranca el primer sync de Books y Calendar (`POST /v1/me/connections/initial-import`);
+   - se abre en seguida el consentimiento de **Google Data Portability**: reseñas y guardados de Maps, valoraciones de
+     búsquedas, YouTube y YouTube Music, Google Play y reservas.
+   Google obliga a que esa sea una segunda pantalla suya (no deja mezclar sus scopes con los del inicio de sesión),
+   pero la persona no tiene que ir a Perfil ni conectar fuente a fuente.
+3. El servidor **rechaza importar o conectar** cualquier fuente de una cuenta real que aún no ha aceptado las
+   condiciones. Antes, Books y Calendar se sincronizaban al volver de Google, antes del alta.
+
+Steam, AniList, Trakt y Facebook siguen siendo opcionales en Perfil: son cuentas de otros proveedores y cada una exige
+su propio inicio de sesión (no se pueden autorizar con el consentimiento de Google).
+
+### Lo que falta para que funcione en el teléfono de otra persona (decisiones del titular)
+
+1. **Una URL pública con HTTPS para la API.** Google solo vuelve a `localhost` o a un https, y el teléfono de un amigo
+   no llega al PC. Opciones:
+   - **Cloudflare Tunnel con un dominio propio** (recomendada): la API sigue en el PC, gratis salvo el dominio (unos
+     10 € al año). URL fija; el PC tiene que estar encendido durante la prueba.
+   - Túnel rápido de Cloudflare (`trycloudflare.com`): gratis y sin cuenta, pero la URL cambia en cada arranque y
+     obliga a registrarla de nuevo en Google y a recompilar el APK. Solo sirve para una prueba de una tarde.
+   - Servidor (VPS) y dominio: el plan de la beta (arriba), de pago.
+2. **Google Cloud** (modo Testing, sin verificación):
+   - añadir el **Gmail de cada persona como usuario de prueba** (máximo 100);
+   - registrar las URL de vuelta `https://<dominio>/v1/auth/google/callback` y la de Data Portability
+     (`/v1/connect/google_portability/callback`);
+   - Google mostrará el aviso de «app no verificada» (hay que pulsar «Continuar»), y el permiso de Data Portability
+     caduca a los 7 días.
+3. **APK de prueba**: el actual (`pnpm android:build`) es de desarrollo y necesita Metro en el PC. Hace falta un APK
+   con la app empaquetada y `EXPO_PUBLIC_API_URL=https://<dominio>`; con `PUBLIC_API_URL` igual en la API.
+4. **Tiempos**: Google prepara el export de Data Portability en minutos u horas; los gustos van apareciendo solos.
+

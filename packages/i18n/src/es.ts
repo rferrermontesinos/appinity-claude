@@ -499,12 +499,12 @@ export const es = {
   },
   onboarding: {
     title: 'Bienvenida a APPINITY',
-    intro: 'Un único paso de consentimiento: confirma estos dos puntos y, a continuación, conecta las fuentes de tus gustos. No te pediremos nada más después.',
+    intro: 'Un único paso de consentimiento: confirma estos dos puntos y empezamos a importar tus gustos de Google (Maps, YouTube, Play, Libros, Calendar…). No te pediremos nada más después.',
     readTerms: 'Leer las condiciones',
     readPrivacy: 'Leer la privacidad',
     howTitle: 'Cómo funciona',
     steps: {
-      connect: { title: 'Conecta tus fuentes', text: 'Steam, Google y otras. Tus gustos salen solo de ahí: deslizar o chatear no los cambia.' },
+      connect: { title: 'Importamos tus gustos', text: 'De tu cuenta de Google, de una vez. Tus gustos salen solo de ahí: deslizar o chatear no los cambia.' },
       soulmates: { title: 'Encuentra a tus almas gemelas', text: 'Calculamos con quién compartes gustos, categoría a categoría.' },
       discover: { title: 'Descubre', text: 'Lo que ellas valoran y tú aún no conoces, con el motivo de cada recomendación.' },
     },
@@ -516,7 +516,8 @@ export const es = {
     adult: 'Tengo 18 años o más',
     terms: 'Acepto las condiciones y la política de privacidad',
     consentNote: 'Tus gustos solo salen de las fuentes que conectes. Nadie ve tu historial: solo tu nombre, tu país y vuestras afinidades.',
-    continue: 'Continuar y conectar mis fuentes',
+    continue: 'Aceptar y empezar a importar',
+    googleNote: 'Al aceptar, Google te pedirá una última confirmación para tus datos de Maps, YouTube, Play y búsquedas: es su forma de autorizar la exportación. Steam y otras cuentas, opcionales, en Perfil.',
   },
   account: {
     title: 'Cuenta',

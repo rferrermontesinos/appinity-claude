@@ -499,12 +499,12 @@ export const en: TranslationResources = {
   },
   onboarding: {
     title: 'Welcome to APPINITY',
-    intro: 'A single consent step: confirm these two points and then connect the sources of your tastes. We will not ask for anything else later.',
+    intro: 'A single consent step: confirm these two points and we start importing your tastes from Google (Maps, YouTube, Play, Books, Calendar…). We will not ask for anything else later.',
     readTerms: 'Read the terms',
     readPrivacy: 'Read the privacy policy',
     howTitle: 'How it works',
     steps: {
-      connect: { title: 'Connect your sources', text: 'Steam, Google and more. Your tastes come only from there: swiping or chatting never changes them.' },
+      connect: { title: 'We import your tastes', text: 'From your Google account, all at once. Your tastes come only from there: swiping or chatting never changes them.' },
       soulmates: { title: 'Find your soulmates', text: 'We work out who shares your tastes, category by category.' },
       discover: { title: 'Discover', text: 'What they rate highly and you don’t know yet, with the reason for each recommendation.' },
     },
@@ -516,7 +516,8 @@ export const en: TranslationResources = {
     adult: 'I am 18 or older',
     terms: 'I accept the terms and the privacy policy',
     consentNote: 'Your tastes only come from the sources you connect. Nobody sees your history: only your name, your country and your affinities.',
-    continue: 'Continue and connect my sources',
+    continue: 'Accept and start importing',
+    googleNote: 'When you accept, Google will ask for one last confirmation for your Maps, YouTube, Play and search data: it is how Google authorises the export. Steam and other accounts are optional, in Profile.',
   },
   account: {
     title: 'Account',
