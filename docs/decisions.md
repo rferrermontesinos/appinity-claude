@@ -1092,3 +1092,16 @@ El acuerdo de desarrolladores de Twitch exige permiso escrito para guardar sus d
   Bricolage Grotesque sustituye a Space Grotesk. El halo se hace con capas de vistas y una textura de grano, sin
   módulos nativos (mismo criterio que el velo de la tarjeta). La guía `docs/design/design-system/` queda desactualizada
   hasta su revisión.
+
+## 2026-10-26 · Desglose numérico de las recomendaciones (petición del titular)
+
+- Cada recomendación expone `reason.evidence` (0–100): los factores reales con los que se ordena. Así la app explica
+  por qué un objeto está arriba (p. ej., 2/3 apoyos con más gusto y confianza puede superar 2/2).
+- **Privacidad (§4 y §16)**: en consenso solo agregados. Se muestra la afinidad **media** de quienes lo apoyan, no la
+  máxima: la máxima, comparada con el Top 50, señalaría a una persona concreta. Se cuentan las almas gemelas
+  excepcionales que lo apoyan, sin nombrarlas. Riesgo residual: con un único alma gemela excepcional, «1 lo
+  recomienda» la identifica. Se acepta como motivo permitido, igual que descubrimiento, que ya nombra a quien aporta
+  el objeto.
+- «Cuánto les gusta» es la preferencia positiva media × 100, no una nota en estrellas: las preferencias pueden venir
+  de escuchas o de «me gusta», no solo de valoraciones.
+

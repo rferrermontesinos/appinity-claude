@@ -174,10 +174,29 @@ describe('recomendador (fase 7)', () => {
     expect(primaryOnly.items.map((r) => r.itemId)).not.toContain(items.persona51);
   });
 
+  it('desglose del consenso: solo agregados (apoyo, gusto, confianza, afinidad media y excepcionales)', async () => {
+    const result = await recommendFor(database.db, viewer, { now: NOW });
+    const found = result.items.find((r) => r.itemId === items.consenso)!;
+    const top = await topSoulmates(database.db, viewer);
+    const backers = top.filter((t) => [soulmates[0], soulmates[1], soulmates[2]].includes(t.userId));
+    expect(backers).toHaveLength(3);
+    expect(found.evidence).toEqual({
+      score: expect.any(Number),
+      support: Math.round((3 / found.consensus!.opinionated) * 100),
+      likeLevel: 100,
+      confidence: 100,
+      supporterAffinity: Math.round(backers.reduce((a, b) => a + b.score, 0) / 3),
+      exceptionalSupporters: backers.filter((b) => b.exceptionalMutual).length,
+    });
+    // Nunca se exponen quiénes lo apoyan.
+    expect(JSON.stringify(found.evidence)).not.toContain(soulmates[0]!);
+  });
+
   it('descubrimiento: identifica a la persona que lo aporta', async () => {
     const result = await recommendFor(database.db, viewer, { now: NOW });
     const found = result.items.find((r) => r.itemId === items.descubierto);
     expect(found).toMatchObject({ block: 'discovery', discovery: { contributorId: soulmates[0], contributorName: 'test_rec_alma_00' } });
+    expect(found?.evidence).toMatchObject({ supporterAffinity: Math.round(found!.discovery!.contributorAffinity), exceptionalSupporters: expect.any(Number) });
   });
 
   it('excluye conocidos, lugares fuera del radio y descartes de Home; descartar no cambia los gustos', async () => {

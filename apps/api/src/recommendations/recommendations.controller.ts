@@ -101,6 +101,7 @@ export class RecommendationsController {
               ...(r.trending ? { positiveVoters: r.trending.positiveVoters, totalVoters: r.trending.totalVoters } : {}),
               ...(r.community ? { supporters: r.community.supporters } : {}),
               ...(r.content ? { because: { itemId: r.content.becauseItemId, title: r.content.becauseTitle, relation: r.content.relation } } : {}),
+              ...(r.evidence ? { evidence: r.evidence } : {}),
             },
           },
         ];

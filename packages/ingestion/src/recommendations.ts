@@ -31,7 +31,7 @@ import {
   users,
   type Database,
 } from '@appinity/database';
-import { isCategory, type Category } from '@appinity/shared';
+import { isCategory, type Category, type RecommendationEvidenceDto } from '@appinity/shared';
 import { and, eq, gte, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { itemTitles } from './content.js';
 import { unseenItems } from './home.js';
@@ -77,7 +77,11 @@ export interface RecommendationItem {
   trending?: { positiveVoters: number; totalVoters: number; averageScore: number };
   community?: { supporters: number };
   content?: { becauseItemId: string; becauseTitle: string; relation: string };
+  /** Desglose numérico del motivo (agregado; ver RecommendationEvidenceDto). */
+  evidence?: RecommendationEvidenceDto;
 }
+
+const pct = (v: number) => Math.round(Math.max(0, Math.min(1, v)) * 100);
 
 export type TrendingStatus = 'ok' | 'no_location' | 'insufficient_votes';
 
@@ -258,18 +262,47 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
       : [],
   );
   const mixed = mixRecommendations({ consensus, discovery, trending }, limit, params);
+  const soulmateBy = new Map(soulmates.map((s) => [s.userId, s]));
   const items: RecommendationItem[] = mixed.map(({ block, fillsFor, candidate }) => {
     const base = { itemId: candidate.itemId, block, fillsFor, score: (candidate as { score: number }).score, isNew: false };
     if (block === 'consensus') {
       const c = candidate as ConsensusCandidate;
-      return { ...base, consensus: { supporters: c.supporters, opinionated: c.opinionated } };
+      // Quiénes lo apoyan (mismos umbrales que el consenso): solo se exponen agregados, nunca sus nombres.
+      const backers = (opinionsByItem.get(c.itemId) ?? [])
+        .filter((o) => o.score >= params.consensus.positiveScore && o.confidence >= params.consensus.positiveConfidence)
+        .map((o) => soulmateBy.get(o.userId))
+        .filter((s): s is NonNullable<typeof s> => Boolean(s));
+      const evidence: RecommendationEvidenceDto = {
+        score: pct(c.score),
+        support: pct(c.supporters / c.opinionated),
+        likeLevel: pct(c.averagePositive),
+        confidence: pct(c.evidenceConfidence),
+        ...(backers.length ? { supporterAffinity: Math.round(backers.reduce((a, s) => a + s.score, 0) / backers.length) } : {}),
+        exceptionalSupporters: backers.filter((s) => s.exceptionalMutual).length,
+      };
+      return { ...base, consensus: { supporters: c.supporters, opinionated: c.opinionated }, evidence };
     }
     if (block === 'discovery') {
       const d = candidate as DiscoveryCandidate;
-      return { ...base, discovery: { contributorId: d.contributorId, contributorName: names.get(d.contributorId) ?? '—', contributorAffinity: d.contributorAffinity } };
+      const pref = prefs.find((p) => p.userId === d.contributorId && p.itemId === d.itemId);
+      const evidence: RecommendationEvidenceDto = {
+        score: pct(d.score),
+        ...(pref?.score != null ? { likeLevel: pct(pref.score) } : {}),
+        ...(pref?.confidence != null ? { confidence: pct(pref.confidence) } : {}),
+        supporterAffinity: Math.round(d.contributorAffinity),
+        exceptionalSupporters: soulmateBy.get(d.contributorId)?.exceptionalMutual ? 1 : 0,
+      };
+      return { ...base, discovery: { contributorId: d.contributorId, contributorName: names.get(d.contributorId) ?? '—', contributorAffinity: d.contributorAffinity }, evidence };
     }
     const t = candidate as TrendingCandidate;
-    return { ...base, trending: { positiveVoters: t.positiveVoters, totalVoters: t.totalVoters, averageScore: t.averageScore } };
+    const evidence: RecommendationEvidenceDto = {
+      score: pct((t.score + 1) / 2),
+      support: pct(t.positiveVoters / t.totalVoters),
+      areaRating: pct((t.averageScore + 1) / 2),
+      radiusKm: Math.round(radiusM / 1000),
+      year,
+    };
+    return { ...base, trending: { positiveVoters: t.positiveVoters, totalVoters: t.totalVoters, averageScore: t.averageScore }, evidence };
   });
 
   // Respaldos, en este orden y solo si los bloques principales no llenan la página.
@@ -305,6 +338,7 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
             score: c.score,
             isNew: false,
             content: { becauseItemId: c.becauseItemId, becauseTitle: titles.get(c.becauseItemId) ?? '—', relation: c.relation },
+            evidence: { score: pct(c.score), relatedLikes: c.sources },
           });
         }
       }
@@ -329,7 +363,7 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
     const communityList: CommunityCandidate[] = communityCandidates(byItem, params);
     available.community = communityList.length;
     for (const c of communityList) {
-      if (take(c.itemId)) items.push({ itemId: c.itemId, block: 'community', fillsFor: null, score: c.score, isNew: false, community: { supporters: c.supporters } });
+      if (take(c.itemId)) items.push({ itemId: c.itemId, block: 'community', fillsFor: null, score: c.score, isNew: false, community: { supporters: c.supporters }, evidence: { score: pct((c.score + 1) / 2), support: pct(c.supporters / c.opinionated) } });
     }
 
     // Conservados en otra sesión (solo Home): pueden volver (§2).

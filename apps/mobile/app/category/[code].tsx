@@ -1,4 +1,3 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { CATEGORY_META, isCategory, type CatalogItemDto, type Category, type RecommendationDto } from '@appinity/shared';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -6,7 +5,7 @@ import { useState } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
 import { useCatalog } from '../../src/api/queries';
 import { CatalogImage } from '../../src/components/CatalogImage';
-import { REASON_ICON, isPeopleReason, reasonText } from '../../src/components/RecommendationCard';
+import { EvidenceInline, PodiumCard, blockTitle, evidenceStats, hasEvidence } from '../../src/components/WhyRecommended';
 import { useRecommendationFeed } from '../../src/state/recommendationFeed';
 import { ErrorCard, Loading, Small } from '../../src/components/ui';
 import { DataBanner } from '../../src/components/DataBanner';
@@ -46,29 +45,27 @@ function Tabs({ category, value, onChange }: { category: Category; value: 'recom
   );
 }
 
-/** Fila de recomendación («Aura»): superficie con borde fino, portada, título en Bricolage y motivo con su icono. */
-function RecommendationRow({ r }: { r: RecommendationDto }) {
+/** Fila de recomendación (puesto 4 en adelante): puesto, portada, título y el motivo con sus cifras principales. */
+function RecommendationRow({ r, rank }: { r: RecommendationDto; rank: number }) {
   const { t } = useTranslation();
   const router = useRouter();
   const c = usePalette();
+  const stats = evidenceStats(t, r);
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${r.item.title}. ${reasonText(t, r)}`}
+      accessibilityLabel={`${t('categoriesScreen.why.rankLabel', { rank })}. ${r.item.title}. ${blockTitle(t, r)}. ${stats.map((s) => `${s.value} ${s.label}`).join(', ')}`}
       onPress={() => router.push({ pathname: '/item/[id]', params: { id: r.item.id } })}
       style={({ pressed }) => ({ flexDirection: 'row', gap: spacing.md, alignItems: 'center', padding: spacing.sm + 2, transform: [{ scale: pressed ? 0.98 : 1 }], backgroundColor: c.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: c.hairline })}
     >
-      <CatalogImage image={r.item.primaryImage} category={r.item.category} compact style={{ width: 68, height: 68, borderRadius: radius.md }} />
+      <Text style={{ width: 22, textAlign: 'center', color: c.textSubtle, fontFamily: fonts.display, fontSize: 15 }}>{rank}</Text>
+      <CatalogImage image={r.item.primaryImage} category={r.item.category} compact style={{ width: 60, height: 60, borderRadius: radius.md }} />
       <View style={{ flex: 1, gap: 4 }}>
         <Text style={{ color: c.text, fontFamily: fonts.display, fontSize: 16, lineHeight: 19 }} numberOfLines={2}>
           {r.item.title}
         </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
-          <MaterialCommunityIcons name={REASON_ICON[r.reason.code]} size={14} color={isPeopleReason(r) ? c.affinity : c.textSubtle} style={{ marginTop: 2 }} />
-          <Small style={{ flexShrink: 1 }}>{reasonText(t, r)}</Small>
-        </View>
+        <EvidenceInline r={r} />
       </View>
-      <MaterialCommunityIcons name="chevron-right" size={20} color={c.textSubtle} />
     </Pressable>
   );
 }
@@ -82,7 +79,7 @@ function CategoryRecommendations({ category }: { category: Category }) {
     <FlatList
       data={feed.items}
       keyExtractor={(r) => r.item.id}
-      contentContainerStyle={{ padding: spacing.lg, gap: spacing.sm }}
+      contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}
       onEndReachedThreshold={0.5}
       onEndReached={() => {
         if (!feed.done) void feed.more();
@@ -102,7 +99,8 @@ function CategoryRecommendations({ category }: { category: Category }) {
         )
       }
       ListFooterComponent={feed.loading && feed.items.length ? <Loading /> : null}
-      renderItem={({ item }) => <RecommendationRow r={item} />}
+      // Podio solo para los 3 primeros con evidencia (explorar y conservados no tienen cifras que mostrar).
+      renderItem={({ item, index }) => (index < 3 && hasEvidence(item) ? <PodiumCard r={item} rank={index + 1} /> : <RecommendationRow r={item} rank={index + 1} />)}
     />
   );
 }

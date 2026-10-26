@@ -25,6 +25,34 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-26 (9) · Por qué está cada recomendación (detalle de categoría)
+
+### Qué se ha hecho
+
+- **Servidor**: cada recomendación lleva `reason.evidence`, el desglose numérico (0–100) con el que se ordena:
+  - consenso: puntuación, apoyo (quienes lo apoyan / quienes opinan), cuánto les gusta, confianza, **afinidad media**
+    contigo de quienes lo apoyan y **cuántos** de ellos son almas gemelas excepcionales;
+  - descubrimiento: afinidad y gusto de esa persona (ya atribuida por su nombre) y si es excepcional;
+  - Trending: votos positivos / totales, valoración media de la zona, radio y año;
+  - comunidad: apoyos; por contenido: cuántos de tus gustos llevan a ese objeto.
+  Solo agregados: nunca se expone quién apoya qué (decisions.md).
+- **App**: los 3 primeros con evidencia forman un **podio** (el n.º 1 con portada ancha): puesto y motivo, cifras en
+  casillas grandes (personas y afinidad en lima), insignia si lo recomienda un alma gemela excepcional y, al pie, la
+  puntuación y la confianza. Del 4 en adelante, filas con el puesto y las dos cifras principales. «Para explorar» y
+  «conservados» no ocupan el podio porque no tienen cifras.
+
+### Comprobaciones
+
+- Test nuevo (`recommendations.int.test.ts`): el desglose del consenso coincide con los datos sembrados y no contiene
+  identificadores de quienes lo apoyan. `pnpm test`: 37 ficheros y 367 tests OK. Lint y typecheck limpios.
+- Vista web (Restaurantes, demo): podio con «2/3 almas gemelas lo recomiendan» en Lasarte. **El resto de cifras
+  necesita reiniciar `pnpm api`** (en marcha en la terminal del titular; no se detiene un proceso cuya línea de
+  comandos no lleva `APPINITY CLAUDE`).
+
+### Pendiente
+
+- Reiniciar `pnpm api` y revisar el podio completo en la vista web y en el teléfono.
+
 ## Entrega 2026-10-26 (8) · «Aura» en Categorías
 
 ### Qué se ha hecho

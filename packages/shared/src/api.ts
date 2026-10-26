@@ -382,8 +382,34 @@ export type RecommendationBlockDto = 'consensus' | 'discovery' | 'trending' | 'c
  * Motivo verificable de una tarjeta (§2 y §12): para el consenso, cuántas almas gemelas la apoyan (nunca quiénes); para
  * el descubrimiento, la persona que la aporta; para Trending, cuántas personas de la zona la votaron este año.
  */
+/**
+ * Desglose numérico del motivo (0–100, enteros), para explicar por qué un objeto está en la lista. Solo agregados de
+ * las almas gemelas (nunca quién en concreto), salvo en descubrimiento, que ya se atribuye a una persona por su nombre.
+ */
+export interface RecommendationEvidenceDto {
+  /** Puntuación del bloque con la que se ordena (0–100). */
+  score: number;
+  /** Quienes lo apoyan entre quienes tienen opinión sobre él (0–100). */
+  support?: number;
+  /** Cuánto gusta, de media, a quienes lo apoyan (preferencia positiva × 100). */
+  likeLevel?: number;
+  /** Confianza media de esa evidencia (0–100). */
+  confidence?: number;
+  /** Afinidad global media contigo de quienes lo apoyan (en descubrimiento, la de esa persona). */
+  supporterAffinity?: number;
+  /** Cuántas de las personas que lo apoyan tienen contigo afinidad mutua excepcional. */
+  exceptionalSupporters?: number;
+  /** Trending: valoración media en la zona (de −1…1 a 0–100), radio y año de los votos. */
+  areaRating?: number;
+  radiusKm?: number | null;
+  year?: number;
+  /** Por contenido: cuántos de tus gustos llevan a este objeto. */
+  relatedLikes?: number;
+}
+
 export interface RecommendationReasonDto {
   code: RecommendationBlockDto;
+  evidence?: RecommendationEvidenceDto;
   supporters?: number;
   opinionated?: number;
   contributor?: { userId: string; displayName: string };
