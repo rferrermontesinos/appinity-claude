@@ -25,6 +25,24 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-26 (3) · Imágenes más representativas y siguiente paso de diseño
+
+### Qué se ha hecho
+
+- Imágenes por categoría (decisions.md, 2026-10-26): en cine, cartel o logotipo y nunca la foto genérica; tipo de
+  imagen guardado (`catalog_images.kind`, migración 0016); el worker revisa al arrancar las imágenes guardadas. En la
+  app, logotipo entero sobre un cartel de la categoría y cartel de diseño cuando no hay imagen.
+- Investigado: Plex y Stremio usan TMDb, TheTVDB y fanart.tv; los pósteres reales exigen un acuerdo comercial.
+- `pnpm test`: 37 ficheros y 366 tests OK.
+
+### Pendiente
+
+- **Reiniciar `pnpm api` y `pnpm worker`** (los tiene el titular en sus pestañas) para aplicar la revisión de
+  imágenes; después, recargar la app.
+- **Rediseño más profesional**: el titular quiere usar el plugin design-superpowers (`/creative` y siguientes) en una
+  sesión nueva. Pedirle 3–4 apps de referencia, 3 palabras de tono y la pantalla por la que empezar (Inicio). El
+  sistema actual es «Noche de cine» (docs/design/design-system/).
+
 ## Entrega 2026-10-26 (2) · D5 aceptada, contactos (fase 10) y textos legales (fase 13)
 
 ### Qué se ha hecho
