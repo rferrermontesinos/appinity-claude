@@ -25,6 +25,27 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-26 (14) · «Aura» en la barra inferior
+
+### Qué se ha hecho
+
+- Barra anclada con esquinas superiores de 24, borde fino y sombra suave (sin la elevación de sistema).
+- Pestaña activa: icono **relleno** (la forma también marca dónde estás, no solo el color), etiqueta en claro y una
+  línea de chispa encima. Se retira la píldora antigua. El aviso de chats va en chispa.
+- Títulos de cabecera de las pestañas en Bricolage grueso (26).
+- No es flotante como en la maqueta: el contenido quedaría debajo, y sin acceso a la altura real de la barra no se
+  puede compensar con seguridad. Se puede revisar más adelante.
+
+### Comprobaciones
+
+- `pnpm typecheck` y `pnpm lint` limpios. Etiquetas inactivas: 4,97:1 sobre la barra. Se mantiene el límite de 1,3× del
+  texto grande.
+- Vista web (390×844): barra en Personas.
+
+### Pendiente
+
+- Ver toda la dirección «Aura» en el teléfono. Último paso de diseño: actualizar la guía `docs/design/design-system/`.
+
 ## Entrega 2026-10-26 (13) · «Aura» en Perfil
 
 ### Qué se ha hecho
