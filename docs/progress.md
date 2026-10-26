@@ -25,6 +25,30 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-26 (11) · El «mundo» de la categoría en las pantallas de detalle (/creative)
+
+### Qué se ha hecho
+
+- **«El cartel se abre»** (`CategoryWorld.tsx`): al entrar en una categoría, su cartel de la cuadrícula pasa a ser la
+  cabecera, con el mismo fondo teñido, brillo, grano e icono gigante, el nombre en 40 y qué recomienda. La barra
+  superior se funde con el fondo y hay un halo del color detrás.
+- **Tintes derivados** de los 8 colores existentes (sin tokens nuevos de sistema): fondo (7 %), filas (8 %),
+  destacadas (12 %), borde (35 %) y `ink` (color aclarado) para el puesto de los 3 primeros. El lima queda solo para
+  personas y afinidad.
+- **Ficha de objeto**: fondo y barra con el tinte de su categoría, y portada con borde y brillo de su color.
+- `Screen` acepta `background`.
+
+### Comprobaciones
+
+- Contraste en el peor caso (Cultura): texto atenuado sobre fila 7,39:1 y sobre el halo 5,60:1; puesto 8,35:1. El gris
+  tenue sobre fila destacada (4,12:1) solo se usa en el icono del motivo (mínimo 3:1).
+- `pnpm typecheck` y `pnpm lint` limpios (sin cambios de servidor).
+- Vista web (390×844): Restaurantes y la ficha de Alkimia.
+
+### Pendiente
+
+- Ver en el teléfono. Siguientes: Perfil, barra inferior y guía del sistema de diseño.
+
 ## Entrega 2026-10-26 (10) · Detalle de categoría: listado único y sin catálogo (decisiones del titular)
 
 ### Qué se ha hecho

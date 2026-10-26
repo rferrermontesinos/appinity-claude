@@ -48,6 +48,17 @@ const registry = createAdapterRegistry({
         },
       }
     : {}),
+  ...(process.env.FACEBOOK_APP_ID?.trim() && process.env.FACEBOOK_APP_SECRET?.trim()
+    ? {
+        facebook: {
+          appId: process.env.FACEBOOK_APP_ID.trim(),
+          appSecret: process.env.FACEBOOK_APP_SECRET.trim(),
+          redirectUri: process.env.FACEBOOK_REDIRECT_URI?.trim() || 'http://localhost:3100/v1/connect/facebook/callback',
+          graphVersion: process.env.FACEBOOK_GRAPH_VERSION?.trim() || 'v23.0',
+          identifier: catalogIdentifier,
+        },
+      }
+    : {}),
   ...(env.google
     ? {
         google: {

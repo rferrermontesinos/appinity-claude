@@ -237,3 +237,14 @@ paginación, límites, permisos de almacenamiento y política de revocación.
 | `OsmPlaceIdentifier` | OpenStreetMap vía Overpass (ODbL, uso comercial con atribución «© OpenStreetMap contributors») | Implementado (fase 3): identifica y clasifica lugares de Maps en lotes de 25 por consulta (la instancia pública bloquea cada hueco ~60 s por consulta). Trae todos los lugares con nombre cercanos para explicar lo no importado (fuera de categoría, sin coincidencia o ambiguo). Instancia pública para desarrollo; en producción, instancia propia o proveedor |
 | `WikidataWorkIdentifier` | API de Wikidata (CC0) | Implementado (fase 3): identifica obras valoradas en la Búsqueda. Fase 4: canales de YouTube por P2397 y artistas por nombre exacto |
 | MusicBrainz (núcleo CC0), TVmaze (CC BY-SA) | Licencias compatibles con uso comercial | Pendiente; ver fuentes-de-datos.md. TMDb, IMDb e IGDB requieren licencia |
+
+## Facebook · páginas que te gustan (2026-10-26)
+
+| Aspecto | Detalle |
+|---|---|
+| Consentimiento | Inicio de sesión con Facebook, solo el permiso `user_likes`; conexión aparte (no es el inicio de sesión de APPINITY). Se comprueba que el permiso se concedió |
+| API | Graph API `/me/likes` (id, nombre, usuario, categoría, ubicación y fecha), paginada; token de 60 días sin refresh: al caducar se vuelve a conectar. Al desconectar se retira el permiso (`DELETE /me/permissions`) |
+| Identificación | 1) Cuenta de Facebook en Wikidata (P2013), cualquier categoría. 2) Restaurante o lugar cultural con ubicación → OpenStreetMap. 3) Grupo o artista → artistas; programa de TV, película, libro, podcast o videojuego → título en esa categoría. Marcas, personas y empresas se ignoran (no son del catálogo) |
+| Semántica (`facebook-v1`) | «Me gusta» explícito débil: preferencia +0,6 con confianza 0,6 × identificación (×0,7 si tiene más de 5 años); conocido; **no** consumido; nunca disgusto |
+| Condiciones | Uso permitido por Meta: personalizar la experiencia según los gustos. Producción: App Review y verificación del negocio |
+| Prueba | Facebook y catálogo simulados (5 tests). **Falta probar con la cuenta real** |

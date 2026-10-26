@@ -6,7 +6,10 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 import { fonts, radius, spacing, usePalette } from '../theme';
 import { CatalogImage } from './CatalogImage';
+import type { useCategoryWorld } from './CategoryWorld';
 import { REASON_ICON, isPeopleReason } from './RecommendationCard';
+
+type CategoryWorld = ReturnType<typeof useCategoryWorld>;
 
 export interface Stat {
   value: string;
@@ -53,10 +56,10 @@ export function evidenceStats(t: TFunction, r: RecommendationDto): Stat[] {
 
 /**
  * Fila del ranking de una categoría: puesto, portada, título, motivo y sus cifras, y la insignia si lo recomienda un
- * alma gemela excepcional. Los 3 primeros (`featured`) van solo un poco más destacados: puesto en lima, portada algo
- * mayor y superficie elevada.
+ * alma gemela excepcional. Los 3 primeros (`featured`) van solo un poco más destacados: puesto en el tono de la
+ * categoría, portada algo mayor, superficie elevada y borde de su color. `world` tiñe la fila con la categoría.
  */
-export function RankedRow({ r, rank, featured }: { r: RecommendationDto; rank: number; featured: boolean }) {
+export function RankedRow({ r, rank, featured, world }: { r: RecommendationDto; rank: number; featured: boolean; world?: CategoryWorld }) {
   const { t } = useTranslation();
   const router = useRouter();
   const c = usePalette();
@@ -80,16 +83,16 @@ export function RankedRow({ r, rank, featured }: { r: RecommendationDto; rank: n
         alignItems: 'center',
         padding: spacing.sm + 2,
         transform: [{ scale: pressed ? 0.98 : 1 }],
-        backgroundColor: featured ? c.surfaceRaised : c.surface,
+        backgroundColor: featured ? (world?.surfaceRaised ?? c.surfaceRaised) : (world?.surface ?? c.surface),
         borderRadius: radius.lg,
         borderWidth: 1,
-        borderColor: c.hairline,
+        borderColor: featured && world ? world.border : c.hairline,
       })}
     >
-      <Text style={{ width: 24, textAlign: 'center', color: featured ? c.affinity : c.textSubtle, fontFamily: featured ? fonts.displayHeavy : fonts.display, fontSize: featured ? 20 : 15 }}>
+      <Text style={{ width: 24, textAlign: 'center', color: featured ? (world?.ink ?? c.text) : c.textSubtle, fontFamily: featured ? fonts.displayHeavy : fonts.display, fontSize: featured ? 20 : 15 }}>
         {rank}
       </Text>
-      <CatalogImage image={r.item.primaryImage} category={r.item.category} compact style={{ width: size, height: size, borderRadius: radius.md }} />
+      <CatalogImage image={r.item.primaryImage} category={r.item.category} compact style={{ width: size, height: size, borderRadius: radius.md, ...(world ? { borderWidth: 1.5, borderColor: world.border } : {}) }} />
       <View style={{ flex: 1, gap: 3 }}>
         <Text style={{ color: c.text, fontFamily: fonts.display, fontSize: featured ? 17 : 16, lineHeight: featured ? 20 : 19 }} numberOfLines={2}>
           {r.item.title}

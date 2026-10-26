@@ -158,12 +158,18 @@ const EXTERNAL_ID_METHODS: Record<string, string> = {
   P8731: 'wikidata_anilist',
   P4086: 'wikidata_mal',
   P4087: 'wikidata_mal',
+  P2013: 'wikidata_facebook',
+  P2003: 'wikidata_instagram',
 };
+/** Cuentas de redes sociales: una página puede ser de cualquier categoría (restaurante, grupo, serie…). */
+const SOCIAL_ID_PROPERTIES = new Set(['P2013', 'P2003']);
+const SOCIAL_USERNAME = /^[A-Za-z0-9._-]{1,100}$/;
 const EXPECTED_CATEGORIES: Record<ExternalIdQuery['kind'], Category[]> = {
   movie: ['movies'],
   show: ['series'],
   anime: ['movies', 'series'],
   manga: ['books'],
+  social: ['food', 'culture', 'movies', 'series', 'music', 'books', 'podcasts', 'games'],
 };
 function externalQuery(i: ExternalIdQuery): string | null {
   // tt0000000: ID de relleno que algunas entidades tienen por error en Wikidata.
@@ -171,6 +177,8 @@ function externalQuery(i: ExternalIdQuery): string | null {
   if (i.tmdb && (i.kind === 'movie' || i.kind === 'show')) return `${i.kind === 'movie' ? 'P4947' : 'P4983'}=${i.tmdb}`;
   if (i.anilist && (i.kind === 'anime' || i.kind === 'manga')) return `${i.kind === 'anime' ? 'P8729' : 'P8731'}=${i.anilist}`;
   if (i.mal && (i.kind === 'anime' || i.kind === 'manga')) return `${i.kind === 'anime' ? 'P4086' : 'P4087'}=${i.mal}`;
+  if (i.kind === 'social' && i.facebook && SOCIAL_USERNAME.test(i.facebook)) return `P2013=${i.facebook}`;
+  if (i.kind === 'social' && i.instagram && SOCIAL_USERNAME.test(i.instagram)) return `P2003=${i.instagram}`;
   return null;
 }
 
@@ -467,7 +475,8 @@ export class WikidataWorkIdentifier {
         if (matches.length === 1) {
           const { qid, entity } = matches[0]!;
           const kind = kindOf(entity)?.kind;
-          if (kind && (kind.category === 'movies' || kind.category === 'series' || kind.category === 'books')) {
+          const social = SOCIAL_ID_PROPERTIES.has(query.slice(0, query.indexOf('=')));
+          if (kind && (social || kind.category === 'movies' || kind.category === 'series' || kind.category === 'books')) {
             const releaseYear = year(entity, 'P577', 'P580');
             result = {
               category: kind.category,

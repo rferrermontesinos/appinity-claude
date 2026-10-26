@@ -27,6 +27,7 @@ export const PLANNED_SOURCE_KEYS = [
   'google_calendar',
   'trakt',
   'anilist',
+  'facebook',
   'apple_music',
   'device_calendar',
   'itchio',
@@ -41,7 +42,10 @@ export interface ExternalIdQuery {
   tmdb?: number;
   anilist?: number;
   mal?: number;
-  kind: 'movie' | 'show' | 'anime' | 'manga';
+  /** Cuenta de Facebook (P2013) o de Instagram (P2003): cualquier categoría del catálogo. */
+  facebook?: string;
+  instagram?: string;
+  kind: 'movie' | 'show' | 'anime' | 'manga' | 'social';
 }
 export type PlannedSourceKey = (typeof PLANNED_SOURCE_KEYS)[number];
 

@@ -5,6 +5,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 import { useItemProfileDetail } from '../../src/api/queries';
+import { useCategoryWorld } from '../../src/components/CategoryWorld';
 import { CatalogImage } from '../../src/components/CatalogImage';
 import { CategoryChipOnImage, ImageVeil } from '../../src/components/ImageVeil';
 import { Dimensions, formatPreference } from '../../src/components/Dimensions';
@@ -83,16 +84,18 @@ export default function ItemScreen() {
   const detail = useItemProfileDetail(id);
   const item = detail.data?.item;
   const notes = detail.data?.notes;
+  const world = useCategoryWorld(item?.category ?? 'movies');
 
   return (
-    <Screen refreshing={detail.isRefetching} onRefresh={() => void detail.refetch()}>
-      <Stack.Screen options={{ title: item?.title ?? t('item.title') }} />
+    <Screen refreshing={detail.isRefetching} onRefresh={() => void detail.refetch()} background={item ? world.background : undefined}>
+      {/* La ficha sigue en el «mundo» de su categoría: fondo teñido y barra fundida con él. */}
+      <Stack.Screen options={{ title: item?.title ?? t('item.title'), ...(item ? { headerStyle: { backgroundColor: world.background }, headerShadowVisible: false } : {}) }} />
       {detail.isLoading ? <Loading /> : null}
       {detail.isError ? <ErrorCard error={detail.error} onRetry={() => void detail.refetch()} /> : null}
       {item ? (
         <>
           {/* Cabecera a sangre (sistema de diseño): imagen, velo, categoría y título en display sobre la imagen. */}
-          <View style={{ width: '100%', aspectRatio: 0.9, borderRadius: radius.xl, overflow: 'hidden', backgroundColor: c.surfaceAlt }}>
+          <View style={{ width: '100%', aspectRatio: 0.9, borderRadius: radius.xl, overflow: 'hidden', backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: world.border, boxShadow: `0px 22px 48px -26px ${world.color}` }}>
             <CatalogImage image={item.primaryImage} category={item.category} title={item.title} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
             <ImageVeil height="55%" />
             <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: spacing.lg, gap: spacing.sm }}>

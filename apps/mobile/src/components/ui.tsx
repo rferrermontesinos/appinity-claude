@@ -22,15 +22,18 @@ export function Screen({
   children,
   refreshing,
   onRefresh,
+  background,
 }: {
   children: ReactNode;
   refreshing?: boolean;
   onRefresh?: () => void;
+  /** Fondo propio (p. ej., el tinte de una categoría); por defecto, el de la paleta. */
+  background?: string;
 }) {
   const c = usePalette();
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: c.background }}
+      style={{ flex: 1, backgroundColor: background ?? c.background }}
       contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl }}
       refreshControl={onRefresh ? <RefreshControl refreshing={Boolean(refreshing)} onRefresh={onRefresh} /> : undefined}
     >
