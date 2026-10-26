@@ -18,12 +18,43 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 7 | **Implementado y comprobado automáticamente** | Entrega 2026-10-14 · fase 7 (rama `fase-7-recomendador`, basada en `fase-6-top50`). Sin pantalla: Home llega en la fase 8 |
 | 8 | **Aceptado en el teléfono** (2026-10-14) | Entrega 2026-10-14 · fase 8 (rama `fase-8-home`, basada en `fase-7-recomendador`) |
 | 9 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-14 · fase 9 (rama `fase-9-categories`, basada en `fase-8-home`). Incluye el feed continuo pedido por el usuario |
-| 10 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-14 · fase 10 (rama `fase-10-people`, basada en `fase-9-categories`). Contactos: pendiente (fase 13) |
+| 10 | **Implementado y comprobado automáticamente**; contactos del dispositivo añadidos (2026-10-26), pendiente de probar en el APK nuevo | Entrega 2026-10-14 · fase 10 (rama `fase-10-people`) y entrega 2026-10-26 (contactos) |
 | 11 | **Paso 1 implementado** (Google: Play, pedidos y guardados), comprobado automáticamente y en parte con servicios reales; falta un export real | Entrega 2026-10-14 · fase 11 (rama `fase-11-fuentes`). Análisis en [source-candidates.md](source-candidates.md) |
 | 12 | **12C (push, servidor) implementada y comprobada automáticamente**; envío real pendiente de build de desarrollo y FCM · **12B (Premium, servidor) implementada y comprobada automáticamente**; compra en la app pendiente de cuentas y build de desarrollo · **12A (chat) implementada, comprobada automáticamente y verificada en la vista web**; 12B (Premium/RevenueCat) y 12C (push) pendientes | Entrega 2026-10-14 · fase 12A (rama `fase-12a-chat`, basada en `fase-10-people`) |
-| 13 | **Preparada**: auth de producción, alta, eliminación de cuenta y despliegue probados en local; beta real pendiente de dominio, servidor y cuentas ([beta.md](beta.md)) · auditoría de seguridad de la API hecha (2026-10-26) | Entrega 2026-10-15 · fase 13 (rama `fase-13-beta`) |
+| 13 | **Preparada**: auth de producción, alta, eliminación de cuenta y despliegue probados en local; beta real pendiente de dominio, servidor y cuentas ([beta.md](beta.md)) · auditoría de seguridad de la API hecha (2026-10-26) · textos legales en borrador (2026-10-26) | Entrega 2026-10-15 · fase 13 (rama `fase-13-beta`) |
 
 ---
+
+## Entrega 2026-10-26 (2) · D5 aceptada, contactos (fase 10) y textos legales (fase 13)
+
+### Qué se ha hecho
+
+- **D5 aceptada en el teléfono** por el titular: texto grande y TalkBack. Corregido durante la prueba: el teclado tapaba
+  la caja del chat (Android de borde a borde) y la siguiente tarjeta de Inicio no se veía al deslizar.
+- **Decisiones del titular**: sin lista de «recomendaciones de una persona» y barra inferior oculta en las pantallas
+  de detalle (decisions.md).
+- **Amigos desde los contactos (cierra la fase 10)**: `POST /v1/me/contacts/match` compara el SHA-256 de emails
+  normalizados con los emails verificados de quien lo permite; no guarda nada; 5 peticiones por minuto y 500 emails por
+  petición. En la app, «Buscar en mis contactos» en Amigos (permiso bajo demanda) con «Añadir». Los módulos nativos se
+  cargan al pulsar: un APK anterior avisa en lugar de fallar.
+- **Textos legales (fase 13)**: `/legal/condiciones` y `/legal/privacidad`, públicas y enlazadas desde el alta.
+  Borrador: faltan el responsable y el contacto, y la revisión legal. La privacidad incluye la declaración de uso
+  limitado que pide Google.
+- **APK de desarrollo nuevo** con `expo-contacts` y `expo-crypto` (`pnpm android:build`).
+
+### Comprobaciones
+
+- Tests nuevos: contactos (coincidencia, ajuste desactivado, bloqueo, formato, tamaño y límite) y páginas legales.
+  `auth.int.test.ts` 8/8 y `api.int.test.ts` 13/13; lint y typecheck limpios.
+- API reiniciada; `/legal/privacidad` responde desde la red local.
+
+### Bloqueos (cuentas del titular, sin coste)
+
+- **Push (12C) en la app**: proyecto de EAS (`eas init`, cuenta de Expo) y Firebase con FCM V1 para Android. El
+  `google-services.json` va dentro del APK: se añadirá `expo-notifications` en esa misma compilación.
+- **YouTube (fase 4)**: añadir 3 permisos en Google Cloud (README).
+- **Beta (13)**: dominio y servidor (de pago: necesita una tarea específica), datos del responsable en los textos
+  legales y su revisión.
 
 ## Entrega 2026-10-26 · Tus gustos, auditoría de seguridad, alta (D2/D3) y D5 con texto grande
 
