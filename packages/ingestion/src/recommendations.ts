@@ -8,13 +8,11 @@ import {
   currentYear,
   exploreOrder,
   discoveryCandidates,
-  followedCandidates,
   mixRecommendations,
   trendingCandidates,
   type ConsensusCandidate,
   type CommunityCandidate,
   type DiscoveryCandidate,
-  type FollowedCandidate,
   type FallbackBlock,
   type Opinion,
   type RecommendationBlock,
@@ -27,7 +25,6 @@ import {
   categoryAffinities,
   homeDismissals,
   recommendationActions,
-  userAffinities,
   userItemProfiles,
   userProfiles,
   userSettings,
@@ -39,7 +36,6 @@ import { and, eq, gte, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { itemTitles } from './content.js';
 import { unseenItems } from './home.js';
 import { CONSENSUS_SOULMATES, topSoulmates } from './soulmates.js';
-import { activeFollowedIds } from './follows.js';
 
 /**
  * Recomendaciones para un usuario (§12 y §13), calculadas al pedirlas a partir de lo ya consolidado (perfiles y
@@ -78,9 +74,6 @@ export interface RecommendationItem {
   isNew: boolean;
   consensus?: { supporters: number; opinionated: number };
   discovery?: { contributorId: string; contributorName: string; contributorAffinity: number };
-  followed?: { contributorId: string; contributorName: string; contributorAffinity: number | null };
-  /** Motivo combinado: personas que sigues a las que también les encanta (no cambia el orden). */
-  followedBy?: { names: string[]; count: number };
   trending?: { positiveVoters: number; totalVoters: number; averageScore: number };
   community?: { supporters: number };
   content?: { becauseItemId: string; becauseTitle: string; relation: string };
@@ -179,16 +172,6 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
         .where(and(inArray(userItemProfiles.userId, soulmateIds), isNotNull(userItemProfiles.preferenceScore)))
     : [];
 
-  // Seguidos (creadores y amigos): sus gustos fuertes forman su propio bloque y enriquecen el motivo de las demás
-  // tarjetas. Nunca votan en el consenso del Top 50.
-  const followedIds = await activeFollowedIds(db, userId);
-  const followedPrefs = followedIds.length
-    ? await db
-        .select({ userId: userItemProfiles.userId, itemId: userItemProfiles.catalogItemId, score: userItemProfiles.preferenceScore, confidence: userItemProfiles.preferenceConfidence })
-        .from(userItemProfiles)
-        .where(and(inArray(userItemProfiles.userId, followedIds), isNotNull(userItemProfiles.preferenceScore)))
-    : [];
-
   // Votos de Trending: personas de la zona (sin mirar su afinidad), votos explícitos fechados este año.
   let votes: Array<{ userId: string; itemId: string; score: number; confidence: number }> = [];
   let trendingStatus: TrendingStatus = 'no_location';
@@ -218,7 +201,7 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
     trendingStatus = 'insufficient_votes';
   }
 
-  const meta = await itemMeta(db, [...new Set([...prefs.map((p) => p.itemId), ...followedPrefs.map((p) => p.itemId), ...votes.map((v) => v.itemId)])], userId, hasLocation, radiusM);
+  const meta = await itemMeta(db, [...new Set([...prefs.map((p) => p.itemId), ...votes.map((v) => v.itemId)])], userId, hasLocation, radiusM);
   /** Objeto recomendable: no excluido, de la categoría pedida, local dentro del radio y evento no terminado. */
   const eligible = (itemId: string) => {
     const m = meta.get(itemId);
@@ -264,23 +247,6 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
     params,
   );
 
-  const followed = followedCandidates(
-    followedIds.map((id) => ({
-      userId: id,
-      preferences: followedPrefs
-        .filter((p) => p.userId === id && p.score !== null && p.confidence !== null && eligible(p.itemId))
-        .map((p) => ({ itemId: p.itemId, score: p.score!, confidence: p.confidence! })),
-    })),
-    params,
-  );
-  /** Seguidos a los que les encanta un objeto (mismos umbrales que un apoyo del consenso). */
-  const followedLikers = new Map<string, string[]>();
-  for (const p of followedPrefs) {
-    if (p.score === null || p.confidence === null) continue;
-    if (p.score < params.consensus.positiveScore || p.confidence < params.consensus.positiveConfidence) continue;
-    followedLikers.set(p.itemId, [...(followedLikers.get(p.itemId) ?? []), p.userId]);
-  }
-
   // Trending.
   const votesByItem = new Map<string, Opinion[]>();
   for (const v of votes) {
@@ -291,21 +257,11 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
   if (trending.length) trendingStatus = 'ok';
 
   const names = new Map(
-    soulmateIds.length || followedIds.length
-      ? (await db.select({ id: userProfiles.userId, name: userProfiles.displayName }).from(userProfiles).where(inArray(userProfiles.userId, [...new Set([...soulmateIds, ...followedIds])]))).map((r) => [r.id, r.name])
+    soulmateIds.length
+      ? (await db.select({ id: userProfiles.userId, name: userProfiles.displayName }).from(userProfiles).where(inArray(userProfiles.userId, soulmateIds))).map((r) => [r.id, r.name])
       : [],
   );
-  const mixed = mixRecommendations({ consensus, discovery, followed, trending }, limit, params);
-  const followedAffinity = new Map(
-    followedIds.length
-      ? (await db.select({ target: userAffinities.targetUserId, score: userAffinities.score }).from(userAffinities).where(and(eq(userAffinities.sourceUserId, userId), inArray(userAffinities.targetUserId, followedIds)))).map((a) => [a.target, a.score])
-      : [],
-  );
-  /** Motivo combinado para una tarjeta (sin quien ya es el autor de la tarjeta). */
-  const combined = (itemId: string, except?: string) => {
-    const likers = (followedLikers.get(itemId) ?? []).filter((id) => id !== except);
-    return likers.length ? { followedBy: { names: likers.slice(0, 2).map((id) => names.get(id) ?? '—'), count: likers.length } } : {};
-  };
+  const mixed = mixRecommendations({ consensus, discovery, trending }, limit, params);
   const soulmateBy = new Map(soulmates.map((s) => [s.userId, s]));
   const items: RecommendationItem[] = mixed.map(({ block, fillsFor, candidate }) => {
     const base = { itemId: candidate.itemId, block, fillsFor, score: (candidate as { score: number }).score, isNew: false };
@@ -324,7 +280,7 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
         ...(backers.length ? { supporterAffinity: Math.round(backers.reduce((a, s) => a + s.score, 0) / backers.length) } : {}),
         exceptionalSupporters: backers.filter((s) => s.exceptionalMutual).length,
       };
-      return { ...base, consensus: { supporters: c.supporters, opinionated: c.opinionated }, evidence, ...combined(c.itemId) };
+      return { ...base, consensus: { supporters: c.supporters, opinionated: c.opinionated }, evidence };
     }
     if (block === 'discovery') {
       const d = candidate as DiscoveryCandidate;
@@ -336,19 +292,7 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
         supporterAffinity: Math.round(d.contributorAffinity),
         exceptionalSupporters: soulmateBy.get(d.contributorId)?.exceptionalMutual ? 1 : 0,
       };
-      return { ...base, discovery: { contributorId: d.contributorId, contributorName: names.get(d.contributorId) ?? '—', contributorAffinity: d.contributorAffinity }, evidence, ...combined(d.itemId) };
-    }
-    if (block === 'followed') {
-      const f = candidate as FollowedCandidate;
-      const pref = followedPrefs.find((p) => p.userId === f.contributorId && p.itemId === f.itemId);
-      const affinity = followedAffinity.get(f.contributorId) ?? null;
-      const evidence: RecommendationEvidenceDto = {
-        score: pct(f.score),
-        ...(pref?.score != null ? { likeLevel: pct(pref.score) } : {}),
-        ...(pref?.confidence != null ? { confidence: pct(pref.confidence) } : {}),
-        ...(affinity !== null ? { supporterAffinity: Math.round(affinity) } : {}),
-      };
-      return { ...base, followed: { contributorId: f.contributorId, contributorName: names.get(f.contributorId) ?? '—', contributorAffinity: affinity }, evidence, ...combined(f.itemId, f.contributorId) };
+      return { ...base, discovery: { contributorId: d.contributorId, contributorName: names.get(d.contributorId) ?? '—', contributorAffinity: d.contributorAffinity }, evidence };
     }
     const t = candidate as TrendingCandidate;
     const evidence: RecommendationEvidenceDto = {
@@ -362,7 +306,7 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
   });
 
   // Respaldos, en este orden y solo si los bloques principales no llenan la página.
-  const available = { consensus: consensus.length, discovery: discovery.length, followed: followed.length, trending: trending.length, content: 0, community: 0, kept: 0, explore: 0 };
+  const available = { consensus: consensus.length, discovery: discovery.length, trending: trending.length, content: 0, community: 0, kept: 0, explore: 0 };
   if (options.includeFallbacks !== false && items.length < limit && viewer) {
     const used = new Set(items.map((i) => i.itemId));
     const take = (itemId: string) => !used.has(itemId) && items.length < limit && (used.add(itemId), true);

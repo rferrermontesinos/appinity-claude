@@ -376,7 +376,7 @@ export interface BlockedPersonDto {
  * Bloques principales (70/20/10) y respaldos cuando se agotan (fase 9): comunidad (valorado por varias personas de
  * APPINITY), conservados en otra sesión y explorar (sin señales todavía). Cada tarjeta dice de dónde sale.
  */
-export type RecommendationBlockDto = 'consensus' | 'discovery' | 'followed' | 'trending' | 'content' | 'community' | 'kept' | 'explore';
+export type RecommendationBlockDto = 'consensus' | 'discovery' | 'trending' | 'content' | 'community' | 'kept' | 'explore';
 
 /**
  * Motivo verificable de una tarjeta (§2 y §12): para el consenso, cuántas almas gemelas la apoyan (nunca quiénes); para
@@ -413,13 +413,6 @@ export interface RecommendationReasonDto {
   supporters?: number;
   opinionated?: number;
   contributor?: { userId: string; displayName: string };
-  /** Bloque de seguidos: afinidad con la persona que sigues (NULL si no hay evidencia comparable). */
-  contributorAffinity?: number | null;
-  /**
-   * Motivo combinado (2026-10-26): personas que sigues a las que también les encanta. Solo nombres de quienes sigues
-   * (creadores con perfil público o amigos); nunca de almas gemelas desconocidas.
-   */
-  followedBy?: { names: string[]; count: number };
   positiveVoters?: number;
   totalVoters?: number;
   /** Por contenido: el gusto propio que lleva a esta tarjeta y la relación (misma saga, mismo director…). */
@@ -430,7 +423,7 @@ export interface RecommendationDto {
   item: CatalogItemDto;
   block: RecommendationBlockDto;
   /** Ocupa el hueco de otro bloque sin candidatos (la cuota 70/20/10 es un objetivo, no se rellena inventando). */
-  fillsFor: 'consensus' | 'discovery' | 'followed' | 'trending' | null;
+  fillsFor: 'consensus' | 'discovery' | 'trending' | null;
   reason: RecommendationReasonDto;
   /** NEW: APPINITY nunca había mostrado este objeto a este usuario (no significa estreno). */
   isNew: boolean;

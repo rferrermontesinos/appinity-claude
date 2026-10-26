@@ -103,26 +103,3 @@ export const invitations = pgTable(
     check('invitations_uses_range', sql`${t.uses} >= 0 AND ${t.uses} <= ${t.maxUses}`),
   ],
 );
-
-/**
- * Personas que sigues (decisiones 2026-10-26): creadores con perfil público y amigos. Seguir nunca cambia gustos ni
- * afinidades; solo añade el bloque «seguidos» de Inicio y el motivo combinado. Un bloqueo elimina el seguimiento en
- * ambos sentidos. Si deja de ser creador o amigo, el seguimiento se ignora al leer (no se borra).
- */
-export const follows = pgTable(
-  'follows',
-  {
-    followerUserId: uuid('follower_user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    followedUserId: uuid('followed_user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => [
-    primaryKey({ columns: [t.followerUserId, t.followedUserId] }),
-    index('follows_followed_idx').on(t.followedUserId),
-    check('follows_not_self', sql`${t.followerUserId} <> ${t.followedUserId}`),
-  ],
-);

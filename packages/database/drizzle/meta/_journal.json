@@ -120,13 +120,6 @@
       "when": 1793027970808,
       "tag": "0016_daily_abomination",
       "breakpoints": true
-    },
-    {
-      "idx": 17,
-      "version": "7",
-      "when": 1793043161005,
-      "tag": "0017_volatile_shotgun",
-      "breakpoints": true
     }
   ]
 }

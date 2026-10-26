@@ -74,13 +74,6 @@ export const es = {
     reasonConsensus_one: '{{count}} de tus almas gemelas lo valoró muy bien',
     reasonConsensus_other: '{{count}} de tus almas gemelas lo valoraron muy bien',
     reasonDiscovery: 'Descubierto a través de {{name}}',
-    reasonFollowed: 'Recomendado por {{name}}, a quien sigues',
-    reasonFollowedMore: 'Recomendado por {{name}}, a quien sigues; también le encanta a {{followed}}',
-    reasonConsensusFollowed_one: 'A {{name}}, a quien sigues, y a {{count}} de tus almas gemelas les encanta',
-    reasonConsensusFollowed_other: 'A {{name}}, a quien sigues, y a {{count}} de tus almas gemelas les encanta',
-    reasonDiscoveryFollowed: 'Descubierto a través de {{name}}; también le encanta a {{followed}}, a quien sigues',
-    followedNames_one: '{{name}} y {{count}} persona más',
-    followedNames_other: '{{name}} y {{count}} personas más',
     reasonContent: {
       same_series: 'De la misma saga que {{title}}, que te gusta',
       sequel: 'Continúa o precede a {{title}}, que te gusta',

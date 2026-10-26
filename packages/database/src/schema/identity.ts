@@ -89,13 +89,6 @@ export const userSettings = pgTable(
     discoverableByContacts: boolean('discoverable_by_contacts').notNull().default(true),
     /** Aparecer en el ranking de almas gemelas de otras personas (§4: disponibles conforme a los ajustes de privacidad). */
     discoverableAsSoulmate: boolean('discoverable_as_soulmate').notNull().default(true),
-    /**
-     * Perfil público de creador (decisiones 2026-10-26): la persona consiente que cualquiera pueda seguirla y que sus
-     * gustos aparezcan atribuidos a su nombre en las recomendaciones de quienes la siguen. Desactivado por defecto.
-     */
-    publicCreator: boolean('public_creator').notNull().default(false),
-    /** Verificación de identidad de un creador conocido (insignia). La concede el equipo, no la persona. */
-    creatorVerifiedAt: timestamp('creator_verified_at', { withTimezone: true }),
     notificationFrequency: text('notification_frequency', {
       enum: ['daily', 'three_per_week', 'weekly', 'off'],
     })

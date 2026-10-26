@@ -1,9 +1,8 @@
-import { follows, friendships, userAffinities, userBlocks, userProfiles, userReports, users, type Database } from '@appinity/database';
+import { friendships, userAffinities, userBlocks, userProfiles, userReports, users, type Database } from '@appinity/database';
 import { and, eq, inArray, isNull, or } from 'drizzle-orm';
 import { ConflictError, ForbiddenError, NotFoundError } from './errors.js';
 import { closeChatForBlock, openMatch } from './chat.js';
 import { canSeePerson } from './soulmates.js';
-import { followEachOther } from './follows.js';
 
 /**
  * Amigos, bloqueos y reportes (§4, §16 y §17). Toda operación parte del usuario de la sesión y comprueba que puede ver
@@ -35,7 +34,6 @@ export async function sendFriendRequest(db: Database, from: string, to: string, 
         await tx.update(friendships).set({ status: 'accepted', respondedAt: now }).where(eq(friendships.id, row.id));
         // La amistad aceptada abre el chat (equivale a un match).
         await openMatch(tx, from, to, 'friendship', now, from);
-        await followEachOther(tx, from, to, now);
       });
       return { state: 'friends' };
     }
@@ -57,10 +55,7 @@ export async function respondFriendRequest(db: Database, userId: string, request
   await db.transaction(async (tx) => {
     await tx.update(friendships).set({ status: accept ? 'accepted' : 'rejected', respondedAt: now }).where(eq(friendships.id, requestId));
     // La amistad aceptada abre el chat (equivale a un match).
-    if (accept) {
-      await openMatch(tx, userId, row.requesterId, 'friendship', now, userId);
-      await followEachOther(tx, userId, row.requesterId, now);
-    }
+    if (accept) await openMatch(tx, userId, row.requesterId, 'friendship', now, userId);
   });
   return { state: accept ? 'friends' : 'none' };
 }
@@ -129,8 +124,6 @@ export async function blockUser(db: Database, userId: string, target: string, no
   await db.transaction(async (tx) => {
     await tx.insert(userBlocks).values({ blockerUserId: userId, blockedUserId: target, createdAt: now }).onConflictDoNothing();
     await tx.delete(friendships).where(pair(userId, target));
-    // Bloquear también deja de seguir, en ambos sentidos.
-    await tx.delete(follows).where(or(and(eq(follows.followerUserId, userId), eq(follows.followedUserId, target)), and(eq(follows.followerUserId, target), eq(follows.followedUserId, userId))));
     // Bloquear detiene los mensajes: la conversación se cierra y se borran las solicitudes de chat.
     await closeChatForBlock(tx, userId, target, now);
   });

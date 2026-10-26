@@ -98,10 +98,6 @@ export class RecommendationsController {
               code: r.block,
               ...(r.consensus ? { supporters: r.consensus.supporters, opinionated: r.consensus.opinionated } : {}),
               ...(r.discovery ? { contributor: { userId: r.discovery.contributorId, displayName: r.discovery.contributorName } } : {}),
-              ...(r.followed
-                ? { contributor: { userId: r.followed.contributorId, displayName: r.followed.contributorName }, contributorAffinity: r.followed.contributorAffinity }
-                : {}),
-              ...(r.followedBy ? { followedBy: r.followedBy } : {}),
               ...(r.trending ? { positiveVoters: r.trending.positiveVoters, totalVoters: r.trending.totalVoters } : {}),
               ...(r.community ? { supporters: r.community.supporters } : {}),
               ...(r.content ? { because: { itemId: r.content.becauseItemId, title: r.content.becauseTitle, relation: r.content.relation } } : {}),

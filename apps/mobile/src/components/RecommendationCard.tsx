@@ -14,25 +14,11 @@ const SWIPE_THRESHOLD = 110;
 
 /** Motivo breve derivado de evidencia real (§2): nunca un porcentaje «Para ti» sin calibrar. */
 export function reasonText(t: (key: string, options?: Record<string, unknown>) => string, r: RecommendationDto): string {
-  // Motivo combinado: alguien a quien sigues también lo adora («A Rosalía, a quien sigues, y a 34 de tus almas gemelas…»).
-  const followed = r.reason.followedBy
-    ? r.reason.followedBy.count > 1
-      ? t('home.followedNames', { name: r.reason.followedBy.names[0], count: r.reason.followedBy.count - 1 })
-      : r.reason.followedBy.names[0]
-    : null;
   switch (r.reason.code) {
     case 'consensus':
-      return followed
-        ? t('home.reasonConsensusFollowed', { name: followed, count: r.reason.supporters ?? 0 })
-        : t('home.reasonConsensus', { count: r.reason.supporters ?? 0 });
+      return t('home.reasonConsensus', { count: r.reason.supporters ?? 0 });
     case 'discovery':
-      return followed
-        ? t('home.reasonDiscoveryFollowed', { name: r.reason.contributor?.displayName ?? '—', followed })
-        : t('home.reasonDiscovery', { name: r.reason.contributor?.displayName ?? '—' });
-    case 'followed':
-      return followed
-        ? t('home.reasonFollowedMore', { name: r.reason.contributor?.displayName ?? '—', followed })
-        : t('home.reasonFollowed', { name: r.reason.contributor?.displayName ?? '—' });
+      return t('home.reasonDiscovery', { name: r.reason.contributor?.displayName ?? '—' });
     case 'trending':
       return t('home.reasonTrending', { count: r.reason.positiveVoters ?? 0 });
     case 'content':
@@ -49,7 +35,6 @@ export function reasonText(t: (key: string, options?: Record<string, unknown>) =
 export const REASON_ICON = {
   consensus: 'account-group',
   discovery: 'account-heart',
-  followed: 'account-star',
   trending: 'map-marker-radius',
   content: 'link-variant',
   community: 'account-multiple-outline',
@@ -59,7 +44,7 @@ export const REASON_ICON = {
 
 /** Motivos que vienen de personas (almas gemelas o comunidad): su icono va en lima. */
 export function isPeopleReason(r: RecommendationDto): boolean {
-  return r.reason.code === 'consensus' || r.reason.code === 'discovery' || r.reason.code === 'followed' || r.reason.code === 'community';
+  return r.reason.code === 'consensus' || r.reason.code === 'discovery' || r.reason.code === 'community';
 }
 
 export function RecommendationCard({
