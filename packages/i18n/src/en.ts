@@ -540,6 +540,11 @@ export const en: TranslationResources = {
   },
   profile: {
     heroSources: 'active sources',
+    sourcesConnected_one: '{{count}} connected · Manage',
+    sourcesConnected_other: '{{count}} connected · Manage',
+    sourcesNone: 'Connect a source to start: your tastes come from there',
+    settingsRowHint: 'Language, location, privacy, notifications, Premium and account',
+    devTitle: 'Development',
     heroLikes: 'clear likes',
     heroSoulmates: 'soulmates',
     heroTop: 'Most of your tastes: {{category}}',

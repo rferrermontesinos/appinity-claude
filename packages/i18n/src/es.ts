@@ -541,6 +541,11 @@ export const es = {
   profile: {
     heroSources: 'fuentes activas',
     heroLikes: 'gustos claros',
+    sourcesConnected_one: '{{count}} conectada · Gestionar',
+    sourcesConnected_other: '{{count}} conectadas · Gestionar',
+    sourcesNone: 'Conecta una fuente para empezar: de ahí salen tus gustos',
+    settingsRowHint: 'Idioma, ubicación, privacidad, notificaciones, Premium y cuenta',
+    devTitle: 'Desarrollo',
     heroSoulmates: 'almas gemelas',
     heroTop: 'Lo que más hay en tus gustos: {{category}}',
     heroEmpty: 'Conecta una fuente para que APPINITY conozca tus gustos.',
