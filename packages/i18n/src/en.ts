@@ -106,6 +106,18 @@ export const en: TranslationResources = {
       'Add your area in Profile to see restaurants, places and what is highly rated near you. Meanwhile only non-located content is recommended.',
     testActions: 'Dismiss hides the card in Home (also after restarting); keep lets it come back another day; undo restores the last one.',
   },
+  tastes: {
+    title: 'Your tastes',
+    summary: '{{total}} titles and places: you like {{likes}} and dislike {{dislikes}}.',
+    noOpinion_one: 'For {{count}}, we only know you know it or have consumed it, with no opinion.',
+    noOpinion_other: 'For {{count}}, we only know you know them or have consumed them, with no opinion.',
+    fromSources: 'Where it comes from',
+    onlySources: 'Only your connected sources count. Swiping, saving, friends and chat never change your tastes.',
+    open: 'See your tastes',
+    empty: 'No tastes yet. Connect a source to start.',
+    intro:
+      'Everything APPINITY knows about you, item by item, and which source it comes from. Tap one to see each piece of evidence. “—” means no evidence, not “dislike”.',
+  },
   model: {
     title: 'Data model (demo)',
     intro:
@@ -454,7 +466,6 @@ export const en: TranslationResources = {
     notificationsExpoGo: 'On Android, Expo Go does not support push notifications (since SDK 53): they will arrive with the development build of the app, which will ask for permission when you sign up.',
     privacy: 'Privacy',
     subscription: 'Subscription',
-    subscriptionPending: 'Premium and Early Access already work on the server; buying from the app arrives with the store release.',
     diagnostics: 'Diagnostics',
   },
   devLogin: {

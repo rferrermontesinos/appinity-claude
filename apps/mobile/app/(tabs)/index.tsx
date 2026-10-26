@@ -46,6 +46,8 @@ export default function HomeScreen() {
       <DataBanner />
       {/* Un mazo por usuario: al cambiar de sesión empieza de cero (sin la cola ni el historial de otra persona). */}
       {userId ? <HomeDeckSection key={userId} /> : <Loading />}
+      {/* Guía de la demo: solo con datos simulados; en una cuenta real «Tus gustos» está en Perfil. */}
+      {me.data?.user.dataset === 'live' ? null : (
       <Card>
         <Title style={{ fontSize: 16 }}>{t('home.whatYouCanTest')}</Title>
         <Small>• {t('home.testActions')}</Small>
@@ -53,6 +55,7 @@ export default function HomeScreen() {
         <Button label={t('home.openModel')} icon="database-search-outline" variant="secondary" onPress={() => router.push('/model')} />
         <Button label={t('home.openCategories')} icon="shape-outline" variant="secondary" onPress={() => router.push('/categories')} />
       </Card>
+      )}
     </Screen>
   );
 }

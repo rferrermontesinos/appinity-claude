@@ -104,6 +104,18 @@ export const es = {
       'Añade tu zona en Perfil para ver restaurantes, lugares y lo más valorado cerca de ti. Mientras tanto solo se recomiendan contenidos sin ubicación.',
     testActions: 'Descartar oculta la tarjeta en Inicio (también tras reiniciar); conservar la deja volver otro día; deshacer recupera la última.',
   },
+  tastes: {
+    title: 'Tus gustos',
+    summary: '{{total}} obras y lugares: {{likes}} te gustan y {{dislikes}} no.',
+    noOpinion_one: 'De {{count}} solo consta que lo conoces o lo has consumido, sin opinión.',
+    noOpinion_other: 'De {{count}} solo consta que los conoces o los has consumido, sin opinión.',
+    fromSources: 'De dónde sale',
+    onlySources: 'Solo cuentan tus fuentes conectadas. Deslizar, guardar, tus amistades y el chat no cambian tus gustos.',
+    open: 'Ver tus gustos',
+    empty: 'Aún no hay gustos. Conecta una fuente para empezar.',
+    intro:
+      'Todo lo que APPINITY sabe de ti, obra a obra, y de qué fuente sale. Toca una para ver cada evidencia. «—» significa sin evidencia, no «no me gusta».',
+  },
   model: {
     title: 'Modelo de datos (demo)',
     intro:
@@ -454,7 +466,6 @@ export const es = {
     notificationsExpoGo: 'En Android, Expo Go no admite notificaciones push (desde el SDK 53): llegarán con la versión de desarrollo de la app, que pedirá el permiso al registrarte.',
     privacy: 'Privacidad',
     subscription: 'Suscripción',
-    subscriptionPending: 'Premium y Early Access ya funcionan en el servidor; la compra desde la app llega con la versión para las tiendas.',
     diagnostics: 'Diagnóstico',
   },
   devLogin: {
