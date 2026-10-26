@@ -438,6 +438,8 @@ export interface RecommendationReasonDto {
   contributor?: { userId: string; displayName: string };
   /** Bloque de seguidos: afinidad con la persona que sigues (NULL si no hay evidencia comparable). */
   contributorAffinity?: number | null;
+  /** Descubrimiento: el alma gemela que lo aporta es alguien a quien sigues. */
+  contributorFollowed?: boolean;
   /**
    * Motivo combinado (2026-10-26): personas que sigues a las que también les encanta. Solo nombres de quienes sigues
    * (creadores con perfil público o amigos); nunca de almas gemelas desconocidas.

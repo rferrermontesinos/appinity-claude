@@ -97,7 +97,7 @@ export class RecommendationsController {
             reason: {
               code: r.block,
               ...(r.consensus ? { supporters: r.consensus.supporters, opinionated: r.consensus.opinionated } : {}),
-              ...(r.discovery ? { contributor: { userId: r.discovery.contributorId, displayName: r.discovery.contributorName } } : {}),
+              ...(r.discovery ? { contributor: { userId: r.discovery.contributorId, displayName: r.discovery.contributorName }, contributorFollowed: r.discovery.contributorFollowed } : {}),
               ...(r.followed
                 ? { contributor: { userId: r.followed.contributorId, displayName: r.followed.contributorName }, contributorAffinity: r.followed.contributorAffinity }
                 : {}),

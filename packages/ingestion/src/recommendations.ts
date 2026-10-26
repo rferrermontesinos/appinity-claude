@@ -77,7 +77,7 @@ export interface RecommendationItem {
   /** NEW: nunca se había mostrado a este usuario (no significa estreno). */
   isNew: boolean;
   consensus?: { supporters: number; opinionated: number };
-  discovery?: { contributorId: string; contributorName: string; contributorAffinity: number };
+  discovery?: { contributorId: string; contributorName: string; contributorAffinity: number; contributorFollowed: boolean };
   followed?: { contributorId: string; contributorName: string; contributorAffinity: number | null };
   /** Motivo combinado: personas que sigues a las que también les encanta (no cambia el orden). */
   followedBy?: { names: string[]; count: number };
@@ -336,7 +336,13 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
         supporterAffinity: Math.round(d.contributorAffinity),
         exceptionalSupporters: soulmateBy.get(d.contributorId)?.exceptionalMutual ? 1 : 0,
       };
-      return { ...base, discovery: { contributorId: d.contributorId, contributorName: names.get(d.contributorId) ?? '—', contributorAffinity: d.contributorAffinity }, evidence, ...combined(d.itemId) };
+      // Si el alma gemela que lo descubre es alguien a quien sigues, se dice en el propio motivo (no se repite su nombre).
+      return {
+        ...base,
+        discovery: { contributorId: d.contributorId, contributorName: names.get(d.contributorId) ?? '—', contributorAffinity: d.contributorAffinity, contributorFollowed: followedIds.includes(d.contributorId) },
+        evidence,
+        ...combined(d.itemId, d.contributorId),
+      };
     }
     if (block === 'followed') {
       const f = candidate as FollowedCandidate;

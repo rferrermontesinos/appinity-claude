@@ -80,7 +80,8 @@ export const en: TranslationResources = {
     reasonFollowedMore: 'Recommended by {{name}}, who you follow; {{followed}} loves it too',
     reasonConsensusFollowed_one: '{{name}}, who you follow, and {{count}} of your soulmates love this',
     reasonConsensusFollowed_other: '{{name}}, who you follow, and {{count}} of your soulmates love this',
-    reasonDiscoveryFollowed: 'Discovered through {{name}}; {{followed}}, who you follow, loves it too',
+    reasonDiscoveryByFollowed: 'Discovered through {{name}}, who you follow',
+    reasonAlsoFollowed: '{{reason}}; {{followed}}, who you follow, loves it too',
     followedNames_one: '{{name}} and {{count}} more',
     followedNames_other: '{{name}} and {{count}} more',
     reasonContent: {

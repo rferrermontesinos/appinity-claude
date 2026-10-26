@@ -344,6 +344,10 @@ describe('Seguir a creadores y amigos (2026-10-26)', () => {
       (i) => (i.block === 'followed' && i.reason.contributor?.userId === clara.id) || i.reason.followedBy?.names.includes(clara.displayName),
     );
     expect(credited).toBe(true);
+    // Nunca se repite a la autora de la tarjeta en el motivo combinado; si descubre ella, se dice «a quien sigues».
+    for (const i of after.items) expect(i.reason.followedBy?.names ?? []).not.toContain(i.reason.contributor?.displayName ?? '∅');
+    const discoveredByClara = after.items.filter((i) => i.block === 'discovery' && i.reason.contributor?.userId === clara.id);
+    for (const i of discoveredByClara) expect(i.reason.contributorFollowed).toBe(true);
     expect(before.items.some((i) => i.reason.followedBy)).toBe(false);
     await call(token, 'DELETE', `/v1/me/follows/${clara.id}`);
     await call(claraToken, 'PATCH', '/v1/me/settings', { publicCreator: false });

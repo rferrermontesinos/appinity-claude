@@ -78,7 +78,8 @@ export const es = {
     reasonFollowedMore: 'Recomendado por {{name}}, a quien sigues; también le encanta a {{followed}}',
     reasonConsensusFollowed_one: 'A {{name}}, a quien sigues, y a {{count}} de tus almas gemelas les encanta',
     reasonConsensusFollowed_other: 'A {{name}}, a quien sigues, y a {{count}} de tus almas gemelas les encanta',
-    reasonDiscoveryFollowed: 'Descubierto a través de {{name}}; también le encanta a {{followed}}, a quien sigues',
+    reasonDiscoveryByFollowed: 'Descubierto a través de {{name}}, a quien sigues',
+    reasonAlsoFollowed: '{{reason}}; también le encanta a {{followed}}, a quien sigues',
     followedNames_one: '{{name}} y {{count}} persona más',
     followedNames_other: '{{name}} y {{count}} personas más',
     reasonContent: {

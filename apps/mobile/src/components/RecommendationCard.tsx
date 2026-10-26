@@ -25,10 +25,11 @@ export function reasonText(t: (key: string, options?: Record<string, unknown>) =
       return followed
         ? t('home.reasonConsensusFollowed', { name: followed, count: r.reason.supporters ?? 0 })
         : t('home.reasonConsensus', { count: r.reason.supporters ?? 0 });
-    case 'discovery':
-      return followed
-        ? t('home.reasonDiscoveryFollowed', { name: r.reason.contributor?.displayName ?? '—', followed })
-        : t('home.reasonDiscovery', { name: r.reason.contributor?.displayName ?? '—' });
+    case 'discovery': {
+      const name = r.reason.contributor?.displayName ?? '—';
+      const discovered = r.reason.contributorFollowed ? t('home.reasonDiscoveryByFollowed', { name }) : t('home.reasonDiscovery', { name });
+      return followed ? t('home.reasonAlsoFollowed', { reason: discovered, followed }) : discovered;
+    }
     case 'followed':
       return followed
         ? t('home.reasonFollowedMore', { name: r.reason.contributor?.displayName ?? '—', followed })
