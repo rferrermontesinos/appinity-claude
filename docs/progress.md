@@ -25,6 +25,47 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-26 (18) · Revisión de diseño de la navegación y correcciones (/design-review)
+
+### Diagnóstico
+
+- L2, cadena completa (visual, heurísticas, accesibilidad, sistema de diseño, movimiento). 14 hallazgos: 0 P0, 3 P1,
+  7 P2 y 4 P3. Al revisar Perfil apareció uno más: texto en color de categoría bajo AA.
+
+### Correcciones
+
+- **#1 y #9 · Cabecera única de detalle** (`DetailHeader`): «Volver» redondo de 48 y título opcional, sin barra
+  nativa, en categoría, objeto, persona y chat. El nombre ya no se repite en barra y cartel.
+- **#2 · Alta en Aura**: cartel de bienvenida con los tres pasos; filas de interruptores de 48.
+- **#3 · Áreas táctiles**: chips de fuentes 44, enviar 48, campo del chat 48, segmentos de Personas 44, chips del
+  modelo 44. Los chips de Ajustes (44) y ProfileHero los hizo la otra sesión.
+- **#4 y #5 · Tipografía**: `theme.type` (display, figure, h1–h4, body, caption, overline: la escala de la guía).
+  `Title` en h4 y como encabezado para el lector de pantalla. Se quitan los tamaños sueltos de los títulos.
+- **#6 y #11 · Estados**: `EmptyState` en categoría, chats, amigos y seguidos; `Skeleton` (pulso suave, quieto con
+  «reducir movimiento») en Inicio, categoría, objeto, persona, chats, amigos, seguidos y match.
+- **#7 · Chat**: burbuja propia en contenedor tonal (11,69:1); la chispa queda para «Enviar».
+- **#8 · Match**: cartel Aura a pantalla completa (brillo lima, caras con aro lima, título en Bricolage).
+- **#12, #13 y #14**: radios a `radius.*`; colores de cartel a `onPoster` (`track`, `glass`); conteo de 0,9 s a 0,6 s.
+- **Nuevo · etiquetas de categoría**: `Badge` con modo `dot` (texto en el color del tema y punto de color) en «Tus
+  gustos». Lo mismo en los filtros del modelo. Libros como texto daba unos 3:1.
+- **Tema claro**: el botón de cabecera usa la superficie del tema (no un cristal oscuro, que en claro no se veía).
+
+### Comprobaciones
+
+- `pnpm --filter @appinity/mobile typecheck` y `lint` limpios.
+- Vista web (390×844, demo): Personas con los tres segmentos, Chats, conversación, ficha de persona, Perfil y
+  detalle de Restaurantes. El alta (necesita una cuenta sin alta) y el match se revisan en código.
+- Metro web estaba atascado tras la compilación del APK: reiniciado (proceso de este proyecto).
+- **APK de prueba validado**: `pnpm android:beta -ApiUrl https://api.ejemplo.invalid` → `dist/appinity-beta.apk`
+  (48 MB, con la URL dentro). Fallaba por el límite de 260 caracteres de Windows en CMake; ahora compila desde un
+  worktree en `C:ppb` (lo último con commit). La unidad virtual `subst` no servía: pnpm resuelve la ruta real.
+
+### Nota de coordinación
+
+- El commit a543ab2 de la otra sesión incluye por error la primera tanda de estas correcciones, que yo había dejado
+  preparada en el índice compartido. Desde ahora, cada sesión hace sus commits con su propio índice o con
+  `git commit -- <rutas>`.
+
 ## Entrega 2026-10-26 (17) · Túnel de Cloudflare y APK de prueba (preparados)
 
 ### Qué se ha hecho

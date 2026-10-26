@@ -12,7 +12,7 @@ import { InviteCard } from '../../src/components/InviteCard';
 import { PersonAvatar, formatAffinity } from '../../src/components/PersonAvatar';
 import { SoulmateHero } from '../../src/components/SoulmateHero';
 import { Badge, Card, ErrorCard, Loading, Screen, Small, Title, EmptyState } from '../../src/components/ui';
-import { fonts, spacing, usePalette } from '../../src/theme';
+import { fonts, radius, spacing, usePalette } from '../../src/theme';
 
 /** Fila de alma gemela («Aura»): avatar con aro lima, nombre y país, cifra grande y acceso al perfil. */
 function SoulmateRow({ person }: { person: SoulmateDto }) {
@@ -67,9 +67,9 @@ function Segments({ value, onChange, badge }: { value: Segment; onChange: (s: Se
             accessibilityState={{ selected }}
             accessibilityLabel={item.key === 'chats' && badge ? `${item.label} (${badge})` : item.label}
             onPress={() => onChange(item.key)}
-            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingVertical: spacing.sm, borderRadius: 999, backgroundColor: selected ? c.surface : 'transparent' }}
+            style={{ flex: 1, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingVertical: spacing.sm, borderRadius: radius.full, backgroundColor: selected ? c.text : 'transparent' }}
           >
-            <Text style={{ color: selected ? c.text : c.textMuted, fontWeight: selected ? '800' : '600' }} numberOfLines={1}>
+            <Text style={{ color: selected ? c.background : c.textMuted, fontWeight: selected ? '700' : '600' }} numberOfLines={1}>
               {item.label}
             </Text>
             {item.key === 'chats' && badge ? (

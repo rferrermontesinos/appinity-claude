@@ -48,6 +48,7 @@ export function TastesCard() {
                 key={code}
                 label={`${t(`categories.${code}`)} · ${s.byCategory.get(code)}`}
                 color={CATEGORY_META[code].color}
+                dot
               />
             ))}
           </View>

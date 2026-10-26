@@ -32,7 +32,7 @@ export default function SettingsScreen() {
           <AccountCard me={me.data} />
           {me.data.authKind === 'dev' ? (
             <Card>
-              <Title style={{ fontSize: 16 }}>{t('profile.devTitle')}</Title>
+              <Title>{t('profile.devTitle')}</Title>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
                 <Badge label={t('profile.devIdentity')} color={c.demo} />
                 <Badge label={`dataset: ${me.data.user.dataset}`} color={c.textMuted} />

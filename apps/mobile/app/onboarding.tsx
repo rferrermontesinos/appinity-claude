@@ -9,8 +9,9 @@ import { useTranslation } from 'react-i18next';
 import { Platform, Switch, Text, View } from 'react-native';
 import { apiRequest } from '../src/api/client';
 import { API } from '../src/config';
-import { Body, Button, Card, ErrorCard, Screen, Small, TextField, Title } from '../src/components/ui';
-import { fonts, spacing, usePalette } from '../src/theme';
+import { Body, Button, Card, ErrorCard, Screen, Small, TextField } from '../src/components/ui';
+import { AuraCard, onPoster } from '../src/components/Aura';
+import { radius, spacing, type, usePalette } from '../src/theme';
 
 /** Cómo funciona APPINITY, en tres pasos: así se entiende por qué lo siguiente es conectar fuentes. */
 const STEPS = [
@@ -64,7 +65,7 @@ export default function OnboardingScreen() {
   }
 
   const row = (label: string, value: boolean, onChange: (v: boolean) => void) => (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, minHeight: 48 }}>
       <Body style={{ flex: 1 }}>{label}</Body>
       <Switch value={value} onValueChange={onChange} accessibilityLabel={label} />
     </View>
@@ -72,37 +73,31 @@ export default function OnboardingScreen() {
 
   return (
     <Screen>
-      <View style={{ gap: spacing.sm, paddingTop: spacing.md }}>
-        <Text accessibilityRole="header" style={{ color: c.text, fontFamily: fonts.display, fontSize: 28, lineHeight: 34 }}>
+      {/* Bienvenida «Aura»: cartel con el saludo y los tres pasos (qué pasa al aceptar). */}
+      <AuraCard accent={c.accent} style={{ marginTop: spacing.md, gap: spacing.md }}>
+        <Text style={{ color: onPoster.lime, ...type.overline }}>APPINITY</Text>
+        <Text accessibilityRole="header" style={{ color: onPoster.text, ...type.h1 }}>
           {t('onboarding.title')}
         </Text>
-        <Body muted>{t('onboarding.intro')}</Body>
-      </View>
-      <Card>
-        <Title style={{ fontSize: 16 }}>{t('onboarding.howTitle')}</Title>
-        {STEPS.map((step, i) => (
-          <View key={step.key} style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' }}>
-            <View
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 18,
-                backgroundColor: c.primaryContainer,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <MaterialCommunityIcons name={step.icon} size={20} color={c.onPrimaryContainer} />
+        <Text style={{ color: onPoster.muted, ...type.body }}>{t('onboarding.intro')}</Text>
+        <View style={{ gap: spacing.md, marginTop: spacing.sm }} accessibilityRole="list" accessibilityLabel={t('onboarding.howTitle')}>
+          {STEPS.map((step, i) => (
+            <View key={step.key} style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' }}>
+              <View
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+                style={{ width: 40, height: 40, borderRadius: radius.full, backgroundColor: onPoster.glass, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <MaterialCommunityIcons name={step.icon} size={20} color={onPoster.text} />
+              </View>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={{ color: onPoster.text, ...type.h4 }}>{`${i + 1}. ${t(`onboarding.steps.${step.key}.title`)}`}</Text>
+                <Text style={{ color: onPoster.muted, ...type.caption }}>{t(`onboarding.steps.${step.key}.text`)}</Text>
+              </View>
             </View>
-            <View style={{ flex: 1, gap: 2 }}>
-              <Body style={{ fontWeight: '700' }}>{`${i + 1}. ${t(`onboarding.steps.${step.key}.title`)}`}</Body>
-              <Small>{t(`onboarding.steps.${step.key}.text`)}</Small>
-            </View>
-          </View>
-        ))}
-      </Card>
+          ))}
+        </View>
+      </AuraCard>
       <Card>
         <TextField label={t('onboarding.nameLabel')} help={t('onboarding.nameHelp')} value={name} onChangeText={setName} maxLength={60} />
         <TextField

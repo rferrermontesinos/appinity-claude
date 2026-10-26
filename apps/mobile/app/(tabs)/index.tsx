@@ -9,7 +9,7 @@ import { useMe } from '../../src/api/queries';
 import { AuraBackdrop } from '../../src/components/Aura';
 import { DataBanner } from '../../src/components/DataBanner';
 import { RecommendationCard } from '../../src/components/RecommendationCard';
-import { Button, Card, EmptyState, ErrorCard, Loading, Screen, Small, Title } from '../../src/components/ui';
+import { Button, Card, EmptyState, ErrorCard, Loading, Screen, Skeleton, Small, Title } from '../../src/components/ui';
 import { useHomeDeck } from '../../src/state/homeDeck';
 import { secureStorage } from '../../src/state/secure-storage';
 import { fonts, radius, spacing, usePalette } from '../../src/theme';
@@ -106,7 +106,7 @@ export default function HomeScreen() {
       {/* Guía de la demo: solo con datos simulados; en una cuenta real «Tus gustos» está en Perfil. */}
       {me.data?.user.dataset === 'live' ? null : (
       <Card>
-        <Title style={{ fontSize: 16 }}>{t('home.whatYouCanTest')}</Title>
+        <Title>{t('home.whatYouCanTest')}</Title>
         <Small>• {t('home.testActions')}</Small>
         <Small>• {t('home.testKnown')}</Small>
         <Button label={t('home.openModel')} icon="database-search-outline" variant="secondary" onPress={() => router.push('/model')} />
@@ -129,7 +129,7 @@ function HomeDeckSection({ onAura }: { onAura: (color: string | null) => void })
 
   return (
     <>
-      {deck.loading ? <Loading /> : null}
+      {deck.loading ? <Skeleton rows={1} height={460} /> : null}
       {deck.error ? <ErrorCard error={deck.error} onRetry={deck.reload} /> : null}
       {deck.current ? (
         <View style={{ gap: spacing.md }}>

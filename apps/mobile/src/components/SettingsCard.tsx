@@ -90,7 +90,7 @@ export function SettingsCard({ settings }: { settings: SettingsDto }) {
 
   return (
     <Card>
-      <Title style={{ fontSize: 16 }}>{t('profile.settings')}</Title>
+      <Title>{t('profile.settings')}</Title>
       {update.isError ? <ErrorCard error={update.error} /> : null}
 
       <Small style={{ fontWeight: '700' }}>{t('profile.language')}</Small>

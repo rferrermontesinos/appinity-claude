@@ -18,15 +18,20 @@ function FilterChip({ label, selected, color, onPress }: { label: string; select
       accessibilityState={{ selected }}
       onPress={onPress}
       style={{
+        minHeight: 44,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
         paddingHorizontal: spacing.md,
-        paddingVertical: spacing.xs + 2,
         borderRadius: radius.full,
         borderWidth: 1,
-        borderColor: selected ? color : c.border,
-        backgroundColor: selected ? `${color}22` : c.surface,
+        borderColor: selected ? c.text : c.border,
+        backgroundColor: selected ? c.surfaceRaised : c.surface,
       }}
     >
-      <Text style={{ color: selected ? color : c.text, fontWeight: selected ? '700' : '500', fontSize: 13 }}>{label}</Text>
+      {/* El color de categoría es una señal (punto); el texto, en el color del tema (AA). */}
+      <View style={{ width: 8, height: 8, borderRadius: radius.full, backgroundColor: color }} />
+      <Text style={{ color: c.text, fontWeight: selected ? '700' : '500', fontSize: 13 }}>{label}</Text>
     </Pressable>
   );
 }

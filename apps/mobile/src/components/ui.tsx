@@ -128,7 +128,20 @@ export function Button({
   );
 }
 
-export function Badge({ label, color, background }: { label: string; color: string; background?: string }) {
+/**
+ * Etiqueta. `dot`: el color es solo una señal (punto) y el texto va en el color normal del tema; obligatorio con colores
+ * de categoría, que no alcanzan AA como texto pequeño («Aura»: el color de categoría nunca es texto ni fondo de texto).
+ */
+export function Badge({ label, color, background, dot }: { label: string; color: string; background?: string; dot?: boolean }) {
+  const c = usePalette();
+  if (dot) {
+    return (
+      <View style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 3, backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.hairline }}>
+        <View style={{ width: 8, height: 8, borderRadius: radius.full, backgroundColor: color }} />
+        <Text style={{ color: c.text, fontSize: 11, fontWeight: '700', letterSpacing: 0.3 }}>{label}</Text>
+      </View>
+    );
+  }
   return (
     <View
       style={{

@@ -300,7 +300,7 @@ export function SourcesCard() {
   const returned = params.source && params.result ? { ok: params.result === 'connected', message: params.message ?? '' } : null;
   return (
     <Card>
-      <Title style={{ fontSize: 16 }}>{t('sources.title')}</Title>
+      <Title>{t('sources.title')}</Title>
       {returned ? (
         <View style={{ gap: spacing.xs }}>
           <Small style={{ color: returned.ok ? c.ok : c.danger, fontWeight: '700' }}>
