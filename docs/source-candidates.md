@@ -152,3 +152,20 @@ Conclusión: las grandes plataformas de consumo exigen licencia comercial. Lo in
 - Google, con un solo consentimiento;
 - Steam, Trakt y AniList (ya integradas);
 - Hardcover y Mixcloud, si se confirman sus condiciones.
+
+## Facebook e Instagram como fuente (revisión 2026-10-26)
+
+| Vía | Qué da | Estado | Valoración |
+|---|---|---|---|
+| **Facebook Login + permiso `user_likes`** (Graph API `/me/likes`) | Páginas que te gustan, con nombre, categoría de la página (restaurante, programa de TV, grupo, libro, podcast…), ubicación, web y fecha | Vigente. Uso permitido: «personalizar la experiencia relacionando o mostrando contenido sobre los gustos de la persona» ([permisos](https://developers.facebook.com/docs/permissions/)) | **Viable, como Steam**: conexión aparte, sync periódico. En modo desarrollo funciona con las cuentas con rol en la app (el titular) sin revisión; en producción exige App Review y verificación del negocio |
+| **Instagram Graph API** | Solo cuentas profesionales; no hay permiso para leer a quién sigue una cuenta personal | Instagram Basic Display cerró en diciembre de 2024 | **No viable** por API |
+| **Exportación «Descargar tu información» (Meta)** | JSON con las cuentas que sigues en Instagram y las páginas que te gustan o sigues en Facebook | Disponible para cualquier usuario | Viable como **subida de archivo**. Instagram solo da el nombre de usuario: se identifica con Wikidata (P2003), útil para artistas, series o marcas y poco para restaurantes |
+| **Portabilidad DMA de Meta** (destino en «Exportar tu información») | El flujo empieza en Meta; la documentación no detalla categorías ([guía](https://developers.facebook.com/docs/data-portability)) | Requiere alta como destino | Por estudiar; no prioritaria |
+
+Identificación: Wikidata tiene el usuario de Facebook (P2013) y de Instagram (P2003), así que una página de un artista,
+serie, película, libro o podcast se identifica de forma exacta cuando Wikidata la conoce. Un restaurante se identifica
+por su ubicación y nombre con OpenStreetMap, como los lugares de Google.
+
+Intensidad de la señal: un «me gusta» de página es un gusto explícito pero débil y a veces antiguo (`explicit_like` con
+confianza moderada y decaimiento por antigüedad); seguir una cuenta de Instagram indica interés (Known y preferencia
+débil). Nunca un disgusto: no seguir algo no es rechazo (NULL).
