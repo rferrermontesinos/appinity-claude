@@ -1035,3 +1035,12 @@ El acuerdo de desarrolladores de Twitch exige permiso escrito para guardar sus d
   - con una sola categoría comparable, el resultado coincide con v3;
   - sigue sin haber cifras altas con poca evidencia, porque E las limita a todas.
 - **Resultado** (Laura ↔ Clara, demo): la global se mantiene en 86 y las categorías pasan de 31–49 a 85–87.
+
+## 2026-10-26 · Recomendaciones por persona y barra inferior (decisiones del titular en la prueba D5)
+
+- **Sin lista de «recomendaciones de una persona»** (p. ej., «solo de Clara» o «restaurantes de Clara»). Se mantiene la
+  regla de la especificación: el perfil no revela historiales y una recomendación atribuida solo revela el objeto y su
+  motivo, de una en una en Inicio. Alternativas descartadas por ahora: con permiso explícito de la persona, o un filtro
+  «a través de X» en Inicio.
+- **La barra inferior sigue oculta en las pantallas de detalle** (perfil de persona, obra, categoría y chat), según el
+  patrón de Material Design: se vuelve con la flecha atrás.
