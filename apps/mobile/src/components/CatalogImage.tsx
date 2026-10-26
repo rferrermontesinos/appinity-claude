@@ -3,7 +3,8 @@ import { CATEGORY_META, type CatalogImage as CatalogImageModel, type Category } 
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View, type ImageStyle, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, Text, View, type ImageStyle, type StyleProp, type ViewStyle } from 'react-native';
+import { fonts } from '../theme';
 
 /** Fondo de cartel: oscuro siempre (como un póster), teñido con el color de la categoría y una forma translúcida. */
 function PosterBackdrop({ category }: { category: Category }) {
@@ -28,6 +29,7 @@ export function CategoryFallback({ category, style, compact }: { category: Categ
   const { t } = useTranslation();
   const meta = CATEGORY_META[category];
   const icon = meta.icon as keyof typeof MaterialCommunityIcons.glyphMap;
+  const label = t(`categories.${category}`);
   if (compact) {
     return (
       <View accessibilityRole="image" accessibilityLabel={t('item.imageFallback')} style={[{ backgroundColor: `${meta.color}33`, alignItems: 'center', justifyContent: 'center' }, style]}>
@@ -36,10 +38,21 @@ export function CategoryFallback({ category, style, compact }: { category: Categ
     );
   }
   return (
-    <View accessibilityRole="image" accessibilityLabel={t('item.imageFallback')} style={[{ overflow: 'hidden', alignItems: 'center' }, style]}>
+    <View accessibilityRole="image" accessibilityLabel={t('item.imageFallback')} style={[{ overflow: 'hidden' }, style]}>
       <PosterBackdrop category={category} />
-      <View style={{ position: 'absolute', top: '22%', alignItems: 'center' }}>
-        <MaterialCommunityIcons name={icon} size={132} color="#FFFFFF" style={{ opacity: 0.85 }} />
+      {/* Textura tipográfica: el nombre de la categoría, enorme y casi transparente, como en un cartel. */}
+      <View style={{ position: 'absolute', top: '18%', left: -8, right: -200 }} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+        {[0, 1, 2].map((i) => (
+          <Text
+            key={i}
+            numberOfLines={1}
+            ellipsizeMode="clip"
+            allowFontScaling={false}
+            style={{ color: '#FFFFFF', opacity: 0.09 - i * 0.025, fontFamily: fonts.display, fontSize: 84, lineHeight: 88, letterSpacing: -2, textTransform: 'uppercase' }}
+          >
+            {label}
+          </Text>
+        ))}
       </View>
     </View>
   );

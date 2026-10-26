@@ -1,13 +1,36 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMe } from '../../src/api/queries';
 import { DataBanner } from '../../src/components/DataBanner';
 import { RecommendationCard } from '../../src/components/RecommendationCard';
 import { Button, Card, EmptyState, ErrorCard, Loading, Screen, Small, Title } from '../../src/components/ui';
 import { useHomeDeck } from '../../src/state/homeDeck';
-import { spacing, usePalette } from '../../src/theme';
+import { secureStorage } from '../../src/state/secure-storage';
+import { fonts, spacing, usePalette } from '../../src/theme';
+
+/** La ayuda de gestos se muestra solo en las primeras tarjetas; después ocupa sitio sin aportar. */
+const HINT_KEY = 'appinity.deckHintUses';
+const HINT_LIMIT = 3;
+
+function useDeckHint() {
+  const [uses, setUses] = useState<number | null>(null);
+  useEffect(() => {
+    void secureStorage.get(HINT_KEY).then((v) => setUses(Number(v) || 0));
+  }, []);
+  return {
+    visible: uses !== null && uses < HINT_LIMIT,
+    used: () =>
+      setUses((prev) => {
+        const next = (prev ?? 0) + 1;
+        if (next <= HINT_LIMIT) void secureStorage.set(HINT_KEY, String(next));
+        return next;
+      }),
+  };
+}
 
 /** Tarjeta siguiente del mazo: solo se muestra, no responde a gestos. */
 const noop = () => undefined;
@@ -44,8 +67,16 @@ export default function HomeScreen() {
   const router = useRouter();
   const me = useMe();
   const userId = me.data?.user.id;
+  const insets = useSafeAreaInsets();
+  const c = usePalette();
   return (
     <Screen>
+      <Text
+        accessibilityRole="header"
+        style={{ marginTop: insets.top - spacing.sm, color: c.accent, fontFamily: fonts.display, fontSize: 20, letterSpacing: 0.5 }}
+      >
+        APPINITY
+      </Text>
       <DataBanner />
       {/* Un mazo por usuario: al cambiar de sesión empieza de cero (sin la cola ni el historial de otra persona). */}
       {userId ? <HomeDeckSection key={userId} /> : <Loading />}
@@ -65,6 +96,7 @@ export default function HomeScreen() {
 
 function HomeDeckSection() {
   const { t } = useTranslation();
+  const hint = useDeckHint();
   const router = useRouter();
   const deck = useHomeDeck(true);
   const emptyReason =
@@ -91,14 +123,14 @@ function HomeDeckSection() {
                 <RecommendationCard recommendation={deck.next} onDismiss={noop} onKeep={noop} interactive={false} />
               </View>
             ) : null}
-            <RecommendationCard key={deck.current.item.id} recommendation={deck.current} onDismiss={() => void deck.dismiss()} onKeep={() => void deck.keep()} interactive={!deck.busy} />
+            <RecommendationCard key={deck.current.item.id} recommendation={deck.current} onDismiss={() => { hint.used(); void deck.dismiss(); }} onKeep={() => { hint.used(); void deck.keep(); }} interactive={!deck.busy} />
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing.xl }}>
-            <DeckButton icon="close" kind="dismiss" label={t('home.dismiss')} onPress={() => void deck.dismiss()} disabled={deck.busy} />
+            <DeckButton icon="close" kind="dismiss" label={t('home.dismiss')} onPress={() => { hint.used(); void deck.dismiss(); }} disabled={deck.busy} />
             <DeckButton icon="undo" kind="undo" label={t('home.undo')} onPress={() => void deck.undo()} disabled={!deck.canUndo} />
-            <DeckButton icon="heart" kind="keep" label={t('home.keep')} onPress={() => void deck.keep()} disabled={deck.busy} />
+            <DeckButton icon="heart" kind="keep" label={t('home.keep')} onPress={() => { hint.used(); void deck.keep(); }} disabled={deck.busy} />
           </View>
-          <Small style={{ textAlign: 'center' }}>{t('home.gestureHint')}</Small>
+          {hint.visible ? <Small style={{ textAlign: 'center' }}>{t('home.gestureHint')}</Small> : null}
         </View>
       ) : null}
       {!deck.loading && !deck.current && !deck.error && deck.exhausted ? (

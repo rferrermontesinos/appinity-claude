@@ -65,6 +65,8 @@ export const en: TranslationResources = {
     recommendationsPending:
       'The recommendation carousel does not exist yet: the affinity engine and recommender are built in phases 5–8. No invented recommendations are shown here.',
     whatYouCanTest: 'What you can check now',
+    viewDetails: 'View details',
+    openItem: 'Open the details of {{title}}',
     openModel: 'Open the demo data model',
     openCategories: 'Browse the catalog by category',
     openSources: 'Manage simulated sources',

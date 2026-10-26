@@ -63,6 +63,8 @@ export const es = {
     recommendationsPending:
       'El carrusel de recomendaciones todavía no existe: el motor de afinidad y el recomendador se construyen en las fases 5–8. Aquí no se muestran recomendaciones inventadas.',
     whatYouCanTest: 'Qué puedes comprobar ahora',
+    viewDetails: 'Ver ficha',
+    openItem: 'Abrir la ficha de {{title}}',
     openModel: 'Ver el modelo de datos de la demo',
     openCategories: 'Explorar el catálogo por categorías',
     openSources: 'Gestionar fuentes simuladas',

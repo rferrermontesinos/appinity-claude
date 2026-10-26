@@ -42,6 +42,8 @@ export default function TabsLayout() {
           name={tab.name}
           options={{
             title: t(tab.titleKey),
+            // Inicio sin cabecera: la tarjeta gana altura (la barra inferior ya dice dónde estás).
+            headerShown: tab.name !== 'index',
             tabBarAccessibilityLabel: tab.name === 'people' && badge ? `${t(tab.titleKey)} (${badge})` : t(tab.titleKey),
             tabBarBadge: tab.name === 'people' && badge ? badge : undefined,
             // La barra tiene altura fija: la etiqueta crece con el tamaño de texto del sistema solo hasta 1,3× (pauta de

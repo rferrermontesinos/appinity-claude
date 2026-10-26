@@ -1,9 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { CATEGORY_META, type RecommendationDto } from '@appinity/shared';
-import * as WebBrowser from 'expo-web-browser';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Animated, PanResponder, Pressable, Text, View } from 'react-native';
+import { contextLine } from '../catalog/contextLine';
 import { fonts, onImage, radius, spacing, usePalette } from '../theme';
 import { CatalogImage } from './CatalogImage';
 import { ImageVeil } from './ImageVeil';
@@ -75,7 +76,8 @@ export function RecommendationCard({
     [interactive, onDismiss, onKeep, x],
   );
   const rotate = x.interpolate({ inputRange: [-300, 0, 300], outputRange: ['-12deg', '0deg', '12deg'] });
-  const link = item.externalLinks.find((l) => l.url.startsWith('https://'));
+  const router = useRouter();
+  const context = contextLine(item);
 
   // Sistema de diseño (tarjeta de recomendación): imagen a sangre, velo inferior, categoría y NEW arriba, título en
   // display y el motivo REAL en una cápsula translúcida. El texto va siempre en claro sobre el velo (contraste AA).
@@ -109,7 +111,11 @@ export function RecommendationCard({
         <Text style={{ color: onImage.text, fontSize: 26, lineHeight: 29, fontFamily: fonts.display, letterSpacing: -0.4 }} numberOfLines={2}>
           {item.title}
         </Text>
-        {item.releaseDate ? <Text style={{ color: onImage.muted, fontSize: 14 }}>{item.releaseDate.slice(0, 4)}</Text> : null}
+        {context ? (
+          <Text style={{ color: onImage.muted, fontSize: 14 }} numberOfLines={1}>
+            {context}
+          </Text>
+        ) : null}
         <View
           style={{
             flexDirection: 'row',
@@ -125,17 +131,17 @@ export function RecommendationCard({
           <MaterialCommunityIcons name={REASON_ICON[recommendation.reason.code]} size={18} color={onImage.reasonIcon} />
           <Text style={{ color: onImage.text, fontSize: 13, fontWeight: '500', flexShrink: 1 }}>{reasonText(t, recommendation)}</Text>
         </View>
-        {link ? (
-          <Pressable
-            accessibilityRole="link"
-            accessibilityLabel={t('home.openLink', { provider: link.provider })}
-            onPress={() => void WebBrowser.openBrowserAsync(link.url)}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', paddingVertical: 4 }}
-          >
-            <MaterialCommunityIcons name="open-in-new" size={14} color={onImage.muted} />
-            <Text style={{ color: onImage.muted, fontSize: 12 }}>{link.provider}</Text>
-          </Pressable>
-        ) : null}
+        {/* La ficha reúne los enlaces externos; aquí, una acción clara y con área táctil de 48 dp. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('home.openItem', { title: item.title })}
+          onPress={() => router.push({ pathname: '/item/[id]', params: { id: item.id } })}
+          hitSlop={8}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', minHeight: 48 }}
+        >
+          <Text style={{ color: onImage.text, fontSize: 14, fontWeight: '600' }}>{t('home.viewDetails')}</Text>
+          <MaterialCommunityIcons name="chevron-right" size={18} color={onImage.text} />
+        </Pressable>
       </View>
     </Animated.View>
   );

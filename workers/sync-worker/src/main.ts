@@ -1,4 +1,4 @@
-import { EntityResolver, LocalDiskStorage, WikidataSnapshotProvider, WikimediaImages, cacheCatalogImage, enrichImagesFromWikidata } from '@appinity/catalog';
+import { EntityResolver, LocalDiskStorage, WikidataSnapshotProvider, WikimediaImages, cacheCatalogImage, enrichDetailsFromWikidata, enrichImagesFromWikidata } from '@appinity/catalog';
 import { createDatabase } from '@appinity/database';
 import { buildContentRelations, createProducerQueues, enqueueAffinity, enqueueImage, enqueueSync, recomputeAffinities, runConnectionSync, scheduleDueSyncs, sendDueDigests, checkDigestReceipts } from '@appinity/ingestion';
 import { ExpoPushSender, createAdapterRegistry, createCatalogIdentifier, portabilityGroups } from '@appinity/integrations';
@@ -108,7 +108,10 @@ const workers: Worker[] = [
         for (const id of images.imageIds) await enqueueImage(producer, id);
         if (images.inserted || images.updated || images.removed)
           console.log(`[catálogo] imágenes de Wikimedia: ${images.inserted} nuevas, ${images.updated} cambiadas, ${images.removed} quitadas (${images.candidates} revisadas)`);
-        return { relations, images: { ...images, imageIds: images.imageIds.length } };
+        // Línea de contexto de las tarjetas: descripción, personas y géneros (solo objetos aún no revisados).
+        const details = await enrichDetailsFromWikidata(database.db, new WikimediaImages({ userAgent: env.catalogUserAgent }));
+        if (details.updated) console.log(`[catálogo] detalles de Wikidata en ${details.updated} objetos`);
+        return { relations, images: { ...images, imageIds: images.imageIds.length }, details };
       }
       return { pong: `${job.data.requestedAt} → ${new Date().toISOString()}` };
     },

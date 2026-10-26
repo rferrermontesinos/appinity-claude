@@ -16,6 +16,15 @@ const ACCEPTED_LICENSE = /^(public domain|pd\b|pd-|cc0|cc[ -]by|cc-by|attributio
 
 type WikidataClaims = Record<string, Array<{ mainsnak?: { datavalue?: { value?: unknown } } }>>;
 
+/** Personas que «firman» una obra: director, autor, desarrollador y creador (series y otras obras). */
+const CREATOR_PROPERTIES = ['P57', 'P50', 'P178', 'P170'];
+
+export interface WikidataDetails {
+  description: string | null;
+  creators: string[];
+  genres: string[];
+}
+
 export interface ImageClaim {
   file: string;
   kind: ImageKind;
@@ -128,6 +137,48 @@ export class WikimediaImages {
         if (category) out.set(qid, claim);
       }
       await this.sleep(200);
+    }
+    return out;
+  }
+
+  /**
+   * Detalles legibles de cada QID para la línea de contexto de las tarjetas: descripción corta (es, en o ca), personas
+   * (director, autor, desarrollador o creador) y géneros, con sus etiquetas. Solo datos de Wikidata (CC0).
+   */
+  async detailsFor(qids: string[]): Promise<Map<string, WikidataDetails>> {
+    type Entity = { descriptions?: Record<string, { value: string }>; labels?: Record<string, { value: string }>; claims?: WikidataClaims };
+    const entities = new Map<string, Entity>();
+    for (const batch of chunk([...new Set(qids)], 50)) {
+      const url = `${WIKIDATA_API}?action=wbgetentities&format=json&props=claims|descriptions&languages=es|en|ca&ids=${batch.join('|')}`;
+      const data = (await this.json(url)) as { entities?: Record<string, Entity> };
+      for (const [qid, entity] of Object.entries(data.entities ?? {})) entities.set(qid, entity);
+      await this.sleep(200);
+    }
+    const refsOf = (entity: Entity, property: string) =>
+      (entity.claims?.[property] ?? [])
+        .map((c) => (c.mainsnak?.datavalue?.value as { id?: string } | undefined)?.id)
+        .filter((id): id is string => typeof id === 'string')
+        .slice(0, 3);
+    const referenced = new Set<string>();
+    for (const entity of entities.values()) for (const p of [...CREATOR_PROPERTIES, 'P136']) for (const id of refsOf(entity, p)) referenced.add(id);
+    const labels = new Map<string, string>();
+    for (const batch of chunk([...referenced], 50)) {
+      const url = `${WIKIDATA_API}?action=wbgetentities&format=json&props=labels&languages=es|en|ca&ids=${batch.join('|')}`;
+      const data = (await this.json(url)) as { entities?: Record<string, Entity> };
+      for (const [id, entity] of Object.entries(data.entities ?? {})) {
+        const label = entity.labels?.es?.value ?? entity.labels?.en?.value ?? entity.labels?.ca?.value;
+        if (label) labels.set(id, label);
+      }
+      await this.sleep(200);
+    }
+    const out = new Map<string, WikidataDetails>();
+    for (const [qid, entity] of entities) {
+      const names = (props: string[]) => [...new Set(props.flatMap((p) => refsOf(entity, p)).map((id) => labels.get(id)).filter((l): l is string => Boolean(l)))].slice(0, 3);
+      out.set(qid, {
+        description: entity.descriptions?.es?.value ?? entity.descriptions?.en?.value ?? entity.descriptions?.ca?.value ?? null,
+        creators: names(CREATOR_PROPERTIES),
+        genres: names(['P136']),
+      });
     }
     return out;
   }
@@ -291,4 +342,54 @@ export async function enrichImagesFromWikidata(
     }
   }
   return result;
+}
+
+export interface DetailsEnrichmentResult {
+  candidates: number;
+  updated: number;
+}
+
+/**
+ * Completa los objetos del catálogo real con descripción, personas y géneros de Wikidata, para la línea de contexto de
+ * las tarjetas. No pisa una descripción existente; los metadatos se fusionan. `metadata.detailsCheckedAt` evita
+ * volver a consultar un objeto ya revisado.
+ */
+export async function enrichDetailsFromWikidata(
+  db: Database,
+  client: WikimediaImages,
+  options: { dataset?: Dataset; limit?: number } = {},
+): Promise<DetailsEnrichmentResult> {
+  const rows = await db
+    .select({ itemId: catalogItems.id, qid: catalogExternalIds.externalId, description: catalogItems.description, metadata: catalogItems.metadata })
+    .from(catalogItems)
+    .innerJoin(catalogExternalIds, and(eq(catalogExternalIds.catalogItemId, catalogItems.id), eq(catalogExternalIds.provider, 'wikidata'), eq(catalogExternalIds.idType, 'entity')))
+    .where(
+      and(
+        eq(catalogItems.dataset, options.dataset ?? 'live'),
+        sql`${catalogExternalIds.externalId} ~ '^Q[0-9]+$'`,
+        sql`NOT (${catalogItems.metadata} ? 'detailsCheckedAt')`,
+      ),
+    )
+    .limit(options.limit ?? 300);
+  if (!rows.length) return { candidates: 0, updated: 0 };
+  const details = await client.detailsFor(rows.map((r) => r.qid));
+  let updated = 0;
+  for (const row of rows) {
+    const d = details.get(row.qid);
+    if (!d) continue; // Wikidata no respondió por este objeto: se reintentará en la próxima pasada.
+    const previous = row.metadata ?? {};
+    const keep = (key: string) => (Array.isArray(previous[key]) && (previous[key] as unknown[]).length ? previous[key] : undefined);
+    const metadata = {
+      ...previous,
+      creators: keep('creators') ?? d.creators,
+      genres: keep('genres') ?? d.genres,
+      detailsCheckedAt: new Date().toISOString(),
+    };
+    await db
+      .update(catalogItems)
+      .set({ metadata, ...(row.description ? {} : d.description ? { description: d.description } : {}), updatedAt: new Date() })
+      .where(eq(catalogItems.id, row.itemId));
+    updated++;
+  }
+  return { candidates: rows.length, updated };
 }
