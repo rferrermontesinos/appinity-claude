@@ -35,6 +35,14 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 - Investigado: Plex y Stremio usan TMDb, TheTVDB y fanart.tv; los pósteres reales exigen un acuerdo comercial.
 - `pnpm test`: 37 ficheros y 366 tests OK.
 
+### Crítica de diseño de Inicio (/design:design-critique) aplicada
+
+- Línea de contexto bajo el título (autor o director · año · género; localidad en lugares). El worker completa el
+  catálogo real con descripción, personas y géneros de Wikidata (`enrichDetailsFromWikidata`, una vez por objeto).
+- «Ver ficha» (48 dp) en lugar del enlace «wikidata»; Inicio sin cabecera (marca pequeña); ayuda de gestos solo en las
+  3 primeras tarjetas; cartel de sustitución con el nombre de la categoría como textura tipográfica.
+- Commit `aaf4666`; 366 tests OK; verificado en la vista web.
+
 ### Pendiente
 
 - **Reiniciar `pnpm api` y `pnpm worker`** (los tiene el titular en sus pestañas) para aplicar la revisión de
