@@ -49,9 +49,16 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
   necesita reiniciar `pnpm api`** (en marcha en la terminal del titular; no se detiene un proceso cuya línea de
   comandos no lleva `APPINITY CLAUDE`).
 
+### Verificado tras reiniciar la API (titular, 2026-10-26)
+
+- Restaurantes (demo): n.º 1 Lasarte (2/3, gusto 100, afinidad media 57 %, puntuación 32, confianza 100 %);
+  n.º 2 Alkimia (2/2, gusto 100, 67 %, puntuación 29, confianza 60 %); n.º 3 Cinc Sentits (2/3, gusto 50, 57 %,
+  puntuación 16). La confianza explica que 2/3 supere a 2/2. En la demo no hay almas gemelas excepcionales, así que
+  la insignia no aparece.
+
 ### Pendiente
 
-- Reiniciar `pnpm api` y revisar el podio completo en la vista web y en el teléfono.
+- Ver en el teléfono. Siguientes: Perfil, barra inferior y guía del sistema de diseño.
 
 ## Entrega 2026-10-26 (8) · «Aura» en Categorías
 
