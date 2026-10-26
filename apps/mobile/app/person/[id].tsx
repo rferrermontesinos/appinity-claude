@@ -7,10 +7,11 @@ import { usePerson } from '../../src/api/queries';
 import { CategoryAffinityBar } from '../../src/components/Affinity';
 import { AuraCard, onPoster } from '../../src/components/Aura';
 import { ChatActions } from '../../src/components/ChatActions';
+import { DetailHeader } from '../../src/components/DetailHeader';
 import { PersonActions } from '../../src/components/PersonActions';
 import { PersonAvatar, formatAffinity } from '../../src/components/PersonAvatar';
-import { Body, Card, ErrorCard, Loading, Screen, Small } from '../../src/components/ui';
-import { fonts, radius, spacing, usePalette } from '../../src/theme';
+import { Body, Card, ErrorCard, Loading, Screen, Skeleton, Small } from '../../src/components/ui';
+import { fonts, radius, spacing, type, usePalette } from '../../src/theme';
 
 /**
  * Perfil público mínimo (§4, «Aura»): cartel con la persona y tu afinidad hacia ella (direccional), teñido con su
@@ -27,8 +28,10 @@ export default function PersonScreen() {
   const value = data ? formatAffinity(data.affinity.score) : null;
   return (
     <Screen refreshing={person.isRefetching} onRefresh={() => void person.refetch()}>
-      <Stack.Screen options={{ title: data?.displayName ?? t('people.title') }} />
-      {person.isLoading ? <Loading /> : null}
+      {/* Cabecera única de detalle: el nombre ya está en el cartel. */}
+      <Stack.Screen options={{ headerShown: false, title: data?.displayName ?? t('people.title') }} />
+      <DetailHeader fallback="/people" />
+      {person.isLoading ? <Skeleton rows={3} height={120} /> : null}
       {person.error ? <ErrorCard error={person.error} onRetry={() => void person.refetch()} /> : null}
       {data ? (
         <>
@@ -36,7 +39,7 @@ export default function PersonScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
               <PersonAvatar name={data.displayName} url={data.avatarUrl} size={64} ring={onPoster.lime} />
               <View style={{ flex: 1 }}>
-                <Text accessibilityRole="header" style={{ color: onPoster.text, fontFamily: fonts.displayHeavy, fontSize: 26, lineHeight: 29, letterSpacing: -0.6 }} numberOfLines={2}>
+                <Text accessibilityRole="header" style={{ color: onPoster.text, ...type.h2 }} numberOfLines={2}>
                   {data.displayName}
                 </Text>
                 {data.countryCode ? <Text style={{ color: onPoster.muted, fontSize: 14 }}>{data.countryCode}</Text> : null}
@@ -47,7 +50,7 @@ export default function PersonScreen() {
             </Text>
             <Text
               accessibilityLabel={`${t('people.affinity')} ${value === null ? '—' : t('people.affinityValue', { value })}`}
-              style={{ color: value === null ? onPoster.muted : onPoster.text, fontFamily: fonts.displayHeavy, fontSize: 64, lineHeight: 66, letterSpacing: -2.5 }}
+              style={{ color: value === null ? onPoster.muted : onPoster.text, ...type.figure }}
             >
               {value ?? '—'}
               {value !== null ? <Text style={{ fontSize: 26, letterSpacing: 0 }}> %</Text> : null}
@@ -62,7 +65,7 @@ export default function PersonScreen() {
           </AuraCard>
           <ChatActions person={data} />
           <Card>
-            <Text accessibilityRole="header" style={{ color: c.text, fontFamily: fonts.display, fontSize: 20, letterSpacing: -0.4 }}>
+            <Text accessibilityRole="header" style={{ color: c.text, ...type.h3 }}>
               {t('people.byCategory')}
             </Text>
             {data.affinity.categories.map((cat) => (

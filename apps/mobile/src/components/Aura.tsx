@@ -92,7 +92,7 @@ export function Grain({ opacity = 0.35 }: { opacity?: number }) {
 }
 
 /** Colores sobre un cartel `AuraCard` (fondo oscuro fijo en ambos temas): AA comprobado en el peor brillo. */
-export const onPoster = { base: '#141708', text: '#F5F3F0', muted: 'rgba(245,243,240,0.78)', lime: '#D4F45A', onLime: '#141A02' };
+export const onPoster = { base: '#141708', text: '#F5F3F0', muted: 'rgba(245,243,240,0.78)', lime: '#D4F45A', onLime: '#141A02', track: 'rgba(255,255,255,0.12)', glass: 'rgba(12,12,14,0.45)' };
 
 /**
  * Cartel de «Aura» para los momentos de persona: fondo oscuro teñido con `accent`, brillo lima arriba a la izquierda,

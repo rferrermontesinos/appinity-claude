@@ -102,7 +102,7 @@ export function SourceLinks({
               accessibilityLabel={t('item.openIn', { name: name(l.provider) })}
               onPress={() => openExternal(l.url)}
               style={({ pressed }) => ({
-                minHeight: 40,
+                minHeight: 44,
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 6,

@@ -122,7 +122,7 @@ export function RecommendationCard({
         <CatalogImage image={item.primaryImage} category={item.category} title={item.title} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
         <View style={{ position: 'absolute', top: spacing.md, left: spacing.md, right: spacing.md, flexDirection: 'row', justifyContent: 'space-between' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: onImage.glass, borderRadius: radius.full, paddingVertical: 6, paddingLeft: spacing.sm, paddingRight: spacing.md }}>
-            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: meta.color }} />
+            <View style={{ width: 8, height: 8, borderRadius: radius.full, backgroundColor: meta.color }} />
             <MaterialCommunityIcons name={meta.icon as never} size={15} color={onImage.text} />
             <Text style={{ color: onImage.text, fontSize: 12, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase' }}>{t(`categories.${item.category}`)}</Text>
           </View>

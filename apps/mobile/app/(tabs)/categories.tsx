@@ -42,7 +42,7 @@ function CategoryTile({ category, width, rank }: { category: Category; width: nu
       <Grain opacity={0.3} />
       <MaterialCommunityIcons name={icon} size={120} color={mixHex(meta.color, '#FFFFFF', 0.5)} style={{ position: 'absolute', right: -22, bottom: -22, opacity: 0.22 }} />
       <View style={{ flex: 1, padding: spacing.md + 2, justifyContent: 'space-between' }}>
-        <View style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(12,12,14,0.45)' }}>
+        <View style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: onPoster.glass }}>
           <MaterialCommunityIcons name={icon} size={22} color={onPoster.text} />
         </View>
         <View style={{ gap: 2 }}>

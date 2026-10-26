@@ -11,7 +11,7 @@ export function CreditsCard() {
   const c = usePalette();
   return (
     <Card>
-      <Title style={{ fontSize: 16 }}>{t('credits.title')}</Title>
+      <Title>{t('credits.title')}</Title>
       <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(OSM_COPYRIGHT)}>
         <Small style={{ color: c.accent }}>{t('credits.osm')}</Small>
       </Pressable>

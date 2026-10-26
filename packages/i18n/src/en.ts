@@ -347,9 +347,11 @@ export const en: TranslationResources = {
     recommendedIntro:
       'Recommendations in this category: first what your soulmates back (even if you have no history here) and what is highly rated in your area; then what the community rates and what you can still explore. Items you dismissed in Home also appear here.',
     emptyRecommended: 'Nothing to recommend in this category yet.',
+    emptyTitle: 'No recommendations here yet',
     emptyNoLocation: 'Add your area in Profile to see place recommendations near you.',
   },
   follow: {
+    emptyTitle: 'You do not follow anyone yet',
     title: 'Following',
     intro: 'Creators and friends. What they love shows up on Home with their name; your soulmates still lead.',
     empty: 'You are not following anyone yet. Follow creators from their profile; you follow friends when the friendship is accepted.',
@@ -396,6 +398,7 @@ export const en: TranslationResources = {
     algorithm: 'Algorithm {{version}}',
     friendsPending: 'Friend requests, contacts and blocking arrive in phase 10.',
     friendsEmpty: 'You have no friends on APPINITY yet. Open someone’s profile and tap “Add friend”. Friends do not need to be soulmates.',
+    friendsEmptyTitle: 'No friends here yet',
     incoming: 'Requests received',
     outgoing: 'Requests sent',
     accept: 'Accept',
@@ -432,6 +435,8 @@ export const en: TranslationResources = {
     later: 'Not now',
   },
   chat: {
+    emptyTitle: 'No conversations yet',
+    matchKicker: 'Mutual match',
     tabChats: 'Chats',
     tabPeople: 'Soulmates',
     tabFollowing: 'Following',

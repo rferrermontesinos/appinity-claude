@@ -128,7 +128,7 @@ function SoulmatesAndFriends() {
       {soulmates.data && !soulmates.data.items.length ? (
         <Card>
           <Title>{t('people.soulmates')}</Title>
-          <EmptyState icon="account-heart-outline" title={t('people.soulmatesEmptyTitle')} body={t('people.soulmatesEmpty')} action={{ label: t('people.connectSources'), icon: 'link-variant', onPress: () => router.push('/profile') }} />
+          <EmptyState icon="account-heart-outline" title={t('people.soulmatesEmptyTitle')} body={t('people.soulmatesEmpty')} action={{ label: t('people.connectSources'), icon: 'link-variant', onPress: () => router.push('/sources') }} />
         </Card>
       ) : null}
       {top ? <SoulmateHero person={top} /> : null}

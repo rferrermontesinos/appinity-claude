@@ -2,7 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { CATEGORY_META, type Category } from '@appinity/shared';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
-import { fonts, radius, spacing, usePalette, useThemeMode } from '../theme';
+import { radius, spacing, type, usePalette, useThemeMode } from '../theme';
 import { Grain, mixHex, onPoster } from './Aura';
 
 /**
@@ -50,11 +50,11 @@ export function CategoryPoster({ category }: { category: Category }) {
         <Grain opacity={0.3} />
       </View>
       <View style={{ flex: 1, padding: spacing.lg + 2, justifyContent: 'space-between' }}>
-        <View style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(12,12,14,0.45)' }}>
+        <View style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: onPoster.glass }}>
           <MaterialCommunityIcons name={icon} size={24} color={onPoster.text} />
         </View>
         <View style={{ gap: 2 }}>
-          <Text style={{ color: onPoster.text, fontFamily: fonts.displayHeavy, fontSize: 40, lineHeight: 42, letterSpacing: -1.4 }} numberOfLines={1} adjustsFontSizeToFit>
+          <Text style={{ color: onPoster.text, ...type.display }} numberOfLines={1} adjustsFontSizeToFit>
             {name}
           </Text>
           <Text style={{ color: onPoster.muted, fontSize: 14 }} numberOfLines={1}>

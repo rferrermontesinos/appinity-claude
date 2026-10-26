@@ -35,7 +35,7 @@ export function TastesCard() {
 
   return (
     <Card>
-      <Title style={{ fontSize: 16 }}>{t('tastes.title')}</Title>
+      <Title>{t('tastes.title')}</Title>
       {s.total === 0 ? (
         <Body muted>{t('tastes.empty')}</Body>
       ) : (

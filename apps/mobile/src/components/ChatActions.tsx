@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import { useChatAction, useChatConfig } from '../api/queries';
-import { spacing, usePalette } from '../theme';
+import { radius, spacing, usePalette } from '../theme';
 import { Badge, Body, Button, Card, ErrorCard, Small, Title } from './ui';
 
 /**
@@ -34,7 +34,7 @@ export function ChatActions({ person }: { person: PublicPersonDto }) {
       <Card>
         <Title>{t('chat.receivedTitle', { name: person.displayName })}</Title>
         {chat.firstMessage ? (
-          <View style={{ backgroundColor: c.surfaceAlt, borderRadius: 14, padding: spacing.md }}>
+          <View style={{ backgroundColor: c.surfaceAlt, borderRadius: radius.md, padding: spacing.md }}>
             <Body>{chat.firstMessage}</Body>
           </View>
         ) : null}

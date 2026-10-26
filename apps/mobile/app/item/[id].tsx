@@ -12,9 +12,10 @@ import { CatalogImage } from '../../src/components/CatalogImage';
 import { CategoryChipOnImage, ImageVeil } from '../../src/components/ImageVeil';
 import { Dimensions, formatPreference } from '../../src/components/Dimensions';
 import { SourceLinks, openExternal } from '../../src/components/SourceLinks';
-import { Body, Card, ErrorCard, Loading, Row, Screen, Small, Title } from '../../src/components/ui';
+import { Body, Card, ErrorCard, Loading, Row, Screen, Skeleton, Small, Title } from '../../src/components/ui';
 import { DataBanner } from '../../src/components/DataBanner';
-import { fonts, onImage, radius, spacing, usePalette } from '../../src/theme';
+import { DetailHeader } from '../../src/components/DetailHeader';
+import { onImage, radius, spacing, type, usePalette } from '../../src/theme';
 
 /** Enlace de texto (atribución de la imagen). */
 function LinkText({ label, url }: { label: string; url: string }) {
@@ -75,9 +76,9 @@ function EvidenceRow({ o }: { o: ObservationDto }) {
   );
 }
 
-/** Título de sección en Bricolage. */
+/** Título de sección (paso h4 de la escala, como encabezado). */
 function SectionTitle({ children }: { children: string }) {
-  return <Title style={{ fontSize: 17, fontFamily: fonts.display }}>{children}</Title>;
+  return <Title>{children}</Title>;
 }
 
 /**
@@ -100,9 +101,10 @@ export default function ItemScreen() {
 
   return (
     <Screen refreshing={detail.isRefetching} onRefresh={() => void detail.refetch()} background={item ? world.background : undefined}>
-      {/* La ficha sigue en el «mundo» de su categoría: fondo teñido y barra fundida con él. */}
-      <Stack.Screen options={{ title: item?.title ?? t('item.title'), ...(item ? { headerStyle: { backgroundColor: world.background }, headerShadowVisible: false } : {}) }} />
-      {detail.isLoading ? <Loading /> : null}
+      {/* Cabecera única de detalle: el título ya está en el cartel; el fondo es el «mundo» de su categoría. */}
+      <Stack.Screen options={{ headerShown: false, title: item?.title ?? t('item.title') }} />
+      <DetailHeader />
+      {detail.isLoading ? <Skeleton rows={3} height={140} /> : null}
       {detail.isError ? <ErrorCard error={detail.error} onRetry={() => void detail.refetch()} /> : null}
       {item && image ? (
         <>
@@ -123,7 +125,7 @@ export default function ItemScreen() {
               <ImageVeil height="55%" />
               <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: spacing.lg, gap: spacing.sm }}>
                 <CategoryChipOnImage category={item.category} />
-                <Text accessibilityRole="header" style={{ color: onImage.text, fontFamily: fonts.displayHeavy, fontSize: 30, lineHeight: 33, letterSpacing: -0.8 }} numberOfLines={3}>
+                <Text accessibilityRole="header" style={{ color: onImage.text, ...type.h1 }} numberOfLines={3}>
                   {item.title}
                 </Text>
                 {context ? (
@@ -148,7 +150,7 @@ export default function ItemScreen() {
 
           {item.externalLinks.length ? (
             <View style={{ gap: spacing.sm }}>
-              <Text accessibilityRole="header" style={{ color: c.text, fontFamily: fonts.display, fontSize: 20, letterSpacing: -0.4 }}>
+              <Text accessibilityRole="header" style={{ color: c.text, ...type.h3 }}>
                 {t('item.whereToFind')}
               </Text>
               <SourceLinks links={item.externalLinks} accent={world.border} />

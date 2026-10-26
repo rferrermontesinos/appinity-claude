@@ -5,7 +5,7 @@ import { Pressable, Text, View } from 'react-native';
 import { useFollowing, useFriends, useSocialAction } from '../api/queries';
 import { spacing, usePalette } from '../theme';
 import { PersonAvatar, formatAffinity } from './PersonAvatar';
-import { Badge, Body, Button, Card, ErrorCard, Loading, Small, Title } from './ui';
+import { Badge, Body, Button, Card, EmptyState, ErrorCard, Loading, Skeleton, Small, Title } from './ui';
 
 function Row({ person, badge, children }: { person: FollowedPersonDto | FriendDto; badge?: { label: string; color: string } | null; children?: React.ReactNode }) {
   const { t } = useTranslation();
@@ -57,10 +57,10 @@ export function FollowingCard() {
     <Card>
       <Title>{t('follow.title')}</Title>
       <Small>{t('follow.intro')}</Small>
-      {following.isLoading ? <Loading /> : null}
+      {following.isLoading ? <Skeleton rows={2} height={64} /> : null}
       {following.error ? <ErrorCard error={following.error} onRetry={() => void following.refetch()} /> : null}
       {action.error ? <ErrorCard error={action.error} /> : null}
-      {following.data && !following.data.length ? <Body muted>{t('follow.empty')}</Body> : null}
+      {following.data && !following.data.length ? <EmptyState icon="account-star-outline" title={t('follow.emptyTitle')} body={t('follow.empty')} /> : null}
       {following.data?.map((p) => (
         <Row key={p.userId} person={p} badge={badgeOf(p)}>
           <Button label={t('follow.unfollow')} variant="secondary" size="small" onPress={() => action.mutate({ kind: 'unfollow', userId: p.userId })} disabled={action.isPending} />

@@ -82,7 +82,8 @@ function ConnectionRow({
    */
   async function startConnect() {
     setNotice(null);
-    const returnUrl = Linking.createURL('profile');
+    // Vuelve a la pantalla de Fuentes, donde se muestra el resultado de la conexión.
+    const returnUrl = Linking.createURL('sources');
     const result = await connect.mutateAsync({ sourceKey: source.key, returnUrl }).catch(() => null);
     if (result?.kind === 'redirect') {
       // En desarrollo Google solo puede volver a localhost: el teléfono no llegaría a la API.
@@ -173,7 +174,7 @@ function ConnectionRow({
               {t(source.key === 'google_portability' ? 'sources.newPermissionsGoogle' : 'sources.newPermissions', { count: connection.missingScopes })}
             </Small>
           ) : null}
-          {latest ? <RunSummary run={latest} /> : null}
+          {latest && isDemoUser ? <RunSummary run={latest} /> : null}
           {notice ? (
             <Small style={{ color: notice.tone === 'ok' ? c.ok : c.danger, fontWeight: '700' }}>{notice.text}</Small>
           ) : null}
@@ -235,7 +236,7 @@ function ConnectionRow({
                     sync.mutate({ connectionId: connection.id, mode: source.capabilities.incrementalSync ? 'incremental' : 'full' })
                   }
                 />
-                {source.capabilities.incrementalSync ? (
+                {source.capabilities.incrementalSync && isDemoUser ? (
                   <Button
                     label={t('sources.fullSync')}
                 size="small"
@@ -312,7 +313,13 @@ export function SourcesCard() {
       {sources.isLoading || connections.isLoading ? <Loading /> : null}
       {sources.isError ? <ErrorCard error={sources.error} onRetry={() => void sources.refetch()} /> : null}
       {sources.data
-        ?.filter((source) => !(source.simulated && !isDemoUser))
+        // Cuentas reales: solo lo que se puede conectar (o ya está conectado). Lo previsto, lo no configurado y lo
+        // simulado solo se ve en la demo y en desarrollo, junto con el detalle técnico de cada sincronización.
+        ?.filter((source) =>
+          isDemoUser
+            ? true
+            : !source.simulated && (source.connectable || Boolean(connections.data?.some((c) => c.sourceKey === source.key))),
+        )
         .map((source) => (
           <ConnectionRow
             key={source.key}

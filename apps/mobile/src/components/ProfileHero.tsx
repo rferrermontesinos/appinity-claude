@@ -18,8 +18,8 @@ function Stat({ value, label, people }: { value: number | null; label: string; p
 }
 
 /**
- * Cabecera de Perfil («Aura»): tu cartel. Avatar con aro lima, nombre y @usuario, y tres cifras reales (fuentes
- * activas, gustos claros y almas gemelas). Se tiñe con la categoría más presente en tus gustos; sin gustos, con la
+ * Cabecera de Perfil («Aura»): tu cartel. Avatar con aro lima, nombre y @usuario, y dos cifras reales (fuentes
+ * activas y almas gemelas; «gustos claros» se quitó el 2026-10-26: el detalle está en «Tus gustos»). Se tiñe con la categoría más presente en tus gustos; sin gustos, con la
  * chispa, y lo dice.
  */
 export function ProfileHero({ me }: { me: MeDto }) {
@@ -47,13 +47,12 @@ export function ProfileHero({ me }: { me: MeDto }) {
           </Text>
         </View>
       </View>
-      <View style={{ flexDirection: 'row', gap: spacing.md, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)' }}>
+      <View style={{ flexDirection: 'row', gap: spacing.md, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: `${onPoster.text}1A` }}>
         <Stat value={active} label={t('profile.heroSources')} />
-        <Stat value={summary?.likes ?? null} label={t('profile.heroLikes')} />
         <Stat value={soulmates.data?.items.length ?? null} label={t('profile.heroSoulmates')} people />
       </View>
       {topCategory ? (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: 'rgba(12,12,14,0.45)', borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 6 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: `${onPoster.base}73`, borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 6 }}>
           <MaterialCommunityIcons name={CATEGORY_META[topCategory].icon as never} size={15} color={onPoster.text} />
           <Text style={{ color: onPoster.text, fontSize: 12, fontWeight: '600' }}>{t('profile.heroTop', { category: t(`categories.${topCategory}`) })}</Text>
         </View>

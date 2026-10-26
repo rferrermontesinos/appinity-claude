@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Animated, Pressable, Text, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { usePerson } from '../api/queries';
-import { fonts, radius, spacing, usePalette } from '../theme';
+import { fonts, radius, spacing, type, usePalette } from '../theme';
 import { AuraCard, onPoster } from './Aura';
 import { PersonAvatar, formatAffinity } from './PersonAvatar';
 
@@ -21,7 +21,7 @@ function useCountUp(target: number | null, reduce: boolean): number | null {
     if (reduce || target === null) return;
     const started = Date.now();
     const id = setInterval(() => {
-      const t = Math.min(1, (Date.now() - started) / 900);
+      const t = Math.min(1, (Date.now() - started) / 600);
       setN(Math.round(target * (1 - (1 - t) ** 3)));
       if (t >= 1) clearInterval(id);
     }, 16);
@@ -48,7 +48,7 @@ function HeroBar({ item, reduce }: { item: AffinityCategoryDto; reduce: boolean 
       <Text style={{ color: HERO_TEXT, fontSize: 13, width: 84 }} numberOfLines={1}>
         {t(`categories.${item.category}`)}
       </Text>
-      <View style={{ flex: 1, height: 8, borderRadius: radius.full, backgroundColor: 'rgba(255,255,255,0.12)', overflow: 'hidden' }}>
+      <View style={{ flex: 1, height: 8, borderRadius: radius.full, backgroundColor: onPoster.track, overflow: 'hidden' }}>
         {item.score !== null ? <Animated.View style={{ width, height: '100%', borderRadius: radius.full, backgroundColor: meta.color }} /> : null}
       </View>
       <Text style={{ width: 30, textAlign: 'right', color: value === null ? HERO_MUTED : HERO_TEXT, fontFamily: fonts.display, fontSize: 14 }}>{value ?? '—'}</Text>
@@ -88,7 +88,7 @@ export function SoulmateHero({ person }: { person: SoulmateDto }) {
       <Text style={{ color: LIME, fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', marginTop: spacing.md }}>{t('people.heroKicker')}</Text>
       <Text
         accessibilityLabel={`${t('people.affinity')} ${score === null ? '—' : t('people.affinityValue', { value: Math.round(score) })}`}
-        style={{ color: HERO_TEXT, fontFamily: fonts.displayHeavy, fontSize: 64, lineHeight: 66, letterSpacing: -2.5, includeFontPadding: false }}
+        style={{ color: HERO_TEXT, ...type.figure, includeFontPadding: false }}
       >
         {shown === null ? '—' : shown}
         {shown !== null ? <Text style={{ fontSize: 26, letterSpacing: 0 }}> %</Text> : null}

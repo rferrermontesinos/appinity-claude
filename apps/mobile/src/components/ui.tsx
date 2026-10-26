@@ -1,9 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { CATEGORY_META, type Category } from '@appinity/shared';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
+  Animated,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -15,7 +16,8 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
-import { fonts, radius, spacing, usePalette } from '../theme';
+import { useReducedMotion } from 'react-native-reanimated';
+import { fonts, radius, spacing, type, usePalette } from '../theme';
 
 export function Screen({
   children,
@@ -57,7 +59,12 @@ export function Card({ children, style }: { children: ReactNode; style?: StylePr
 
 export function Title({ children, style }: { children: ReactNode; style?: StyleProp<TextStyle> }) {
   const c = usePalette();
-  return <Text style={[{ color: c.text, fontSize: 18, fontFamily: fonts.display, letterSpacing: -0.3 }, style]}>{children}</Text>;
+  // Encabezado de sección: con TalkBack se puede saltar de uno a otro.
+  return (
+    <Text accessibilityRole="header" style={[{ color: c.text, ...type.h4 }, style]}>
+      {children}
+    </Text>
+  );
 }
 
 export function Body({ children, style, muted }: { children: ReactNode; style?: StyleProp<TextStyle>; muted?: boolean }) {
@@ -126,7 +133,7 @@ export function Badge({ label, color, background }: { label: string; color: stri
     <View
       style={{
         alignSelf: 'flex-start',
-        borderRadius: 999,
+        borderRadius: radius.full,
         paddingHorizontal: spacing.sm,
         paddingVertical: 2,
         backgroundColor: background ?? `${color}22`,
@@ -226,12 +233,41 @@ export function Loading() {
   );
 }
 
+/**
+ * Esqueleto de carga («Aura»): bloques con la forma del contenido que llega, con un pulso suave (sin pulso si el sistema
+ * pide reducir movimiento). Oculto al lector de pantalla; se anuncia «Cargando».
+ */
+export function Skeleton({ rows = 3, height = 76, style }: { rows?: number; height?: number; style?: StyleProp<ViewStyle> }) {
+  const c = usePalette();
+  const { t } = useTranslation();
+  const reduce = useReducedMotion();
+  const [pulse] = useState(() => new Animated.Value(0.55));
+  useEffect(() => {
+    if (reduce) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0.55, duration: 700, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulse, reduce]);
+  return (
+    <View accessible accessibilityLabel={t('common.loading')} accessibilityRole="progressbar" style={[{ gap: spacing.sm }, style]}>
+      {Array.from({ length: rows }, (_, i) => (
+        <Animated.View key={i} style={{ height, borderRadius: radius.lg, backgroundColor: c.surfaceRaised, opacity: reduce ? 0.8 : pulse }} />
+      ))}
+    </View>
+  );
+}
+
 export function ErrorCard({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   const c = usePalette();
   const { t } = useTranslation();
   return (
     <Card style={{ borderColor: c.danger }}>
-      <Title style={{ color: c.danger, fontSize: 16 }}>{t('common.errorTitle')}</Title>
+      <Title style={{ color: c.danger }}>{t('common.errorTitle')}</Title>
       <Body muted>{error instanceof Error ? error.message : String(error)}</Body>
       {onRetry ? <Button label={t('common.retry')} variant="secondary" onPress={onRetry} /> : null}
     </Card>
@@ -239,7 +275,7 @@ export function ErrorCard({ error, onRetry }: { error: unknown; onRetry?: () => 
 }
 
 /**
- * Estado vacío / arranque en frío (sistema de diseño): icono en el contenedor violeta, título en display, explicación y
+ * Estado vacío / arranque en frío («Aura»): icono en una superficie neutra (la chispa queda para la acción), título en display, explicación y
  * UNA acción principal (más, como mucho, una secundaria pequeña). Explica por qué está vacío; nunca inventa contenido.
  */
 export function EmptyState({
@@ -260,10 +296,10 @@ export function EmptyState({
     <View
       style={{ alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xxl, paddingHorizontal: spacing.xl, borderRadius: radius.lg, borderWidth: 1, borderStyle: 'dashed', borderColor: c.border }}
     >
-      <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: c.primaryContainer, alignItems: 'center', justifyContent: 'center' }}>
-        <MaterialCommunityIcons name={icon} size={32} color={c.onPrimaryContainer} />
+      <View style={{ width: 72, height: 72, borderRadius: radius.full, backgroundColor: c.surfaceRaised, alignItems: 'center', justifyContent: 'center' }}>
+        <MaterialCommunityIcons name={icon} size={32} color={c.text} />
       </View>
-      <Text style={{ color: c.text, fontFamily: fonts.display, fontSize: 20, textAlign: 'center' }} accessibilityRole="header">
+      <Text style={{ color: c.text, ...type.h3, textAlign: 'center' }} accessibilityRole="header">
         {title}
       </Text>
       <Text style={{ color: c.textMuted, fontSize: 14, lineHeight: 21, textAlign: 'center' }}>{body}</Text>

@@ -346,9 +346,11 @@ export const es = {
     recommendedIntro:
       'Recomendaciones de esta categoría: primero lo que apoyan tus almas gemelas (aunque no tengas historial aquí) y lo valorado en tu zona; después, lo que valora la comunidad y lo que aún puedes explorar. Aquí también aparece lo que descartaste en Inicio.',
     emptyRecommended: 'Todavía no hay nada que recomendarte en esta categoría.',
+    emptyTitle: 'Aún no hay recomendaciones aquí',
     emptyNoLocation: 'Añade tu zona en Perfil para ver recomendaciones de lugares cerca de ti.',
   },
   follow: {
+    emptyTitle: 'Aún no sigues a nadie',
     title: 'Siguiendo',
     intro: 'Creadores y amigos. Lo que más les gusta aparece en Inicio con su nombre; tus almas gemelas siguen mandando.',
     empty: 'Aún no sigues a nadie. Sigue a creadores desde su perfil; a tus amigos los sigues al aceptar la amistad.',
@@ -396,6 +398,7 @@ export const es = {
     algorithm: 'Algoritmo {{version}}',
     friendsPending: 'Las solicitudes de amistad, contactos y bloqueo llegarán en la fase 10.',
     friendsEmpty: 'Todavía no tienes amigos en APPINITY. Abre el perfil de alguien y pulsa «Añadir amigo». Los amigos no tienen por qué ser almas gemelas.',
+    friendsEmptyTitle: 'Aún no tienes amigos aquí',
     incoming: 'Solicitudes recibidas',
     outgoing: 'Solicitudes enviadas',
     accept: 'Aceptar',
@@ -432,6 +435,8 @@ export const es = {
     later: 'Ahora no',
   },
   chat: {
+    emptyTitle: 'Todavía no hay conversaciones',
+    matchKicker: 'Match mutuo',
     tabChats: 'Chats',
     tabPeople: 'Almas gemelas',
     tabFollowing: 'Siguiendo',

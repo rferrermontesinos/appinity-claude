@@ -20,7 +20,7 @@ function FilterChip({ label, selected, color, onPress }: { label: string; select
       style={{
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.xs + 2,
-        borderRadius: 999,
+        borderRadius: radius.full,
         borderWidth: 1,
         borderColor: selected ? color : c.border,
         backgroundColor: selected ? `${color}22` : c.surface,
@@ -107,7 +107,7 @@ export default function ModelScreen() {
             <DataBanner detailed />
             <Body muted>{live ? t('tastes.intro') : t('model.intro')}</Body>
             <Card>
-              <Title style={{ fontSize: 15 }}>{t('model.legendTitle')}</Title>
+              <Title>{t('model.legendTitle')}</Title>
               <Small>{t('model.legendKnown')}</Small>
               <Small>{t('model.legendConsumed')}</Small>
               <Small>{t('model.legendPreference')}</Small>

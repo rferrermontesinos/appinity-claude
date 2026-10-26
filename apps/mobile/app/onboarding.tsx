@@ -55,7 +55,7 @@ export default function OnboardingScreen() {
         await WebBrowser.openAuthSessionAsync(next.authorizationUrl, returnUrl);
       }
       for (const key of ['connections', 'profiles', 'profile']) await queryClient.invalidateQueries({ queryKey: [key] });
-      router.replace('/profile');
+      router.replace('/sources');
     } catch (e) {
       setError(e);
     } finally {

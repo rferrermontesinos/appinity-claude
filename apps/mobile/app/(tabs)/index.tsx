@@ -163,7 +163,7 @@ function HomeDeckSection({ onAura }: { onAura: (color: string | null) => void })
           icon={deck.meta?.localFilter === 'no_location' ? 'map-marker-outline' : 'compass-outline'}
           title={t('home.emptyTitle')}
           body={emptyReason}
-          action={{ label: t('home.openSources'), icon: 'link-variant', onPress: () => router.push('/profile') }}
+          action={{ label: t('home.openSources'), icon: 'link-variant', onPress: () => router.push('/sources') }}
           secondary={deck.canUndo ? { label: t('home.undo'), icon: 'undo', onPress: () => void deck.undo() } : { label: t('home.reload'), icon: 'refresh', onPress: deck.reload }}
         />
       ) : null}

@@ -104,6 +104,23 @@ export const fonts = {
   mono: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }),
 };
 
+/**
+ * Escala tipográfica («Aura», misma escala que la guía docs/design/design-system): usar estos pasos en lugar de
+ * tamaños sueltos. `display`/`h1`/`h2`/`figure` en Bricolage grueso; `h3`/`h4` en Bricolage; el resto, fuente del sistema.
+ */
+export const type = {
+  display: { fontFamily: fonts.displayHeavy, fontSize: 40, lineHeight: 42, letterSpacing: -1.4 },
+  figure: { fontFamily: fonts.displayHeavy, fontSize: 64, lineHeight: 66, letterSpacing: -2.5 },
+  h1: { fontFamily: fonts.displayHeavy, fontSize: 30, lineHeight: 33, letterSpacing: -0.8 },
+  h2: { fontFamily: fonts.displayHeavy, fontSize: 26, lineHeight: 30, letterSpacing: -0.6 },
+  h3: { fontFamily: fonts.display, fontSize: 20, lineHeight: 24, letterSpacing: -0.4 },
+  h4: { fontFamily: fonts.display, fontSize: 17, lineHeight: 21, letterSpacing: -0.3 },
+  body: { fontSize: 15, lineHeight: 21 },
+  bodySm: { fontSize: 14, lineHeight: 19 },
+  caption: { fontSize: 12, lineHeight: 17 },
+  overline: { fontSize: 11, lineHeight: 14, fontWeight: '700' as const, letterSpacing: 1.2, textTransform: 'uppercase' as const },
+} as const;
+
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };
 export const radius = { sm: 8, md: 12, lg: 18, xl: 30, full: 999 };
 

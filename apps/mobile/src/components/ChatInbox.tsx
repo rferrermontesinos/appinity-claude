@@ -3,9 +3,9 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useChatAction, useChatInbox } from '../api/queries';
-import { spacing, usePalette } from '../theme';
+import { radius, spacing, usePalette } from '../theme';
 import { PersonAvatar, formatAffinity } from './PersonAvatar';
-import { Badge, Body, Button, Card, ErrorCard, Loading, Small, Title } from './ui';
+import { Badge, Body, Button, Card, EmptyState, ErrorCard, Loading, Skeleton, Small, Title } from './ui';
 
 /** Hora si es de hoy; si no, fecha corta. */
 export function shortTime(iso: string, locale: string): string {
@@ -45,7 +45,7 @@ function RequestRow({ request }: { request: ChatRequestDto }) {
         <AffinityText value={person.affinity} />
       </Pressable>
       {request.firstMessage ? (
-        <View style={{ backgroundColor: c.surfaceAlt, borderRadius: 14, padding: spacing.md }}>
+        <View style={{ backgroundColor: c.surfaceAlt, borderRadius: radius.md, padding: spacing.md }}>
           <Body>{request.firstMessage}</Body>
         </View>
       ) : null}
@@ -133,7 +133,7 @@ export function ChatInbox({ onExplore }: { onExplore: () => void }) {
   const c = usePalette();
   const inbox = useChatInbox();
   const data = inbox.data;
-  if (inbox.isLoading) return <Loading />;
+  if (inbox.isLoading) return <Skeleton rows={3} height={72} />;
   if (inbox.error) return <ErrorCard error={inbox.error} onRetry={() => void inbox.refetch()} />;
   if (!data) return null;
   const empty = !data.requests.length && !data.matches.length && !data.conversations.length;
@@ -170,10 +170,7 @@ export function ChatInbox({ onExplore }: { onExplore: () => void }) {
         </Card>
       ) : null}
       {empty ? (
-        <Card>
-          <Body muted>{t('chat.empty')}</Body>
-          <Button label={t('chat.explore')} icon="account-heart-outline" onPress={onExplore} />
-        </Card>
+        <EmptyState icon="chat-outline" title={t('chat.emptyTitle')} body={t('chat.empty')} action={{ label: t('chat.explore'), icon: 'account-heart-outline', onPress: onExplore }} />
       ) : null}
       <Small>{t('chat.pollingNote')}</Small>
     </>
