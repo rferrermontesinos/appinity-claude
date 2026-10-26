@@ -39,7 +39,7 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 ### Comprobaciones
 
 - Revisada en el navegador integrado: corregido el solape de los botones del mazo con la barra inferior.
-- Contraste calculado de los pares de texto nuevos (texto apagado `#8A867F` ≥ 5:1 sobre fondo y superficie;
+- Contraste calculado de los pares de texto nuevos (texto apagado `#938F88` ≥ 4,9:1 sobre fondo, superficie y superficie elevada;
   chispa y lima con su texto ≥ 4,5:1). Falta comprobar el texto sobre el halo de Personas en el teléfono.
 
 ### Siguiente paso
