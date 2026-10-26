@@ -4,8 +4,9 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
-import { useChatInbox, useSoulmates } from '../../src/api/queries';
+import { useChatInbox, useFollowing, useSoulmates } from '../../src/api/queries';
 import { ChatInbox } from '../../src/components/ChatInbox';
+import { FollowingCard } from '../../src/components/FollowingCard';
 import { FriendsCard } from '../../src/components/FriendsCard';
 import { InviteCard } from '../../src/components/InviteCard';
 import { PersonAvatar, formatAffinity } from '../../src/components/PersonAvatar';
@@ -44,7 +45,7 @@ function SoulmateRow({ person }: { person: SoulmateDto }) {
   );
 }
 
-type Segment = 'chats' | 'people';
+type Segment = 'chats' | 'people' | 'following';
 
 /** Selector superior: Chats (con aviso de pendientes) y Almas gemelas y amigos. */
 function Segments({ value, onChange, badge }: { value: Segment; onChange: (s: Segment) => void; badge: number }) {
@@ -52,6 +53,7 @@ function Segments({ value, onChange, badge }: { value: Segment; onChange: (s: Se
   const c = usePalette();
   const items: Array<{ key: Segment; label: string }> = [
     { key: 'people', label: t('chat.tabPeople') },
+    { key: 'following', label: t('chat.tabFollowing') },
     { key: 'chats', label: t('chat.tabChats') },
   ];
   return (
@@ -91,12 +93,21 @@ export default function PeopleScreen() {
   const [segment, setSegment] = useState<Segment>('people');
   const soulmates = useSoulmates();
   const inbox = useChatInbox();
-  const refreshing = segment === 'chats' ? inbox.isRefetching : soulmates.isRefetching;
-  const refresh = () => void (segment === 'chats' ? inbox.refetch() : soulmates.refetch());
+  const following = useFollowing();
+  const refreshing = segment === 'chats' ? inbox.isRefetching : segment === 'following' ? following.isRefetching : soulmates.isRefetching;
+  const refresh = () => void (segment === 'chats' ? inbox.refetch() : segment === 'following' ? following.refetch() : soulmates.refetch());
   return (
     <Screen refreshing={refreshing} onRefresh={refresh}>
       <Segments value={segment} onChange={setSegment} badge={inbox.data?.badge ?? 0} />
-      {segment === 'chats' ? <ChatInbox onExplore={() => setSegment('people')} /> : <SoulmatesAndFriends />}
+      {segment === 'chats' ? <ChatInbox onExplore={() => setSegment('people')} /> : null}
+      {segment === 'people' ? <SoulmatesAndFriends /> : null}
+      {/* Siguiendo: creadores y amigos juntos; debajo, solicitudes, contactos y bloqueos. */}
+      {segment === 'following' ? (
+        <>
+          <FollowingCard />
+          <FriendsCard />
+        </>
+      ) : null}
     </Screen>
   );
 }
@@ -136,7 +147,6 @@ function SoulmatesAndFriends() {
       ) : null}
       {top ? <Small>{t('people.affinityHint')}</Small> : null}
       {hasSoulmates ? <InviteCard /> : null}
-      <FriendsCard />
     </>
   );
 }

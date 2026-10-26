@@ -156,6 +156,13 @@ function SettingsCard({ settings }: { settings: SettingsDto }) {
           accessibilityLabel={t('profile.discoverableAsSoulmate')}
         />
       </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Body>{t('follow.publicCreator')}</Body>
+          <Small>{t('follow.publicCreatorHint')}</Small>
+        </View>
+        <Switch value={settings.publicCreator} onValueChange={(value) => save({ publicCreator: value })} accessibilityLabel={t('follow.publicCreator')} />
+      </View>
 
       <Small style={{ fontWeight: '700', marginTop: spacing.sm }}>{t('profile.notifications')}</Small>
       <ChipRow>

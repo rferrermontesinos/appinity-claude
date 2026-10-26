@@ -45,7 +45,7 @@ export function FriendsCard() {
   const data = friends.data;
   return (
     <Card>
-      <Title>{t('people.friends')}</Title>
+      <Title>{t('follow.requestsAndContacts')}</Title>
       {friends.isLoading ? <Loading /> : null}
       {friends.error ? <ErrorCard error={friends.error} onRetry={() => void friends.refetch()} /> : null}
       {action.error ? <ErrorCard error={action.error} /> : null}
@@ -60,8 +60,8 @@ export function FriendsCard() {
           ))}
         </View>
       ) : null}
+      {/* Los amigos se listan en «Siguiendo» (seguidos o no); aquí quedan solicitudes, contactos y bloqueos. */}
       {data && !data.friends.length && !data.incoming.length && !data.outgoing.length ? <Body muted>{t('people.friendsEmpty')}</Body> : null}
-      {data?.friends.map((p) => <PersonLine key={p.userId} person={p} />)}
       {data?.outgoing.length ? (
         <View style={{ gap: spacing.xs }}>
           <Small style={{ fontWeight: '700' }}>{t('people.outgoing')}</Small>

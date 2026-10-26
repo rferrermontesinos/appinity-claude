@@ -351,6 +351,35 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 - Aceptación de la maqueta por el titular. Después: paleta y tipografía completas (Palette Architect y Typography
   Director), tokens en `styles.css` y `apps/mobile/src/theme.ts`, y aplicación pantalla a pantalla empezando por Inicio.
 
+## Entrega 2026-10-26 (4) · Fuentes sociales, competencia y seguir a creadores y amigos
+
+### Qué se ha hecho
+
+- **Fuentes sociales** (docs/source-candidates.md): Facebook (`user_likes`) implementado como fuente, como Steam, con
+  Facebook y Wikidata simulados; **bloqueado** porque el titular no puede darse de alta como desarrollador de Meta (no
+  llega el SMS). Instagram solo por archivo (descartado por el titular). Pinterest, TikTok (DMA), Twitch, Reddit, X y
+  LinkedIn analizados.
+- **Competencia**: análisis de Hypelist (docs/competencia-hypelist.md).
+- **Seguir a creadores y amigos** (decisions.md, propuesta en docs/propuesta-seguir-creadores.md):
+  - tabla `follows` (migración 0017) y «perfil público de creador» con verificación;
+  - al aceptar una amistad, os seguís los dos (también las amistades ya existentes); bloquear deja de seguir;
+  - `recommendation-v2`: bloque «seguidos» (mezcla 70/10/10/10; sin seguidos, 70/20/10 como antes) y motivo
+    combinado («A Rosalía, a quien sigues, y a 34 de tus almas gemelas les encanta»). Los seguidos nunca votan en el
+    consenso del Top 50;
+  - app: Personas con tres segmentos (Almas gemelas · Siguiendo · Chats), botón «Seguir» en el perfil de un creador o
+    amigo, insignia de creador y ajuste «Perfil público de creador» en Perfil.
+
+### Comprobaciones
+
+- `pnpm test`: 39 ficheros y 380 tests OK. Tests nuevos: bloque de seguidos y mezcla; quién se puede seguir, amistad
+  mutua, bloqueo y consenso intacto al seguir a alguien.
+- Lint y typecheck limpios. Migración 0017 aplicada en la base local.
+
+### Pendiente
+
+- Reiniciar `pnpm api` y `pnpm worker` (en las pestañas del titular) y probar Siguiendo en el teléfono.
+- Facebook: crear la app de Meta cuando el titular consiga registrarse.
+
 ## Entrega 2026-10-26 (3) · Imágenes más representativas y siguiente paso de diseño
 
 ### Qué se ha hecho
