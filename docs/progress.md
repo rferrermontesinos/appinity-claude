@@ -25,6 +25,40 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-26 (12) · Ficha de objeto: dónde encontrarlo y diseño «Aura»
+
+### Qué se ha hecho
+
+- **Enlaces de fuente** (`packages/catalog/src/links.ts`): el DTO del catálogo junta los enlaces guardados (Wikipedia,
+  web oficial…) con los derivados de los IDs externos y los ordena por categoría. Lo primero es dónde se consume:
+  - juegos → Steam;
+  - música → Spotify, Apple Music, YouTube;
+  - podcasts → Spotify, Apple Podcasts;
+  - lugares → Google Maps (por CID o, si falta, búsqueda por las coordenadas del lugar) y OpenStreetMap;
+  - cine y series → IMDb;
+  - libros → Open Library, Goodreads.
+  Después van las referencias (MusicBrainz, Discogs, IGDB, Wikipedia) y, al final, Wikidata. Cada ID se valida con su
+  patrón y solo se generan URLs https de dominios fijos; los IDs internos (fixtures, exportaciones, Freebase) no
+  enlazan.
+- **Ficha** (§2: enlace externo con icono y etiqueta accesible; atribución en el detalle):
+  - cartel con la categoría, el título en 30 y la línea de contexto;
+  - atribución de la foto visible bajo el cartel;
+  - «Dónde encontrarlo»: botón principal «Abrir en …» (solo un sitio de consumo, nunca Wikidata ni Wikipedia) y el
+    resto como chips con icono y nombre;
+  - «Sobre esto», «Tu relación con esto» (Known, Consumed y Preference por separado) y «Datos técnicos» plegados (IDs
+    externos y evidencias);
+  - todo en el mundo de su categoría.
+
+### Comprobaciones
+
+- `links.test.ts` (5 tests: orden, validación, https, Maps por CID y por coordenadas, sin duplicados). `pnpm test`: 39
+  ficheros y 377 tests OK. Lint y typecheck limpios.
+- Vista web: ficha de Lasarte con el diseño nuevo. **Los enlaces derivados necesitan reiniciar `pnpm api`.**
+
+### Pendiente
+
+- Reiniciar `pnpm api` y revisar fichas de un restaurante, un juego (Steam) y un artista (Spotify).
+
 ## Entrega 2026-10-26 (11) · El «mundo» de la categoría en las pantallas de detalle (/creative)
 
 ### Qué se ha hecho

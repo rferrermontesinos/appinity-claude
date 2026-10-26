@@ -1,6 +1,7 @@
 import type { catalogExternalIds, catalogImages, catalogItems } from '@appinity/database';
 import type { CatalogImageDto, CatalogItemDto, DatePrecision } from '@appinity/shared';
 import { fallbackImage } from './fallback.js';
+import { publicLinks } from './links.js';
 
 type ItemRow = typeof catalogItems.$inferSelect;
 type ImageRow = typeof catalogImages.$inferSelect;
@@ -73,7 +74,12 @@ export function toCatalogItemDto(
     externalIds: externalIds
       .map((e) => ({ provider: e.provider, idType: e.idType, value: e.externalId }))
       .sort((a, b) => `${a.provider}:${a.idType}`.localeCompare(`${b.provider}:${b.idType}`)),
-    externalLinks: item.externalLinks,
+    externalLinks: publicLinks(
+      item.category,
+      externalIds.map((e) => ({ provider: e.provider, idType: e.idType, value: e.externalId })),
+      item.externalLinks,
+      item.latitude !== null && item.longitude !== null ? { latitude: item.latitude, longitude: item.longitude } : null,
+    ),
     releaseDate: formatPartialDate(item.releaseDate, item.releaseDatePrecision),
     releaseDatePrecision: item.releaseDatePrecision,
     eventStartsAt: formatEventDate(item.eventStartsAt, item.eventDatePrecision),

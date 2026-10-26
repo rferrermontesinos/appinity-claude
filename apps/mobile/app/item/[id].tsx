@@ -1,28 +1,27 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { ObservationDto } from '@appinity/shared';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import type { TFunction } from 'i18next';
-import * as WebBrowser from 'expo-web-browser';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 import { useItemProfileDetail } from '../../src/api/queries';
+import { contextLine } from '../../src/catalog/contextLine';
 import { useCategoryWorld } from '../../src/components/CategoryWorld';
 import { CatalogImage } from '../../src/components/CatalogImage';
 import { CategoryChipOnImage, ImageVeil } from '../../src/components/ImageVeil';
 import { Dimensions, formatPreference } from '../../src/components/Dimensions';
+import { SourceLinks, openExternal } from '../../src/components/SourceLinks';
 import { Body, Card, ErrorCard, Loading, Row, Screen, Small, Title } from '../../src/components/ui';
 import { DataBanner } from '../../src/components/DataBanner';
 import { fonts, onImage, radius, spacing, usePalette } from '../../src/theme';
 
-/** Abre enlaces externos solo si son https (validación de enlaces). */
-function openExternal(url: string) {
-  if (url.startsWith('https://')) void WebBrowser.openBrowserAsync(url);
-}
-
+/** Enlace de texto (atribución de la imagen). */
 function LinkText({ label, url }: { label: string; url: string }) {
   const c = usePalette();
   return (
-    <Pressable accessibilityRole="link" accessibilityLabel={label} onPress={() => openExternal(url)}>
-      <Text style={{ color: c.accent, fontSize: 14, paddingVertical: 2 }}>{label} ↗</Text>
+    <Pressable accessibilityRole="link" accessibilityLabel={label} onPress={() => openExternal(url)} hitSlop={8}>
+      <Text style={{ color: c.primaryInk, fontSize: 12, fontWeight: '600' }}>{label} ↗</Text>
     </Pressable>
   );
 }
@@ -76,7 +75,17 @@ function EvidenceRow({ o }: { o: ObservationDto }) {
   );
 }
 
-/** Detalle de un objeto: imagen con atribución, metadatos, IDs externos, perfil propio y evidencias propias. */
+/** Título de sección en Bricolage. */
+function SectionTitle({ children }: { children: string }) {
+  return <Title style={{ fontSize: 17, fontFamily: fonts.display }}>{children}</Title>;
+}
+
+/**
+ * Ficha de un objeto («Aura»): cartel a sangre con su categoría, título y contexto; atribución de la foto; «Dónde
+ * encontrarlo» (Spotify, Steam, Google Maps… según la categoría, §2); descripción; tu relación con él (Known, Consumed y
+ * Preference por separado) y, plegados, los datos técnicos (IDs externos y evidencias propias). Todo en el «mundo» de
+ * su categoría.
+ */
 export default function ItemScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
@@ -85,6 +94,9 @@ export default function ItemScreen() {
   const item = detail.data?.item;
   const notes = detail.data?.notes;
   const world = useCategoryWorld(item?.category ?? 'movies');
+  const [technical, setTechnical] = useState(false);
+  const context = item ? contextLine(item) : null;
+  const image = item?.primaryImage;
 
   return (
     <Screen refreshing={detail.isRefetching} onRefresh={() => void detail.refetch()} background={item ? world.background : undefined}>
@@ -92,64 +104,78 @@ export default function ItemScreen() {
       <Stack.Screen options={{ title: item?.title ?? t('item.title'), ...(item ? { headerStyle: { backgroundColor: world.background }, headerShadowVisible: false } : {}) }} />
       {detail.isLoading ? <Loading /> : null}
       {detail.isError ? <ErrorCard error={detail.error} onRetry={() => void detail.refetch()} /> : null}
-      {item ? (
+      {item && image ? (
         <>
-          {/* Cabecera a sangre (sistema de diseño): imagen, velo, categoría y título en display sobre la imagen. */}
-          <View style={{ width: '100%', aspectRatio: 0.9, borderRadius: radius.xl, overflow: 'hidden', backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: world.border, boxShadow: `0px 22px 48px -26px ${world.color}` }}>
-            <CatalogImage image={item.primaryImage} category={item.category} title={item.title} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
-            <ImageVeil height="55%" />
-            <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: spacing.lg, gap: spacing.sm }}>
-              <CategoryChipOnImage category={item.category} />
-              <Text style={{ color: onImage.text, fontFamily: fonts.display, fontSize: 28, lineHeight: 31, letterSpacing: -0.4 }} numberOfLines={3}>
-                {item.title}
-              </Text>
-              {item.releaseDate ? <Text style={{ color: onImage.muted, fontSize: 14 }}>{item.releaseDate.slice(0, 4)}</Text> : null}
-            </View>
-          </View>
-          <Card>
-            {item.description ? <Body muted>{item.description}</Body> : null}
-            {item.releaseDate ? (
-              <Row
-                label={t('item.released')}
-                value={`${item.releaseDate} (${t(`item.releasedPrecision.${item.releaseDatePrecision ?? 'day'}`)})`}
-              />
-            ) : null}
-            {item.eventStartsAt ? (
-              <Row label={t('item.event')} value={`${item.eventStartsAt}${item.eventEndsAt ? ` → ${item.eventEndsAt}` : ''}`} />
-            ) : null}
-            {item.location ? (
-              <Row
-                label={t('item.location')}
-                value={`${item.location.locality ?? ''} · ${item.location.latitude.toFixed(3)}, ${item.location.longitude.toFixed(3)}`}
-              />
-            ) : null}
-          </Card>
-
-          <Card>
-            <Title style={{ fontSize: 15 }}>{t('item.image')}</Title>
-            {item.primaryImage.isFallback ? (
-              <Small>{t('item.imageFallback')}</Small>
-            ) : (
-              <>
-                {item.primaryImage.author ? <Row label={t('item.imageAuthor')} value={item.primaryImage.author} /> : null}
-                {item.primaryImage.license ? <Row label={t('item.imageLicense')} value={item.primaryImage.license} /> : null}
-                {item.primaryImage.descriptionUrl ? (
-                  <LinkText label={t('item.imageSource')} url={item.primaryImage.descriptionUrl} />
+          <View style={{ gap: spacing.sm }}>
+            <View
+              style={{
+                width: '100%',
+                aspectRatio: 0.9,
+                borderRadius: radius.xl,
+                overflow: 'hidden',
+                backgroundColor: c.surfaceAlt,
+                borderWidth: 1,
+                borderColor: world.border,
+                boxShadow: `0px 22px 48px -26px ${world.color}`,
+              }}
+            >
+              <CatalogImage image={image} category={item.category} title={item.title} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+              <ImageVeil height="55%" />
+              <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: spacing.lg, gap: spacing.sm }}>
+                <CategoryChipOnImage category={item.category} />
+                <Text accessibilityRole="header" style={{ color: onImage.text, fontFamily: fonts.displayHeavy, fontSize: 30, lineHeight: 33, letterSpacing: -0.8 }} numberOfLines={3}>
+                  {item.title}
+                </Text>
+                {context ? (
+                  <Text style={{ color: onImage.muted, fontSize: 14 }} numberOfLines={2}>
+                    {context}
+                  </Text>
                 ) : null}
-              </>
+              </View>
+            </View>
+            {/* Atribución exigida por la licencia de la foto, visible bajo el cartel. */}
+            {image.isFallback ? (
+              <Small>{t('item.generatedCover')}</Small>
+            ) : (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: spacing.sm }}>
+                <Small>
+                  {t('item.photo')}: {[image.author, image.license].filter(Boolean).join(' · ')}
+                </Small>
+                {image.descriptionUrl ? <LinkText label={t('item.imageSource')} url={image.descriptionUrl} /> : null}
+              </View>
             )}
-          </Card>
+          </View>
 
-          <Card>
-            <Title style={{ fontSize: 15 }}>{t('item.profile')}</Title>
+          {item.externalLinks.length ? (
+            <View style={{ gap: spacing.sm }}>
+              <Text accessibilityRole="header" style={{ color: c.text, fontFamily: fonts.display, fontSize: 20, letterSpacing: -0.4 }}>
+                {t('item.whereToFind')}
+              </Text>
+              <SourceLinks links={item.externalLinks} accent={world.border} />
+            </View>
+          ) : null}
+
+          {item.description || item.releaseDate || item.eventStartsAt || item.location?.locality ? (
+            <Card style={{ backgroundColor: world.surface }}>
+              <SectionTitle>{t('item.about')}</SectionTitle>
+              {item.description ? <Body muted>{item.description}</Body> : null}
+              {item.releaseDate ? (
+                <Row label={t('item.released')} value={`${item.releaseDate} (${t(`item.releasedPrecision.${item.releaseDatePrecision ?? 'day'}`)})`} />
+              ) : null}
+              {item.eventStartsAt ? <Row label={t('item.event')} value={`${item.eventStartsAt}${item.eventEndsAt ? ` → ${item.eventEndsAt}` : ''}`} /> : null}
+              {item.location?.locality ? <Row label={t('item.location')} value={item.location.locality} /> : null}
+            </Card>
+          ) : null}
+
+          <Card style={{ backgroundColor: world.surface }}>
+            <SectionTitle>{t('item.yourRelation')}</SectionTitle>
             <DataBanner />
             {detail.data?.profile ? (
               <>
                 <Dimensions {...detail.data.profile} />
                 {notes?.overridden?.length ? (
                   <Small>
-                    {t('item.overridden')}:{' '}
-                    {notes.overridden.map((o) => `${t(`basis.${o.basis}`)} ${formatPreference(o.score)}`).join(', ')}
+                    {t('item.overridden')}: {notes.overridden.map((o) => `${t(`basis.${o.basis}`)} ${formatPreference(o.score)}`).join(', ')}
                   </Small>
                 ) : null}
                 {notes?.disagreement?.length ? <Small style={{ color: c.warn }}>{t('item.disagreement')}</Small> : null}
@@ -160,25 +186,37 @@ export default function ItemScreen() {
             )}
           </Card>
 
-          {detail.data?.observations.length ? (
-            <Card>
-              <Title style={{ fontSize: 15 }}>{t('item.evidence')}</Title>
-              <Small>{t('item.simulatedActivity')}</Small>
-              {detail.data.observations.map((o) => (
-                <EvidenceRow key={o.id} o={o} />
-              ))}
-            </Card>
-          ) : null}
-
-          <Card>
-            <Title style={{ fontSize: 15 }}>{t('item.externalIds')}</Title>
-            {item.externalIds.map((e) => (
-              <Row key={`${e.provider}:${e.idType}`} label={`${e.provider}:${e.idType}`} value={e.value} />
-            ))}
-            {item.externalLinks.length ? <Small style={{ fontWeight: '700', marginTop: spacing.sm }}>{t('item.links')}</Small> : null}
-            {item.externalLinks.map((l) => (
-              <LinkText key={l.url} label={l.provider} url={l.url} />
-            ))}
+          {/* Datos técnicos plegados: útiles para comprobar, no para decidir. */}
+          <Card style={{ backgroundColor: world.surface }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ expanded: technical }}
+              onPress={() => setTechnical((v) => !v)}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 44 }}
+            >
+              <View style={{ flex: 1 }}>
+                <SectionTitle>{t('item.technical')}</SectionTitle>
+                <Small>{t('item.technicalHint')}</Small>
+              </View>
+              <MaterialCommunityIcons name={technical ? 'chevron-up' : 'chevron-down'} size={24} color={c.textMuted} />
+            </Pressable>
+            {technical ? (
+              <>
+                {detail.data?.observations.length ? (
+                  <>
+                    <Small style={{ fontWeight: '700' }}>{t('item.evidence')}</Small>
+                    <Small>{t('item.simulatedActivity')}</Small>
+                    {detail.data.observations.map((o) => (
+                      <EvidenceRow key={o.id} o={o} />
+                    ))}
+                  </>
+                ) : null}
+                <Small style={{ fontWeight: '700', marginTop: spacing.sm }}>{t('item.externalIds')}</Small>
+                {item.externalIds.map((e) => (
+                  <Row key={`${e.provider}:${e.idType}`} label={`${e.provider}:${e.idType}`} value={e.value} />
+                ))}
+              </>
+            ) : null}
           </Card>
         </>
       ) : null}
