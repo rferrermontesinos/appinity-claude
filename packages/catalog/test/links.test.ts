@@ -25,10 +25,11 @@ describe('enlaces públicos de un objeto', () => {
     expect(links).toEqual([]);
   });
 
-  it('lugares: Google Maps por su CID; sin él, búsqueda por las coordenadas del lugar', () => {
+  it('lugares: Google Maps por su CID; sin él, búsqueda por nombre y localidad (o, sin localidad, por coordenadas)', () => {
     expect(publicLinks('food', [{ provider: 'google_maps', idType: 'cid', value: '4226397108067053575' }], [])[0]?.url).toBe('https://maps.google.com/?cid=4226397108067053575');
-    expect(publicLinks('food', [], [], { latitude: 41.3937, longitude: 2.1621 })[0]?.url).toBe('https://www.google.com/maps/search/?api=1&query=41.393700,2.162100');
-    expect(publicLinks('movies', [], [], { latitude: 41, longitude: 2 })).toEqual([]);
+    expect(publicLinks('food', [], [], { name: 'Lasarte', latitude: 41.3937, longitude: 2.1621, locality: 'Barcelona' })[0]?.url).toBe('https://www.google.com/maps/search/?api=1&query=Lasarte%2C%20Barcelona');
+    expect(publicLinks('food', [], [], { name: 'X', latitude: 41.3937, longitude: 2.1621, locality: null })[0]?.url).toBe('https://www.google.com/maps/search/?api=1&query=41.393700%2C2.162100');
+    expect(publicLinks('movies', [], [], { name: 'X', latitude: 41, longitude: 2, locality: 'Barcelona' })).toEqual([]);
   });
 
   it('no duplica proveedor: el enlace guardado manda sobre el derivado', () => {

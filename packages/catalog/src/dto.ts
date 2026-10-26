@@ -78,7 +78,9 @@ export function toCatalogItemDto(
       item.category,
       externalIds.map((e) => ({ provider: e.provider, idType: e.idType, value: e.externalId })),
       item.externalLinks,
-      item.latitude !== null && item.longitude !== null ? { latitude: item.latitude, longitude: item.longitude } : null,
+      item.latitude !== null && item.longitude !== null
+        ? { name: item.title, latitude: item.latitude, longitude: item.longitude, locality: item.locality }
+        : null,
     ),
     releaseDate: formatPartialDate(item.releaseDate, item.releaseDatePrecision),
     releaseDatePrecision: item.releaseDatePrecision,

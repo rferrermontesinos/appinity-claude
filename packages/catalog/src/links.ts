@@ -55,14 +55,15 @@ const PRIORITY: Record<Category, string[]> = {
 
 /**
  * Enlaces públicos de un objeto: los guardados en el catálogo más los que se derivan de sus IDs externos, sin
- * duplicar proveedor, solo https y en el orden de su categoría. Si es un lugar sin enlace de mapa, un enlace de
- * búsqueda en Google Maps con sus coordenadas (dato público del objeto, nunca del usuario).
+ * duplicar proveedor, solo https y en el orden de su categoría. Si es un lugar sin enlace de mapa, una búsqueda en
+ * Google Maps por su nombre y localidad (así abre la ficha del sitio, no una chincheta); sin localidad, por sus
+ * coordenadas. Datos públicos del objeto, nunca del usuario.
  */
 export function publicLinks(
   category: Category,
   ids: readonly IdRef[],
   stored: readonly ExternalLink[],
-  location: { latitude: number; longitude: number } | null = null,
+  place: { name: string; latitude: number; longitude: number; locality: string | null } | null = null,
 ): ExternalLink[] {
   const byProvider = new Map<string, ExternalLink>();
   for (const l of stored) if (l.url.startsWith('https://') && !byProvider.has(l.provider)) byProvider.set(l.provider, l);
@@ -71,8 +72,9 @@ export function publicLinks(
     if (!tpl || !tpl.pattern.test(id.value) || byProvider.has(id.provider)) continue;
     byProvider.set(id.provider, { provider: id.provider, url: tpl.url(id.value) });
   }
-  if (location && (category === 'food' || category === 'culture') && !byProvider.has('google_maps')) {
-    byProvider.set('google_maps', { provider: 'google_maps', url: `https://www.google.com/maps/search/?api=1&query=${location.latitude.toFixed(6)},${location.longitude.toFixed(6)}` });
+  if (place && (category === 'food' || category === 'culture') && !byProvider.has('google_maps')) {
+    const query = place.locality ? `${place.name}, ${place.locality}` : `${place.latitude.toFixed(6)},${place.longitude.toFixed(6)}`;
+    byProvider.set('google_maps', { provider: 'google_maps', url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` });
   }
   const order = PRIORITY[category];
   const rank = (p: string) => (p === 'wikidata' ? 1000 : order.includes(p) ? order.indexOf(p) : 500);

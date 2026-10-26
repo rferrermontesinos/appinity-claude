@@ -55,9 +55,18 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
   ficheros y 377 tests OK. Lint y typecheck limpios.
 - Vista web: ficha de Lasarte con el diseño nuevo. **Los enlaces derivados necesitan reiniciar `pnpm api`.**
 
+### Verificado tras reiniciar la API (2026-10-26)
+
+- Lasarte: Google Maps (principal), Wikipedia, Wikidata. Celeste: Steam `store.steampowered.com/app/504230/`
+  (principal), web oficial, IGDB, Wikipedia, Wikidata. Arctic Monkeys: Spotify (principal), Apple Music, MusicBrainz,
+  Discogs, Wikipedia, Wikidata.
+- Mejora tras la revisión: la búsqueda en Maps sin CID usaba coordenadas (abría una chincheta). Ahora busca por
+  «nombre, localidad» para abrir la ficha del sitio, y solo sin localidad usa las coordenadas. Test actualizado; hace
+  falta reiniciar `pnpm api` para verlo.
+
 ### Pendiente
 
-- Reiniciar `pnpm api` y revisar fichas de un restaurante, un juego (Steam) y un artista (Spotify).
+- Ver en el teléfono. Siguientes: Perfil, barra inferior y guía del sistema de diseño.
 
 ## Entrega 2026-10-26 (11) · El «mundo» de la categoría en las pantallas de detalle (/creative)
 
