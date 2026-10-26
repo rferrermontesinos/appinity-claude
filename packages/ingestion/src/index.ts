@@ -18,3 +18,6 @@ export * from './chat.js';
 export * from './premium.js';
 export * from './notifications.js';
 export * from './auth.js';
+export * from './content.js';
+export * from './invitations.js';
+export * from './contacts.js';

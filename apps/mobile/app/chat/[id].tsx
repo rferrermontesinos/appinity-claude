@@ -52,10 +52,13 @@ function Icebreaker({ userId }: { userId: string }) {
 
 function Bubble({ body, mine, meta, failed, onRetry }: { body: string; mine: boolean; meta?: string; failed?: boolean; onRetry?: () => void }) {
   const c = usePalette();
+  const { t } = useTranslation();
   return (
     <Pressable
       disabled={!onRetry}
       onPress={onRetry}
+      // Solo es pulsable si el envío falló: entonces se anuncia como «reintentar».
+      {...(onRetry ? { accessibilityRole: 'button' as const, accessibilityLabel: t('common.retry') } : {})}
       style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '80%', gap: 2, alignItems: mine ? 'flex-end' : 'flex-start' }}
     >
       <View
@@ -170,7 +173,13 @@ export default function ChatScreen() {
   ].reverse();
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: c.background }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+    // Android 15+ dibuja la app de borde a borde: la ventana ya no se encoge con el teclado y «height» deja la caja de
+    // texto debajo. «padding» en ambas plataformas, desplazado por la cabecera (barra de estado + 56 dp o 44 pt).
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: c.background }}
+      behavior="padding"
+      keyboardVerticalOffset={insets.top + (Platform.OS === 'ios' ? 44 : 56)}
+    >
       <Stack.Screen
         options={{
           title: person?.displayName ?? t('chat.tabChats'),
@@ -226,7 +235,12 @@ export default function ChatScreen() {
             <View style={{ gap: spacing.md, alignItems: 'center', paddingBottom: spacing.md }}>
               {hasMore ? <Button label={t('chat.loadOlder')} variant="secondary" loading={loadingOlder} onPress={() => void loadOlder()} /> : null}
               {!hasMore ? (
-                <Pressable onPress={() => router.push(`/person/${person.userId}`)} style={{ alignItems: 'center', gap: spacing.xs }}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('chat.openProfile', { name: person.displayName })}
+                  onPress={() => router.push(`/person/${person.userId}`)}
+                  style={{ alignItems: 'center', gap: spacing.xs }}
+                >
                   <PersonAvatar name={person.displayName} url={person.avatarUrl} size={72} />
                   <Text style={{ color: c.text, fontWeight: '800', fontSize: 17 }}>{person.displayName}</Text>
                   <Small>

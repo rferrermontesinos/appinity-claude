@@ -144,3 +144,39 @@ export class NominatimGeocoder {
     throw new SourceError('unavailable', 'Nominatim no responde; se reintentará', true);
   }
 }
+
+export interface GeocodedCity {
+  label: string;
+  latitude: number;
+  longitude: number;
+  countryCode?: string;
+}
+
+/**
+ * Ciudad escrita por la persona en el alta → coordenadas aproximadas (centro de la población). Solo asentamientos
+ * (ciudad, pueblo, municipio): nunca una calle ni un comercio. Una petición, dentro del límite de 1/s de Nominatim.
+ */
+export async function geocodeCity(
+  name: string,
+  options: { userAgent: string; endpoint?: string; fetchImpl?: typeof fetch; language?: string },
+): Promise<GeocodedCity | null> {
+  const query = name.trim();
+  if (query.length < 2) return null;
+  const url = new URL(options.endpoint ?? NOMINATIM_DEFAULT_URL);
+  url.searchParams.set('q', query);
+  url.searchParams.set('format', 'jsonv2');
+  url.searchParams.set('featureType', 'settlement');
+  url.searchParams.set('addressdetails', '1');
+  url.searchParams.set('limit', '1');
+  const response = await (options.fetchImpl ?? fetch)(url, {
+    headers: { 'User-Agent': options.userAgent, Accept: 'application/json', 'Accept-Language': options.language ?? 'es,en' },
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!response.ok) throw new Error(`Nominatim respondió HTTP ${response.status}`);
+  const [hit] = (await response.json()) as Array<{ lat: string; lon: string; name?: string; display_name?: string; address?: Record<string, string> }>;
+  if (!hit) return null;
+  const a = hit.address ?? {};
+  const city = a.city ?? a.town ?? a.village ?? a.municipality ?? hit.name ?? query;
+  const label = [city, a.country].filter(Boolean).join(', ');
+  return { label, latitude: Number(hit.lat), longitude: Number(hit.lon), ...(a.country_code ? { countryCode: a.country_code.toUpperCase() } : {}) };
+}

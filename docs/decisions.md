@@ -998,3 +998,76 @@ El acuerdo de desarrolladores de Twitch exige permiso escrito para guardar sus d
 - `myactivity.youtube` y `maps.starred_places` son restringidos: en producción exigen una evaluación CASA anual de pago.
 - Sin pagos, `GOOGLE_RESTRICTED_SCOPES` es false por defecto en producción y solo se piden los scopes sensibles, cuya verificación es gratuita. En desarrollo se piden todos.
 - Detalle en docs/google-verification.md.
+
+## 2026-10-22 · Arranque en frío
+
+- **Relaciones de contenido**: son datos públicos de Wikidata (CC0) y no se guarda qué usuario las originó. Pesos
+  propuestos sin calibrar:
+
+  | Relación | Peso |
+  |---|---|
+  | Saga o secuela | 1 |
+  | Director, creador o autor | 0,8 |
+  | Influencia | 0,7 |
+  | Guionista o estudio | 0,6 |
+  | Géneros | 0,4–0,6 |
+
+- **Diversidad**: como mucho 3 recomendaciones por gusto de origen. Dos relaciones desde el mismo gusto no suman dos
+  veces.
+- **Imágenes**: solo licencias libres de Commons, con autoría guardada. Para los restaurantes no se busca «una foto
+  cerca», que podría ser de otro sitio.
+- **Invitaciones**: compartir el enlace es el consentimiento de quien invita y aceptarlo, el de quien recibe; por eso se
+  crea la amistad directamente. Todas las rutas requieren sesión.
+- **Ciudad en el alta**: opcional y aproximada. Se geocodifica antes de completar el alta para no dejarla a medias.
+- **Build de desarrollo**: local con Gradle, sin EAS (sin coste). La carpeta `android/` se genera con prebuild y no se
+  versiona.
+
+## 2026-10-23 · affinity-v4 (encogimiento parcial por categoría)
+
+- **Problema detectado por el titular**: Clara tenía un 86 % global y ninguna categoría pasaba de 50. Cada categoría se
+  penalizaba solo con su propia evidencia, mientras la global sumaba la de todas. Era coherente con la fórmula, pero
+  contradictorio a la vista.
+- **Solución**: dentro de la global, cada categoría se encoge hacia la calidad global de la pareja (Q) según su
+  evidencia, en vez de hacia 0: `categoría = 100 · E · (w · calidad_c + (1 − w) · Q)` con `w = 1 − exp(−n_eff/tau)`.
+- **Propiedades**:
+  - la global queda siempre entre la menor y la mayor categoría;
+  - con mucha evidencia, el desacuerdo real llega a ~0;
+  - con una sola categoría comparable, el resultado coincide con v3;
+  - sigue sin haber cifras altas con poca evidencia, porque E las limita a todas.
+- **Resultado** (Laura ↔ Clara, demo): la global se mantiene en 86 y las categorías pasan de 31–49 a 85–87.
+
+## 2026-10-26 · Recomendaciones por persona y barra inferior (decisiones del titular en la prueba D5)
+
+- **Sin lista de «recomendaciones de una persona»** (p. ej., «solo de Clara» o «restaurantes de Clara»). Se mantiene la
+  regla de la especificación: el perfil no revela historiales y una recomendación atribuida solo revela el objeto y su
+  motivo, de una en una en Inicio. Alternativas descartadas por ahora: con permiso explícito de la persona, o un filtro
+  «a través de X» en Inicio.
+- **La barra inferior sigue oculta en las pantallas de detalle** (perfil de persona, obra, categoría y chat), según el
+  patrón de Material Design: se vuelve con la flecha atrás.
+
+## 2026-10-26 · Amigos desde los contactos (cierra la fase 10)
+
+- **Solo emails, y solo los verificados**: el servidor compara con el email que Google da como verificado en el inicio
+  de sesión. No hay teléfonos verificados, así que no se buscan teléfonos.
+- **SHA-256 en el móvil, no HMAC**: la propuesta anterior (HMAC «con clave del servidor» calculado en el dispositivo)
+  exigía meter la clave en la app, y entonces deja de ser secreta. El móvil envía el SHA-256 de cada email normalizado
+  (minúsculas, sin espacios); el servidor lo compara con `sha256(lower(email))` en la consulta y **no guarda** lo
+  recibido. Un hash no anonimiza a quien ya conoce el email: por eso solo responde con personas que tienen activado
+  «Permitir que mis contactos me encuentren», respeta los bloqueos y el dataset, y limita la ruta a 5 peticiones por
+  minuto y 500 emails por petición.
+- **Bajo demanda**: el permiso de contactos del sistema solo se pide al pulsar «Buscar en mis contactos». Los
+  resultados viven en memoria; de ahí se puede enviar una solicitud de amistad.
+
+## 2026-10-26 · Imágenes más representativas (sin licencias nuevas)
+
+- **Por categoría** (`IMAGE_CLAIMS`): en películas y series, cartel libre (P3383) y, si no hay, logotipo del título
+  (P154); nunca la imagen genérica (P18), que en cine suele ser una foto del reparto, de un estreno o de un rodaje. En
+  podcasts, logotipo antes que foto. Un SVG siempre es logotipo. Cada imagen guarda su tipo (`catalog_images.kind`).
+- **Revisión**: al arrancar, el worker reevalúa las imágenes de Commons ya guardadas con estas reglas (cambia,
+  reclasifica o quita). Solo toca objetos por los que Wikidata ha respondido.
+- **En la app**: un logotipo se muestra entero sobre un cartel del color de la categoría; sin imagen, un cartel de
+  diseño (fondo oscuro teñido y el icono grande) en lugar del recuadro pálido.
+- **Plex y Stremio** no usan fuentes libres: Plex toma pósteres sobre todo de TMDb y TheTVDB (y fanart.tv como agente
+  adicional); Stremio (Cinemeta) usa IDs de IMDb y sirve el arte desde MetaHub, derivado de esas mismas fuentes.
+  Los pósteres reales exigen un acuerdo comercial con TMDb o TheTVDB: sigue siendo la decisión de negocio pendiente
+  (2026-10-09).

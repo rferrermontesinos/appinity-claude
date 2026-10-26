@@ -1,16 +1,18 @@
 import { Body, Controller, Delete, Get, HttpCode, Inject, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import { type DatabaseHandle } from '@appinity/database';
+import { Throttle } from '@nestjs/throttler';
 import {
   blockUser,
   listBlocked,
   listFriends,
+  matchContacts,
   removeFriendship,
   reportUser,
   respondFriendRequest,
   sendFriendRequest,
   unblockUser,
 } from '@appinity/ingestion';
-import type { BlockedPersonDto, FriendsDto, FriendshipResultDto } from '@appinity/shared';
+import { CONTACT_HASH_BATCH_MAX, type BlockedPersonDto, type ContactMatchDto, type FriendsDto, type FriendshipResultDto } from '@appinity/shared';
 import { z } from 'zod';
 import type { AuthContext } from '../auth/auth.types.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
@@ -18,6 +20,9 @@ import { ZodPipe } from '../common/zod.pipe.js';
 import { DATABASE } from '../infra/tokens.js';
 
 const userSchema = z.object({ userId: z.uuid() }).strict();
+const contactsSchema = z
+  .object({ hashes: z.array(z.string().regex(/^[0-9a-f]{64}$/)).max(CONTACT_HASH_BATCH_MAX) })
+  .strict();
 const reportSchema = z
   .object({
     userId: z.uuid(),
@@ -63,6 +68,17 @@ export class SocialController {
   @HttpCode(204)
   async remove(@CurrentUser() auth: AuthContext, @Param('userId', new ParseUUIDPipe()) userId: string): Promise<void> {
     await removeFriendship(this.database.db, auth.userId, userId);
+  }
+
+  /**
+   * Coincidencias con los contactos del dispositivo (SHA-256 de emails normalizados). No se guarda nada de lo recibido;
+   * límite bajo para que no sirva para recorrer emails.
+   */
+  @Post('contacts/match')
+  @HttpCode(200)
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  matchContacts(@CurrentUser() auth: AuthContext, @Body(new ZodPipe(contactsSchema)) body: z.infer<typeof contactsSchema>): Promise<ContactMatchDto[]> {
+    return matchContacts(this.database.db, auth.userId, body.hashes);
   }
 
   @Get('blocks')

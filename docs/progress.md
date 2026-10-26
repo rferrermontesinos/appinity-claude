@@ -12,18 +12,263 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | Revisión de fuentes | **Hecha** (2026-10-08) | Especificación 1.1 y docs/fuentes-de-datos.md (rama `especificacion-fuentes`, PR rferrermontesinos/appinity-claude#5, basada en `fase-2`). TMDb descartada: PR rferrermontesinos/appinity-claude#4 cerrada sin fusionar |
 | Revisión de fuentes · decisiones | **Aceptada** (2026-10-09) | El usuario aceptó la especificación 1.1; de momento, imagen genérica (sin licencia de catálogo); Gmail se evaluará más adelante |
 | 3 | **Sincronizado con la cuenta real del usuario** (2026-10-09); pendiente de revisar la identificación con el siguiente export y de la aceptación en la app | Entrega 2026-10-09 · fase 3 (rama `fase-3-google`, PR rferrermontesinos/appinity-claude#6, basada en `especificacion-fuentes`). Primer sync: 21 evidencias (20 reseñas y 1 sitio guardado) |
-| 4 | **Implementado y comprobado automáticamente**; pendiente de validar con la cuenta real | Entrega 2026-10-13 · fase 4 (rama `fase-4-youtube`, basada en `fase-3-google`). Falta añadir 3 permisos en Google Cloud y renovar el permiso (README) |
+| 4 | **Validado con la cuenta real del titular**: 49 escuchas agregadas de YouTube y YouTube Music y 2 suscripciones importadas (comprobado en la BD el 2026-10-26) | Entrega 2026-10-13 · fase 4 (rama `fase-4-youtube`, basada en `fase-3-google`) |
 | 5 | **Implementado y comprobado automáticamente** | Entrega 2026-10-13 · fase 5 (rama `fase-5-afinidad`, basada en `fase-4-youtube`). Calibración en decisions.md |
 | 6 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-13 · fase 6 (rama `fase-6-top50`, basada en `fase-5-afinidad`). Pendiente de aceptación en el teléfono |
 | 7 | **Implementado y comprobado automáticamente** | Entrega 2026-10-14 · fase 7 (rama `fase-7-recomendador`, basada en `fase-6-top50`). Sin pantalla: Home llega en la fase 8 |
 | 8 | **Aceptado en el teléfono** (2026-10-14) | Entrega 2026-10-14 · fase 8 (rama `fase-8-home`, basada en `fase-7-recomendador`) |
 | 9 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-14 · fase 9 (rama `fase-9-categories`, basada en `fase-8-home`). Incluye el feed continuo pedido por el usuario |
-| 10 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-14 · fase 10 (rama `fase-10-people`, basada en `fase-9-categories`). Contactos: pendiente (fase 13) |
+| 10 | **Implementado y comprobado automáticamente**; contactos del dispositivo añadidos (2026-10-26), pendiente de probar en el APK nuevo | Entrega 2026-10-14 · fase 10 (rama `fase-10-people`) y entrega 2026-10-26 (contactos) |
 | 11 | **Paso 1 implementado** (Google: Play, pedidos y guardados), comprobado automáticamente y en parte con servicios reales; falta un export real | Entrega 2026-10-14 · fase 11 (rama `fase-11-fuentes`). Análisis en [source-candidates.md](source-candidates.md) |
 | 12 | **12C (push, servidor) implementada y comprobada automáticamente**; envío real pendiente de build de desarrollo y FCM · **12B (Premium, servidor) implementada y comprobada automáticamente**; compra en la app pendiente de cuentas y build de desarrollo · **12A (chat) implementada, comprobada automáticamente y verificada en la vista web**; 12B (Premium/RevenueCat) y 12C (push) pendientes | Entrega 2026-10-14 · fase 12A (rama `fase-12a-chat`, basada en `fase-10-people`) |
-| 13 | **Preparada**: auth de producción, alta, eliminación de cuenta y despliegue probados en local; beta real pendiente de dominio, servidor y cuentas ([beta.md](beta.md)) | Entrega 2026-10-15 · fase 13 (rama `fase-13-beta`) |
+| 13 | **Preparada**: auth de producción, alta, eliminación de cuenta y despliegue probados en local; beta real pendiente de dominio, servidor y cuentas ([beta.md](beta.md)) · auditoría de seguridad de la API hecha (2026-10-26) · textos legales en borrador (2026-10-26) | Entrega 2026-10-15 · fase 13 (rama `fase-13-beta`) |
 
 ---
+
+## Entrega 2026-10-26 (3) · Imágenes más representativas y siguiente paso de diseño
+
+### Qué se ha hecho
+
+- Imágenes por categoría (decisions.md, 2026-10-26): en cine, cartel o logotipo y nunca la foto genérica; tipo de
+  imagen guardado (`catalog_images.kind`, migración 0016); el worker revisa al arrancar las imágenes guardadas. En la
+  app, logotipo entero sobre un cartel de la categoría y cartel de diseño cuando no hay imagen.
+- Investigado: Plex y Stremio usan TMDb, TheTVDB y fanart.tv; los pósteres reales exigen un acuerdo comercial.
+- `pnpm test`: 37 ficheros y 366 tests OK.
+
+### Crítica de diseño de Inicio (/design:design-critique) aplicada
+
+- Línea de contexto bajo el título (autor o director · año · género; localidad en lugares). El worker completa el
+  catálogo real con descripción, personas y géneros de Wikidata (`enrichDetailsFromWikidata`, una vez por objeto).
+- «Ver ficha» (48 dp) en lugar del enlace «wikidata»; Inicio sin cabecera (marca pequeña); ayuda de gestos solo en las
+  3 primeras tarjetas; cartel de sustitución con el nombre de la categoría como textura tipográfica.
+- Commit `aaf4666`; 366 tests OK; verificado en la vista web.
+
+### Pendiente
+
+- **Reiniciar `pnpm api` y `pnpm worker`** (los tiene el titular en sus pestañas) para aplicar la revisión de
+  imágenes; después, recargar la app.
+- **Rediseño más profesional**: el titular quiere usar el plugin design-superpowers (`/creative` y siguientes) en una
+  sesión nueva. Pedirle 3–4 apps de referencia, 3 palabras de tono y la pantalla por la que empezar (Inicio). El
+  sistema actual es «Noche de cine» (docs/design/design-system/).
+
+## Entrega 2026-10-26 (2) · D5 aceptada, contactos (fase 10) y textos legales (fase 13)
+
+### Qué se ha hecho
+
+- **D5 aceptada en el teléfono** por el titular: texto grande y TalkBack. Corregido durante la prueba: el teclado tapaba
+  la caja del chat (Android de borde a borde) y la siguiente tarjeta de Inicio no se veía al deslizar.
+- **Decisiones del titular**: sin lista de «recomendaciones de una persona» y barra inferior oculta en las pantallas
+  de detalle (decisions.md).
+- **Amigos desde los contactos (cierra la fase 10)**: `POST /v1/me/contacts/match` compara el SHA-256 de emails
+  normalizados con los emails verificados de quien lo permite; no guarda nada; 5 peticiones por minuto y 500 emails por
+  petición. En la app, «Buscar en mis contactos» en Amigos (permiso bajo demanda) con «Añadir». Los módulos nativos se
+  cargan al pulsar: un APK anterior avisa en lugar de fallar.
+- **Textos legales (fase 13)**: `/legal/condiciones` y `/legal/privacidad`, públicas y enlazadas desde el alta.
+  Borrador: faltan el responsable y el contacto, y la revisión legal. La privacidad incluye la declaración de uso
+  limitado que pide Google.
+- **APK de desarrollo nuevo** con `expo-contacts` y `expo-crypto` (`pnpm android:build`).
+
+### Comprobaciones
+
+- Tests nuevos: contactos (coincidencia, ajuste desactivado, bloqueo, formato, tamaño y límite) y páginas legales.
+  `auth.int.test.ts` 8/8 y `api.int.test.ts` 13/13; lint y typecheck limpios.
+- API reiniciada; `/legal/privacidad` responde desde la red local.
+
+### Bloqueos (cuentas del titular, sin coste)
+
+- **Push (12C) en la app**: proyecto de EAS (`eas init`, cuenta de Expo) y Firebase con FCM V1 para Android. El
+  `google-services.json` va dentro del APK: se añadirá `expo-notifications` en esa misma compilación.
+- **YouTube (fase 4)**: añadir 3 permisos en Google Cloud (README).
+- **Beta (13)**: dominio y servidor (de pago: necesita una tarea específica), datos del responsable en los textos
+  legales y su revisión.
+
+## Entrega 2026-10-26 · Tus gustos, auditoría de seguridad, alta (D2/D3) y D5 con texto grande
+
+### Qué se ha hecho
+
+- **Incidencia**: el teléfono no cargaba tras reiniciar el PC: Metro (8091) no estaba en marcha y Expo Go probó con la
+  vista web (8092). Metro arrancado de nuevo; la app ya carga (confirmado por el titular).
+- **Tus gustos** (explicabilidad, diagnóstico §2.4): tarjeta en Perfil con el total, los gustos y disgustos claros
+  (±0,3), lo que no tiene opinión (NULL), el recuento por categoría y por fuente. El detalle se titula «Tus gustos» en
+  cuentas reales, nombra la fuente de cada obra y ordena primero los gustos claros. La guía de la demo de Inicio solo
+  aparece con datos simulados; fuera la tarjeta de suscripción duplicada.
+- **Auditoría de seguridad (fase 13)**: resultado en [beta.md](beta.md). Arreglado: detrás del proxy HTTPS el límite de
+  peticiones se habría repartido entre todos los usuarios; ahora `TRUST_PROXY` lee la IP real. Tests nuevos de acceso
+  a recursos ajenos (solicitudes y conversaciones).
+- **Alta (D2/D3)**: título en display, «Cómo funciona» en tres pasos y el campo de texto del sistema de diseño
+  (`TextField`, con etiqueta visible), también en el acceso local y en la eliminación de cuenta.
+- **D5**: las etiquetas de la barra inferior crecen con el texto del sistema hasta 1,3×. Lista de comprobación para el
+  teléfono: [D5-checklist-dispositivo.md](design/D5-checklist-dispositivo.md).
+
+### Comprobaciones
+
+- `pnpm test`: 36 ficheros y 360 tests OK (2 nuevos de configuración y más casos de acceso ajeno); lint y typecheck
+  limpios.
+- Vista web: Perfil con «Tus gustos» (Laura: 28 obras, 10 gustos y 3 disgustos) y la pantalla de alta.
+
+### Siguiente paso
+
+El titular pasa la lista D5 en el teléfono. Después: textos legales (condiciones y privacidad) y, con dominio y
+servidor, la beta (ver beta.md).
+
+## Entrega 2026-10-23 · D4 (ficha, estados vacíos y textos) y D5 (accesibilidad, primera pasada)
+
+### Qué se ha hecho
+
+- **Ficha de una obra**: cabecera a sangre con la imagen, el velo, la categoría y el título en display; sin la
+  etiqueta técnica de tipo («artist»).
+- **`ImageVeil` y `CategoryChipOnImage`**: componentes compartidos por la tarjeta y la ficha.
+- **`EmptyState`**: icono, título, explicación y una acción, como en el sistema de diseño. Se usa al final del mazo de
+  Inicio (conectar fuentes, con deshacer o recargar como secundaria) y en «Aún no hay almas gemelas».
+- **Textos**: se retiran las referencias a fases ya terminadas (chat, fuentes, contactos, sesión de desarrollo y
+  Premium).
+- **Accesibilidad**: auditoría automática de los `Pressable`. La burbuja de reintento del chat y la cabecera con el
+  perfil no tenían rol ni etiqueta; ahora sí. Los demás pulsables con rol leen su texto visible.
+
+### Incidencia: disco lleno (resuelta)
+
+- **Causa**: `scripts/web-screenshot.mjs` dejaba perfiles temporales de Edge en `%TEMP%` (unos 250 MB cada uno) y
+  293 procesos sin interfaz vivos. En Windows, el lanzador de Edge termina enseguida y sus hijos quedan sueltos.
+- **Efecto**: el disco llegó a 0 GB libres y se cayó la vista web. Metro (8091), la API y PostgreSQL siguieron bien y
+  el registro de PostgreSQL no tiene errores de escritura.
+- **Arreglo**: se borraron los 40 perfiles y se cerraron los procesos, con lo que quedaron 18 GB libres. El script cierra
+  ahora los procesos por la ruta de su perfil y borra el perfil al terminar. Comprobado: tras una captura quedan
+  0 procesos y 0 perfiles.
+
+### Comprobaciones
+
+- `pnpm test`: 36 ficheros y 358 tests OK; lint y typecheck limpios.
+- Capturas reales: ficha de Vetusta Morla (foto de Commons, licencia CC BY-SA 4.0) y conversación de chat.
+
+### Siguiente paso
+
+Revisión en el teléfono (barra inferior, tarjeta y perfil); después, D5 con lector de pantalla y textos grandes en el
+propio dispositivo.
+
+## Entrega 2026-10-23 · observaciones del titular en el teléfono y D4 en el resto de pestañas
+
+### Qué se ha hecho
+
+- **Afinidad (`affinity-v4`)**: Clara tenía un 86 % global y ninguna categoría pasaba de 50. Ahora cada categoría se
+  encoge hacia la calidad global de la pareja según su propia evidencia, así que la global queda siempre entre la menor
+  y la mayor categoría. Laura ↔ Clara: global 86, categorías 85–87. Afinidades recalculadas; API y worker reiniciados.
+- **Barra inferior**: ya no se solapa con los botones de Android (edge-to-edge); su altura suma el margen del sistema.
+- **People**: abre en «Almas gemelas» (primer segmento). La invitación va arriba solo si aún no hay almas gemelas.
+- **Categorías**: sin el nombre repetido y con títulos en Space Grotesk.
+- **Perfil**: las acciones de cada fuente son pequeñas y van en fila (`Button size="small"`).
+- `web-screenshot.mjs`: sesión de demo creada por la API y `--tabs` para varias capturas en una misma sesión.
+
+### Comprobaciones
+
+- `pnpm test`: 36 ficheros y 358 tests OK. Tests nuevos de v4: la global queda entre la menor y la mayor categoría, y
+  el desacuerdo con evidencia llega a ~0.
+- Lint y typecheck limpios.
+- Capturas de Inicio, Personas, Categorías y Perfil en la vista web.
+- **Pendiente de ver en el teléfono**: la barra inferior sobre los botones de Android (en la web no hay margen del
+  sistema).
+
+## Entrega 2026-10-23 · diseño D1 y D4 (sistema de diseño y primera aplicación en la app)
+
+### Qué se ha hecho
+
+- **Teléfono**:
+  - la app de desarrollo (APK) conecta tras abrir en el cortafuegos de Windows los puertos 3100 y 8091 para redes
+    privadas (acción del titular);
+  - acceso sin Google con un código local de un solo uso para la cuenta real (`pnpm user:local` conserva los datos).
+- **D1 · sistema de diseño «Noche de cine»** (`docs/design/design-system/`):
+  - tokens oscuro y claro;
+  - 44 componentes (38 de Material + MUI y 6 propios);
+  - guía viva con Dev Mode y «Copiar como prompt»;
+  - concepto de dos pantallas y 43 iconos propios.
+- **D4 · en la app**:
+  - tema con los tokens, oscuro por defecto;
+  - Space Grotesk en titulares y cifras;
+  - barra inferior con píldora;
+  - tarjeta de recomendación a sangre con velo, categoría y motivo;
+  - botones del mazo y botones en píldora;
+  - perfil de persona con la cifra grande y barras por categoría.
+- **Arreglo**: tras entrar (con código local o con Google), el inicio se quedaba cargando hasta recargar. La caché se
+  vaciaba después de cambiar la sesión y se llevaba por delante la consulta `/v1/me`.
+- `scripts/web-screenshot.mjs`: capturas de la vista web con Edge sin interfaz (DevTools), sin dependencias.
+
+### Comprobaciones
+
+- `pnpm test`: 36 ficheros y 357 tests OK; lint y typecheck limpios.
+- Contraste AA calculado con la fórmula WCAG para todos los pares de tokens, en ambos temas.
+- Capturas reales en la vista web: inicio con tarjeta y perfil de una alma gemela. La guía y el concepto se
+  revisaron en oscuro y en claro.
+- **Pendiente de comprobar en el teléfono**: el aspecto en el APK de desarrollo. La fuente se carga en JavaScript y no
+  hace falta otro APK.
+
+### Siguiente paso
+
+- D4 en el resto de pantallas: Categorías, People con la fila de persona, Perfil con la tarjeta de fuente y los
+  estados vacíos.
+- D5: accesibilidad (lector de pantalla y tamaños) y revisión en el teléfono.
+
+## Entrega 2026-10-22 · fase 14 (arranque en frío y prioridades del diagnóstico)
+
+### Qué se ha hecho
+
+1. **Recomendador por contenido** (bloque `content`, «porque te gusta X»):
+   - relaciones públicas de Wikidata: saga, secuela, director, guionista, creador, autor, estudio, influencias y
+     géneros (`catalog_relations`, migración 0014);
+   - una consulta SPARQL por relación, porque la UNION tardaba 65 s y cada una por separado menos de 1,5 s;
+   - en series se usa el creador y no el director, que en las series son los de cada episodio;
+   - en música, artistas del mismo tipo (grupo o solista) con 2 géneros en común o influencias;
+   - el bloque va antes de comunidad y explorar, y solo lo generan gustos claros (≥ 0,3); un disgusto nunca recomienda
+     lo relacionado.
+2. **Imágenes del catálogo real** desde Wikidata (P18 y P154) y Commons, con licencia libre y autoría. El job
+   `enrich-catalog` del worker las añade cada 6 h y al arrancar.
+3. **Ciudad opcional en el alta**: Nominatim, solo poblaciones; un nombre de calle o un texto inventado se rechazan.
+   Se guarda aproximada.
+4. **Invitaciones por enlace** (migración 0015):
+   - código aleatorio de 10 caracteres, 30 días y 20 usos;
+   - aceptar crea la amistad y abre el chat;
+   - respetan bloqueos y datasets; la invitación propia no sirve.
+5. **Diseño D0**: dirección y principios en docs/design/D0-direccion.md.
+6. **CI**: GitHub Actions con PostGIS y Redis (lint, typecheck y tests); repositorio público, sin coste.
+7. **Build de desarrollo local**: `expo-dev-client` y `pnpm android:build`, que genera un APK en este PC con el SDK y
+   el JDK de Android Studio, sin EAS.
+
+También: fusión de cuentas (la antigua queda vacía, no se ha borrado) y ciudad «Barcelona» en la cuenta real, deducida
+de los lugares de su calendario y modificable en Perfil.
+
+### Resultados reales con la cuenta del titular
+
+| Métrica | Antes | Después |
+|---|---|---|
+| Recomendaciones | 3 (explorar) | **47** «porque te gusta X» |
+| Objetos del catálogo real con imagen | 9 % | **55 %** del catálogo de entonces; +109 de los objetos nuevos |
+| Trending | «sin ubicación» | «votos insuficientes» (falta gente en la zona) |
+
+Ejemplos de recomendaciones:
+- *2010* y *El resplandor*, por *2001: A Space Odyssey*;
+- *The Cranberries*, por La Oreja de Van Gogh;
+- Michael Jackson, por Beyoncé.
+
+Endpoints comprobados por HTTP con una sesión temporal: recomendaciones con su motivo e imagen, crear invitación y
+rechazo de la invitación propia.
+
+### Comprobaciones
+
+- `pnpm test`: 36 ficheros y 357 tests OK; lint y typecheck limpios.
+- Tests nuevos:
+  - algoritmo por contenido (3);
+  - consultas y relacionados de Wikidata (2);
+  - bloque «por contenido» de extremo a extremo (1);
+  - invitaciones (4).
+
+### Limitaciones conocidas
+
+- La calidad de las relaciones musicales es irregular: Wikidata tiene pocas influencias y los géneros son amplios.
+- Las fotos de restaurantes siguen con fallback: no hay fotos libres fiables de cada local.
+- Sin otros usuarios reales, consenso, descubrimiento y Trending siguen vacíos. Las invitaciones son la vía.
+
+### Siguiente paso
+
+D1, el sistema de diseño, con los plugins (disponibles en la próxima sesión), e instalar el APK de desarrollo en el
+teléfono.
 
 ## Entrega 2026-10-22 · fase 11E (Google Calendar)
 

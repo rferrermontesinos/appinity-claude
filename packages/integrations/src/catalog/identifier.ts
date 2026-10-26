@@ -49,6 +49,7 @@ export function createCatalogIdentifier(options: CatalogIdentifierOptions): Enti
     identifyApps: (packages, onProgress) => works.identifyApps(packages, onProgress),
     identifyGoogleBooksVolume: (volumeId) => works.identifyGoogleBooksVolume(volumeId),
     identifyByExternalIds: (items) => works.identifyByExternalIds(items),
+    relatedWorks: (qid, category) => works.relatedWorks(qid, category),
     identifyPlace: (place) => places.identifyPlace(place),
     identifyPlaces: (list, onProgress) => places.identifyPlaces(list, onProgress),
     identifyWork: (work) => works.identifyWork(work),

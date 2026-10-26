@@ -213,7 +213,8 @@ describe('People y Friends (fase 10)', () => {
     expect(await (await call(token, 'POST', '/v1/me/friends/requests', { userId: clara.id })).json()).toEqual({ state: 'pending_out' });
     const incoming = ((await (await call(claraToken, 'GET', '/v1/me/friends')).json()) as FriendsDto).incoming;
     expect(incoming.map((f) => f.userId)).toEqual([laura.id]);
-    // Laura no puede aceptar su propia solicitud.
+    // Laura no puede aceptar su propia solicitud, ni una tercera persona la de otra.
+    expect((await call(await tokenFor('demo_leo'), 'POST', `/v1/me/friends/requests/${incoming[0]!.requestId}/reject`)).status).toBe(404);
     expect((await call(token, 'POST', `/v1/me/friends/requests/${incoming[0]!.requestId}/accept`)).status).toBe(404);
     expect(await (await call(claraToken, 'POST', `/v1/me/friends/requests/${incoming[0]!.requestId}/accept`)).json()).toEqual({ state: 'friends' });
     const person = (await (await get(`/v1/people/${clara.id}`)).json()) as PublicPersonDto;
@@ -261,6 +262,9 @@ describe('Chat (fase 12A)', () => {
     expect(person.chat).toEqual({ state: 'request_sent', kind: 'interest' });
     const inbox = (await (await call(irisToken, 'GET', '/v1/me/chats')).json()) as ChatInboxDto;
     expect(inbox.requests.map((r) => r.person.userId)).toEqual([laura.id]);
+    // Una solicitud solo la responde quien la recibe.
+    expect((await call(leoToken, 'POST', `/v1/me/chats/requests/${inbox.requests[0]!.requestId}/accept`)).status).toBe(404);
+    expect((await call(leoToken, 'POST', `/v1/me/chats/requests/${inbox.requests[0]!.requestId}/ignore`)).status).toBe(404);
     const match = (await (await call(irisToken, 'POST', `/v1/me/chats/requests/${inbox.requests[0]!.requestId}/accept`)).json()) as ChatMatchResultDto;
     expect(match).toMatchObject({ state: 'matched', newMatch: true });
     const conv = match.conversationId!;
@@ -270,6 +274,8 @@ describe('Chat (fase 12A)', () => {
     // Leo no es miembro: ni lee ni escribe.
     expect((await call(leoToken, 'GET', `/v1/me/chats/${conv}/messages`)).status).toBe(404);
     expect((await call(leoToken, 'POST', `/v1/me/chats/${conv}/messages`, { body: 'hola' })).status).toBe(404);
+    expect((await call(leoToken, 'POST', `/v1/me/chats/${conv}/read`)).status).toBe(404);
+    expect((await call(leoToken, 'DELETE', `/v1/me/chats/${conv}`)).status).toBe(404);
     const page = (await (await call(irisToken, 'GET', `/v1/me/chats/${conv}/messages`)).json()) as ChatConversationDto;
     expect(page.messages.map((m) => [m.body, m.mine])).toEqual([['Hola Iris', false]]);
     expect((await call(irisToken, 'POST', `/v1/me/chats/${conv}/read`)).status).toBe(204);

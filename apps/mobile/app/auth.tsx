@@ -24,8 +24,9 @@ export default function AuthReturnScreen() {
     started.current = true;
     void apiRequest<AuthSessionDto>('/v1/auth/exchange', { method: 'POST', body: { code: params.code }, auth: false })
       .then(async (session) => {
-        await useSession.getState().setSession({ token: session.accessToken, expiresAt: session.expiresAt, refreshToken: session.refreshToken, handle: '', kind: 'user' });
+        // Caché vacía antes de la sesión nueva (ver useDevLogin).
         queryClient.clear();
+        await useSession.getState().setSession({ token: session.accessToken, expiresAt: session.expiresAt, refreshToken: session.refreshToken, handle: '', kind: 'user' });
         router.replace(session.needsOnboarding ? '/onboarding' : '/');
       })
       .catch((e: Error) => setError(e.message));
