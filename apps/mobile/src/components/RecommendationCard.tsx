@@ -32,7 +32,7 @@ export function reasonText(t: (key: string, options?: Record<string, unknown>) =
   }
 }
 
-const REASON_ICON = {
+export const REASON_ICON = {
   consensus: 'account-group',
   discovery: 'account-heart',
   trending: 'map-marker-radius',
@@ -41,6 +41,11 @@ const REASON_ICON = {
   kept: 'heart-outline',
   explore: 'compass-outline',
 } as const;
+
+/** Motivos que vienen de personas (almas gemelas o comunidad): su icono va en lima. */
+export function isPeopleReason(r: RecommendationDto): boolean {
+  return r.reason.code === 'consensus' || r.reason.code === 'discovery' || r.reason.code === 'community';
+}
 
 export function RecommendationCard({
   recommendation,
@@ -81,7 +86,7 @@ export function RecommendationCard({
 
   // «Aura» (docs/design/aura/): portada arriba (imagen o portada generada) y panel de texto debajo, sobre superficie
   // (el texto nunca va sobre el halo ni sobre la imagen). La tarjeta brilla con el color de la categoría.
-  const peopleReason = recommendation.reason.code === 'consensus' || recommendation.reason.code === 'discovery' || recommendation.reason.code === 'community';
+  const peopleReason = isPeopleReason(recommendation);
   return (
     <Animated.View
       {...(interactive ? responder.panHandlers : {})}

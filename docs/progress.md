@@ -25,6 +25,30 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-26 (8) · «Aura» en Categorías
+
+### Qué se ha hecho
+
+- **Cuadrícula**: las ocho categorías como carteles en dos columnas (base oscura teñida, brillo proporcional al
+  cartel, grano, icono grande de fondo y brillo exterior del color). Nombre en Bricolage y, debajo, qué recomienda
+  («Artistas», «Series y temporadas») o su alcance (Local / Global).
+- **Detalle**: selector neutro con la pestaña elegida en claro y un punto del color de la categoría (el color nunca es
+  fondo de texto); filas de recomendación con borde fino, portada de 68, título en Bricolage y motivo con su icono
+  (lima si viene de personas); catálogo con esquinas y títulos nuevos.
+- `REASON_ICON` e `isPeopleReason` exportados desde `RecommendationCard` para compartirlos.
+
+### Comprobaciones
+
+- Corregido durante la verificación: los brillos de la portada generada, pensados para la tarjeta ancha, cubrían
+  los carteles pequeños y bajaban el contraste. Los carteles tienen ahora su propio fondo.
+- Contraste calculado en el peor caso (Cultura con la banda): nombre 6,28:1 y texto atenuado 4,55:1.
+- `pnpm lint` y `pnpm typecheck` limpios; `pnpm test`: 37 ficheros y 366 tests OK.
+- Vista web (390×844, demo): cuadrícula, Música › Recomendado y Música › Catálogo.
+
+### Pendiente
+
+- Ver en el teléfono. Siguientes: Perfil, barra inferior y guía del sistema de diseño.
+
 ## Entrega 2026-10-26 (7) · «Aura» en la ficha de persona
 
 ### Qué se ha hecho
