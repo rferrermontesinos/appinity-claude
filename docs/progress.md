@@ -44,6 +44,8 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
   y lima 6,79:1; inicial del avatar ≥ 6,66:1.
 - `pnpm lint` y `pnpm typecheck` limpios; `pnpm test`: 37 ficheros y 366 tests OK.
 - Vista web (390×844, demo): «Clara (demo) y tú», 86 %, Películas, Libros y Restaurantes, 10 gustos en común.
+- Ajuste del titular: cifra más pequeña (64 en lugar de 104) y tarjeta más compacta para dar más peso al listado;
+  en 390×844 se ven dos almas gemelas más y asoma la tercera (antes, una).
 - Nota: la vista web lee `packages/i18n/dist`; tras añadir textos hay que ejecutar `pnpm build`.
 
 ### Pendiente

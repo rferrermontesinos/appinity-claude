@@ -78,7 +78,7 @@ export function SoulmateHero({ person }: { person: SoulmateDto }) {
   const version = affinity?.algorithmVersion;
 
   return (
-    <View style={{ borderRadius: radius.xl, overflow: 'hidden', padding: spacing.xl - 2, gap: spacing.xs, backgroundColor: HERO_BASE, borderWidth: 1, borderColor: c.hairline }}>
+    <View style={{ borderRadius: radius.xl, overflow: 'hidden', padding: spacing.lg + 2, gap: spacing.xs, backgroundColor: HERO_BASE, borderWidth: 1, borderColor: c.hairline }}>
       <View pointerEvents="none" aria-hidden accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: mixHex(accent, HERO_BASE, 0.88) }} />
         <Glow color={LIME} size={420} x={-40} y={-60} strength={0.012} />
@@ -87,20 +87,20 @@ export function SoulmateHero({ person }: { person: SoulmateDto }) {
       </View>
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-        <PersonAvatar name={person.displayName} url={person.avatarUrl} size={40} ring={LIME} />
+        <PersonAvatar name={person.displayName} url={person.avatarUrl} size={36} ring={LIME} />
         <Text style={{ color: HERO_TEXT, fontSize: 15, flexShrink: 1 }} numberOfLines={1}>
           <Text style={{ fontWeight: '700' }}>{t('people.heroWith', { name: person.displayName })}</Text>
           {person.countryCode ? <Text style={{ color: HERO_MUTED }}> · {person.countryCode}</Text> : null}
         </Text>
       </View>
 
-      <Text style={{ color: LIME, fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', marginTop: spacing.lg }}>{t('people.heroKicker')}</Text>
+      <Text style={{ color: LIME, fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', marginTop: spacing.md }}>{t('people.heroKicker')}</Text>
       <Text
         accessibilityLabel={`${t('people.affinity')} ${score === null ? '—' : t('people.affinityValue', { value: Math.round(score) })}`}
-        style={{ color: HERO_TEXT, fontFamily: fonts.displayHeavy, fontSize: 104, lineHeight: 104, letterSpacing: -5, includeFontPadding: false }}
+        style={{ color: HERO_TEXT, fontFamily: fonts.displayHeavy, fontSize: 64, lineHeight: 66, letterSpacing: -2.5, includeFontPadding: false }}
       >
         {shown === null ? '—' : shown}
-        {shown !== null ? <Text style={{ fontSize: 40, letterSpacing: 0 }}> %</Text> : null}
+        {shown !== null ? <Text style={{ fontSize: 26, letterSpacing: 0 }}> %</Text> : null}
       </Text>
       {person.exceptionalMutual ? (
         <View style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: LIME, borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 5 }}>
@@ -113,20 +113,20 @@ export function SoulmateHero({ person }: { person: SoulmateDto }) {
       </Text>
 
       {top.length ? (
-        <View style={{ gap: spacing.md, marginTop: spacing.lg }}>
+        <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
           {top.map((item) => (
             <HeroBar key={item.category} item={item} reduce={reduce} />
           ))}
         </View>
       ) : null}
-      {common > 0 ? <Text style={{ color: HERO_TEXT, fontSize: 14, fontWeight: '600', marginTop: spacing.md }}>{t('people.heroCommon', { count: common })}</Text> : null}
+      {common > 0 ? <Text style={{ color: HERO_TEXT, fontSize: 14, fontWeight: '600', marginTop: spacing.sm }}>{t('people.heroCommon', { count: common })}</Text> : null}
 
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={t('people.openProfile', { name: person.displayName })}
         onPress={() => router.push(`/person/${person.userId}`)}
         style={({ pressed }) => ({
-          marginTop: spacing.lg,
+          marginTop: spacing.md,
           minHeight: 48,
           borderRadius: radius.full,
           backgroundColor: LIME,
