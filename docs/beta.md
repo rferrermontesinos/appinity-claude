@@ -44,7 +44,7 @@ La cuenta de Google es nueva y está vacía; los gustos del usuario siguen en su
 
 ## Auditoría de seguridad de la API (2026-10-26)
 
-Revisión de las 70 rutas de `apps/api` (sin herramientas externas):
+Revisión de todas las rutas de `apps/api` (sin herramientas externas):
 
 - **Sesión**: un guard global exige sesión en todo lo que no se marca `@Public()`. Las públicas son: salud, inicio de
   sesión con Google, imágenes del catálogo (solo `catalog/`, sin datos personales), retorno de las fuentes (con `state`),
