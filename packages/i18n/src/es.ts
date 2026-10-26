@@ -325,6 +325,7 @@ export const es = {
       content: 'Porque te gusta {{title}}',
       kept: 'Lo conservaste',
       explore: 'Para explorar',
+      followed: 'Lo recomienda {{name}}, a quien sigues',
       supporters: 'almas gemelas lo recomiendan',
       affinityMean: 'afinidad media contigo',
       affinityOne: 'su afinidad contigo',

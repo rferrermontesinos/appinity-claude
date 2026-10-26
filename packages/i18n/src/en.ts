@@ -326,6 +326,7 @@ export const en: TranslationResources = {
       content: 'Because you like {{title}}',
       kept: 'You kept it',
       explore: 'To explore',
+      followed: 'Recommended by {{name}}, who you follow',
       supporters: 'soulmates recommend it',
       affinityMean: 'their average affinity with you',
       affinityOne: 'their affinity with you',
