@@ -495,6 +495,20 @@ export interface ItemOpinionDto {
   vote: -2 | -1 | 1 | 2 | null;
 }
 
+/**
+ * «Entre tus almas gemelas» en la ficha: qué opina tu Top 50 de una obra (solo recuentos, nunca quién) y a quiénes de
+ * los que sigues les gusta (solo nombres de seguidos). opinionated = love + like + mixed + dislike.
+ */
+export interface ItemCircleDto {
+  soulmates: number;
+  opinionated: number;
+  love: number;
+  like: number;
+  mixed: number;
+  dislike: number;
+  followedLikers: { names: string[]; count: number };
+}
+
 export interface HomeVoteResultDto {
   actionId: string;
 }

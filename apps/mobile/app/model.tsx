@@ -1,5 +1,6 @@
 import { CATEGORIES, CATEGORY_META, type Category } from '@appinity/shared';
-import { Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
+import { useOpenItem } from '../src/catalog/openItem';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, Pressable, ScrollView, Text, View } from 'react-native';
@@ -87,7 +88,7 @@ function ProfileRow({ profile, onPress }: { profile: ProfileView; onPress: () =>
  */
 export default function ModelScreen() {
   const { t } = useTranslation();
-  const router = useRouter();
+  const openItem = useOpenItem();
   const c = usePalette();
   const [category, setCategory] = useState<Category | undefined>(undefined);
   const profiles = useItemProfiles(category);
@@ -136,7 +137,7 @@ export default function ModelScreen() {
         }
         ListEmptyComponent={profiles.isSuccess ? <Body muted>{t('model.empty')}</Body> : null}
         renderItem={({ item }) => (
-          <ProfileRow profile={item} onPress={() => router.push({ pathname: '/item/[id]', params: { id: item.item.id } })} />
+          <ProfileRow profile={item} onPress={() => openItem(item.item.id)} />
         )}
       />
     </View>

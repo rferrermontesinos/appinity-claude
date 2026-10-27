@@ -1,11 +1,11 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { CATEGORY_META, type RecommendationDto } from '@appinity/shared';
-import { useRouter } from 'expo-router';
 import { useImperativeHandle, useRef, useState, type Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Animated, Text, View, type AccessibilityActionEvent, type GestureResponderEvent } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { contextLine } from '../catalog/contextLine';
+import { useOpenItem } from '../catalog/openItem';
 import { fonts, motion, onImage, radius, spacing, usePalette } from '../theme';
 import { CatalogImage } from './CatalogImage';
 import type { DeckAction } from '../state/homeDeck';
@@ -146,8 +146,8 @@ export function RecommendationCard({
   const leaving = useRef(false);
   // ¿Se ha movido el dedo en algún momento de este toque? Arrastrar y volver al centro no es un toque.
   const moved = useRef(false);
-  const router = useRouter();
-  const openDetails = () => router.push({ pathname: '/item/[id]', params: { id: item.id } });
+  const openItem = useOpenItem();
+  const openDetails = () => openItem(item.id);
 
   /** `shown`: el sello ya se ve (gesto). Desde un botón no hay arrastre previo: se enseña un momento antes de salir. */
   const fling = (action: DeckAction, shown = false) => {

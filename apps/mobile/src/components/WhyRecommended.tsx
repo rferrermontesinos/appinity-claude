@@ -1,9 +1,9 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { RecommendationDto } from '@appinity/shared';
-import { useRouter } from 'expo-router';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
+import { useOpenItem } from '../catalog/openItem';
 import { fonts, radius, spacing, usePalette } from '../theme';
 import { CatalogImage } from './CatalogImage';
 import type { useCategoryWorld } from './CategoryWorld';
@@ -61,7 +61,7 @@ export function evidenceStats(t: TFunction, r: RecommendationDto): Stat[] {
  */
 export function RankedRow({ r, rank, featured, world }: { r: RecommendationDto; rank: number; featured: boolean; world?: CategoryWorld }) {
   const { t } = useTranslation();
-  const router = useRouter();
+  const openItem = useOpenItem();
   const c = usePalette();
   const stats = evidenceStats(t, r);
   const exceptional = r.reason.evidence?.exceptionalSupporters ?? 0;
@@ -76,7 +76,7 @@ export function RankedRow({ r, rank, featured, world }: { r: RecommendationDto; 
         ...stats.map((s) => `${s.value} ${s.label}`),
         ...(exceptional ? [t('categoriesScreen.why.exceptional', { count: exceptional })] : []),
       ].join('. ')}
-      onPress={() => router.push({ pathname: '/item/[id]', params: { id: r.item.id } })}
+      onPress={() => openItem(r.item.id)}
       style={({ pressed }) => ({
         flexDirection: 'row',
         gap: spacing.md,

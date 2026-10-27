@@ -25,3 +25,4 @@ export * from './follows.js';
 export * from './category-ranking.js';
 export * from './catalog-expansion.js';
 export * from './votes.js';
+export * from './item-circle.js';

@@ -25,6 +25,31 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-27 (5) · Ficha rediseñada: «Entre tus almas gemelas» y doble toque
+
+### Qué se ha hecho
+
+- Ficha con cabecera compacta (miniatura + categoría, título, autoría · año) en lugar del cartel grande que repetía
+  la tarjeta de Inicio.
+- Sección nueva «Entre tus almas gemelas»: cuántas de tus 50 más afines la han valorado y cómo (barra + leyenda) y a
+  quién de los que sigues le gusta. Endpoint `GET /v1/me/home/items/:id/circle` (solo recuentos; nombres solo de seguidos).
+- «Sobre esto» muestra todos los géneros y el país de origen.
+- Corregido: el doble toque en la tarjeta abría dos fichas apiladas (`useOpenItem`, también en Recomendaciones y en
+  el modelo de datos).
+
+### Comprobaciones
+
+- Test nuevo de la API: recuentos coherentes (suma, Top 50, apoyos del consenso = les encanta + les gusta), sin IDs,
+  400/404. `pnpm test`: 42 ficheros y 390 tests OK; `pnpm lint` y `pnpm typecheck` limpios.
+- Vista web (375 × 812, Marta demo): Merlí muestra «La han valorado 3 de tus 5 almas gemelas más afines», «Les encanta
+  3», «A Clara (demo), a quien sigues, le gusta», géneros y país. Doble clic en la tarjeta: una sola ficha (un «atrás»
+  vuelve a Inicio).
+
+### Pendiente
+
+- Aceptación en el teléfono (solo JS: recargar). En Hermes, si no hay `Intl.DisplayNames`, el país sale como código ISO.
+- Decidir si «Me encanta» pasa al doble toque (recomendación: no; ver decisions.md).
+
 ## Entrega 2026-10-27 (4) · Motor v3: 4 opciones, sin guardar y tarjeta simplificada
 
 ### Qué se ha hecho

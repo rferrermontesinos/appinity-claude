@@ -1229,3 +1229,25 @@ Sustituye al modelo «binario + Me encanta» de esta misma fecha: «Guardar» y 
   **Recomendaciones excluye solo lo votado** (antes excluía todo lo visto en Inicio y anteponía lo guardado).
 - **Guardar desaparece**: la API ya no acepta `keep`; las acciones «keep» antiguas no cuentan (la demo de Laura
   tenía 100 «Conservar» del modelo anterior que llenaban Recomendaciones de «Lo guardaste»). Ficha: solo votar.
+
+## 2026-10-27 · Ficha de una obra: lo que la tarjeta no cuenta (/creative L2, Layout Strategist, dentro de «Aura»)
+
+- **Problema** (titular): la ficha repetía la tarjeta de Inicio (cartel grande con título encima).
+- **Composición nueva** (móvil, una columna, espaciado de `theme.spacing`):
+  1. Cabecera compacta: miniatura de 112 px (2:3 en cine, series y libros; cuadrada en lo demás) con el brillo de su
+     categoría, y al lado categoría, título y autoría completa · año (o la localidad en lugares). Atribución debajo.
+  2. **«Entre tus almas gemelas»** (nuevo): cuántas de tus 50 almas gemelas más afines la han valorado y cómo
+     (barra de reparto + leyenda: les encanta ≥ 0,8 · les gusta ≥ 0,5 · ni fu ni fa · no les gusta ≤ −0,5, con
+     confianza ≥ 0,5), y a quiénes de los que sigues les gusta. Mismos umbrales y mismo Top 50 que el consenso:
+     «les encanta» + «les gusta» = apoyos de la tarjeta. Sin valoraciones se dice tal cual.
+  3. «Tu opinión» (votar). 4. «Sobre esto»: descripción, **todos** los géneros, fecha, país. 5. «Dónde encontrarlo»,
+     tu relación (Known/Consumed/Preference) y datos técnicos plegados.
+- **Privacidad**: de las almas gemelas solo recuentos, nunca quién ni su historial; nombres solo de personas que
+  sigues (la misma regla que el motivo combinado de Inicio). Endpoint `GET /v1/me/home/items/:id/circle`, con la
+  visibilidad del objeto comprobada en backend.
+- **Doble toque**: abría la ficha dos veces (dos pantallas apiladas). Ahora todas las aperturas pasan por
+  `useOpenItem`, que ignora otra apertura durante 800 ms.
+- **«Me encanta» por doble toque: no** (por ahora sigue ↑). Motivos: obligaría a retrasar ~300 ms cada toque simple
+  para saber si llega un segundo (la ficha se abriría siempre más lenta); «Me encanta» es el voto más fuerte y es
+  definitivo (la tarjeta se va), así que un doble toque accidental cuesta más que en Instagram, donde el corazón se
+  quita con otro toque; y rompe la regla «deslizar = opinar, tocar = mirar». Pendiente de que el titular decida.

@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HttpCode, Inject, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import { type DatabaseHandle } from '@appinity/database';
-import { NotFoundError, applyHomeAction, assertItemVisible, castVote, enqueueAffinity, itemOpinion, recordImpression, undoLastHomeAction, type ProducerQueues } from '@appinity/ingestion';
-import type { HomeActionResultDto, HomeImpressionResultDto, HomeUndoResultDto, HomeVoteResultDto, ItemOpinionDto } from '@appinity/shared';
+import { NotFoundError, applyHomeAction, assertItemVisible, castVote, enqueueAffinity, itemCircle, itemOpinion, recordImpression, undoLastHomeAction, type ProducerQueues } from '@appinity/ingestion';
+import type { HomeActionResultDto, HomeImpressionResultDto, HomeUndoResultDto, HomeVoteResultDto, ItemCircleDto, ItemOpinionDto } from '@appinity/shared';
 import { z } from 'zod';
 import type { AuthContext } from '../auth/auth.types.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
@@ -34,13 +34,21 @@ export class HomeController {
     return { actionId: result.actionId };
   }
 
-  /** La tarjeta se ha mostrado de verdad (no precargada). */
-  /** Tu voto y si la guardaste, para la ficha (solo tus propios datos). */
+  /** Tu voto, para la ficha (solo tus propios datos). */
   @Get('items/:id/opinion')
   async opinion(@CurrentUser() auth: AuthContext, @Param('id', new ParseUUIDPipe()) id: string): Promise<ItemOpinionDto> {
     await assertItemVisible(this.database.db, auth.userId, id);
     return itemOpinion(this.database.db, auth.userId, id);
   }
+
+  /** «Entre tus almas gemelas» (ficha): recuentos del Top 50 y nombres solo de quienes sigues. */
+  @Get('items/:id/circle')
+  async circle(@CurrentUser() auth: AuthContext, @Param('id', new ParseUUIDPipe()) id: string): Promise<ItemCircleDto> {
+    await assertItemVisible(this.database.db, auth.userId, id);
+    return itemCircle(this.database.db, auth.userId, id);
+  }
+
+  /** La tarjeta se ha mostrado de verdad (no precargada). */
 
   @Post('impressions')
   @HttpCode(200)

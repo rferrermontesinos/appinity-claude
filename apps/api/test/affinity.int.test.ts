@@ -1,7 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import { createDatabase, userAffinities, userBlocks, users, type DatabaseHandle } from '@appinity/database';
 import { DEMO_USERS, recomputeAffinities, seedDemo } from '@appinity/ingestion';
-import { CATEGORIES, type AffinityDto, type CategoryRankingDto, type ChatConfigDto, type ChatConversationDto, type ChatInboxDto, type ChatMatchResultDto, type FollowedPersonDto, type FriendsDto, type PublicPersonDto, type RecommendationsDto, type SoulmatesDto } from '@appinity/shared';
+import { CATEGORIES, type AffinityDto, type CategoryRankingDto, type ChatConfigDto, type ChatConversationDto, type ChatInboxDto, type ChatMatchResultDto, type FollowedPersonDto, type FriendsDto, type ItemCircleDto, type PublicPersonDto, type RecommendationsDto, type SoulmatesDto } from '@appinity/shared';
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { testEnv, truncateAll } from '../../../test/helpers.js';
@@ -438,5 +438,26 @@ describe('Votos en Inicio (motor v3, 2026-10-27)', () => {
     const reverted = (await (await call('GET', `/v1/me/item-profiles/${liked}`)).json()) as { observations: Array<{ sourceKey: string }> };
     expect(reverted.observations.filter((o) => o.sourceKey === 'appinity')).toEqual([]);
     expect(await opinion(liked)).toEqual({ voted: false, vote: null });
+  });
+
+  it('ficha «Entre tus almas gemelas»: recuentos del Top 50 coherentes con el consenso, sin IDs ni nombres de almas gemelas', async () => {
+    const call = (path: string) => fetch(`${base}${path}`, { headers: { Authorization: `Bearer ${token}` } });
+    const recs = (await (await call('/v1/me/recommendations?limit=20')).json()) as RecommendationsDto;
+    expect(recs.items.length).toBeGreaterThan(0);
+    for (const r of recs.items.slice(0, 8)) {
+      const res = await call(`/v1/me/home/items/${r.item.id}/circle`);
+      expect(res.status).toBe(200);
+      const circle = (await res.json()) as ItemCircleDto;
+      expect(Object.keys(circle).sort()).toEqual(['dislike', 'followedLikers', 'like', 'love', 'mixed', 'opinionated', 'soulmates']);
+      expect(JSON.stringify(circle)).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/);
+      expect(circle.soulmates).toBeLessThanOrEqual(50);
+      expect(circle.opinionated).toBe(circle.love + circle.like + circle.mixed + circle.dislike);
+      expect(circle.opinionated).toBeLessThanOrEqual(circle.soulmates);
+      expect(circle.followedLikers.names.length).toBe(Math.min(2, circle.followedLikers.count));
+      // Mismo Top 50 y mismos umbrales que un apoyo del consenso: «les encanta» + «les gusta» = apoyos de la tarjeta.
+      if (r.block === 'consensus') expect(circle.love + circle.like).toBe(r.reason.supporters);
+    }
+    expect((await call('/v1/me/home/items/no-uuid/circle')).status).toBe(400);
+    expect((await call('/v1/me/home/items/00000000-0000-4000-8000-000000000000/circle')).status).toBe(404);
   });
 });
