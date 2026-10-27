@@ -18,6 +18,8 @@ export function CreditsCard() {
       <Small>{t('credits.wikidata')}</Small>
       <Small>{t('credits.steam')}</Small>
       <Small>{t('credits.google')}</Small>
+      {/* Atribución exigida por TMDb (carteles de películas) y TVmaze (carteles de series). */}
+      <Small>{t('credits.posters')}</Small>
     </Card>
   );
 }

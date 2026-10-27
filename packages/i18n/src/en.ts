@@ -317,6 +317,7 @@ export const en: TranslationResources = {
     wikidata: 'Catalog: Wikidata (CC0) and images from Wikimedia Commons; every image shows its author and license.',
     steam: 'Games: data from the Steam Web API and Steam store art, as reference only.',
     google: 'Your Google data is imported with your permission through Google Data Portability and is never shared.',
+    posters: 'Series posters: TVmaze (CC BY-SA 4.0). Movie posters: TMDb. This product uses the TMDB API but is not endorsed or certified by TMDB.',
   },
   categoriesScreen: {
     sectionData: 'Recommended with data',

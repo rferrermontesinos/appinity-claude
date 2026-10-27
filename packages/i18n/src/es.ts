@@ -316,6 +316,7 @@ export const es = {
     wikidata: 'Catálogo: Wikidata (CC0) e imágenes de Wikimedia Commons; cada imagen muestra su autor y licencia.',
     steam: 'Juegos: datos de la Steam Web API y arte de la tienda de Steam, solo como referencia.',
     google: 'Tus datos de Google se importan con tu autorización mediante Google Data Portability y nunca se comparten.',
+    posters: 'Carteles de series: TVmaze (CC BY-SA 4.0). Carteles de películas: TMDb. This product uses the TMDB API but is not endorsed or certified by TMDB.',
   },
   categoriesScreen: {
     sectionData: 'Recomendado con datos',
