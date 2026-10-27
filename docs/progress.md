@@ -25,6 +25,14 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-27 (7) · Diagnóstico completo y plan de beta cerrada
+
+- [diagnostico-2026-10-27.md](diagnostico-2026-10-27.md): estado por niveles, lo que falta de la especificación,
+  veredicto (beta cerrada en Android con Gmail, hasta 100 personas), olas de 5–8, 25–40 y 100, base de datos e
+  infraestructura, requisitos con costes y orden propuesto.
+- Datos medidos en la BD local: 2 cuentas reales, 97 gustos reales y 0 afinidades reales; 260 obras reales y 132 de
+  demo. `main` solo tiene el commit inicial y hay 23 PR abiertos.
+
 ## Entrega 2026-10-27 (6) · Sinopsis en la ficha, sello inmediato y «Me encanta» en rosa
 
 ### Qué se ha hecho
