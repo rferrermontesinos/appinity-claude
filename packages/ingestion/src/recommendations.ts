@@ -27,8 +27,6 @@ import {
   categoryAffinities,
   homeDismissals,
   itemVotes,
-  recommendationImpressions,
-  recommendationActions,
   userAffinities,
   userItemProfiles,
   userProfiles,
@@ -54,7 +52,7 @@ import { activeFollowedIds } from './follows.js';
  */
 const LOCAL_CATEGORIES: readonly Category[] = ['food', 'culture'];
 
-/** Días tras los que una obra pasada («Paso») vuelve a Inicio para valorarla. */
+/** Días tras los que una obra marcada «No lo conozco» puede volver a Inicio. */
 export const PASS_RETURN_DAYS = 30;
 
 export interface RecommendationOptions {
@@ -163,34 +161,18 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
     .from(userItemProfiles)
     .where(and(eq(userItemProfiles.userId, userId), gte(userItemProfiles.knownConfidence, params.knownThreshold)));
   for (const k of known) excluded.add(k.itemId);
-  // Votadas (2026-10-27): un voto es definitivo, también «No lo conozco»; no vuelven en ningún sitio.
+  // Votadas (2026-10-27): un voto es definitivo; no vuelven ni en Inicio ni en Recomendaciones.
   const voted = await db.select({ itemId: itemVotes.catalogItemId }).from(itemVotes).where(eq(itemVotes.userId, userId));
   for (const v of voted) excluded.add(v.itemId);
-  // Guardadas (doble toque): no vuelven a Inicio; en Recomendaciones van primero, en su propio apartado.
-  const keptRows = await db
-    .selectDistinct({ itemId: recommendationActions.catalogItemId })
-    .from(recommendationActions)
-    .where(and(eq(recommendationActions.userId, userId), eq(recommendationActions.action, 'keep'), isNull(recommendationActions.undoneAt)));
-  const keptIds = new Set(keptRows.map((k) => k.itemId).filter((id) => !excluded.has(id)));
-  const sessionSeen = new Set(options.excludeItemIds ?? []);
-  // Inicio: lo que pasaste vuelve para valorarlo a los PASS_RETURN_DAYS del último paso (decisión del titular,
-  // 2026-10-27: «lo descartado vuelve cada mes»).
-  const returnAfter = new Date(now.getTime() - PASS_RETURN_DAYS * 86_400_000);
+  // «No lo conozco» (motor v3, 2026-10-27): no cambia gustos; en Inicio no vuelve hasta PASS_RETURN_DAYS después y en
+  // Recomendaciones sigue saliendo si es una recomendación. Guardar ya no existe: las acciones «keep» antiguas no cuentan.
   if (options.applyHomeDismissals !== false) {
-    const dismissed = await db
+    const returnAfter = new Date(now.getTime() - PASS_RETURN_DAYS * 86_400_000);
+    const unknown = await db
       .select({ itemId: homeDismissals.catalogItemId })
       .from(homeDismissals)
       .where(and(eq(homeDismissals.userId, userId), gte(homeDismissals.createdAt, returnAfter)));
-    for (const d of dismissed) excluded.add(d.itemId);
-    for (const id of keptIds) excluded.add(id);
-  } else {
-    // Recomendaciones: solo lo guardado y lo que NUNCA ha salido en Inicio (ni votado, ni pasado, ni visto). Lo pasado
-    // no vuelve aquí: vuelve a Inicio para valorarlo.
-    const shown = await db.select({ itemId: recommendationImpressions.catalogItemId }).from(recommendationImpressions).where(eq(recommendationImpressions.userId, userId));
-    const passed = await db.select({ itemId: homeDismissals.catalogItemId }).from(homeDismissals).where(eq(homeDismissals.userId, userId));
-    for (const p of passed) excluded.add(p.itemId);
-    for (const r of shown) excluded.add(r.itemId);
-    for (const id of keptIds) excluded.add(id);
+    for (const d of unknown) excluded.add(d.itemId);
   }
 
   // Almas gemelas: SOLO el Top 50 (la persona 51 no influye en el consenso ni en el descubrimiento).
@@ -325,18 +307,7 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
       ? (await db.select({ id: userProfiles.userId, name: userProfiles.displayName }).from(userProfiles).where(inArray(userProfiles.userId, [...new Set([...soulmateIds, ...followedIds])]))).map((r) => [r.id, r.name])
       : [],
   );
-  const savedFirst: RecommendationItem[] = [];
-  if (options.applyHomeDismissals === false && keptIds.size) {
-    const keptMeta = await itemMeta(db, [...keptIds].filter((id) => !sessionSeen.has(id)), userId, hasLocation, radiusM);
-    for (const [id, m] of keptMeta) {
-      if (options.category && m.category !== options.category) continue;
-      if (LOCAL_CATEGORIES.includes(m.category) && m.inRadius !== true) continue;
-      const end = m.eventEndsAt ?? m.eventStartsAt;
-      if (end && end < now) continue;
-      savedFirst.push({ itemId: id, block: 'kept', fillsFor: null, score: 0, isNew: false });
-    }
-  }
-  const mixed = mixRecommendations({ consensus, discovery, followed, trending }, Math.max(0, limit - savedFirst.length), params);
+  const mixed = mixRecommendations({ consensus, discovery, followed, trending }, limit, params);
   const followedAffinity = new Map(
     followedIds.length
       ? (await db.select({ target: userAffinities.targetUserId, score: userAffinities.score }).from(userAffinities).where(and(eq(userAffinities.sourceUserId, userId), inArray(userAffinities.targetUserId, followedIds)))).map((a) => [a.target, a.score])
@@ -408,7 +379,7 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
     return { ...base, trending: { positiveVoters: t.positiveVoters, totalVoters: t.totalVoters, averageScore: t.averageScore }, evidence };
   });
 
-  const items: RecommendationItem[] = [...savedFirst, ...mainItems];
+  const items: RecommendationItem[] = mainItems;
 
   // Respaldos, en este orden y solo si los bloques principales no llenan la página.
   const available = { consensus: consensus.length, discovery: discovery.length, followed: followed.length, trending: trending.length, content: 0, community: 0, kept: 0, explore: 0 };
@@ -470,8 +441,6 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
     for (const c of communityList) {
       if (take(c.itemId)) items.push({ itemId: c.itemId, block: 'community', fillsFor: null, score: c.score, isNew: false, community: { supporters: c.supporters }, evidence: { score: pct((c.score + 1) / 2), support: pct(c.supporters / c.opinionated) } });
     }
-
-    available.kept = savedFirst.length;
 
     // Explorar: objetos del catálogo sin señales (obras, no ediciones ni temporadas), en orden estable por día.
     if (items.length < limit) {

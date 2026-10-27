@@ -1,6 +1,6 @@
 import { itemVotes, recommendationActions, userConnections, userItemObservations, type Database } from '@appinity/database';
 import { createHash } from 'node:crypto';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import type { Tx } from '@appinity/catalog';
 import { ConflictError } from './errors.js';
 import { recomputeProfiles } from './profiles.js';
@@ -11,8 +11,8 @@ import { recomputeProfiles } from './profiles.js';
  * una nota de una fuente externa, y recalcula el perfil (y después la afinidad). Deslizar sin votar, guardar, deshacer,
  * amistad y chat siguen sin cambiar gustos.
  * - Valores (modelo binario + «Me encanta», 2026-10-27): −1 «No me gusta», +1 «Me gusta», +2 «Me encanta». −2 solo
- *   existe en votos antiguos. «Paso» no es un voto: es un descarte que caduca a los 30 días (home.ts).
- * - Un voto es definitivo para esa obra: ya no sale en recomendaciones, ni se puede guardar o pasar (salvo deshacer).
+ *   existe en votos antiguos. «No lo conozco» no es un voto: es un descarte de Inicio que caduca a los 30 días.
+ * - Un voto es definitivo para esa obra: ya no sale en recomendaciones (salvo deshacer).
  */
 export const VOTE_SOURCE_KEY = 'appinity';
 export const VOTE_MAPPER_VERSION = 'appinity-vote-v1';
@@ -71,15 +71,10 @@ export async function castVote(db: Database, userId: string, itemId: string, val
   });
 }
 
-/** Lo que la ficha necesita saber de una obra: tu voto (null si no hay o es un «No lo conozco» antiguo) y si la guardaste. */
-export async function itemOpinion(db: Database, userId: string, itemId: string): Promise<{ voted: boolean; vote: -2 | -1 | 1 | 2 | null; saved: boolean }> {
+/** Tu voto sobre una obra, para la ficha (null si no hay voto o es un «No lo conozco» antiguo). */
+export async function itemOpinion(db: Database, userId: string, itemId: string): Promise<{ voted: boolean; vote: -2 | -1 | 1 | 2 | null }> {
   const [vote] = await db.select({ value: itemVotes.value }).from(itemVotes).where(and(eq(itemVotes.userId, userId), eq(itemVotes.catalogItemId, itemId)));
-  const [kept] = await db
-    .select({ id: recommendationActions.id })
-    .from(recommendationActions)
-    .where(and(eq(recommendationActions.userId, userId), eq(recommendationActions.catalogItemId, itemId), eq(recommendationActions.action, 'keep'), isNull(recommendationActions.undoneAt)))
-    .limit(1);
-  return { voted: Boolean(vote), vote: (vote?.value ?? null) as -2 | -1 | 1 | 2 | null, saved: Boolean(kept) };
+  return { voted: Boolean(vote), vote: (vote?.value ?? null) as -2 | -1 | 1 | 2 | null };
 }
 
 /** Deshacer un voto: borra el voto y su observación y recalcula el perfil de esa obra. */

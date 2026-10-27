@@ -398,8 +398,8 @@ describe('Escribir siempre, sin match (2026-10-27)', () => {
   });
 });
 
-describe('Votos en Inicio (2026-10-27, binario + «Me encanta»)', () => {
-  it('un voto es una nota con el mismo peso que una externa; «Paso» no toca el perfil; votado = definitivo', async () => {
+describe('Votos en Inicio (motor v3, 2026-10-27)', () => {
+  it('un voto es una nota con el mismo peso que una externa; «No lo conozco» no toca el perfil; votado = definitivo', async () => {
     // Sesión de Laura (ya abierta): pedir otra superaría el límite de sesiones de desarrollo por minuto.
     const tok = token;
     const call = (method: string, path: string, body?: unknown) =>
@@ -407,44 +407,36 @@ describe('Votos en Inicio (2026-10-27, binario + «Me encanta»)', () => {
     const recsRes = await call('GET', '/v1/me/recommendations?limit=10');
     const recs = (await recsRes.json()) as RecommendationsDto;
     if (!recs.items) throw new Error(`recomendaciones: HTTP ${recsRes.status} ${JSON.stringify(recs).slice(0, 300)}`);
-    const [liked = '', passed = '', saved = ''] = recs.items.map((i) => i.item.id);
-    expect(liked && passed && saved).toBeTruthy();
-    const opinion = async (id: string) => (await (await call('GET', `/v1/me/home/items/${id}/opinion`)).json()) as { voted: boolean; vote: number | null; saved: boolean };
+    const [liked = '', unknown = ''] = recs.items.map((i) => i.item.id);
+    expect(liked && unknown).toBeTruthy();
+    const opinion = async (id: string) => (await (await call('GET', `/v1/me/home/items/${id}/opinion`)).json()) as { voted: boolean; vote: number | null };
     // Me gusta: observación «appinity» con preferencia +0,5 y confianza 1 (mismo peso que una nota externa).
     expect((await call('POST', '/v1/me/home/votes', { itemId: liked, value: 1 })).status).toBe(200);
     const profile = (await (await call('GET', `/v1/me/item-profiles/${liked}`)).json()) as { observations: Array<{ sourceKey: string; preferenceScore: number; preferenceConfidence: number; preferenceBasis: string }> };
     expect(profile.observations.find((o) => o.sourceKey === 'appinity')).toMatchObject({ preferenceScore: 0.5, preferenceConfidence: 1, preferenceBasis: 'explicit_rating' });
-    expect(await opinion(liked)).toEqual({ voted: true, vote: 1, saved: false });
-    // Solo −1, +1 y +2: «No lo conozco» y «Lo odio» ya no son votos.
-    expect((await call('POST', '/v1/me/home/votes', { itemId: passed, value: 'unknown' })).status).toBe(400);
-    expect((await call('POST', '/v1/me/home/votes', { itemId: passed, value: -2 })).status).toBe(400);
-    // Paso: descarte sin observación.
-    expect((await call('POST', '/v1/me/home/actions', { itemId: passed, action: 'dismiss' })).status).toBe(200);
-    const passedProfile = (await (await call('GET', `/v1/me/item-profiles/${passed}`)).json()) as { observations: Array<{ sourceKey: string }> };
-    expect(passedProfile.observations.filter((o) => o.sourceKey === 'appinity')).toEqual([]);
-    expect(await opinion(passed)).toEqual({ voted: false, vote: null, saved: false });
-    // Votado = definitivo: no se vuelve a votar, ni a guardar, ni sale en Inicio ni en Recomendaciones.
-    expect((await call('POST', '/v1/me/home/votes', { itemId: liked, value: 2 })).status).toBe(409);
-    expect((await call('POST', '/v1/me/home/actions', { itemId: liked, action: 'keep' })).status).toBe(409);
+    expect(await opinion(liked)).toEqual({ voted: true, vote: 1 });
+    // Solo −1, +1 y +2; «No lo conozco» es una acción, no un voto. Guardar ya no existe.
+    expect((await call('POST', '/v1/me/home/votes', { itemId: unknown, value: 'unknown' })).status).toBe(400);
+    expect((await call('POST', '/v1/me/home/votes', { itemId: unknown, value: -2 })).status).toBe(400);
+    expect((await call('POST', '/v1/me/home/actions', { itemId: unknown, action: 'keep' })).status).toBe(400);
+    // No lo conozco: sin observación; fuera de Inicio (hasta 30 días después), pero sigue en Recomendaciones.
+    expect((await call('POST', '/v1/me/home/actions', { itemId: unknown, action: 'dismiss' })).status).toBe(200);
+    const unknownProfile = (await (await call('GET', `/v1/me/item-profiles/${unknown}`)).json()) as { observations: Array<{ sourceKey: string }> };
+    expect(unknownProfile.observations.filter((o) => o.sourceKey === 'appinity')).toEqual([]);
+    expect(await opinion(unknown)).toEqual({ voted: false, vote: null });
     const ids = async (context: 'home' | 'category') =>
       ((await (await call('POST', '/v1/me/recommendations/query', { limit: 50, context })).json()) as RecommendationsDto).items.map((i) => i.item.id);
-    for (const context of ['home', 'category'] as const) {
-      expect(await ids(context)).not.toContain(liked);
-      // Lo pasado tampoco: vuelve a Inicio al mes (test de ingestion) y nunca a Recomendaciones.
-      expect(await ids(context)).not.toContain(passed);
-    }
-    // Guardar (doble toque): no vuelve a Inicio; en Recomendaciones encabeza la lista como «guardada».
-    expect((await call('POST', '/v1/me/home/actions', { itemId: saved, action: 'keep' })).status).toBe(200);
-    expect(await ids('home')).not.toContain(saved);
-    const category = ((await (await call('POST', '/v1/me/recommendations/query', { limit: 50, context: 'category' })).json()) as RecommendationsDto).items;
-    expect(category[0]).toMatchObject({ block: 'kept', item: { id: saved } });
-    expect(await opinion(saved)).toEqual({ voted: false, vote: null, saved: true });
-    // Deshacer el guardado, el paso y el voto «Me gusta» (la última acción primero).
-    expect(((await (await call('POST', '/v1/me/home/undo')).json()) as { action: string }).action).toBe('keep');
-    expect(((await (await call('POST', '/v1/me/home/undo')).json()) as { action: string; itemId: string })).toMatchObject({ action: 'dismiss', itemId: passed });
+    expect(await ids('home')).not.toContain(unknown);
+    expect(await ids('category')).toContain(unknown);
+    // Votado = definitivo: no se vuelve a votar ni sale en Inicio ni en Recomendaciones.
+    expect((await call('POST', '/v1/me/home/votes', { itemId: liked, value: 2 })).status).toBe(409);
+    expect((await call('POST', '/v1/me/home/actions', { itemId: liked, action: 'dismiss' })).status).toBe(409);
+    for (const context of ['home', 'category'] as const) expect(await ids(context)).not.toContain(liked);
+    // Deshacer «No lo conozco» y después el voto (la última acción primero).
+    expect(((await (await call('POST', '/v1/me/home/undo')).json()) as { action: string; itemId: string })).toMatchObject({ action: 'dismiss', itemId: unknown });
     expect(((await (await call('POST', '/v1/me/home/undo')).json()) as { action: string; itemId: string })).toMatchObject({ action: 'vote', itemId: liked });
     const reverted = (await (await call('GET', `/v1/me/item-profiles/${liked}`)).json()) as { observations: Array<{ sourceKey: string }> };
     expect(reverted.observations.filter((o) => o.sourceKey === 'appinity')).toEqual([]);
-    expect(await opinion(liked)).toEqual({ voted: false, vote: null, saved: false });
+    expect(await opinion(liked)).toEqual({ voted: false, vote: null });
   });
 });

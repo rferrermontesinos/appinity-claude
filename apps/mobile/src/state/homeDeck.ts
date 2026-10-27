@@ -8,14 +8,14 @@ import { ApiError, apiRequest } from '../api/client';
  * - La cola se pide al recomendador excluyendo todo lo ya visto en la sesión (sin tarjetas repetidas).
  * - La impresión se registra cuando una tarjeta pasa a ser la primera (se ve de verdad), no al precargarla.
  * - Votar (No me gusta, Me gusta, Me encanta) cuenta para tus gustos y tus almas gemelas, con el mismo peso que una nota
- *   externa. Guardar no cambia gustos y lleva la obra a Recomendaciones. «Paso» no cambia gustos y la obra vuelve a
- *   Inicio al mes.
- * - Votar o guardar es definitivo para esa obra; solo «Deshacer» revierte la última acción.
+ *   externa. «No lo conozco» no cambia gustos: la obra no vuelve a Inicio hasta 30 días después y sigue en
+ *   Recomendaciones (motor v3, 2026-10-27).
+ * - Votar es definitivo para esa obra; solo «Deshacer» revierte la última acción.
  */
 const BATCH = 10;
 const REFILL_BELOW = 3;
 
-export type DeckAction = { kind: 'vote'; value: VoteValueDto } | { kind: 'save' } | { kind: 'pass' };
+export type DeckAction = { kind: 'vote'; value: VoteValueDto } | { kind: 'unknown' };
 export interface DeckEntry {
   item: RecommendationDto;
   action: DeckAction;
@@ -115,7 +115,7 @@ export function useHomeDeck(enabled: boolean): HomeDeck {
           await apiRequest('/v1/me/home/votes', { method: 'POST', body: { itemId: top.item.id, value: action.value } });
           refreshTastes();
         } else {
-          await apiRequest('/v1/me/home/actions', { method: 'POST', body: { itemId: top.item.id, action: action.kind === 'save' ? 'keep' : 'dismiss' } });
+          await apiRequest('/v1/me/home/actions', { method: 'POST', body: { itemId: top.item.id, action: 'dismiss' } });
         }
         setHistory((h) => [...h, { item: top, action }]);
       } catch (e) {

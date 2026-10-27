@@ -15,13 +15,11 @@ import { fonts, spacing, usePalette } from '../../src/theme';
  * Filas de la lista: las recomendaciones con datos (almas gemelas, seguidos, Trending, por contenido o de la
  * comunidad) y, aparte, «para explorar» (sin datos de nadie todavía). Cada apartado lleva su cabecera.
  */
-type Section = 'saved' | 'data' | 'explore';
+type Section = 'data' | 'explore';
 type Row = { kind: 'header'; section: Section } | { kind: 'item'; r: RecommendationDto; rank: number };
 
-/** Lo guardado (doble toque en Inicio) va primero y aparte; el puesto se cuenta sin ello. */
-const sectionOf = (r: RecommendationDto): Section => (r.block === 'kept' ? 'saved' : r.block === 'explore' ? 'explore' : 'data');
+const sectionOf = (r: RecommendationDto): Section => (r.block === 'explore' ? 'explore' : 'data');
 const SECTION_TEXT = {
-  saved: ['categoriesScreen.sectionSaved', 'categoriesScreen.sectionSavedHint'],
   data: ['categoriesScreen.sectionData', 'categoriesScreen.sectionDataHint'],
   explore: ['categoriesScreen.sectionExplore', 'categoriesScreen.sectionExploreHint'],
 } as const;
@@ -29,7 +27,6 @@ const SECTION_TEXT = {
 function toRows(items: RecommendationDto[]): Row[] {
   const rows: Row[] = [];
   let current: Section | null = null;
-  let saved = 0;
   let ranked = 0;
   for (const r of items) {
     const section = sectionOf(r);
@@ -37,7 +34,7 @@ function toRows(items: RecommendationDto[]): Row[] {
       rows.push({ kind: 'header', section });
       current = section;
     }
-    rows.push({ kind: 'item', r, rank: section === 'saved' ? ++saved : ++ranked });
+    rows.push({ kind: 'item', r, rank: ++ranked });
   }
   return rows;
 }

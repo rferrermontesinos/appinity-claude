@@ -3,34 +3,33 @@ import { CATEGORY_META, type RecommendationDto } from '@appinity/shared';
 import { useRouter } from 'expo-router';
 import { useImperativeHandle, useRef, useState, type Ref } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Animated, Pressable, Text, View, type AccessibilityActionEvent, type GestureResponderEvent } from 'react-native';
+import { Animated, Text, View, type AccessibilityActionEvent, type GestureResponderEvent } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { contextLine } from '../catalog/contextLine';
 import { fonts, motion, onImage, radius, spacing, usePalette } from '../theme';
-import { mixHex } from './Aura';
 import { CatalogImage } from './CatalogImage';
-import { VOTE_LEVELS, VoteStamp, type CardZone } from './Vote';
+import type { DeckAction } from '../state/homeDeck';
+import { VOTE_LEVELS, VoteStamp } from './Vote';
 
 /**
- * Gestos de la tarjeta (modelo binario + «Me encanta», 2026-10-27): derecha «Me gusta», izquierda «No me gusta», doble
- * toque «Me encanta» (como en Instagram), arriba «Guardar», abajo «Paso». Cada dirección es una sola decisión: no hay
- * que medir distancias. Pasado el umbral se ve el sello; volver al centro y soltar cancela.
+ * Gestos de la tarjeta (motor v3, 2026-10-27): derecha «Me gusta», izquierda «No me gusta», arriba «Me encanta», abajo
+ * «No lo conozco»; un toque abre la ficha. Cada dirección es una sola decisión: no hay que medir distancias. Pasado el
+ * umbral se ve el sello; volver al centro y soltar cancela.
  */
 const THRESHOLD = 100;
-const DOUBLE_TAP_MS = 280;
 
-function zoneOf(dx: number, dy: number): CardZone | null {
+function zoneOf(dx: number, dy: number): DeckAction | null {
   const ax = Math.abs(dx);
   const ay = Math.abs(dy);
   if (ay > ax) {
-    if (dy <= -THRESHOLD) return { kind: 'save' };
-    if (dy >= THRESHOLD) return { kind: 'pass' };
+    if (dy <= -THRESHOLD) return { kind: 'vote', value: 2 };
+    if (dy >= THRESHOLD) return { kind: 'unknown' };
     return null;
   }
   if (ax < THRESHOLD) return null;
   return { kind: 'vote', value: dx > 0 ? 1 : -1 };
 }
-const sameZone = (a: CardZone | null, b: CardZone | null) =>
+const sameZone = (a: DeckAction | null, b: DeckAction | null) =>
   a?.kind === b?.kind && (a?.kind !== 'vote' || (b?.kind === 'vote' && a.value === b.value));
 
 /** Historial de toques que el sistema de respuesta añade a cada evento (los tipos de React Native no lo declaran). */
@@ -40,7 +39,7 @@ const touchHistory = (e: GestureResponderEvent) =>
 
 /** Lo que pueden pedir los botones de debajo: la tarjeta sale con la misma animación y el mismo sello que el gesto. */
 export interface RecommendationCardHandle {
-  fling: (action: CardZone) => void;
+  fling: (action: DeckAction) => void;
 }
 
 /** Motivo breve derivado de evidencia real (§2): nunca un porcentaje «Para ti» sin calibrar. */
@@ -78,6 +77,32 @@ export function reasonText(t: (key: string, options?: Record<string, unknown>) =
   }
 }
 
+/** Motivo en pocas palabras para la tarjeta (la frase completa sigue en reasonText: lector de pantalla y listas). */
+export function reasonShort(t: (key: string, options?: Record<string, unknown>) => string, r: RecommendationDto): string {
+  const followed = r.reason.followedBy?.names[0];
+  const name = r.reason.contributor?.displayName ?? '—';
+  switch (r.reason.code) {
+    case 'consensus':
+      return followed
+        ? t('home.short.consensusFollowed', { name: followed, count: r.reason.supporters ?? 0 })
+        : t('home.short.consensus', { count: r.reason.supporters ?? 0 });
+    case 'discovery':
+      return t('home.short.discovery', { name });
+    case 'followed':
+      return t('home.short.followed', { name });
+    case 'trending':
+      return t('home.short.trending');
+    case 'content':
+      return t('home.short.content', { title: r.reason.because?.title ?? '—' });
+    case 'community':
+      return t('home.short.community');
+    case 'kept':
+      return t('home.reasonKept');
+    case 'explore':
+      return t('home.short.explore');
+  }
+}
+
 export const REASON_ICON = {
   consensus: 'account-group',
   discovery: 'account-heart',
@@ -103,7 +128,7 @@ export function RecommendationCard({
 }: {
   recommendation: RecommendationDto;
   /** Votar, guardar o pasar (después de la animación de salida). */
-  onAction: (action: CardZone) => void;
+  onAction: (action: DeckAction) => void;
   /** Solo la tarjeta de arriba responde a gestos. */
   interactive: boolean;
   ref?: Ref<RecommendationCardHandle>;
@@ -116,14 +141,16 @@ export function RecommendationCard({
   // Una tarjeta por objeto (key = id): los valores animados nacen en 0 con cada tarjeta nueva.
   const [x] = useState(() => new Animated.Value(0));
   const [y] = useState(() => new Animated.Value(0));
-  const [zone, setZone] = useState<CardZone | null>(null);
-  const zoneRef = useRef<CardZone | null>(null);
-  const lastTap = useRef(0);
+  const [zone, setZone] = useState<DeckAction | null>(null);
+  const zoneRef = useRef<DeckAction | null>(null);
   const leaving = useRef(false);
+  // ¿Se ha movido el dedo en algún momento de este toque? Arrastrar y volver al centro no es un toque.
+  const moved = useRef(false);
   const router = useRouter();
   const openDetails = () => router.push({ pathname: '/item/[id]', params: { id: item.id } });
 
-  const fling = (action: CardZone) => {
+  /** `shown`: el sello ya se ve (gesto). Desde un botón no hay arrastre previo: se enseña un momento antes de salir. */
+  const fling = (action: DeckAction, shown = false) => {
     if (leaving.current) return;
     leaving.current = true;
     zoneRef.current = null;
@@ -144,16 +171,13 @@ export function RecommendationCard({
     setTimeout(done, 1200);
     const to = (v: Animated.Value, toValue: number, delay = 0) =>
       Animated.sequence([Animated.delay(delay), Animated.timing(v, { toValue, duration: 200, useNativeDriver: false })]);
-    // «Me encanta» y «Guardar» enseñan el sello un momento antes de salir (no hay arrastre previo que lo muestre).
+    // Sale hacia donde apunta su gesto: abajo «No lo conozco», arriba «Me encanta», a los lados el resto.
+    const delay = shown ? 0 : 260;
     const anim =
-      action.kind === 'save'
-        ? to(y, -900, 260)
-        : action.kind === 'pass'
-          ? to(y, 900)
-          : to(x, Math.sign(action.value) * 600, action.value === 2 ? 320 : 0);
+      action.kind === 'unknown' ? to(y, 900, delay) : action.value === 2 ? to(y, -900, delay) : to(x, Math.sign(action.value) * 600, delay);
     anim.start(done);
   };
-  useImperativeHandle(ref, () => ({ fling }));
+  useImperativeHandle(ref, () => ({ fling: (action) => fling(action) }));
 
   // Gesto con el sistema de respuesta táctil de la vista (props JSX: solo se ejecutan en eventos, nunca en el render).
   // Desplazamiento desde donde empezó el dedo, según el historial de toques del sistema de respuesta (el mismo que usa
@@ -174,17 +198,21 @@ export function RecommendationCard({
     ]).start();
   };
   const gesture = {
-    // Se queda el toque desde el principio: doble toque y gestos verticales sin que la página se desplace.
+    // Se queda el toque desde el principio: gestos verticales y toque sin que la página se desplace.
     onStartShouldSetResponder: () => !leaving.current,
     onMoveShouldSetResponder: (e: GestureResponderEvent) => {
       const { dx, dy } = delta(e);
       return !leaving.current && (Math.abs(dx) > 8 || Math.abs(dy) > 8);
     },
     // true: el desplazamiento nativo de la página no puede quitarle el gesto a la tarjeta.
-    onResponderGrant: () => true,
+    onResponderGrant: () => {
+      moved.current = false;
+      return true;
+    },
     onResponderTerminationRequest: () => false,
     onResponderMove: (e: GestureResponderEvent) => {
       const { dx, dy } = delta(e);
+      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) moved.current = true;
       const vertical = Math.abs(dy) > Math.abs(dx);
       x.setValue(vertical ? dx * 0.25 : dx);
       y.setValue(vertical ? dy : dy * 0.25);
@@ -197,39 +225,32 @@ export function RecommendationCard({
     onResponderRelease: (e: GestureResponderEvent) => {
       const { dx, dy } = delta(e);
       const z = zoneOf(dx, dy);
-      if (z) return fling(z);
-      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) {
-        const now = touchHistory(e).mostRecentTimeStamp;
-        if (now - lastTap.current < DOUBLE_TAP_MS) {
-          lastTap.current = 0;
-          return fling({ kind: 'vote', value: 2 });
-        }
-        lastTap.current = now;
-      }
+      if (z) return fling(z, true);
       reset();
+      // Un toque (el dedo no se ha movido) abre la ficha.
+      if (!moved.current && Math.abs(dx) < 8 && Math.abs(dy) < 8) openDetails();
     },
     onResponderTerminate: reset,
   };
 
   const rotate = x.interpolate({ inputRange: [-300, 0, 300], outputRange: ['-12deg', '0deg', '12deg'] });
-  // El tinte crece hacia el umbral: coral a la izquierda, lima a la derecha, claro arriba (guardar), oscuro abajo (paso).
+  // El tinte crece hacia el umbral: coral a la izquierda, lima a la derecha y arriba (más), oscuro abajo (no lo conozco).
   const negTint = x.interpolate({ inputRange: [-THRESHOLD, -THRESHOLD / 3, 0], outputRange: [0.32, 0, 0], extrapolate: 'clamp' });
   const posTint = x.interpolate({ inputRange: [0, THRESHOLD / 3, THRESHOLD], outputRange: [0, 0, 0.3], extrapolate: 'clamp' });
-  const upTint = y.interpolate({ inputRange: [-THRESHOLD, -THRESHOLD / 3, 0], outputRange: [0.18, 0, 0], extrapolate: 'clamp' });
+  const upTint = y.interpolate({ inputRange: [-THRESHOLD, -THRESHOLD / 3, 0], outputRange: [0.36, 0, 0], extrapolate: 'clamp' });
   const downTint = y.interpolate({ inputRange: [0, THRESHOLD], outputRange: [0, 0.45], extrapolate: 'clamp' });
   const context = contextLine(item);
 
-  // Lector de pantalla: la tarjeta es un solo elemento con acciones (votar, guardar, paso; activar abre la ficha).
+  // Lector de pantalla: la tarjeta es un solo elemento con acciones (votar, no lo conozco; activar abre la ficha).
   const actions = [
     ...VOTE_LEVELS.map((l) => ({ name: `vote${l.value}`, label: t(`home.vote.${l.key}`) })),
-    { name: 'save', label: t('home.vote.save') },
-    { name: 'pass', label: t('home.vote.pass') },
+    { name: 'unknown', label: t('home.vote.unknown') },
     { name: 'activate', label: t('home.viewDetails') },
   ];
   const onA11yAction = (e: AccessibilityActionEvent) => {
     const name = e.nativeEvent.actionName;
     if (name === 'activate') return openDetails();
-    if (name === 'save' || name === 'pass') return fling({ kind: name });
+    if (name === 'unknown') return fling({ kind: 'unknown' });
     const level = VOTE_LEVELS.find((l) => `vote${l.value}` === name);
     if (level) fling({ kind: 'vote', value: level.value });
   };
@@ -257,7 +278,7 @@ export function RecommendationCard({
         boxShadow: `0px 24px 60px -24px ${meta.color}B3`,
       }}
     >
-      <View style={{ width: '100%', aspectRatio: 1.3 }}>
+      <View style={{ width: '100%', aspectRatio: 1.1 }}>
         <CatalogImage image={item.primaryImage} category={item.category} title={item.title} style={fill} />
         <View style={{ position: 'absolute', top: spacing.md, left: spacing.md, right: spacing.md, flexDirection: 'row', justifyContent: 'space-between' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: onImage.glass, borderRadius: radius.full, paddingVertical: 6, paddingLeft: spacing.sm, paddingRight: spacing.md }}>
@@ -272,7 +293,7 @@ export function RecommendationCard({
           ) : null}
         </View>
       </View>
-      <View style={{ paddingHorizontal: spacing.lg + 2, paddingTop: spacing.lg, paddingBottom: spacing.xs, gap: spacing.xs }}>
+      <View style={{ paddingHorizontal: spacing.lg + 2, paddingTop: spacing.lg, paddingBottom: spacing.lg, gap: spacing.xs }}>
         <Text style={{ color: c.text, fontSize: 28, lineHeight: 30, fontFamily: fonts.displayHeavy, letterSpacing: -0.7 }} numberOfLines={2}>
           {item.title}
         </Text>
@@ -281,37 +302,21 @@ export function RecommendationCard({
             {context}
           </Text>
         ) : null}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.sm, backgroundColor: c.surfaceRaised, borderRadius: radius.lg, padding: spacing.md }}>
-          {recommendation.reason.code === 'trending' ? (
-            <View style={{ borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: mixHex(meta.color, c.surfaceRaised, 0.7) }}>
-              <Text style={{ color: c.text, fontSize: 11, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase' }}>{t('home.trendingTag')}</Text>
-            </View>
-          ) : (
-            <View style={{ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: c.surfaceAlt }}>
-              <MaterialCommunityIcons name={REASON_ICON[recommendation.reason.code]} size={18} color={peopleReason ? c.affinity : c.textMuted} />
-            </View>
-          )}
-          <Text style={{ color: c.text, fontSize: 14, lineHeight: 19, flexShrink: 1 }}>{reasonText(t, recommendation)}</Text>
+        {/* Motivo en una línea; un toque en la tarjeta abre la ficha (sin enlace «Ver ficha»). */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.xs }}>
+          <MaterialCommunityIcons name={REASON_ICON[recommendation.reason.code]} size={16} color={peopleReason ? c.affinity : c.textMuted} />
+          <Text style={{ color: peopleReason ? c.text : c.textMuted, fontSize: 14, fontWeight: '600', flexShrink: 1 }} numberOfLines={1}>
+            {reasonShort(t, recommendation)}
+          </Text>
         </View>
-        {/* La ficha reúne los enlaces externos; aquí, una acción clara y con área táctil de 48 dp. */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('home.openItem', { title: item.title })}
-          onPress={openDetails}
-          hitSlop={8}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', minHeight: 48 }}
-        >
-          <Text style={{ color: c.text, fontSize: 14, fontWeight: '600' }}>{t('home.viewDetails')}</Text>
-          <MaterialCommunityIcons name="chevron-right" size={18} color={c.text} />
-        </Pressable>
       </View>
       {/* Tintes del gesto y sello del voto, por encima de todo y sin recibir toques. */}
       <Animated.View pointerEvents="none" style={[fill, { backgroundColor: c.negative, opacity: negTint }]} />
       <Animated.View pointerEvents="none" style={[fill, { backgroundColor: c.affinity, opacity: posTint }]} />
-      <Animated.View pointerEvents="none" style={[fill, { backgroundColor: c.text, opacity: upTint }]} />
+      <Animated.View pointerEvents="none" style={[fill, { backgroundColor: c.affinity, opacity: upTint }]} />
       <Animated.View pointerEvents="none" style={[fill, { backgroundColor: c.auraBase, opacity: downTint }]} />
       {zone ? (
-        <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, aspectRatio: 1.3, alignItems: 'center', justifyContent: 'center' }}>
+        <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, aspectRatio: 1.1, alignItems: 'center', justifyContent: 'center' }}>
           <VoteStamp zone={zone} />
         </View>
       ) : null}

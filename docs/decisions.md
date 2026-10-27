@@ -1206,3 +1206,26 @@ se descubren y más opciones por tarjeta dan menos tarjetas votadas. En el motor
   definitivo; «Deshacer» solo justo después de votar en esa ficha. `GET /v1/me/home/items/:id/opinion`.
 - La API solo acepta −1, +1 y +2; los votos antiguos de −2 («Lo odio») se conservan (−1 en el perfil).
 - La tarjeta registra la acción aunque la animación no termine (app en segundo plano): tope de 1,2 s.
+
+## 2026-10-27 · Motor v3: 4 opciones, sin guardar, tarjeta simplificada (decisión del titular; /creative L2)
+
+Sustituye al modelo «binario + Me encanta» de esta misma fecha: «Guardar» y «Paso» eran demasiado parecidos.
+
+- **Cuatro opciones**: «No me gusta» (−0,5), «Me gusta» (+0,5), «Me encanta» (+1) y «No lo conozco» (no cuenta).
+- **«No lo conozco»** (auditoría de la palabra): describe un hecho (no conocerlo), no un juicio, y vale para las ocho
+  categorías (un artista, un restaurante, un libro). Se descartaron «Paso» (suena a rechazo, y la obra sigue en
+  Recomendaciones), «No lo he visto» (no sirve para música, libros ni lugares), «Ni idea» (coloquial, ambiguo) y
+  «Aún no lo conozco» (no cabe bajo un botón). Icono de interrogación, color neutro.
+- **Gestos**: derecha «Me gusta», izquierda «No me gusta», **arriba «Me encanta»** y **abajo «No lo conozco»**.
+  Arriba = más (escala vertical: lo mejor arriba; convención del «super like»); abajo = dejarlo pasar, sin energía y
+  sin juicio. **Un toque abre la ficha** (sustituye al doble toque: es el gesto que todo el mundo prueba primero y
+  ya no compite con ninguna acción). Arrastrar y volver al centro no cuenta como toque.
+- **Tarjeta con menos texto**: portada más alta (1,1), título, una línea de contexto y el motivo en una línea
+  («Clara y 3 almas gemelas»). Fuera la caja del motivo y el enlace «Ver ficha». La frase completa sigue para el
+  lector de pantalla y en las listas.
+- **Botones** en escala: No me gusta · No lo conozco (más pequeño: no es un voto) · Me gusta · Me encanta (relleno).
+- **Reglas**: lo votado no vuelve en ningún sitio; «No lo conozco» no vuelve a Inicio hasta 30 días después
+  (`home_dismissals`, `PASS_RETURN_DAYS`) y **sí** aparece en Recomendaciones si es una recomendación.
+  **Recomendaciones excluye solo lo votado** (antes excluía todo lo visto en Inicio y anteponía lo guardado).
+- **Guardar desaparece**: la API ya no acepta `keep`; las acciones «keep» antiguas no cuentan (la demo de Laura
+  tenía 100 «Conservar» del modelo anterior que llenaban Recomendaciones de «Lo guardaste»). Ficha: solo votar.

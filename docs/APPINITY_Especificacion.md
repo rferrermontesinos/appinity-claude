@@ -420,7 +420,7 @@ Se actualiza tras sync significativa y mediante jobs periódicos e incrementales
 
 ## 12 Recomendaciones de consenso y descubrimiento
 
-> **Cambio aprobado (2026-10-27, decisions.md): votos en la app.** Votar una tarjeta o desde la ficha (No me gusta −0,5, Me gusta +0,5, Me encanta +1) es una fuente declarada con el mismo peso que una nota externa y cuenta para el perfil y la afinidad. Una obra votada no vuelve a recomendarse. Guardar no cambia gustos y lleva la obra a Recomendaciones. «Paso» no cambia gustos y la obra vuelve a Inicio a los 30 días. Recomendaciones solo muestra lo guardado y lo que nunca ha salido en Inicio.
+> **Cambio aprobado (2026-10-27, decisions.md): votos en la app.** Votar una tarjeta o desde la ficha (No me gusta −0,5, Me gusta +0,5, Me encanta +1) es una fuente declarada con el mismo peso que una nota externa y cuenta para el perfil y la afinidad. Una obra votada no vuelve a recomendarse. «No lo conozco» no cambia gustos: la obra no vuelve a Inicio hasta 30 días después y sigue en Recomendaciones. Guardar ya no existe (motor v3). Recomendaciones excluye solo lo votado.
 
 > **Cambio aprobado (2026-10-26, decisions.md):** la mezcla pasa a **70 % consenso, 10 % descubrimiento por alma gemela, 10 % personas que sigues (creadores y amigos) y 10 % Trending**. Los seguidos no votan en el consenso; si no sigues a nadie, su hueco vuelve al descubrimiento. A futuro se prevé un 10 % patrocinado, siempre marcado.
 

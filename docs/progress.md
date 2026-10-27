@@ -25,6 +25,30 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-27 (4) · Motor v3: 4 opciones, sin guardar y tarjeta simplificada
+
+### Qué se ha hecho
+
+- Cuatro opciones: → Me gusta, ← No me gusta, ↑ Me encanta, ↓ No lo conozco; un toque abre la ficha. Cuatro botones.
+- «No lo conozco» no cuenta, no vuelve a Inicio hasta 30 días después y sigue en Recomendaciones.
+- Guardar desaparece (API sin `keep`; las acciones antiguas no cuentan). Recomendaciones excluye solo lo votado.
+- Tarjeta: portada más alta, motivo en una línea, sin caja de motivo ni enlace «Ver ficha».
+- Corregido: «Lo guardaste» en todas las categorías (100 «Conservar» antiguos de Laura) y ninguna recomendación de
+  almas gemelas (se excluía todo lo visto en Inicio).
+
+### Comprobaciones
+
+- Tests de votos y recomendaciones adaptados. `pnpm test`: 42 ficheros y 389 tests OK; `pnpm lint` y `pnpm typecheck` limpios.
+- API con Laura (demo): sin bloques «kept»; Series vuelve a mostrar consenso (Merlí). El conjunto demo es pequeño:
+  quedan 5 de consenso, 2 de descubrimiento y 4 de seguidos en total.
+- Vista web (375×812, Marta): sellos de las 4 direcciones; cancelar no vota ni abre la ficha; un toque la abre; los
+  4 botones caben sin cortar etiquetas.
+- Fallo encontrado y corregido: arrastrar y volver al centro abría la ficha (se tomaba como toque).
+
+### Pendiente
+
+- Probar en el teléfono (sin cambios nativos: recargar el JavaScript).
+
 ## Entrega 2026-10-27 (3) · Votación binaria + «Me encanta», «Paso» mensual y voto desde la ficha
 
 ### Qué se ha hecho

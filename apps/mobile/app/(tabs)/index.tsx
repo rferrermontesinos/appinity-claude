@@ -38,9 +38,9 @@ function useDeckHint() {
 const noop = () => undefined;
 
 /**
- * Home (§2, modelo binario + «Me encanta», 2026-10-27): tarjetas de recomendación (70/20/10 cuando hay candidatos).
- * Derecha «Me gusta», izquierda «No me gusta», doble toque «Me encanta» (cuentan para tus gustos y tus almas gemelas);
- * arriba «Guardar» y abajo «Paso» (no cuentan; lo pasado vuelve al mes). Cada gesto tiene su botón. Si no hay
+ * Home (§2, motor v3, 2026-10-27): tarjetas de recomendación (70/20/10 cuando hay candidatos).
+ * Derecha «Me gusta», izquierda «No me gusta», arriba «Me encanta» (cuentan para tus gustos y tus almas gemelas); abajo
+ * «No lo conozco» (no cuenta; vuelve a Inicio al mes). Un toque abre la ficha. Cada gesto tiene su botón. Si no hay
  * recomendaciones, se explica por qué; no se inventan.
  */
 export default function HomeScreen() {

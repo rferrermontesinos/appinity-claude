@@ -9,7 +9,8 @@ import { ZodPipe } from '../common/zod.pipe.js';
 import { DATABASE, QUEUES } from '../infra/tokens.js';
 
 const itemSchema = z.object({ itemId: z.uuid() }).strict();
-const actionSchema = z.object({ itemId: z.uuid(), action: z.enum(['dismiss', 'keep']) }).strict();
+// Motor v3: la única acción sin voto es «No lo conozco» (dismiss). Guardar (keep) ya no existe.
+const actionSchema = z.object({ itemId: z.uuid(), action: z.enum(['dismiss']) }).strict();
 const voteSchema = z.object({ itemId: z.uuid(), value: z.union([z.literal(-1), z.literal(1), z.literal(2)]) }).strict();
 
 /**

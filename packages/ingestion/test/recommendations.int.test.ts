@@ -209,16 +209,15 @@ describe('recomendador (fase 7)', () => {
     expect(ids).not.toContain(items.lejos);
     expect(ids).toContain(items.cerca);
     expect(ids).not.toContain(items.descartado);
-    // Recomendaciones no muestra lo pasado: solo lo guardado o lo que nunca ha salido en Inicio (2026-10-27).
-    expect((await recommendFor(database.db, viewer, { now: NOW, applyHomeDismissals: false })).items.map((r) => r.itemId)).not.toContain(items.descartado);
+    // «No lo conozco» (motor v3): sigue saliendo en Recomendaciones si es una recomendación.
+    expect((await recommendFor(database.db, viewer, { now: NOW, applyHomeDismissals: false })).items.map((r) => r.itemId)).toContain(items.descartado);
     expect(await database.db.select().from(userItemProfiles).where(eq(userItemProfiles.userId, viewer))).toEqual(before);
-    // «Lo descartado vuelve cada mes»: pasado el plazo desde el último paso vuelve a Inicio para valorarlo, no a Recomendaciones.
+    // En Inicio no vuelve hasta pasado el plazo desde la última vez.
     await database.db
       .update(homeDismissals)
       .set({ createdAt: new Date(NOW.getTime() - (PASS_RETURN_DAYS + 1) * 86_400_000) })
       .where(eq(homeDismissals.catalogItemId, items.descartado!));
     expect((await recommendFor(database.db, viewer, { now: NOW })).items.map((r) => r.itemId)).toContain(items.descartado);
-    expect((await recommendFor(database.db, viewer, { now: NOW, applyHomeDismissals: false })).items.map((r) => r.itemId)).not.toContain(items.descartado);
     // Lo ya mostrado en la sesión no se repite.
     expect((await recommendFor(database.db, viewer, { now: NOW, excludeItemIds: [items.cerca!] })).items.map((r) => r.itemId)).not.toContain(items.cerca);
   });
@@ -265,11 +264,11 @@ describe('Home: acciones e impresiones (fase 8)', () => {
     expect(await ids()).not.toContain(items.consenso);
     expect(await undoLastHomeAction(database.db, viewer)).toEqual({ itemId: items.consenso, action: 'dismiss', profileChanged: false });
     expect(await ids()).toContain(items.consenso);
-    // Guardar (2026-10-27): ya no vuelve a Inicio; la lista de Recomendaciones la muestra primero.
+    // Guardar ya no existe (motor v3): una acción «keep» antigua no saca la obra de Inicio ni crea un apartado aparte.
     await applyHomeAction(database.db, viewer, items.cerca!, 'keep');
-    expect(await ids()).not.toContain(items.cerca);
-    const saved = await recommendFor(database.db, viewer, { now: NOW, limit: 100, applyHomeDismissals: false });
-    expect(saved.items[0]).toMatchObject({ itemId: items.cerca, block: 'kept' });
+    expect(await ids()).toContain(items.cerca);
+    const category = await recommendFor(database.db, viewer, { now: NOW, limit: 100, applyHomeDismissals: false });
+    expect(category.items.some((r) => r.block === 'kept')).toBe(false);
     // Deshacer revierte solo la última acción vigente; después ya no queda nada.
     expect(await undoLastHomeAction(database.db, viewer)).toEqual({ itemId: items.cerca, action: 'keep', profileChanged: false });
     expect(await undoLastHomeAction(database.db, viewer)).toBeNull();
@@ -311,7 +310,7 @@ describe('Home: acciones e impresiones (fase 8)', () => {
 });
 
 describe('feed continuo: respaldos honestos (fase 9)', () => {
-  it('cuando se agotan los bloques principales siguen comunidad y explorar, cada uno con su motivo; lo guardado no vuelve a Home', async () => {
+  it('cuando se agotan los bloques principales siguen comunidad y explorar, cada uno con su motivo', async () => {
     await database.db.delete(homeDismissals);
     await item('sinSenales', 'movies');
     await item('conservado', 'books');
@@ -324,8 +323,8 @@ describe('feed continuo: respaldos honestos (fase 9)', () => {
     expect(blocks.slice(firstFallback).every((b) => ['community', 'kept', 'explore'].includes(b))).toBe(true);
     const byItem = new Map(all.items.map((r) => [r.itemId, r]));
     expect(byItem.get(items.persona51!)).toMatchObject({ block: 'community', community: { supporters: 2 } });
-    // Guardado (2026-10-27): no vuelve a Inicio.
-    expect(byItem.has(items.conservado!)).toBe(false);
+    // Guardar ya no existe (motor v3): una acción «keep» antigua no lo saca de Inicio.
+    expect(byItem.get(items.conservado!)?.block).toBe('explore');
     expect(byItem.get(items.sinSenales!)?.block).toBe('explore');
     // Los filtros siguen valiendo: lo conocido y los lugares fuera del radio tampoco salen como respaldo.
     expect(byItem.has(items.conocido!)).toBe(false);
