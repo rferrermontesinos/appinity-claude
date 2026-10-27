@@ -368,3 +368,32 @@ describe('Orden personal de Categorías (2026-10-26)', () => {
     expect(['games', 'music']).toContain(alexRank.items[0]!.category);
   });
 });
+
+describe('Escribir siempre, sin match (2026-10-27)', () => {
+  it('se abre la conversación sin esperar; solo aparece en la bandeja cuando alguien escribe; bloquear la cierra', async () => {
+    const tokenFor = async (handle: string) =>
+      ((await (await fetch(`${base}/v1/dev/session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle }) })).json()) as { token: string }).token;
+    const call = (tok: string, method: string, path: string, body?: unknown) =>
+      fetch(`${base}${path}`, { method, headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
+    const ona = DEMO_USERS.find((u) => u.handle === 'demo_ona')!;
+    const onaToken = await tokenFor(ona.handle);
+    const opened = await call(token, 'POST', '/v1/me/chats/open', { userId: ona.id });
+    expect(opened.status).toBe(200);
+    const { conversationId } = (await opened.json()) as { conversationId: string };
+    // Abrir otra vez devuelve la misma conversación.
+    expect(((await (await call(token, 'POST', '/v1/me/chats/open', { userId: ona.id })).json()) as { conversationId: string }).conversationId).toBe(conversationId);
+    // Sin mensajes no aparece en la bandeja de Ona (ni cuenta en el aviso).
+    let inbox = (await (await call(onaToken, 'GET', '/v1/me/chats')).json()) as ChatInboxDto;
+    expect(inbox.conversations.map((c) => c.conversationId)).not.toContain(conversationId);
+    expect(inbox.badge).toBe(0);
+    expect((await call(token, 'POST', `/v1/me/chats/${conversationId}/messages`, { body: 'Hola Ona', clientId: 'laura-ona-1' })).status).toBe(201);
+    inbox = (await (await call(onaToken, 'GET', '/v1/me/chats')).json()) as ChatInboxDto;
+    expect(inbox.conversations.find((c) => c.conversationId === conversationId)).toMatchObject({ unread: 1, lastMessage: { body: 'Hola Ona', mine: false } });
+    expect(inbox.badge).toBe(1);
+    // Nadie puede abrir chat consigo mismo; tras un bloqueo, la otra persona ya no es visible.
+    expect((await call(token, 'POST', '/v1/me/chats/open', { userId: laura.id })).status).toBe(403);
+    expect((await call(onaToken, 'POST', '/v1/me/blocks', { userId: laura.id })).status).toBe(204);
+    expect((await call(token, 'POST', '/v1/me/chats/open', { userId: ona.id })).status).toBe(404);
+    expect((await call(onaToken, 'DELETE', `/v1/me/blocks/${laura.id}`)).status).toBe(204);
+  });
+});

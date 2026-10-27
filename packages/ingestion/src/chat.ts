@@ -204,6 +204,31 @@ async function matchIfMutual(db: Database, from: string, to: string, now: Date, 
 }
 
 /** Interés por hablar (EARLY_ACCESS). Si es mutuo, match inmediato. */
+/**
+ * Escribir siempre (decisión del titular, 2026-10-27): abre (o devuelve) la conversación con una persona visible sin
+ * esperar a nadie; no hay «match». La conversación solo aparece en la bandeja de ambos cuando alguien escribe. Se
+ * respetan bloqueos (`canSeePerson`), el ajuste de chat con almas gemelas solo Premium y un tope de conversaciones
+ * nuevas por día contra el spam.
+ */
+export async function openChat(db: Database, policy: ChatPolicy, from: string, to: string, now = new Date()): Promise<{ conversationId: string }> {
+  if (!policy.earlyAccess) throw new ForbiddenError('El chat todavía no está disponible');
+  if (from === to) throw new ForbiddenError('No puedes escribirte a ti');
+  if (!(await canSeePerson(db, from, to))) throw new NotFoundError('Persona no encontrada');
+  if (policy.soulmateChatRequiresPremium && !(await areFriends(db, from, to)) && !(await policy.isPremium(from))) {
+    throw new ForbiddenError('Hablar con almas gemelas es una función Premium; con tus amigos puedes hablar siempre');
+  }
+  const existing = await conversationOfPair(db, from, to);
+  if (existing?.status === 'active') return { conversationId: existing.id };
+  const [opened] = await db
+    .select({ n: count() })
+    .from(conversations)
+    .innerJoin(conversationMembers, and(eq(conversationMembers.conversationId, conversations.id), eq(conversationMembers.userId, from)))
+    .where(and(eq(conversations.origin, 'direct'), gte(conversations.matchedAt, new Date(now.getTime() - 24 * 3600 * 1000))));
+  if ((opened?.n ?? 0) >= CHAT_LIMITS.requestsPerDay) throw new RateLimitedError('Has abierto muchas conversaciones nuevas hoy. Vuelve a intentarlo mañana.');
+  const { conversationId } = await openMatch(db, from, to, 'direct', now, from);
+  return { conversationId };
+}
+
 export async function sendChatInterest(db: Database, policy: ChatPolicy, from: string, to: string, now = new Date()): Promise<MatchResult> {
   if (!policy.earlyAccess) throw new ForbiddenError('El chat todavía no está disponible');
   if (!(await canSeePerson(db, from, to))) throw new NotFoundError('Persona no encontrada');
@@ -534,6 +559,7 @@ export async function chatInbox(db: Database, userId: string): Promise<ChatInbox
   const requests: ChatRequestRow[] = pending
     .filter((p) => visible.has(p.senderId))
     .map((p) => ({ requestId: p.id, kind: p.kind, firstMessage: p.firstMessage, person: people.get(p.senderId)!, createdAt: p.createdAt.toISOString() }));
-  const badge = withMessages.filter((r) => r.unread > 0).length + matches.filter((r) => r.isNew).length + requests.length;
+  // Sin «nuevos matches» (2026-10-27): solo cuentan las conversaciones con mensajes sin leer (y solicitudes antiguas).
+  const badge = withMessages.filter((r) => r.unread > 0).length + requests.length;
   return { matches, conversations: withMessages, requests, badge };
 }
