@@ -25,6 +25,32 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-27 · Categorías sin fin, orden personal y Perfil simplificado
+
+### Qué se ha hecho
+
+- **Reparto de sesiones**: esta sesión lleva producto, backend y operación; «Rediseño visual ambicioso», solo diseño.
+- **Categorías sin fin**: cada categoría se carga de 10 en 10 con «Cargar más» y separa «Recomendado con datos»
+  (almas gemelas, seguidos, Trending, por contenido, comunidad) de «Para explorar» (sin datos de nadie). Al agotarse,
+  el worker amplía el catálogo con obras populares de Wikidata (por número de Wikipedias, ≥ 25) y completa imágenes y
+  detalles; `catalog_expansions` (migración 0018) recuerda la página. Restaurantes y cultura no se amplían.
+- **Orden personal del mosaico de Categorías** (`category-ranking-v1`): 60 % afinidad con las 10 almas gemelas más
+  afines en la categoría, 40 % gustos propios (tope 30); cada cartel dice por qué.
+- **Perfil simplificado**: cartel sin «gustos claros», Tus gustos y dos accesos (Fuentes, Ajustes) a pantallas
+  propias; fuentes públicas limitadas a las conectables para cuentas reales.
+- Lint: imports sin usar tras la revisión de diseño.
+
+### Comprobaciones
+
+- `pnpm test`: 42 ficheros y 387 tests OK; lint y typecheck limpios.
+- Wikidata real: 10 series en 6 s y 20 artistas en 12 s. Extremo a extremo con Laura (demo): Series agotada tras
+  3, ampliación en cola, 10 nuevas «para explorar» a los 12 s (23 dadas de alta; 20 con imagen, 23 con detalles).
+- Vista web: apartados, «Cargar más» y Perfil reorganizado.
+
+### Pendiente
+
+- Probar en el teléfono (APK de desarrollo actual; sin cambios nativos).
+
 ## Entrega 2026-10-26 (18) · Revisión de diseño de la navegación y correcciones (/design-review)
 
 ### Diagnóstico
