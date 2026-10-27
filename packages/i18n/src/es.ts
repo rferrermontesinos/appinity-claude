@@ -217,6 +217,8 @@ export const es = {
     yourVote: 'Tu voto: {{label}}. Ya no se te recomendará.',
     opinionError: 'No se ha podido guardar. Inténtalo de nuevo.',
     creators: 'Autoría',
+    textSource: 'Texto',
+    inEnglish: 'en inglés',
     genres: 'Géneros',
     country: 'País',
     circle: {

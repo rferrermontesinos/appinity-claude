@@ -49,7 +49,7 @@ export function ItemOpinion({ itemId, surface }: { itemId: string; surface: stri
   const levels = [
     { value: -1 as const, icon: 'thumb-down' as const, label: t('home.vote.dislike'), color: c.negative },
     { value: 1 as const, icon: 'thumb-up' as const, label: t('home.vote.like'), color: c.affinity },
-    { value: 2 as const, icon: 'heart' as const, label: t('home.vote.love'), color: c.affinity },
+    { value: 2 as const, icon: 'heart' as const, label: t('home.vote.love'), color: c.love },
   ];
   const status = data.voted ? t('item.yourVote', { label: levels.find((l) => l.value === current)?.label ?? '—' }) : t('item.opinionHint');
 
@@ -66,6 +66,7 @@ export function ItemOpinion({ itemId, surface }: { itemId: string; surface: stri
             label={l.label}
             hint={t('home.vote.counts')}
             color={l.color}
+            onColor={l.value === 2 ? c.onLove : l.value === 1 ? c.onAffinity : undefined}
             size={l.value === 2 ? 58 : 52}
             emphasis={l.value === 2 && !data.voted}
             selected={current === l.value}

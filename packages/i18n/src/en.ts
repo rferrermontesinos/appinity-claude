@@ -219,6 +219,8 @@ export const en: TranslationResources = {
     yourVote: 'Your vote: {{label}}. It will no longer be recommended to you.',
     opinionError: 'Could not save it. Please try again.',
     creators: 'By',
+    textSource: 'Text',
+    inEnglish: 'in English',
     genres: 'Genres',
     country: 'Country',
     circle: {

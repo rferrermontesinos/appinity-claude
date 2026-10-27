@@ -17,6 +17,8 @@ import { VOTE_LEVELS, VoteStamp } from './Vote';
  * umbral se ve el sello; volver al centro y soltar cancela.
  */
 const THRESHOLD = 100;
+/** A partir de aquí ya se sabe hacia dónde va el gesto: el sello empieza a verse (aún no cuenta). */
+const INTENT = 12;
 
 function zoneOf(dx: number, dy: number): DeckAction | null {
   const ax = Math.abs(dx);
@@ -29,6 +31,15 @@ function zoneOf(dx: number, dy: number): DeckAction | null {
   if (ax < THRESHOLD) return null;
   return { kind: 'vote', value: dx > 0 ? 1 : -1 };
 }
+/** Hacia dónde va el gesto en cuanto el dedo se mueve un poco: el sello se ve enseguida, aunque aún no cuente. */
+function intentOf(dx: number, dy: number): DeckAction | null {
+  const ax = Math.abs(dx);
+  const ay = Math.abs(dy);
+  if (Math.max(ax, ay) < INTENT) return null;
+  if (ay > ax) return dy < 0 ? { kind: 'vote', value: 2 } : { kind: 'unknown' };
+  return { kind: 'vote', value: dx > 0 ? 1 : -1 };
+}
+type Stamp = { action: DeckAction; armed: boolean } | null;
 const sameZone = (a: DeckAction | null, b: DeckAction | null) =>
   a?.kind === b?.kind && (a?.kind !== 'vote' || (b?.kind === 'vote' && a.value === b.value));
 
@@ -141,8 +152,16 @@ export function RecommendationCard({
   // Una tarjeta por objeto (key = id): los valores animados nacen en 0 con cada tarjeta nueva.
   const [x] = useState(() => new Animated.Value(0));
   const [y] = useState(() => new Animated.Value(0));
-  const [zone, setZone] = useState<DeckAction | null>(null);
-  const zoneRef = useRef<DeckAction | null>(null);
+  // Sello: aparece en cuanto se mueve el dedo (intención) y queda «armado» al pasar el umbral (al soltar, cuenta).
+  const [stamp, setStamp] = useState<Stamp>(null);
+  const stampRef = useRef<Stamp>(null);
+  const [progress] = useState(() => new Animated.Value(0));
+  const showStamp = (next: Stamp) => {
+    const prev = stampRef.current;
+    if (prev === next || (prev && next && prev.armed === next.armed && sameZone(prev.action, next.action))) return;
+    stampRef.current = next;
+    setStamp(next);
+  };
   const leaving = useRef(false);
   // ¿Se ha movido el dedo en algún momento de este toque? Arrastrar y volver al centro no es un toque.
   const moved = useRef(false);
@@ -153,8 +172,8 @@ export function RecommendationCard({
   const fling = (action: DeckAction, shown = false) => {
     if (leaving.current) return;
     leaving.current = true;
-    zoneRef.current = null;
-    setZone(action);
+    showStamp({ action, armed: true });
+    progress.setValue(1);
     // Una sola vez: al acabar la animación o, si no llega a acabar (app en segundo plano, animaciones en pausa), por
     // tiempo; la acción no se pierde.
     let sent = false;
@@ -190,8 +209,8 @@ export function RecommendationCard({
     return Number.isFinite(dx) && Number.isFinite(dy) ? { dx, dy } : { dx: 0, dy: 0 };
   };
   const reset = () => {
-    zoneRef.current = null;
-    setZone(null);
+    showStamp(null);
+    progress.setValue(0);
     Animated.parallel([
       Animated.spring(x, { toValue: 0, ...motion.spring, useNativeDriver: false }),
       Animated.spring(y, { toValue: 0, ...motion.spring, useNativeDriver: false }),
@@ -216,11 +235,10 @@ export function RecommendationCard({
       const vertical = Math.abs(dy) > Math.abs(dx);
       x.setValue(vertical ? dx * 0.25 : dx);
       y.setValue(vertical ? dy : dy * 0.25);
+      progress.setValue(Math.min(1, (vertical ? Math.abs(dy) : Math.abs(dx)) / THRESHOLD));
       const z = zoneOf(dx, dy);
-      if (!sameZone(z, zoneRef.current)) {
-        zoneRef.current = z;
-        setZone(z);
-      }
+      const intent = z ?? intentOf(dx, dy);
+      showStamp(intent ? { action: intent, armed: Boolean(z) } : null);
     },
     onResponderRelease: (e: GestureResponderEvent) => {
       const { dx, dy } = delta(e);
@@ -234,11 +252,15 @@ export function RecommendationCard({
   };
 
   const rotate = x.interpolate({ inputRange: [-300, 0, 300], outputRange: ['-12deg', '0deg', '12deg'] });
-  // El tinte crece hacia el umbral: coral a la izquierda, lima a la derecha y arriba (más), oscuro abajo (no lo conozco).
-  const negTint = x.interpolate({ inputRange: [-THRESHOLD, -THRESHOLD / 3, 0], outputRange: [0.32, 0, 0], extrapolate: 'clamp' });
-  const posTint = x.interpolate({ inputRange: [0, THRESHOLD / 3, THRESHOLD], outputRange: [0, 0, 0.3], extrapolate: 'clamp' });
-  const upTint = y.interpolate({ inputRange: [-THRESHOLD, -THRESHOLD / 3, 0], outputRange: [0.36, 0, 0], extrapolate: 'clamp' });
-  const downTint = y.interpolate({ inputRange: [0, THRESHOLD], outputRange: [0, 0.45], extrapolate: 'clamp' });
+  // El tinte crece desde que empieza el gesto hasta el umbral: coral a la izquierda, lima a la derecha, rosa arriba
+  // (Me encanta), oscuro abajo (no lo conozco).
+  const negTint = x.interpolate({ inputRange: [-THRESHOLD, -INTENT, 0], outputRange: [0.32, 0, 0], extrapolate: 'clamp' });
+  const posTint = x.interpolate({ inputRange: [0, INTENT, THRESHOLD], outputRange: [0, 0, 0.3], extrapolate: 'clamp' });
+  const upTint = y.interpolate({ inputRange: [-THRESHOLD, -INTENT, 0], outputRange: [0.42, 0, 0], extrapolate: 'clamp' });
+  const downTint = y.interpolate({ inputRange: [0, INTENT, THRESHOLD], outputRange: [0, 0, 0.45], extrapolate: 'clamp' });
+  // El sello se ve casi desde el principio (medio transparente) y llega entero al umbral.
+  const stampOpacity = progress.interpolate({ inputRange: [0, INTENT / THRESHOLD, 1], outputRange: [0, 0.6, 1], extrapolate: 'clamp' });
+  const stampScale = progress.interpolate({ inputRange: [0, 1], outputRange: [0.86, 1], extrapolate: 'clamp' });
   const context = contextLine(item);
 
   // Lector de pantalla: la tarjeta es un solo elemento con acciones (votar, no lo conozco; activar abre la ficha).
@@ -313,12 +335,15 @@ export function RecommendationCard({
       {/* Tintes del gesto y sello del voto, por encima de todo y sin recibir toques. */}
       <Animated.View pointerEvents="none" style={[fill, { backgroundColor: c.negative, opacity: negTint }]} />
       <Animated.View pointerEvents="none" style={[fill, { backgroundColor: c.affinity, opacity: posTint }]} />
-      <Animated.View pointerEvents="none" style={[fill, { backgroundColor: c.affinity, opacity: upTint }]} />
+      <Animated.View pointerEvents="none" style={[fill, { backgroundColor: c.love, opacity: upTint }]} />
       <Animated.View pointerEvents="none" style={[fill, { backgroundColor: c.auraBase, opacity: downTint }]} />
-      {zone ? (
-        <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, aspectRatio: 1.1, alignItems: 'center', justifyContent: 'center' }}>
-          <VoteStamp zone={zone} />
-        </View>
+      {stamp ? (
+        <Animated.View
+          pointerEvents="none"
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, aspectRatio: 1.1, alignItems: 'center', justifyContent: 'center', opacity: stampOpacity, transform: [{ scale: stampScale }] }}
+        >
+          <VoteStamp zone={stamp.action} armed={stamp.armed} />
+        </Animated.View>
       ) : null}
     </Animated.View>
   );

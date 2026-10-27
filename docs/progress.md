@@ -25,6 +25,34 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-27 (6) · Sinopsis en la ficha, sello inmediato y «Me encanta» en rosa
+
+### Qué se ha hecho
+
+- «Sobre esto»: sinopsis de 3–4 frases (máx. 480 caracteres) del comienzo del artículo de Wikipedia, con
+  «Texto: Wikipedia · CC BY-SA 4.0 ↗». El worker la guarda en `metadata.summary` (es y en) en la pasada
+  `enrich-catalog` (al arrancar y cada 6 h, catálogo real y demo). Sin artículo, la descripción corta de siempre.
+- Al deslizar, el sello aparece a los 12 px (medio transparente) y se completa en el umbral (100 px, borde marcado);
+  el tinte también empieza enseguida. Sin subtítulo en el sello.
+- «Me encanta» con color propio (token `love`, rosa «Flechazo»), relleno y con brillo en el botón, el sello, el tinte,
+  la ficha y «Entre tus almas gemelas». «Me gusta» sigue en lima.
+
+### Comprobaciones
+
+- Tests nuevos de `trimSummary` (frases, límite, abreviaturas, pronunciación, ancho cero) y del cliente (fetch
+  simulado). `pnpm test`: 43 ficheros y 397 tests OK. Tras el último retoque (solo cómo se construye la expresión de
+  ancho cero) se repitieron los 7 tests de sinopsis, `pnpm lint` y `pnpm typecheck`: limpios.
+- Worker con red real: sinopsis en 183 de 192 objetos del catálogo real y 113 de 131 de la demo. Cobertura en español
+  baja en restaurantes (2 de 15) y podcasts (2 de 12); en esos casos se usa la inglesa, avisando «en inglés». Media de
+  363 caracteres (máximo 480); ninguna con pronunciación ni caracteres invisibles.
+- Vista web (375 × 812): con 30 px de arrastre el sello «Me gusta» ya se ve (opacidad 0,68); hacia arriba, sello rosa
+  relleno; volver al centro y soltar no vota ni abre la ficha.
+
+### Pendiente
+
+- Aceptación en el teléfono (JS: recargar).
+- Un objeto se revisa una sola vez (`summaryCheckedAt`): si Wikipedia crea el artículo después, no se recoge todavía.
+
 ## Entrega 2026-10-27 (5) · Ficha rediseñada: «Entre tus almas gemelas» y doble toque
 
 ### Qué se ha hecho

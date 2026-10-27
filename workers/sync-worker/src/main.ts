@@ -1,4 +1,4 @@
-import { EntityResolver, LocalDiskStorage, WikidataSnapshotProvider, WikimediaImages, cacheCatalogImage, enrichDetailsFromWikidata, enrichImagesFromWikidata, enrichPosters } from '@appinity/catalog';
+import { EntityResolver, LocalDiskStorage, WikidataSnapshotProvider, WikimediaImages, cacheCatalogImage, WikipediaSummaries, enrichDetailsFromWikidata, enrichImagesFromWikidata, enrichPosters, enrichSummariesFromWikipedia } from '@appinity/catalog';
 import { createDatabase } from '@appinity/database';
 import { buildContentRelations, createProducerQueues, expandCatalog, enqueueAffinity, enqueueImage, enqueueSync, recomputeAffinities, runConnectionSync, scheduleDueSyncs, sendDueDigests, checkDigestReceipts } from '@appinity/ingestion';
 import { ExpoPushSender, createAdapterRegistry, createCatalogIdentifier, portabilityGroups } from '@appinity/integrations';
@@ -122,6 +122,7 @@ const workers: Worker[] = [
           const images = await enrichImagesFromWikidata(database.db, wikimedia, { dataset: data.dataset });
           for (const id of images.imageIds) await enqueueImage(producer, id);
           await enrichDetailsFromWikidata(database.db, wikimedia, { dataset: data.dataset });
+          await enrichSummariesFromWikipedia(database.db, new WikipediaSummaries({ userAgent: env.catalogUserAgent }), { dataset: data.dataset });
           await enrichPosters(database.db, { userAgent: env.catalogUserAgent, dataset: data.dataset, ...(env.tmdbApiKey ? { tmdbApiKey: env.tmdbApiKey } : {}) });
         }
         console.log(`[catálogo] ampliación de ${data.category} (${data.dataset}): ${result.itemsCreated} obras nuevas de ${result.requested}${result.exhausted ? ' · fin de la lista' : ''}`);
@@ -147,7 +148,18 @@ const workers: Worker[] = [
         // Línea de contexto de las tarjetas: descripción, personas y géneros (solo objetos aún no revisados).
         const details = await enrichDetailsFromWikidata(database.db, new WikimediaImages({ userAgent: env.catalogUserAgent }));
         if (details.updated) console.log(`[catálogo] detalles de Wikidata en ${details.updated} objetos`);
-        return { relations, images: { ...images, imageIds: images.imageIds.length }, details };
+        // Sinopsis de la ficha (Wikipedia, CC BY-SA): también la demo, cuyas obras son reales. Un fallo no tumba el resto.
+        const summaries: Record<string, unknown> = {};
+        for (const dataset of ['live', 'demo'] as const) {
+          try {
+            const s = await enrichSummariesFromWikipedia(database.db, new WikipediaSummaries({ userAgent: env.catalogUserAgent }), { dataset });
+            summaries[dataset] = s;
+            if (s.candidates) console.log(`[catálogo] sinopsis de Wikipedia (${dataset}): ${s.withSummary} de ${s.candidates} objetos revisados`);
+          } catch (error) {
+            console.error(`[catálogo] sinopsis de Wikipedia (${dataset}): ${error instanceof Error ? error.message : String(error)}`);
+          }
+        }
+        return { relations, images: { ...images, imageIds: images.imageIds.length }, details, summaries };
       }
       return { pong: `${job.data.requestedAt} → ${new Date().toISOString()}` };
     },

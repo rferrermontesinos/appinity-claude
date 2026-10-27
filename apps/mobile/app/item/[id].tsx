@@ -43,6 +43,17 @@ function countryName(code: string, locale: string) {
   }
 }
 
+type Summary = { text: string; url: string };
+/** Sinopsis de Wikipedia en el idioma de la app; en español, si no hay artículo, la inglesa (avisando). */
+function pickSummary(metadata: Record<string, unknown> | undefined, language: string): (Summary & { lang: string }) | null {
+  const all = (metadata?.summary ?? {}) as Partial<Record<string, Summary>>;
+  for (const lang of language.startsWith('es') ? ['es', 'en'] : ['en']) {
+    const s = all[lang];
+    if (s && typeof s.text === 'string' && typeof s.url === 'string') return { ...s, lang };
+  }
+  return null;
+}
+
 /** Carteles verticales (cine, series, libros); el resto, cuadrado (portadas de disco, logos, fotos de lugares). */
 const TALL: readonly Category[] = ['movies', 'series', 'books'];
 
@@ -102,7 +113,8 @@ function SectionTitle({ children }: { children: string }) {
  * 1. Cabecera compacta: miniatura con el brillo de su categoría + categoría, título y autoría/año (o la localidad).
  * 2. «Entre tus almas gemelas»: cuántas de tus 50 más afines la han valorado y cómo, y a quién de los que sigues le gusta.
  * 3. «Tu opinión»: votar con la misma escala que Inicio.
- * 4. «Sobre esto»: descripción, todos los géneros, fecha, país, evento.
+ * 4. «Sobre esto»: sinopsis (3–4 frases de Wikipedia, con atribución; si no hay, la descripción corta), todos los
+ *    géneros, fecha, país, evento.
  * 5. «Dónde encontrarlo», tu relación (Known, Consumed y Preference por separado) y, plegados, los datos técnicos.
  */
 export default function ItemScreen() {
@@ -125,6 +137,7 @@ export default function ItemScreen() {
   const subtitle = item ? (placeLike ? (item.location?.locality ?? null) : [creators.join(', '), year].filter(Boolean).join(' · ') || null) : null;
   const tall = item ? TALL.includes(item.category) : false;
   const meta = item ? CATEGORY_META[item.category] : null;
+  const summary = pickSummary(item?.metadata, i18n.language);
 
   return (
     <Screen refreshing={detail.isRefetching} onRefresh={() => void detail.refetch()} background={item ? world.background : undefined}>
@@ -182,10 +195,20 @@ export default function ItemScreen() {
           <ItemCircle itemId={item.id} surface={world.surface} />
           <ItemOpinion itemId={item.id} surface={world.surface} />
 
-          {item.description || genres.length || countries.length || item.releaseDate || item.eventStartsAt || (item.location?.locality && !placeLike) ? (
+          {summary || item.description || genres.length || countries.length || item.releaseDate || item.eventStartsAt || (item.location?.locality && !placeLike) ? (
             <Card style={{ backgroundColor: world.surface }}>
               <SectionTitle>{t('item.about')}</SectionTitle>
-              {item.description ? <Body muted>{capitalize(item.description)}</Body> : null}
+              {summary ? (
+                <View style={{ gap: spacing.xs }}>
+                  <Text style={{ color: c.text, fontSize: 15, lineHeight: 22 }}>{summary.text}</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: spacing.xs }}>
+                    <Small>{`${t('item.textSource')}:`}</Small>
+                    <LinkText label={`Wikipedia · CC BY-SA 4.0${summary.lang !== i18n.language.slice(0, 2) ? ` · ${t('item.inEnglish')}` : ''}`} url={summary.url} />
+                  </View>
+                </View>
+              ) : item.description ? (
+                <Body muted>{capitalize(item.description)}</Body>
+              ) : null}
               {genres.length ? (
                 <View accessibilityLabel={`${t('item.genres')}: ${genres.join(', ')}`} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
                   {genres.map((g) => (

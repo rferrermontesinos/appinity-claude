@@ -21,8 +21,8 @@ export function ItemCircle({ itemId, surface }: { itemId: string; surface: strin
   if (!data) return null;
 
   const levels = [
-    { key: 'love', count: data.love, color: c.affinity, icon: 'heart' },
-    { key: 'like', count: data.like, color: `${c.affinity}99`, icon: 'thumb-up' },
+    { key: 'love', count: data.love, color: c.love, icon: 'heart' },
+    { key: 'like', count: data.like, color: c.affinity, icon: 'thumb-up' },
     { key: 'mixed', count: data.mixed, color: c.neutral, icon: 'minus-circle-outline' },
     { key: 'dislike', count: data.dislike, color: c.negative, icon: 'thumb-down' },
   ] as const;
@@ -61,7 +61,7 @@ export function ItemCircle({ itemId, surface }: { itemId: string; surface: strin
           <View importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.lg, rowGap: spacing.xs }}>
             {shown.map((l) => (
               <View key={l.key} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                <MaterialCommunityIcons name={l.icon} size={16} color={l.key === 'like' ? c.affinity : l.color} />
+                <MaterialCommunityIcons name={l.icon} size={16} color={l.color} />
                 <Text style={{ color: c.textMuted, fontSize: 13 }}>{t(`item.circle.${l.key}`)}</Text>
                 <Text style={{ color: c.text, fontSize: 13, fontWeight: '700' }}>{l.count}</Text>
               </View>

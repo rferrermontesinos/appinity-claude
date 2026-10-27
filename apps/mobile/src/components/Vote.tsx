@@ -8,8 +8,9 @@ import { mixHex } from './Aura';
 
 /**
  * Votación («Aura», motor v3, decisión del titular 2026-10-27; ver docs/decisions.md). Cuatro opciones en una escala:
- * «No me gusta» (coral) · «No lo conozco» (neutro, no cuenta) · «Me gusta» y «Me encanta» (lima, el color de las almas
- * gemelas). Cada una con su icono y su texto: nunca solo el color.
+ * «No me gusta» (coral) · «No lo conozco» (neutro, no cuenta) · «Me gusta» (lima, el color de las almas gemelas) ·
+ * «Me encanta» (rosa «Flechazo», relleno y con brillo: el voto más fuerte). Cada una con su icono y su texto: nunca solo
+ * el color.
  */
 type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
 type VoteKey = 'dislike' | 'like' | 'love';
@@ -24,29 +25,48 @@ export const VOTE_LEVELS: ReadonlyArray<{ value: VoteValueDto; key: VoteKey; ico
 export function actionLook(c: Palette, action: DeckAction): { key: string; icon: IconName; color: string } {
   if (action.kind === 'unknown') return { key: 'unknown', icon: 'help-circle-outline', color: c.neutral };
   const level = VOTE_LEVELS.find((l) => l.value === action.value) ?? VOTE_LEVELS[0]!;
-  return { key: level.key, icon: level.icon, color: level.value < 0 ? c.negative : c.affinity };
+  return { key: level.key, icon: level.icon, color: level.value < 0 ? c.negative : level.value === 2 ? c.love : c.affinity };
 }
 
-/** Sello que se ve ANTES de soltar la tarjeta: qué harás y si cuenta o no para tus gustos. */
-export function VoteStamp({ zone }: { zone: DeckAction }) {
+/** Colores del sello sobre la imagen (el velo es siempre oscuro): legibles en tema claro y oscuro. */
+const STAMP_COLOR: Record<string, string> = { dislike: onImage.dislike, unknown: onImage.unknown, like: onImage.like, love: onImage.love };
+
+/**
+ * Sello que se ve mientras deslizas: aparece en cuanto se mueve el dedo y se completa al llegar al umbral (`armed`: al
+ * soltar, cuenta). «Me encanta», relleno en su rosa y con brillo: el voto más fuerte se distingue de un vistazo.
+ */
+export function VoteStamp({ zone, armed }: { zone: DeckAction; armed: boolean }) {
   const { t } = useTranslation();
   const c = usePalette();
   const look = actionLook(c, zone);
+  const color = STAMP_COLOR[look.key] ?? onImage.text;
+  const love = look.key === 'love';
   return (
     <View
       pointerEvents="none"
-      style={{ alignItems: 'center', gap: spacing.xs, backgroundColor: onImage.glass, borderRadius: radius.lg, paddingVertical: spacing.md, paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: mixHex(look.color, '#0C0C0E', 0.45) }}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        backgroundColor: love ? color : onImage.glass,
+        borderRadius: radius.full,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.xl,
+        borderWidth: 2,
+        borderColor: armed ? (love ? onImage.text : color) : 'transparent',
+        boxShadow: love && armed ? `0px 0px 36px ${color}` : undefined,
+      }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-        <MaterialCommunityIcons name={look.icon} size={zone.kind === 'vote' && zone.value === 2 ? 32 : 26} color={look.color} />
-        <Text style={{ color: onImage.text, fontFamily: fonts.displayHeavy, fontSize: 24, letterSpacing: -0.5 }}>{t(`home.vote.${look.key}`)}</Text>
-      </View>
-      <Text style={{ color: onImage.muted, fontSize: 12 }}>{zone.kind === 'unknown' ? t('home.vote.unknownHint') : t('home.vote.counts')}</Text>
+      <MaterialCommunityIcons name={look.icon} size={love ? 30 : 26} color={love ? onImage.onLove : color} />
+      <Text style={{ color: love ? onImage.onLove : onImage.text, fontFamily: fonts.displayHeavy, fontSize: love ? 26 : 24, letterSpacing: -0.5 }}>{t(`home.vote.${look.key}`)}</Text>
     </View>
   );
 }
 
-/** Botón redondo con etiqueta debajo. `emphasis`: «Me encanta», relleno en lima y con brillo; `selected`: tu voto. */
+/**
+ * Botón redondo con etiqueta debajo. `emphasis`: «Me encanta», relleno y con brillo; `selected`: tu voto. `onColor`:
+ * icono sobre el relleno de `color` (sin él, el relleno es una mezcla suave del color).
+ */
 export function RoundAction({
   icon,
   label,
@@ -55,6 +75,7 @@ export function RoundAction({
   size,
   emphasis,
   selected,
+  onColor,
   onPress,
   disabled,
 }: {
@@ -65,12 +86,12 @@ export function RoundAction({
   size: number;
   emphasis?: boolean;
   selected?: boolean;
+  onColor?: string;
   onPress: () => void;
   disabled: boolean;
 }) {
   const c = usePalette();
   const filled = emphasis || selected;
-  const lime = color === c.affinity;
   return (
     <Pressable
       accessibilityRole="button"
@@ -88,13 +109,13 @@ export function RoundAction({
           borderRadius: size / 2,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: filled ? (lime ? c.affinity : mixHex(color, c.surfaceRaised, 0.55)) : c.surfaceRaised,
+          backgroundColor: filled ? (onColor ? color : mixHex(color, c.surfaceRaised, 0.55)) : c.surfaceRaised,
           borderWidth: filled ? 0 : 1,
           borderColor: c.border,
-          boxShadow: emphasis ? `0px 10px 28px -8px ${c.affinity}99` : undefined,
+          boxShadow: emphasis ? `0px 10px 28px -8px ${color}99` : undefined,
         }}
       >
-        <MaterialCommunityIcons name={icon} size={Math.round(size * 0.46)} color={filled && lime ? c.onAffinity : color} />
+        <MaterialCommunityIcons name={icon} size={Math.round(size * 0.46)} color={filled && onColor ? onColor : color} />
       </View>
       <Text importantForAccessibility="no" accessibilityElementsHidden numberOfLines={1} style={{ color: selected ? c.text : c.textMuted, fontSize: 12, fontWeight: selected ? '700' : '400' }}>
         {label}
@@ -115,7 +136,7 @@ export function VoteBar({ onAction, disabled }: { onAction: (action: DeckAction)
       <RoundAction icon="thumb-down" label={t('home.vote.dislike')} hint={t('home.vote.counts')} color={c.negative} size={56} onPress={() => onAction({ kind: 'vote', value: -1 })} disabled={disabled} />
       <RoundAction icon="help-circle-outline" label={t('home.vote.unknown')} hint={t('home.vote.unknownHint')} color={c.textMuted} size={46} onPress={() => onAction({ kind: 'unknown' })} disabled={disabled} />
       <RoundAction icon="thumb-up" label={t('home.vote.like')} hint={t('home.vote.counts')} color={c.affinity} size={56} onPress={() => onAction({ kind: 'vote', value: 1 })} disabled={disabled} />
-      <RoundAction icon="heart" label={t('home.vote.love')} hint={t('home.vote.counts')} color={c.affinity} size={62} emphasis onPress={() => onAction({ kind: 'vote', value: 2 })} disabled={disabled} />
+      <RoundAction icon="heart" label={t('home.vote.love')} hint={t('home.vote.counts')} color={c.love} onColor={c.onLove} size={62} emphasis onPress={() => onAction({ kind: 'vote', value: 2 })} disabled={disabled} />
     </View>
   );
 }

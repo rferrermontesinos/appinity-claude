@@ -31,6 +31,9 @@ const light = {
   /** Lima: afinidad y almas gemelas (en claro, un verde oliva legible). */
   affinity: '#4D6A00',
   onAffinity: '#FFFFFF',
+  /** Flechazo: «Me encanta», el voto más fuerte (rosa con algo de azul: no se confunde con el coral de «No me gusta»). */
+  love: '#B0176A',
+  onLove: '#FFFFFF',
   secondary: '#9A5F00',
   onSecondary: '#FFFFFF',
   demo: '#9A5F00',
@@ -64,6 +67,8 @@ const dark: typeof light = {
   onPrimaryContainer: '#FFD5CF',
   affinity: '#D4F45A',
   onAffinity: '#141A02',
+  love: '#FF5DB1',
+  onLove: '#2A0618',
   secondary: '#E8B04B',
   onSecondary: '#1F1606',
   demo: '#E8B04B',
@@ -91,7 +96,7 @@ export function usePalette(): Palette {
 }
 
 /** Texto e iconos sobre imagen: siempre claros, sobre el velo oscuro de la tarjeta (contraste garantizado). */
-export const onImage = { text: '#F5F3F0', muted: 'rgba(245,243,240,0.82)', glass: 'rgba(12,12,14,0.66)', reasonIcon: '#D4F45A' };
+export const onImage = { text: '#F5F3F0', muted: 'rgba(245,243,240,0.82)', glass: 'rgba(12,12,14,0.66)', reasonIcon: '#D4F45A', like: '#D4F45A', love: '#FF5DB1', onLove: '#2A0618', dislike: '#FF7A70', unknown: '#D6D2CC' };
 
 /**
  * Bricolage Grotesque (Google Fonts, OFL) solo para titulares, títulos de obras y cifras; el resto, la fuente del

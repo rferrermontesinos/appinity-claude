@@ -1251,3 +1251,21 @@ Sustituye al modelo «binario + Me encanta» de esta misma fecha: «Guardar» y 
   para saber si llega un segundo (la ficha se abriría siempre más lenta); «Me encanta» es el voto más fuerte y es
   definitivo (la tarjeta se va), así que un doble toque accidental cuesta más que en Instagram, donde el corazón se
   quita con otro toque; y rompe la regla «deslizar = opinar, tocar = mirar». Pendiente de que el titular decida.
+
+## 2026-10-27 · Sinopsis de Wikipedia, sello inmediato y color propio para «Me encanta» (/creative L2)
+
+- **Sinopsis** (titular: «una pequeña sinopsis», 3–4 frases): comienzo del artículo de Wikipedia (TextExtracts,
+  texto plano), recortado a 4 frases y 480 caracteres sin partir frases (abreviaturas «EE. UU.» y «Dr.» respetadas; se
+  quita la pronunciación AFI). Fuente revisada: el texto de Wikipedia es **CC BY-SA 4.0**, que permite uso comercial
+  con atribución y misma licencia; se muestra «Texto: Wikipedia · CC BY-SA 4.0» con enlace al artículo. API de
+  Wikimedia con User-Agent identificable y por lotes (50 QID, 20 títulos), a ritmo limitado. Se descartan TMDb
+  (solo no comercial) y Google Places (sin licencia para mostrar textos).
+  Idioma: el de la app; en español, si no hay artículo, la versión inglesa avisando «en inglés». Sin ninguno, la
+  descripción corta de Wikidata (no se inventa texto).
+- **Sello al deslizar**: aparecía al llegar al umbral (100 px). Ahora se ve a los 12 px (opacidad 0,6 → 1 y escala
+  0,86 → 1 hasta el umbral) y se «arma» al pasarlo (borde marcado: al soltar, cuenta). Sin subtítulo (titular).
+- **«Me encanta» con color propio** (titular: el verde era el mismo que en «Me gusta»). Token nuevo `love` / `onLove`
+  (claro #B0176A / blanco, 6,6:1; oscuro #FF5DB1 / #2A0618; sobre imagen #FF5DB1). Rosa con componente azul: con
+  daltonismo rojo-verde se distingue del coral de «No me gusta». Se aplica al botón (relleno y brillo), al sello
+  (píldora rellena), al tinte hacia arriba, a la ficha y a «Entre tus almas gemelas». «Me gusta» sigue en lima, el
+  color de las almas gemelas.
