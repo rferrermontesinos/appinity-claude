@@ -1145,3 +1145,12 @@ Propuesta en [propuesta-seguir-creadores.md](propuesta-seguir-creadores.md).
   vuelven las imágenes de Commons). Revierte la parte de imágenes de «TMDb descartada» (2026-10-09) solo para esta fase.
 - Un cartel tiene prioridad sobre el logotipo o la foto de Commons; se sirve por enlace (no se cachea) y lleva su
   crédito (fuente y licencia) en la ficha.
+
+## 2026-10-27 · Chat sin match (decisión del titular)
+
+- **Siempre se puede escribir** a una persona visible (alma gemela, amigo o alguien a quien sigues): «Escribir» abre la
+  conversación sin esperar a nadie (`POST /v1/me/chats/open`). Sustituye al modelo «interés → match» de la fase 12A.
+- **El chat solo aparece cuando alguien escribe**: la bandeja lista conversaciones con mensajes; fuera «nuevos
+  matches» y la palabra «match» de la interfaz.
+- Protecciones: bloqueos y reportes, límites de mensajes (20/min, 500/día) y 30 conversaciones nuevas al día. El ajuste
+  `CHAT_SOULMATES_PREMIUM` (chat con almas gemelas solo Premium) sigue disponible para más adelante.
