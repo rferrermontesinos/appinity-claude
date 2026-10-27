@@ -16,6 +16,8 @@ export interface WorkerEnv {
   expoAccessToken?: string;
   /** Geocodificador Nominatim (por defecto la instancia pública; en producción, una propia). */
   nominatimUrl?: string;
+  /** Clave de TMDb (carteles de películas, solo uso no comercial). Sin ella, solo TVmaze para series. */
+  tmdbApiKey?: string;
 }
 
 function required(name: string): string {
@@ -49,6 +51,7 @@ export function loadWorkerEnv(): WorkerEnv {
       : {}),
     ...(process.env.NOMINATIM_URL?.trim() ? { nominatimUrl: process.env.NOMINATIM_URL.trim() } : {}),
     ...(process.env.EXPO_ACCESS_TOKEN?.trim() ? { expoAccessToken: process.env.EXPO_ACCESS_TOKEN.trim() } : {}),
+    ...(process.env.TMDB_API_KEY?.trim() ? { tmdbApiKey: process.env.TMDB_API_KEY.trim() } : {}),
     catalogUserAgent:
       process.env.CATALOG_USER_AGENT?.trim() || 'APPINITY-Claude/0.1 (desarrollo; https://github.com/rferrermontesinos/appinity-claude)',
   };

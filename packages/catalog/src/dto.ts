@@ -22,7 +22,8 @@ export function formatEventDate(value: Date | null, precision: 'day' | 'instant'
 
 /** Texto de atribución exigido por la licencia de la imagen. */
 export function imageAttribution(image: Pick<ImageRow, 'author' | 'license' | 'source'>): string | undefined {
-  const sourceLabel = image.source === 'wikimedia_commons' ? 'Wikimedia Commons' : image.source === 'steam_cdn' ? 'Steam' : image.source;
+  const labels: Record<string, string> = { wikimedia_commons: 'Wikimedia Commons', steam_cdn: 'Steam', tvmaze: 'TVmaze', tmdb: 'TMDb' };
+  const sourceLabel = labels[image.source] ?? image.source;
   const parts = [image.author, image.license, sourceLabel]
     .filter((p): p is string => Boolean(p));
   return parts.length ? parts.join(' · ') : undefined;

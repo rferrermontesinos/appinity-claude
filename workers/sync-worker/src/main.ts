@@ -1,4 +1,4 @@
-import { EntityResolver, LocalDiskStorage, WikidataSnapshotProvider, WikimediaImages, cacheCatalogImage, enrichDetailsFromWikidata, enrichImagesFromWikidata } from '@appinity/catalog';
+import { EntityResolver, LocalDiskStorage, WikidataSnapshotProvider, WikimediaImages, cacheCatalogImage, enrichDetailsFromWikidata, enrichImagesFromWikidata, enrichPosters } from '@appinity/catalog';
 import { createDatabase } from '@appinity/database';
 import { buildContentRelations, createProducerQueues, expandCatalog, enqueueAffinity, enqueueImage, enqueueSync, recomputeAffinities, runConnectionSync, scheduleDueSyncs, sendDueDigests, checkDigestReceipts } from '@appinity/ingestion';
 import { ExpoPushSender, createAdapterRegistry, createCatalogIdentifier, portabilityGroups } from '@appinity/integrations';
@@ -122,6 +122,7 @@ const workers: Worker[] = [
           const images = await enrichImagesFromWikidata(database.db, wikimedia, { dataset: data.dataset });
           for (const id of images.imageIds) await enqueueImage(producer, id);
           await enrichDetailsFromWikidata(database.db, wikimedia, { dataset: data.dataset });
+          await enrichPosters(database.db, { userAgent: env.catalogUserAgent, dataset: data.dataset, ...(env.tmdbApiKey ? { tmdbApiKey: env.tmdbApiKey } : {}) });
         }
         console.log(`[catálogo] ampliación de ${data.category} (${data.dataset}): ${result.itemsCreated} obras nuevas de ${result.requested}${result.exhausted ? ' · fin de la lista' : ''}`);
         return result;
@@ -137,6 +138,12 @@ const workers: Worker[] = [
         for (const id of images.imageIds) await enqueueImage(producer, id);
         if (images.inserted || images.updated || images.removed)
           console.log(`[catálogo] imágenes de Wikimedia: ${images.inserted} nuevas, ${images.updated} cambiadas, ${images.removed} quitadas (${images.candidates} revisadas)`);
+        // Carteles de películas y series (TVmaze; TMDb con clave): prioridad sobre logotipos y fotos de Commons.
+        // También la demo: sus obras son reales (Wikidata) y los carteles se sirven por enlace.
+        for (const dataset of ['live', 'demo'] as const) {
+          const posters = await enrichPosters(database.db, { userAgent: env.catalogUserAgent, dataset, ...(env.tmdbApiKey ? { tmdbApiKey: env.tmdbApiKey } : {}) });
+          if (posters.tvmaze || posters.tmdb) console.log(`[catálogo] carteles (${dataset}): ${posters.tvmaze} de TVmaze y ${posters.tmdb} de TMDb (${posters.candidates} revisados)`);
+        }
         // Línea de contexto de las tarjetas: descripción, personas y géneros (solo objetos aún no revisados).
         const details = await enrichDetailsFromWikidata(database.db, new WikimediaImages({ userAgent: env.catalogUserAgent }));
         if (details.updated) console.log(`[catálogo] detalles de Wikidata en ${details.updated} objetos`);

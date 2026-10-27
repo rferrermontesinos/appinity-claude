@@ -7,3 +7,4 @@ export * from './import-snapshot.js';
 export * from './image-cache.js';
 export * from './dto.js';
 export * from './wikimedia-images.js';
+export * from './posters.js';

@@ -1135,3 +1135,13 @@ Propuesta en [propuesta-seguir-creadores.md](propuesta-seguir-creadores.md).
   de sesión se guardan, pero su primer sync espera al alta. Conectar otra fuente también lo exige.
 - Steam, AniList, Trakt y Facebook siguen opcionales en Perfil (cada proveedor exige su inicio de sesión).
 
+
+## 2026-10-27 · Carteles de películas y series (fase no comercial)
+
+- **Series → TVmaze** (sin clave): datos CC BY-SA 4.0, uso comercial permitido con crédito, imágenes por enlace. Se
+  identifica por el ID de IMDb de Wikidata (P345). Prueba: 31 de 39 series de la demo con su cartel en 27 s.
+- **Películas → TMDb**, solo con `TMDB_API_KEY`: gratis para **uso no comercial** y con atribución. El titular confirma
+  que hoy no hay beneficio comercial. **Antes de monetizar: acuerdo comercial con TMDb o quitar la clave** (sin ella,
+  vuelven las imágenes de Commons). Revierte la parte de imágenes de «TMDb descartada» (2026-10-09) solo para esta fase.
+- Un cartel tiene prioridad sobre el logotipo o la foto de Commons; se sirve por enlace (no se cachea) y lleva su
+  crédito (fuente y licencia) en la ficha.
