@@ -54,6 +54,9 @@ import { activeFollowedIds } from './follows.js';
  */
 const LOCAL_CATEGORIES: readonly Category[] = ['food', 'culture'];
 
+/** Días tras los que una obra pasada («Paso») vuelve a Inicio para valorarla. */
+export const PASS_RETURN_DAYS = 30;
+
 export interface RecommendationOptions {
   limit?: number;
   now?: Date;
@@ -170,13 +173,22 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
     .where(and(eq(recommendationActions.userId, userId), eq(recommendationActions.action, 'keep'), isNull(recommendationActions.undoneAt)));
   const keptIds = new Set(keptRows.map((k) => k.itemId).filter((id) => !excluded.has(id)));
   const sessionSeen = new Set(options.excludeItemIds ?? []);
+  // Inicio: lo que pasaste vuelve para valorarlo a los PASS_RETURN_DAYS del último paso (decisión del titular,
+  // 2026-10-27: «lo descartado vuelve cada mes»).
+  const returnAfter = new Date(now.getTime() - PASS_RETURN_DAYS * 86_400_000);
   if (options.applyHomeDismissals !== false) {
-    const dismissed = await db.select({ itemId: homeDismissals.catalogItemId }).from(homeDismissals).where(eq(homeDismissals.userId, userId));
+    const dismissed = await db
+      .select({ itemId: homeDismissals.catalogItemId })
+      .from(homeDismissals)
+      .where(and(eq(homeDismissals.userId, userId), gte(homeDismissals.createdAt, returnAfter)));
     for (const d of dismissed) excluded.add(d.itemId);
     for (const id of keptIds) excluded.add(id);
   } else {
-    // Recomendaciones: solo lo guardado o lo que aún no ha salido en el carrusel de Inicio.
+    // Recomendaciones: solo lo guardado y lo que NUNCA ha salido en Inicio (ni votado, ni pasado, ni visto). Lo pasado
+    // no vuelve aquí: vuelve a Inicio para valorarlo.
     const shown = await db.select({ itemId: recommendationImpressions.catalogItemId }).from(recommendationImpressions).where(eq(recommendationImpressions.userId, userId));
+    const passed = await db.select({ itemId: homeDismissals.catalogItemId }).from(homeDismissals).where(eq(homeDismissals.userId, userId));
+    for (const p of passed) excluded.add(p.itemId);
     for (const r of shown) excluded.add(r.itemId);
     for (const id of keptIds) excluded.add(id);
   }

@@ -57,7 +57,11 @@ export async function applyHomeAction(db: Database, userId: string, itemId: stri
       .values({ userId, catalogItemId: itemId, action, createdAt: now })
       .returning({ id: recommendationActions.id });
     if (action === 'dismiss') {
-      await tx.insert(homeDismissals).values({ userId, catalogItemId: itemId, createdAt: now }).onConflictDoNothing();
+      // «Paso»: la fecha se renueva con cada paso; la obra vuelve a los PASS_RETURN_DAYS (recommendations.ts).
+      await tx
+        .insert(homeDismissals)
+        .values({ userId, catalogItemId: itemId, createdAt: now })
+        .onConflictDoUpdate({ target: [homeDismissals.userId, homeDismissals.catalogItemId], set: { createdAt: now } });
     }
     return { actionId: row!.id };
   });

@@ -38,9 +38,10 @@ function useDeckHint() {
 const noop = () => undefined;
 
 /**
- * Home (§2, motor de votos 2026-10-27): tarjetas de recomendación (70/20/10 cuando hay candidatos). Se vota
- * arrastrando (4 niveles, cuenta para tus gustos y tus almas gemelas), abajo «No lo conozco» (no cuenta) y doble toque
- * para guardar; cada gesto tiene su botón. Si no hay recomendaciones, se explica por qué; no se inventan.
+ * Home (§2, modelo binario + «Me encanta», 2026-10-27): tarjetas de recomendación (70/20/10 cuando hay candidatos).
+ * Derecha «Me gusta», izquierda «No me gusta», doble toque «Me encanta» (cuentan para tus gustos y tus almas gemelas);
+ * arriba «Guardar» y abajo «Paso» (no cuentan; lo pasado vuelve al mes). Cada gesto tiene su botón. Si no hay
+ * recomendaciones, se explica por qué; no se inventan.
  */
 export default function HomeScreen() {
   const { t } = useTranslation();
@@ -108,27 +109,23 @@ function HomeDeckSection({ onAura }: { onAura: (color: string | null) => void })
                 importantForAccessibility="no-hide-descendants"
                 style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden', borderRadius: radius.xl, transform: [{ translateY: 10 }, { scale: 0.95 }, { rotate: '3deg' }], opacity: 0.55 }}
               >
-                <RecommendationCard recommendation={deck.next} onVote={noop} onSave={noop} interactive={false} />
+                <RecommendationCard recommendation={deck.next} onAction={noop} interactive={false} />
               </View>
             ) : null}
             <RecommendationCard
               key={deck.current.item.id}
               ref={card}
               recommendation={deck.current}
-              onVote={(value) => {
+              onAction={(action) => {
                 hint.used();
-                void deck.vote(value);
-              }}
-              onSave={() => {
-                hint.used();
-                void deck.save();
+                void deck.apply(action);
               }}
               interactive={!deck.busy}
             />
           </View>
           {hint.visible ? <Small style={{ textAlign: 'center' }}>{t('home.gestureHint')}</Small> : null}
           {/* Los botones lanzan la tarjeta con la misma animación y el mismo sello que el gesto. */}
-          <VoteBar onVote={(value) => card.current?.fling(value)} onSave={() => card.current?.fling('save')} disabled={deck.busy} />
+          <VoteBar onAction={(action) => card.current?.fling(action)} disabled={deck.busy} />
           <LastActionBar entry={deck.last} onUndo={() => void deck.undo()} disabled={!deck.canUndo} />
         </View>
       ) : null}

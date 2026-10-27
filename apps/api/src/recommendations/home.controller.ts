@@ -1,7 +1,7 @@
-import { Body, Controller, HttpCode, Inject, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Inject, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import { type DatabaseHandle } from '@appinity/database';
-import { NotFoundError, applyHomeAction, assertItemVisible, castVote, enqueueAffinity, recordImpression, undoLastHomeAction, type ProducerQueues } from '@appinity/ingestion';
-import type { HomeActionResultDto, HomeImpressionResultDto, HomeUndoResultDto, HomeVoteResultDto } from '@appinity/shared';
+import { NotFoundError, applyHomeAction, assertItemVisible, castVote, enqueueAffinity, itemOpinion, recordImpression, undoLastHomeAction, type ProducerQueues } from '@appinity/ingestion';
+import type { HomeActionResultDto, HomeImpressionResultDto, HomeUndoResultDto, HomeVoteResultDto, ItemOpinionDto } from '@appinity/shared';
 import { z } from 'zod';
 import type { AuthContext } from '../auth/auth.types.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
@@ -10,7 +10,7 @@ import { DATABASE, QUEUES } from '../infra/tokens.js';
 
 const itemSchema = z.object({ itemId: z.uuid() }).strict();
 const actionSchema = z.object({ itemId: z.uuid(), action: z.enum(['dismiss', 'keep']) }).strict();
-const voteSchema = z.object({ itemId: z.uuid(), value: z.union([z.literal(-2), z.literal(-1), z.literal(1), z.literal(2), z.literal('unknown')]) }).strict();
+const voteSchema = z.object({ itemId: z.uuid(), value: z.union([z.literal(-1), z.literal(1), z.literal(2)]) }).strict();
 
 /**
  * Home (§2): impresiones, votos y acciones de la tarjeta. Guardar y descartar solo afectan a lo que se muestra; un voto
@@ -34,6 +34,13 @@ export class HomeController {
   }
 
   /** La tarjeta se ha mostrado de verdad (no precargada). */
+  /** Tu voto y si la guardaste, para la ficha (solo tus propios datos). */
+  @Get('items/:id/opinion')
+  async opinion(@CurrentUser() auth: AuthContext, @Param('id', new ParseUUIDPipe()) id: string): Promise<ItemOpinionDto> {
+    await assertItemVisible(this.database.db, auth.userId, id);
+    return itemOpinion(this.database.db, auth.userId, id);
+  }
+
   @Post('impressions')
   @HttpCode(200)
   async impression(@CurrentUser() auth: AuthContext, @Body(new ZodPipe(itemSchema)) body: z.infer<typeof itemSchema>): Promise<HomeImpressionResultDto> {

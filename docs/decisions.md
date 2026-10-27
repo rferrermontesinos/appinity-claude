@@ -1188,3 +1188,21 @@ Cambia la regla «ninguna acción en la app cambia gustos». Ahora:
 - **Pestaña «Recomendaciones»** (antes Categorías): en cada categoría, primero «Guardadas» y después lo que aún no ha
   salido en Inicio. La etiqueta de la pestaña se encoge hasta un 80 % si no cabe.
 - Sin módulos nativos nuevos: basta con recargar el JavaScript en el APK de desarrollo actual.
+
+## 2026-10-27 · Modelo binario + «Me encanta» (sustituye a los 4 niveles; decisión del titular tras auditoría)
+
+Auditoría de los 4 niveles por distancia: mezclaban valorar lo que conoces con decidir sobre lo que no conoces (la
+tarea principal de una app de recomendaciones quedaba escondida), la intensidad por píxeles es ruidosa, los gestos no
+se descubren y más opciones por tarjeta dan menos tarjetas votadas. En el motor, consenso y Trending tratan igual
+«Me gusta» y «Me encanta» (umbral 0,5) y la afinidad depende sobre todo de cuántas obras valoradas se comparten.
+
+- **Gestos**: derecha «Me gusta» (+0,5), izquierda «No me gusta» (−0,5), doble toque «Me encanta» (+1, convención de
+  Instagram), arriba «Guardar», abajo «Paso». Umbral único de 100 px; sin medir distancias. Cinco botones equivalentes
+  (No me gusta · Paso · Guardar · Me gusta · Me encanta) y acciones para lector de pantalla.
+- **«Paso»** sustituye a «No lo conozco»: no cambia gustos y la obra **vuelve a Inicio cada mes** (30 días desde el
+  último paso) para valorarla. Es el descarte de Inicio (`home_dismissals`), ahora con caducidad.
+- **Recomendaciones** solo muestra lo guardado y lo que **nunca** ha salido en Inicio (ni votado, ni pasado, ni visto).
+- **Ficha**: «Tu opinión» con la misma escala y «Guardar», para votar lo guardado cuando ya se conoce. Votar es
+  definitivo; «Deshacer» solo justo después de votar en esa ficha. `GET /v1/me/home/items/:id/opinion`.
+- La API solo acepta −1, +1 y +2; los votos antiguos de −2 («Lo odio») se conservan (−1 en el perfil).
+- La tarjeta registra la acción aunque la animación no termine (app en segundo plano): tope de 1,2 s.

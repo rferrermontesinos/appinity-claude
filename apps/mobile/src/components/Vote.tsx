@@ -2,88 +2,88 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { VoteValueDto } from '@appinity/shared';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
-import type { DeckEntry } from '../state/homeDeck';
+import type { DeckAction, DeckEntry } from '../state/homeDeck';
 import { fonts, onImage, radius, spacing, usePalette, type Palette } from '../theme';
 import { mixHex } from './Aura';
 
 /**
- * Votación de Inicio («Aura», motor de votos 2026-10-27). Cuatro niveles en una escala con dos lados:
- * negativo (coral) y positivo (lima, el color de las almas gemelas). La intensidad nunca depende solo del color:
- * cada nivel tiene su icono, su texto y su posición en el medidor de 4 segmentos.
- * «No lo conozco» es neutro (no cuenta para tus gustos) y «Guardar» no es un voto.
+ * Votación («Aura», modelo binario + «Me encanta», decisión del titular 2026-10-27; ver docs/decisions.md):
+ * - Votos (cuentan para tus gustos y tus almas gemelas): «No me gusta» (coral), «Me gusta» y «Me encanta» (lima, el color
+ *   de las almas gemelas). Cada uno con su icono y su texto: nunca solo el color.
+ * - Sin efecto en gustos: «Guardar» (a Recomendaciones) y «Paso» (vuelve a Inicio al mes).
  */
-export type VoteLevel = -2 | -1 | 1 | 2;
 type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
-type VoteKey = 'hate' | 'dislike' | 'like' | 'love';
+type VoteKey = 'dislike' | 'like' | 'love';
 
-export const VOTE_LEVELS: ReadonlyArray<{ value: VoteLevel; key: VoteKey; icon: IconName }> = [
-  { value: -2, key: 'hate', icon: 'heart-broken' },
+export const VOTE_LEVELS: ReadonlyArray<{ value: VoteValueDto; key: VoteKey; icon: IconName }> = [
   { value: -1, key: 'dislike', icon: 'thumb-down' },
   { value: 1, key: 'like', icon: 'thumb-up' },
   { value: 2, key: 'love', icon: 'heart' },
 ];
 
-const levelOf = (v: VoteLevel) => VOTE_LEVELS.find((l) => l.value === v)!;
-export const voteKey = (v: VoteValueDto): VoteKey | 'unknown' => (v === 'unknown' ? 'unknown' : levelOf(v).key);
-export const voteIcon = (v: VoteValueDto): IconName => (v === 'unknown' ? 'help-circle-outline' : levelOf(v).icon);
-export function voteColor(c: Palette, v: VoteValueDto): string {
-  return v === 'unknown' ? c.neutral : v < 0 ? c.negative : c.affinity;
+/** Etiqueta, icono y color de cualquier acción del mazo (votos antiguos −2 se muestran como «No me gusta»). */
+export function actionLook(c: Palette, a: DeckAction['kind'] | 'vote', value?: number): { key: string; icon: IconName; color: string } {
+  if (a === 'save') return { key: 'saved', icon: 'bookmark', color: c.text };
+  if (a === 'pass') return { key: 'passed', icon: 'skip-next', color: c.neutral };
+  const level = VOTE_LEVELS.find((l) => l.value === value) ?? VOTE_LEVELS[0]!;
+  return { key: level.key, icon: level.icon, color: level.value < 0 ? c.negative : c.affinity };
 }
 
-/** Medidor de 4 segmentos: dónde cae el voto en la escala (los dos centrales son los suaves). */
-export function VoteMeter({ value, color, track }: { value: VoteValueDto | null; color: string; track: string }) {
-  const lit = (i: number) =>
-    value === -2 ? i <= 1 : value === -1 ? i === 1 : value === 1 ? i === 2 : value === 2 ? i >= 2 : false;
-  return (
-    <View style={{ flexDirection: 'row', gap: 3 }}>
-      {[0, 1, 2, 3].map((i) => (
-        <View key={i} style={{ width: 16, height: 4, borderRadius: 2, backgroundColor: lit(i) ? color : track, marginLeft: i === 2 ? 4 : 0 }} />
-      ))}
-    </View>
-  );
-}
+export type CardZone = DeckAction;
 
-/** Sello que se ve ANTES de soltar la tarjeta: nivel, medidor y si cuenta o no para tus gustos. */
-export function VoteStamp({ zone }: { zone: VoteValueDto | 'save' }) {
+/** Sello que se ve ANTES de soltar la tarjeta: qué harás y si cuenta o no para tus gustos. */
+export function VoteStamp({ zone }: { zone: CardZone }) {
   const { t } = useTranslation();
   const c = usePalette();
-  const color = zone === 'save' ? c.text : voteColor(c, zone);
-  const label = zone === 'save' ? t('home.vote.saved') : t(`home.vote.${voteKey(zone)}`);
-  const hint = zone === 'save' ? t('home.vote.saveHint') : zone === 'unknown' ? t('home.vote.unknownHint') : t('home.vote.counts');
+  const look = actionLook(c, zone.kind, zone.kind === 'vote' ? zone.value : undefined);
+  const hint = zone.kind === 'save' ? t('home.vote.saveHint') : zone.kind === 'pass' ? t('home.vote.passHint') : t('home.vote.counts');
   return (
     <View
       pointerEvents="none"
-      style={{ alignItems: 'center', gap: spacing.sm, backgroundColor: onImage.glass, borderRadius: radius.lg, paddingVertical: spacing.md, paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: mixHex(color, '#0C0C0E', 0.45) }}
+      style={{ alignItems: 'center', gap: spacing.xs, backgroundColor: onImage.glass, borderRadius: radius.lg, paddingVertical: spacing.md, paddingHorizontal: spacing.lg, borderWidth: 1, borderColor: mixHex(look.color, '#0C0C0E', 0.45) }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-        <MaterialCommunityIcons name={zone === 'save' ? 'bookmark' : voteIcon(zone)} size={26} color={color} />
-        <Text style={{ color: onImage.text, fontFamily: fonts.displayHeavy, fontSize: 24, letterSpacing: -0.5 }}>{label}</Text>
+        <MaterialCommunityIcons name={look.icon} size={zone.kind === 'vote' && zone.value === 2 ? 32 : 26} color={look.color} />
+        <Text style={{ color: onImage.text, fontFamily: fonts.displayHeavy, fontSize: 24, letterSpacing: -0.5 }}>{t(`home.vote.${look.key}`)}</Text>
       </View>
-      {zone === 'save' || zone === 'unknown' ? null : <VoteMeter value={zone} color={color} track="rgba(245,243,240,0.22)" />}
       <Text style={{ color: onImage.muted, fontSize: 12 }}>{hint}</Text>
     </View>
   );
 }
 
-/** Botón de un nivel: los extremos son más grandes (más intensidad, más peso visual); «Me encanta» brilla. */
-function LevelButton({ level, onPress, disabled }: { level: (typeof VOTE_LEVELS)[number]; onPress: () => void; disabled: boolean }) {
-  const { t } = useTranslation();
+/** Botón redondo con etiqueta debajo. `emphasis`: «Me encanta», relleno en lima y con brillo. */
+export function RoundAction({
+  icon,
+  label,
+  hint,
+  color,
+  size,
+  emphasis,
+  selected,
+  onPress,
+  disabled,
+}: {
+  icon: IconName;
+  label: string;
+  hint: string;
+  color: string;
+  size: number;
+  emphasis?: boolean;
+  selected?: boolean;
+  onPress: () => void;
+  disabled: boolean;
+}) {
   const c = usePalette();
-  const strong = Math.abs(level.value) === 2;
-  const size = strong ? 58 : 50;
-  const side = voteColor(c, level.value);
-  const bg = level.value === 2 ? c.affinity : level.value === -2 ? mixHex(c.negative, c.surfaceRaised, 0.72) : c.surfaceRaised;
-  const fg = level.value === 2 ? c.onAffinity : side;
-  const label = t(`home.vote.${level.key}`);
+  const filled = emphasis || selected;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityHint={t('home.vote.counts')}
-      accessibilityState={{ disabled }}
+      accessibilityHint={hint}
+      accessibilityState={{ disabled, selected: Boolean(selected) }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => ({ width: 76, alignItems: 'center', gap: 6, opacity: disabled ? 0.35 : 1, transform: [{ scale: pressed ? 0.9 : 1 }] })}
+      style={({ pressed }) => ({ width: 66, alignItems: 'center', gap: 6, opacity: disabled && !selected ? 0.35 : 1, transform: [{ scale: pressed ? 0.9 : 1 }] })}
     >
       <View
         style={{
@@ -92,82 +92,53 @@ function LevelButton({ level, onPress, disabled }: { level: (typeof VOTE_LEVELS)
           borderRadius: size / 2,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: bg,
-          borderWidth: strong ? 0 : 1,
+          backgroundColor: filled ? (color === c.affinity ? c.affinity : mixHex(color, c.surfaceRaised, 0.55)) : c.surfaceRaised,
+          borderWidth: filled ? 0 : 1,
           borderColor: c.border,
-          boxShadow: level.value === 2 ? `0px 10px 28px -8px ${c.affinity}99` : undefined,
+          boxShadow: emphasis ? `0px 10px 28px -8px ${c.affinity}99` : undefined,
         }}
       >
-        <MaterialCommunityIcons name={level.icon} size={strong ? 28 : 24} color={fg} />
+        <MaterialCommunityIcons name={icon} size={Math.round(size * 0.46)} color={filled && color === c.affinity ? c.onAffinity : color} />
       </View>
-      <Text importantForAccessibility="no" accessibilityElementsHidden numberOfLines={1} style={{ color: c.textMuted, fontSize: 12 }}>
+      <Text importantForAccessibility="no" accessibilityElementsHidden numberOfLines={1} style={{ color: selected ? c.text : c.textMuted, fontSize: 11, fontWeight: selected ? '700' : '400' }}>
         {label}
       </Text>
     </Pressable>
   );
 }
 
-function PillButton({ icon, label, hint, onPress, disabled }: { icon: IconName; label: string; hint: string; onPress: () => void; disabled: boolean }) {
+/**
+ * Alternativa a los gestos (siempre visible), en el orden de la pantalla: No me gusta · Paso · Guardar · Me gusta ·
+ * Me encanta. Los votos son más grandes que las dos acciones sin efecto en gustos.
+ */
+export function VoteBar({ onAction, disabled }: { onAction: (zone: CardZone) => void; disabled: boolean }) {
+  const { t } = useTranslation();
   const c = usePalette();
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityHint={hint}
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        minHeight: 48,
-        paddingHorizontal: spacing.lg,
-        borderRadius: radius.full,
-        borderWidth: 1,
-        borderColor: c.border,
-        backgroundColor: pressed ? c.surfaceRaised : 'transparent',
-        opacity: disabled ? 0.35 : 1,
-      })}
-    >
-      <MaterialCommunityIcons name={icon} size={20} color={c.textMuted} />
-      <Text style={{ color: c.text, fontSize: 14, fontWeight: '600' }}>{label}</Text>
-    </Pressable>
-  );
-}
-
-/** Alternativa a los gestos (siempre visible): los 4 niveles y, debajo, «No lo conozco» y «Guardar». */
-export function VoteBar({ onVote, onSave, disabled }: { onVote: (value: VoteValueDto) => void; onSave: () => void; disabled: boolean }) {
-  const { t } = useTranslation();
-  return (
-    <View style={{ gap: spacing.md, alignItems: 'center' }}>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: spacing.sm }}>
-        {VOTE_LEVELS.map((level) => (
-          <LevelButton key={level.key} level={level} onPress={() => onVote(level.value)} disabled={disabled} />
-        ))}
-      </View>
-      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.sm }}>
-        <PillButton icon="help-circle-outline" label={t('home.vote.unknown')} hint={t('home.vote.unknownHint')} onPress={() => onVote('unknown')} disabled={disabled} />
-        <PillButton icon="bookmark-outline" label={t('home.vote.save')} hint={t('home.vote.saveHint')} onPress={onSave} disabled={disabled} />
-      </View>
+    <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <RoundAction icon="thumb-down" label={t('home.vote.dislike')} hint={t('home.vote.counts')} color={c.negative} size={54} onPress={() => onAction({ kind: 'vote', value: -1 })} disabled={disabled} />
+      <RoundAction icon="skip-next" label={t('home.vote.pass')} hint={t('home.vote.passHint')} color={c.textMuted} size={44} onPress={() => onAction({ kind: 'pass' })} disabled={disabled} />
+      <RoundAction icon="bookmark-outline" label={t('home.vote.save')} hint={t('home.vote.saveHint')} color={c.text} size={44} onPress={() => onAction({ kind: 'save' })} disabled={disabled} />
+      <RoundAction icon="thumb-up" label={t('home.vote.like')} hint={t('home.vote.counts')} color={c.affinity} size={54} onPress={() => onAction({ kind: 'vote', value: 1 })} disabled={disabled} />
+      <RoundAction icon="heart" label={t('home.vote.love')} hint={t('home.vote.counts')} color={c.affinity} size={60} emphasis onPress={() => onAction({ kind: 'vote', value: 2 })} disabled={disabled} />
     </View>
   );
 }
 
 /**
- * Última acción con su «Deshacer» (sustituye al botón fijo). Confirma qué nivel quedó registrado —el gesto es
- * graduado y es fácil pasarse— y no caduca: sigue ahí hasta la siguiente acción (sin límite de tiempo, WCAG 2.2.1).
+ * Última acción con su «Deshacer» (sustituye al botón fijo). Confirma qué quedó registrado y no caduca: sigue ahí
+ * hasta la siguiente acción (sin límite de tiempo, WCAG 2.2.1).
  */
 export function LastActionBar({ entry, onUndo, disabled }: { entry: DeckEntry | null; onUndo: () => void; disabled: boolean }) {
   const { t } = useTranslation();
   const c = usePalette();
   if (!entry) return null;
   const { action } = entry;
-  const color = action.kind === 'save' ? c.text : voteColor(c, action.value);
-  const label = action.kind === 'save' ? t('home.vote.saved') : t(`home.vote.${voteKey(action.value)}`);
+  const look = actionLook(c, action.kind, action.kind === 'vote' ? action.value : undefined);
+  const label = t(`home.vote.${look.key}`);
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: c.surfaceRaised, borderRadius: radius.full, paddingLeft: spacing.lg, paddingRight: spacing.xs, alignSelf: 'center', maxWidth: '100%' }}>
-      <MaterialCommunityIcons name={action.kind === 'save' ? 'bookmark' : voteIcon(action.value)} size={18} color={color} />
+      <MaterialCommunityIcons name={look.icon} size={18} color={look.color} />
       <Text accessibilityLiveRegion="polite" numberOfLines={1} style={{ color: c.text, fontSize: 14, flexShrink: 1 }}>
         {t('home.vote.last', { title: entry.item.item.title, label })}
       </Text>

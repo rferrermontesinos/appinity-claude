@@ -21,6 +21,7 @@ import {
   createOrResetLocalUser,
   recomputeAffinities,
   recommendFor,
+  PASS_RETURN_DAYS,
   recordImpression,
   topSoulmates,
   undoLastHomeAction,
@@ -208,9 +209,16 @@ describe('recomendador (fase 7)', () => {
     expect(ids).not.toContain(items.lejos);
     expect(ids).toContain(items.cerca);
     expect(ids).not.toContain(items.descartado);
-    // Categories (fase 9) no aplica el descarte de Home.
-    expect((await recommendFor(database.db, viewer, { now: NOW, applyHomeDismissals: false })).items.map((r) => r.itemId)).toContain(items.descartado);
+    // Recomendaciones no muestra lo pasado: solo lo guardado o lo que nunca ha salido en Inicio (2026-10-27).
+    expect((await recommendFor(database.db, viewer, { now: NOW, applyHomeDismissals: false })).items.map((r) => r.itemId)).not.toContain(items.descartado);
     expect(await database.db.select().from(userItemProfiles).where(eq(userItemProfiles.userId, viewer))).toEqual(before);
+    // «Lo descartado vuelve cada mes»: pasado el plazo desde el último paso vuelve a Inicio para valorarlo, no a Recomendaciones.
+    await database.db
+      .update(homeDismissals)
+      .set({ createdAt: new Date(NOW.getTime() - (PASS_RETURN_DAYS + 1) * 86_400_000) })
+      .where(eq(homeDismissals.catalogItemId, items.descartado!));
+    expect((await recommendFor(database.db, viewer, { now: NOW })).items.map((r) => r.itemId)).toContain(items.descartado);
+    expect((await recommendFor(database.db, viewer, { now: NOW, applyHomeDismissals: false })).items.map((r) => r.itemId)).not.toContain(items.descartado);
     // Lo ya mostrado en la sesión no se repite.
     expect((await recommendFor(database.db, viewer, { now: NOW, excludeItemIds: [items.cerca!] })).items.map((r) => r.itemId)).not.toContain(items.cerca);
   });

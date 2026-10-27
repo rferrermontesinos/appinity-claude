@@ -15,6 +15,7 @@ import { SourceLinks, openExternal } from '../../src/components/SourceLinks';
 import { Body, Card, ErrorCard, Row, Screen, Skeleton, Small, Title } from '../../src/components/ui';
 import { DataBanner } from '../../src/components/DataBanner';
 import { DetailHeader } from '../../src/components/DetailHeader';
+import { ItemOpinion } from '../../src/components/ItemOpinion';
 import { onImage, radius, spacing, type, usePalette } from '../../src/theme';
 
 /** Enlace de texto (atribución de la imagen). */
@@ -147,6 +148,8 @@ export default function ItemScreen() {
               </View>
             )}
           </View>
+
+          <ItemOpinion itemId={item.id} surface={world.surface} />
 
           {item.externalLinks.length ? (
             <View style={{ gap: spacing.sm }}>

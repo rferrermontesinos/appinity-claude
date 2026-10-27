@@ -486,7 +486,15 @@ export interface HomeUndoResultDto {
 }
 
 /** Voto en Inicio (2026-10-27): −2, −1, +1, +2 o «No lo conozco». */
-export type VoteValueDto = -2 | -1 | 1 | 2 | 'unknown';
+/** −1 «No me gusta», +1 «Me gusta», +2 «Me encanta» (modelo binario + «Me encanta», 2026-10-27). */
+export type VoteValueDto = -1 | 1 | 2;
+
+/** Tu opinión sobre una obra, para la ficha. `vote` −2 solo en votos antiguos; null si no hay voto. */
+export interface ItemOpinionDto {
+  voted: boolean;
+  vote: -2 | -1 | 1 | 2 | null;
+  saved: boolean;
+}
 
 export interface HomeVoteResultDto {
   actionId: string;

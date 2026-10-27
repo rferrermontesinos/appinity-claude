@@ -7,14 +7,15 @@ import { ApiError, apiRequest } from '../api/client';
  * Mazo de Home de la sesión (§2, motor de votos 2026-10-27):
  * - La cola se pide al recomendador excluyendo todo lo ya visto en la sesión (sin tarjetas repetidas).
  * - La impresión se registra cuando una tarjeta pasa a ser la primera (se ve de verdad), no al precargarla.
- * - Votar (4 niveles) cuenta para tus gustos y tus almas gemelas, con el mismo peso que una nota externa;
- *   «No lo conozco» no cuenta. Guardar (doble toque) no cambia gustos y lleva la obra a Recomendaciones.
+ * - Votar (No me gusta, Me gusta, Me encanta) cuenta para tus gustos y tus almas gemelas, con el mismo peso que una nota
+ *   externa. Guardar no cambia gustos y lleva la obra a Recomendaciones. «Paso» no cambia gustos y la obra vuelve a
+ *   Inicio al mes.
  * - Votar o guardar es definitivo para esa obra; solo «Deshacer» revierte la última acción.
  */
 const BATCH = 10;
 const REFILL_BELOW = 3;
 
-export type DeckAction = { kind: 'vote'; value: VoteValueDto } | { kind: 'save' };
+export type DeckAction = { kind: 'vote'; value: VoteValueDto } | { kind: 'save' } | { kind: 'pass' };
 export interface DeckEntry {
   item: RecommendationDto;
   action: DeckAction;
@@ -32,8 +33,7 @@ export interface HomeDeck {
   last: DeckEntry | null;
   canUndo: boolean;
   busy: boolean;
-  vote: (value: VoteValueDto) => Promise<void>;
-  save: () => Promise<void>;
+  apply: (action: DeckAction) => Promise<void>;
   undo: () => Promise<void>;
   reload: () => void;
 }
@@ -113,9 +113,9 @@ export function useHomeDeck(enabled: boolean): HomeDeck {
       try {
         if (action.kind === 'vote') {
           await apiRequest('/v1/me/home/votes', { method: 'POST', body: { itemId: top.item.id, value: action.value } });
-          if (action.value !== 'unknown') refreshTastes();
+          refreshTastes();
         } else {
-          await apiRequest('/v1/me/home/actions', { method: 'POST', body: { itemId: top.item.id, action: 'keep' } });
+          await apiRequest('/v1/me/home/actions', { method: 'POST', body: { itemId: top.item.id, action: action.kind === 'save' ? 'keep' : 'dismiss' } });
         }
         setHistory((h) => [...h, { item: top, action }]);
       } catch (e) {
@@ -140,7 +140,7 @@ export function useHomeDeck(enabled: boolean): HomeDeck {
       const restored = index >= 0 ? history[index] : undefined;
       if (index >= 0) setHistory((h) => [...h.slice(0, index), ...h.slice(index + 1)]);
       if (restored) setQueue((q) => [restored.item, ...q.filter((r) => r.item.id !== result.itemId)]);
-      if (restored?.action.kind === 'vote' && restored.action.value !== 'unknown') refreshTastes();
+      if (restored?.action.kind === 'vote') refreshTastes();
     } catch (e) {
       setError(e);
     } finally {
@@ -158,8 +158,7 @@ export function useHomeDeck(enabled: boolean): HomeDeck {
     last: history[history.length - 1] ?? null,
     canUndo: history.length > 0 && !busy,
     busy,
-    vote: (value) => act({ kind: 'vote', value }),
-    save: () => act({ kind: 'save' }),
+    apply: act,
     undo,
     reload,
   };

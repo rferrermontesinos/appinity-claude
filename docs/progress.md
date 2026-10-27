@@ -25,6 +25,30 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-27 (3) · Votación binaria + «Me encanta», «Paso» mensual y voto desde la ficha
+
+### Qué se ha hecho
+
+- Auditoría de los 4 niveles y cambio de modelo elegido por el titular (ver decisions.md): derecha «Me gusta»,
+  izquierda «No me gusta», doble toque «Me encanta», arriba «Guardar», abajo «Paso». Cinco botones equivalentes.
+- «Paso» vuelve a Inicio a los 30 días del último paso; Recomendaciones solo muestra lo guardado y lo nunca salido en
+  Inicio.
+- Ficha: «Tu opinión» (votar y guardar) con `GET /v1/me/home/items/:id/opinion`.
+- La tarjeta registra la acción aunque la animación no llegue a terminar.
+
+### Comprobaciones
+
+- Tests de votos y de recomendaciones adaptados (paso que vuelve al mes; −2 y «unknown» rechazados; opinión de la
+  ficha). `pnpm test`: 42 ficheros y 389 tests OK; `pnpm lint` y `pnpm typecheck` limpios.
+- Vista web (375×812, demo de Marta): sellos correctos en las 4 direcciones, sin acción al soltar en el centro;
+  botón «Me encanta» registra el voto y «Deshacer» lo revierte; ficha: votar muestra «Tu voto: Me encanta · Deshacer»
+  y deshacer lo revierte; los 5 botones caben sin cortar etiquetas. Votos de prueba deshechos.
+- En el panel del navegador oculto las animaciones no avanzan (pausa del navegador): por eso el tope de 1,2 s.
+
+### Pendiente
+
+- Probar en el teléfono (sin cambios nativos: recargar el JavaScript).
+
 ## Entrega 2026-10-27 (2) · Motor de votos: tarjeta de votación y pestaña Recomendaciones
 
 ### Qué se ha hecho
