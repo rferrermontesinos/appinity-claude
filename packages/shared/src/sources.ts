@@ -263,6 +263,8 @@ export interface EntityIdentifier {
   identifyGoogleBooksVolume?(volumeId: string): Promise<IdentifiedEntity | null>;
   /** Obras y artistas relacionados (misma saga, director, autor, estudio, influencias). Opcional. */
   relatedWorks?(qid: string, category: Category): Promise<Array<{ entity: IdentifiedEntity; relation: string; weight: number }>>;
+  /** Obras populares de una categoría, paginadas (ampliación del catálogo bajo demanda). Opcional. */
+  popularWorks?(category: Category, offset: number, limit?: number): Promise<{ works: IdentifiedEntity[]; exhausted: boolean }>;
   /** Obras por IMDb, TMDB, AniList o MyAnimeList (Wikidata). Opcional. Mismo orden que la entrada. */
   identifyByExternalIds?(items: ExternalIdQuery[]): Promise<Array<IdentifiedEntity | null>>;
   /**

@@ -193,6 +193,21 @@ export interface WikidataWorkIdentifierOptions {
   log?: (message: string) => void;
 }
 
+/**
+ * Patrones SPARQL de obras populares por categoría (ampliación bajo demanda). En música, grupos y cantantes por
+ * separado (una UNION es mucho más lenta). Restaurantes y cultura no: dependen de la zona.
+ */
+const POPULAR_PATTERNS: Partial<Record<Category, string[]>> = {
+  movies: ['?item wdt:P31 wd:Q11424 .'],
+  series: ['?item wdt:P31 wd:Q5398426 .'],
+  books: ['?item wdt:P31 wd:Q7725634 .'],
+  games: ['?item wdt:P31 wd:Q7889 .'],
+  podcasts: ['?item wdt:P31 wd:Q24634210 .'],
+  music: ['?item wdt:P31 wd:Q215380 .', '?item wdt:P106 wd:Q177220 .'],
+};
+/** Notoriedad mínima (Wikipedias) para entrar en el catálogo por popularidad. */
+const POPULAR_MIN_SITELINKS = 25;
+
 /** Intentos por petición: con 3 (unos 7 s) un corte breve de Wikidata obligaba a repetir el sync entero. */
 const WIKIDATA_ATTEMPTS = 6;
 
@@ -562,6 +577,49 @@ export class WikidataWorkIdentifier {
       });
     }
     return out;
+  }
+
+  /**
+   * Obras populares de una categoría (ampliación del catálogo bajo demanda, 2026-10-27): por número de Wikipedias,
+   * paginadas con `offset`. Solo categorías de obras; restaurantes y cultura dependen de la zona (OpenStreetMap).
+   * Se clasifican con los mismos tipos que la identificación: lo que no encaje en la categoría se descarta.
+   * `exhausted` indica que Wikidata ya no devolvió filas (fin de la lista con la notoriedad mínima).
+   */
+  async popularWorks(category: Category, offset: number, limit = 30): Promise<{ works: IdentifiedEntity[]; exhausted: boolean }> {
+    const patterns = POPULAR_PATTERNS[category];
+    if (!patterns) return { works: [], exhausted: true };
+    const qids: string[] = [];
+    let rows = 0;
+    for (const pattern of patterns) {
+      const query =
+        `SELECT ?item ?sl WHERE { ${pattern} ?item wikibase:sitelinks ?sl . FILTER(?sl >= ${POPULAR_MIN_SITELINKS}) } ` +
+        `ORDER BY DESC(?sl) LIMIT ${limit} OFFSET ${Math.max(0, Math.floor(offset))}`;
+      const url = new URL(this.options.sparqlEndpoint ?? WIKIDATA_SPARQL);
+      url.searchParams.set('query', query);
+      url.searchParams.set('format', 'json');
+      const response = await this.fetchImpl(url, { headers: { 'User-Agent': this.options.userAgent, Accept: 'application/sparql-results+json' }, signal: AbortSignal.timeout(45_000) });
+      if (!response.ok) throw new SourceError('unavailable', `Wikidata (SPARQL) respondió HTTP ${response.status}`, response.status === 429 || response.status >= 500);
+      const data = (await response.json()) as { results?: { bindings?: Array<Record<string, { value: string } | undefined>> } };
+      for (const b of data.results?.bindings ?? []) {
+        rows++;
+        const qid = b.item?.value.split('/').pop();
+        if (qid && /^Q\d+$/.test(qid) && !qids.includes(qid)) qids.push(qid);
+      }
+    }
+    if (!qids.length) return { works: [], exhausted: rows === 0 };
+    const languages = ['es', 'en'];
+    const entities = await this.entities(qids, languages);
+    const works: IdentifiedEntity[] = [];
+    for (const qid of qids) {
+      const entity = entities[qid];
+      const kind = entity ? kindOf(entity) : null;
+      if (!entity || !kind || kind.musicWork || kind.kind.category !== category) continue;
+      const title = label(entity, languages);
+      if (!title) continue;
+      const releaseYear = year(entity, 'P577', 'P580');
+      works.push({ category, itemType: kind.kind.itemType, title, canonicalIds: { 'wikidata:entity': qid }, ...(releaseYear ? { releaseYear } : {}), confidence: 0.95, method: 'wikidata_popular' });
+    }
+    return { works, exhausted: false };
   }
 
   /** Artistas por nombre exacto (solo grupos y personas músicos). */

@@ -226,6 +226,11 @@ export interface PublicPersonDto {
   creator: { public: boolean; verified: boolean };
 }
 
+/** Ampliación del catálogo de una categoría: en cola, agotada (Wikidata no da más) o no aplicable (lugares). */
+export interface CatalogExpansionDto {
+  status: 'queued' | 'exhausted' | 'not_expandable';
+}
+
 /** Orden personal del mosaico de categorías: afinidad con tus almas gemelas en cada una y tu propio gusto. */
 export interface CategoryRankingDto {
   version: string;

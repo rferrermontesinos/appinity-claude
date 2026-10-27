@@ -127,6 +127,13 @@
       "when": 1793043161005,
       "tag": "0017_volatile_shotgun",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793096113119,
+      "tag": "0018_petite_vulcan",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,6 @@
 import { EntityResolver, LocalDiskStorage, WikidataSnapshotProvider, WikimediaImages, cacheCatalogImage, enrichDetailsFromWikidata, enrichImagesFromWikidata } from '@appinity/catalog';
 import { createDatabase } from '@appinity/database';
-import { buildContentRelations, createProducerQueues, enqueueAffinity, enqueueImage, enqueueSync, recomputeAffinities, runConnectionSync, scheduleDueSyncs, sendDueDigests, checkDigestReceipts } from '@appinity/ingestion';
+import { buildContentRelations, createProducerQueues, expandCatalog, enqueueAffinity, enqueueImage, enqueueSync, recomputeAffinities, runConnectionSync, scheduleDueSyncs, sendDueDigests, checkDigestReceipts } from '@appinity/ingestion';
 import { ExpoPushSender, createAdapterRegistry, createCatalogIdentifier, portabilityGroups } from '@appinity/integrations';
 import {
   QUEUES,
@@ -9,6 +9,8 @@ import {
   type AffinityJob,
   type CatalogImageJob,
   type PingJob,
+  type ExpandCatalogJob,
+  isCategory,
   type ProfileSyncJob,
 } from '@appinity/shared';
 import { DelayedError, Queue, UnrecoverableError, Worker, type Job } from 'bullmq';
@@ -107,6 +109,22 @@ const workers: Worker[] = [
         const receipts = await checkDigestReceipts(database.db, pushSender);
         if (receipts.checked) console.log(`[push] recibos: ${JSON.stringify(receipts)}`);
         return { ...result, receipts };
+      }
+      // Ampliación del catálogo bajo demanda (Categorías, «Cargar más»): obras populares de Wikidata y, de lo nuevo,
+      // imágenes y detalles enseguida para que no salgan vacías.
+      if (job.name === 'expand-catalog') {
+        const data = job.data as unknown as ExpandCatalogJob;
+        const popular = catalogIdentifier.popularWorks;
+        if (!isCategory(data.category) || !popular) return { skipped: true };
+        const result = await expandCatalog(database.db, resolver, { popularWorks: (c, o, l) => popular(c, o, l) }, { dataset: data.dataset, category: data.category });
+        if (result.itemsCreated) {
+          const wikimedia = new WikimediaImages({ userAgent: env.catalogUserAgent });
+          const images = await enrichImagesFromWikidata(database.db, wikimedia, { dataset: data.dataset });
+          for (const id of images.imageIds) await enqueueImage(producer, id);
+          await enrichDetailsFromWikidata(database.db, wikimedia, { dataset: data.dataset });
+        }
+        console.log(`[catálogo] ampliación de ${data.category} (${data.dataset}): ${result.itemsCreated} obras nuevas de ${result.requested}${result.exhausted ? ' · fin de la lista' : ''}`);
+        return result;
       }
       // Enriquecimiento del catálogo real (prioridad 2 del diagnóstico): imágenes libres de Wikidata y Commons.
       if (job.name === 'enrich-catalog') {

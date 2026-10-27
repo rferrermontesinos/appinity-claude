@@ -1,15 +1,50 @@
-import { CATEGORY_META, isCategory, type Category } from '@appinity/shared';
+import { CATEGORY_META, isCategory, type Category, type RecommendationDto } from '@appinity/shared';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { FlatList, useWindowDimensions, View } from 'react-native';
+import { FlatList, Text, useWindowDimensions, View } from 'react-native';
 import { AuraBackdrop } from '../../src/components/Aura';
 import { CategoryPoster, useCategoryWorld } from '../../src/components/CategoryWorld';
 import { DataBanner } from '../../src/components/DataBanner';
 import { DetailHeader } from '../../src/components/DetailHeader';
-import { EmptyState, ErrorCard, Loading, Skeleton, Small } from '../../src/components/ui';
+import { Button, EmptyState, ErrorCard, Loading, Skeleton, Small } from '../../src/components/ui';
 import { RankedRow } from '../../src/components/WhyRecommended';
 import { useRecommendationFeed } from '../../src/state/recommendationFeed';
-import { spacing } from '../../src/theme';
+import { fonts, spacing, usePalette } from '../../src/theme';
+
+/**
+ * Filas de la lista: las recomendaciones con datos (almas gemelas, seguidos, Trending, por contenido o de la
+ * comunidad) y, aparte, «para explorar» (sin datos de nadie todavía). Cada apartado lleva su cabecera.
+ */
+type Row = { kind: 'header'; section: 'data' | 'explore' } | { kind: 'item'; r: RecommendationDto; rank: number };
+
+const sectionOf = (r: RecommendationDto): 'data' | 'explore' => (r.block === 'explore' || r.block === 'kept' ? 'explore' : 'data');
+
+function toRows(items: RecommendationDto[]): Row[] {
+  const rows: Row[] = [];
+  let current: 'data' | 'explore' | null = null;
+  items.forEach((r, i) => {
+    const section = sectionOf(r);
+    if (section !== current) {
+      rows.push({ kind: 'header', section });
+      current = section;
+    }
+    rows.push({ kind: 'item', r, rank: i + 1 });
+  });
+  return rows;
+}
+
+function SectionHeader({ section }: { section: 'data' | 'explore' }) {
+  const { t } = useTranslation();
+  const c = usePalette();
+  return (
+    <View style={{ gap: 2, marginTop: spacing.md }}>
+      <Text accessibilityRole="header" style={{ color: c.text, fontFamily: fonts.display, fontSize: 18 }}>
+        {t(section === 'data' ? 'categoriesScreen.sectionData' : 'categoriesScreen.sectionExplore')}
+      </Text>
+      <Small>{t(section === 'data' ? 'categoriesScreen.sectionDataHint' : 'categoriesScreen.sectionExploreHint')}</Small>
+    </View>
+  );
+}
 
 /**
  * Una categoría (§3): el ranking de recomendaciones con el mismo motor que Inicio, sin los descartes de Inicio y con
@@ -32,13 +67,9 @@ export default function CategoryScreen() {
       <AuraBackdrop color={world.color} width={width} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
       <FlatList
         key={category}
-        data={feed.items}
-        keyExtractor={(r) => r.item.id}
+        data={toRows(feed.items)}
+        keyExtractor={(row) => (row.kind === 'header' ? `header-${row.section}` : row.r.item.id)}
         contentContainerStyle={{ padding: spacing.lg, paddingTop: 0, gap: spacing.sm }}
-        onEndReachedThreshold={0.5}
-        onEndReached={() => {
-          if (!feed.done) void feed.more();
-        }}
         ListHeaderComponent={
           <View style={{ gap: spacing.md, marginBottom: spacing.xs }}>
             <DetailHeader fallback="/categories" />
@@ -59,8 +90,20 @@ export default function CategoryScreen() {
             />
           )
         }
-        ListFooterComponent={feed.loading && feed.items.length ? <Loading /> : null}
-        renderItem={({ item, index }) => <RankedRow r={item} rank={index + 1} featured={index < 3} world={world} />}
+        ListFooterComponent={
+          feed.items.length ? (
+            <View style={{ gap: spacing.sm, marginTop: spacing.md, alignItems: 'center' }}>
+              {feed.expanding ? <Small style={{ textAlign: 'center' }}>{t('categoriesScreen.expanding')}</Small> : null}
+              {feed.loading ? <Loading /> : null}
+              {!feed.loading && feed.pending ? <Small style={{ textAlign: 'center' }}>{t('categoriesScreen.expandPending')}</Small> : null}
+              {!feed.loading && feed.done ? <Small style={{ textAlign: 'center' }}>{t(local ? 'categoriesScreen.endLocal' : 'categoriesScreen.endCatalog')}</Small> : null}
+              {!feed.loading && !feed.done ? <Button label={t('categoriesScreen.loadMore')} icon="chevron-down" variant="secondary" onPress={() => void feed.more()} /> : null}
+            </View>
+          ) : null
+        }
+        renderItem={({ item: row }) =>
+          row.kind === 'header' ? <SectionHeader section={row.section} /> : <RankedRow r={row.r} rank={row.rank} featured={row.rank <= 3 && sectionOf(row.r) === 'data'} world={world} />
+        }
       />
     </View>
   );
