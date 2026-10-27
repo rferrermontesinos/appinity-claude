@@ -9,7 +9,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useMe } from '../src/api/queries';
 import { initI18n } from '../src/i18n';
 import { useSession } from '../src/state/session';
-import { SpaceGrotesk_500Medium, SpaceGrotesk_700Bold, useFonts } from '@expo-google-fonts/space-grotesk';
+import { BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold, BricolageGrotesque_800ExtraBold, useFonts } from '@expo-google-fonts/bricolage-grotesque';
 import { fonts, usePalette, useThemeMode } from '../src/theme';
 
 const i18n = initI18n();
@@ -66,8 +66,8 @@ export default function RootLayout() {
   );
   const c = usePalette();
   const mode = useThemeMode((s) => s.mode);
-  // Space Grotesk se carga sin bloquear: hasta entonces, los titulares usan la fuente del sistema.
-  useFonts({ SpaceGrotesk_500Medium, SpaceGrotesk_700Bold });
+  // Bricolage Grotesque se carga sin bloquear: hasta entonces, los titulares usan la fuente del sistema.
+  useFonts({ BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold, BricolageGrotesque_800ExtraBold });
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: c.background }}>
       <I18nextProvider i18n={i18n}>

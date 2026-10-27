@@ -1,51 +1,37 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { CATEGORY_META, type Category } from '@appinity/shared';
+import { CATEGORY_META, type AffinityCategoryDto } from '@appinity/shared';
 import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 import { fonts, radius, spacing, usePalette } from '../theme';
 import { formatAffinity } from './PersonAvatar';
 
 /**
- * Medidor de afinidad (sistema de diseño): cifra grande en Space Grotesk y violeta apto para texto. Sin objetos en
- * común (NULL) se muestra «—» en gris, nunca 0 %.
+ * Barra de afinidad por categoría («Aura»): icono y nombre, recuento de gustos en común (solo el número, nunca cuáles),
+ * barra en el color de la categoría y cifra en Bricolage. Sin datos (NULL), «—» y barra vacía, nunca 0 %.
  */
-export function AffinityFigure({ score, caption, size = 'lg' }: { score: number | null; caption?: string; size?: 'md' | 'lg' }) {
+export function CategoryAffinityBar({ item }: { item: AffinityCategoryDto }) {
   const { t } = useTranslation();
   const c = usePalette();
-  const value = formatAffinity(score);
-  const big = size === 'lg' ? 76 : 36;
-  return (
-    <View accessibilityLabel={`${t('people.affinity')} ${value === null ? '—' : t('people.affinityValue', { value })}`} style={{ alignItems: 'flex-end' }}>
-      <Text style={{ fontFamily: fonts.display, fontSize: big, lineHeight: big * 1.02, letterSpacing: -big * 0.04, color: value === null ? c.textMuted : c.primaryInk }}>
-        {value ?? '—'}
-        {value !== null ? <Text style={{ fontSize: big * 0.42, letterSpacing: 0 }}>%</Text> : null}
-      </Text>
-      {caption ? <Text style={{ color: c.textMuted, fontSize: 12 }}>{caption}</Text> : null}
-    </View>
-  );
-}
-
-/** Barra por categoría: chip con icono en su color, barra rellena con el color de la categoría y cifra tabular. */
-export function CategoryAffinityBar({ category, score }: { category: Category; score: number | null }) {
-  const { t } = useTranslation();
-  const c = usePalette();
-  const meta = CATEGORY_META[category];
-  const value = formatAffinity(score);
+  const meta = CATEGORY_META[item.category];
+  const value = formatAffinity(item.score);
+  const label = t(`categories.${item.category}`);
   return (
     <View
-      accessibilityLabel={`${t(`categories.${category}`)}: ${value === null ? t('people.noData') : t('people.affinityValue', { value })}`}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 36 }}
+      accessible
+      accessibilityLabel={`${label}: ${value === null ? t('people.noData') : t('people.affinityValue', { value })}${item.commonItems ? `, ${t('people.commonItems', { count: item.commonItems })}` : ''}`}
+      style={{ gap: 6, paddingVertical: spacing.xs }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, width: 112, height: 28, borderRadius: radius.full, paddingLeft: spacing.sm, backgroundColor: `${meta.color}33` }}>
-        <MaterialCommunityIcons name={meta.icon as never} size={15} color={meta.color} />
-        <Text style={{ color: c.text, fontSize: 12, fontWeight: '600' }} numberOfLines={1}>
-          {t(`categories.${category}`)}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+        <MaterialCommunityIcons name={meta.icon as never} size={18} color={value === null ? c.textSubtle : c.text} />
+        <Text style={{ flex: 1, color: value === null ? c.textMuted : c.text, fontSize: 14, fontWeight: '600' }} numberOfLines={1}>
+          {label}
+          {item.commonItems ? <Text style={{ color: c.textMuted, fontWeight: '400' }}> · {t('people.commonItems', { count: item.commonItems })}</Text> : null}
         </Text>
+        <Text style={{ fontFamily: fonts.displayHeavy, fontSize: 18, color: value === null ? c.textSubtle : c.text }}>{value ?? '—'}</Text>
       </View>
-      <View style={{ flex: 1, height: 8, borderRadius: radius.full, backgroundColor: c.surfaceAlt, overflow: 'hidden' }}>
-        {score !== null ? <View style={{ width: `${Math.max(2, Math.min(100, score))}%`, height: '100%', borderRadius: radius.full, backgroundColor: meta.color }} /> : null}
+      <View style={{ height: 8, borderRadius: radius.full, backgroundColor: c.surfaceAlt, overflow: 'hidden' }}>
+        {item.score !== null ? <View style={{ width: `${Math.max(2, Math.min(100, item.score))}%`, height: '100%', borderRadius: radius.full, backgroundColor: meta.color }} /> : null}
       </View>
-      <Text style={{ width: 34, textAlign: 'right', fontFamily: fonts.display, fontSize: 14, color: value === null ? c.textMuted : c.text }}>{value ?? '—'}</Text>
     </View>
   );
 }

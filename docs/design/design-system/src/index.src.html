@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>APPINITY · Sistema de diseño</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <script src="theme.js"></script>
 <style>
@@ -84,17 +84,19 @@ body.inspecting #inspector{transform:translateX(0)} body.inspecting main{margin-
   <a href="#appbar">App bar</a><a href="#card">Card</a><a href="#paper">Paper</a><a href="#accordion">Accordion</a>
   <div class="grp">Navigation</div>
   <a href="#bottomnav">Bottom navigation</a><a href="#drawer">Drawer</a><a href="#tabs">Tabs</a><a href="#menu">Menu</a><a href="#link">Link</a><a href="#stepper">Stepper</a><a href="#speeddial">Speed dial</a>
+  <div class="grp">Aura</div>
+  <a href="#aura">Halo, cartel, ranking y fuentes</a>
   <div class="grp">Extensiones APPINITY</div>
   <a href="#reccard">Tarjeta de recomendación</a><a href="#affinity">Medidor de afinidad</a><a href="#personrow">Fila de persona</a><a href="#catchip">Chip de categoría</a><a href="#sourcecard">Tarjeta de fuente</a><a href="#emptystate">Estado vacío</a>
 </nav>
 
 <main>
-  <header style="margin-bottom:40px"><div class="t-h1">APPINITY · «Noche de cine»</div>
-    <p class="sec-desc" style="margin-top:10px">Tokens y componentes; la fuente de verdad es <code>styles.css</code>. Oscuro cálido por defecto con modo claro. El violeta es la única familia de interacción (afinidad y acción principal); el ámbar marca lo nuevo; cada categoría aporta su color como señal. Activa <b>Dev Mode</b> para inspeccionar un componente y usa <b>Copiar como prompt</b> para implementarlo (React Native primero).</p></header>
+  <header style="margin-bottom:40px"><div class="t-h1">APPINITY · «Aura»</div>
+    <p class="sec-desc" style="margin-top:10px">Tokens y componentes; la fuente de verdad es <code>styles.css</code>. Oscuro por defecto con modo claro. Dos acentos con papel fijo: <b>chispa</b> (coral) solo para la acción principal y <b>lima</b> solo para afinidad y almas gemelas; el ámbar marca lo nuevo; cada categoría tiñe su halo, su cartel y sus pantallas de detalle. Activa <b>Dev Mode</b> para inspeccionar un componente y usa <b>Copiar como prompt</b> para implementarlo (React Native primero).</p></header>
 
   <section id="colors"><h2 class="sec">Color</h2><p class="sec-desc">Roles semánticos (Material) con nombres de paleta MUI. Cada relleno tiene su <code>--on-*</code>; todos los pares superan AA (4,5:1) con la fórmula WCAG, en ambos temas.</p><div class="colors" id="colorGrid"></div></section>
   <section id="categories"><h2 class="sec">Categorías</h2><p class="sec-desc">Colores fijos del producto. Se usan como <b>señal</b> (punto, icono, tinte del 20 %), nunca como fondo de texto, y siempre con icono y nombre.</p><div class="stage" id="catGrid"></div></section>
-  <section id="type"><h2 class="sec">Tipografía</h2><p class="sec-desc">Lectura con la fuente del sistema (San Francisco / Roboto); <b>Space Grotesk</b> solo en titulares, títulos de obras y cifras de afinidad. Escala ~1,25 con interletrado ajustado por paso.</p><div id="typeList"></div></section>
+  <section id="type"><h2 class="sec">Tipografía</h2><p class="sec-desc">Lectura con la fuente del sistema (San Francisco / Roboto); <b>Bricolage Grotesque</b> solo en titulares, títulos de obras y cifras de afinidad. Escala ~1,25 con interletrado ajustado por paso.</p><div id="typeList"></div></section>
   <section id="spacing"><h2 class="sec">Espaciado</h2><p class="sec-desc">Escala de 4/8 px (<code>spacing(1)=8</code>). Roles: <code>--gap-related</code> 8 · <code>--gap-section</code> 24 · <code>--gap-major</code> 32 · margen lateral 16 · objetivo táctil 48.</p><div id="spacingList"></div></section>
   <section id="shape"><h2 class="sec">Forma</h2><p class="sec-desc">Redondeo suave; botones en píldora; la tarjeta de recomendación y los diálogos usan <code>--r-xl</code>.</p><div class="tiles" id="shapeList"></div></section>
   <section id="elevation"><h2 class="sec">Elevación</h2><p class="sec-desc">Decisión: <b>tonal</b> en oscuro (la superficie se aclara: bg → surface → surface-raised) más una sombra mínima de contacto. Subconjunto MUI documentado: 0, 1, 2, 3.</p><div class="tiles" id="elevList"></div></section>
@@ -195,7 +197,7 @@ body.inspecting #inspector{transform:translateX(0)} body.inspecting main{margin-
     </div></section>
 
   <!-- ============================== DATA DISPLAY ============================== -->
-  <section id="avatar"><h2 class="sec">Avatar</h2><p class="sec-desc">Iniciales sobre el contenedor violeta, foto, tamaños y grupo; anillo para almas gemelas destacadas.</p>
+  <section id="avatar"><h2 class="sec">Avatar</h2><p class="sec-desc">Iniciales sobre el color estable por nombre, foto, tamaños y grupo; anillo para almas gemelas destacadas.</p>
     <div class="stage">
       <div class="cell"><div class="avatar avatar--sm" data-insp="avatar">LM</div><div class="spec">28</div></div>
       <div class="cell"><div class="avatar" data-insp="avatar">CR</div><div class="spec">40</div></div>
@@ -333,7 +335,7 @@ body.inspecting #inspector{transform:translateX(0)} body.inspecting main{margin-
   <section id="menu"><h2 class="sec">Menu</h2><p class="sec-desc">Desplegable del perfil de otra persona (acción destructiva en rojo).</p>
     <div class="stage"><div class="menu" data-insp="menu"><div class="mi"><svg class="ico ico--sm"><use href="#i-chat"/></svg>Escribir</div><div class="mi"><svg class="ico ico--sm"><use href="#i-share"/></svg>Compartir perfil</div><hr class="divider" style="margin:4px 0"><div class="mi mi--danger"><svg class="ico ico--sm"><use href="#i-lock"/></svg>Bloquear</div></div></div></section>
 
-  <section id="link"><h2 class="sec">Link</h2><p class="sec-desc">Subrayado fino con <code>--link</code> (violeta apto para texto).</p>
+  <section id="link"><h2 class="sec">Link</h2><p class="sec-desc">Subrayado fino con <code>--link</code> (chispa apto para texto).</p>
     <div class="stage"><p class="t-body1" data-insp="link">Lee <a class="link">cómo usamos tus datos</a> antes de conectar una fuente.</p></div></section>
 
   <section id="stepper"><h2 class="sec">Stepper</h2><p class="sec-desc">El alta: cuenta → condiciones → fuentes.</p>
@@ -346,6 +348,20 @@ body.inspecting #inspector{transform:translateX(0)} body.inspecting main{margin-
       <button class="fab" aria-label="Cerrar"><svg class="ico"><use href="#i-close"/></svg></button></div></div></section>
 
   <!-- ============================== EXTENSIONES ============================== -->
+  <section id="aura"><h2 class="sec">Aura · componentes nuevos</h2><p class="sec-desc">Dirección «Aura» (docs/design/aura/). <b>Halo</b>: luz ambiental del color de lo que se muestra, con grano, siempre detrás de una superficie. <b>Cartel</b>: fondo oscuro fijo teñido con la categoría (cabecera de categoría, alma gemela, perfil). <b>Fila de ranking</b>: los 3 primeros solo un poco más destacados; dos cifras (almas gemelas que lo recomiendan y afinidad media, en lima). <b>Dónde encontrarlo</b>: la acción principal es un sitio de consumo (Spotify, Steam, Google Maps…); las referencias, como chips.</p>
+    <div class="stage" data-insp="aura">
+      <div class="cell" style="align-items:stretch;width:280px;max-width:100%"><div class="aura-halo"></div><div class="spec">Halo · Música</div></div>
+      <div class="cell" style="align-items:stretch;width:300px;max-width:100%"><div class="aura-poster" style="--c:var(--cat-food)"><svg class="ico ico-bg"><use href="#i-cat-food"/></svg><svg class="ico" style="position:relative;width:28px;height:28px"><use href="#i-cat-food"/></svg><div><div class="name">Restaurantes</div><div class="sub">Local · se filtra por radio</div></div></div><div class="spec">Cartel de categoría</div></div>
+      <div class="cell" style="align-items:stretch;width:300px;max-width:100%"><div class="aura-poster" style="--c:var(--cat-movies)"><div class="kicker">Vuestra afinidad</div><div class="big">86 %</div><div class="sub">Calculada con vuestras fuentes · affinity-v4</div></div><div class="spec">Cartel de alma gemela</div></div>
+    </div>
+    <div class="stage" data-insp="aura">
+      <div class="cell" style="align-items:stretch;width:320px;max-width:100%">
+        <div class="rank-row is-top"><span class="n">1</span><span class="th"></span><div><div class="t">Lasarte</div><div class="m"><b>2/3</b> almas gemelas lo recomiendan</div><div class="m"><b>57 %</b> afinidad media contigo</div></div></div>
+        <div class="rank-row"><span class="n">4</span><span class="th"></span><div><div class="t">Hisop</div><div class="m">Para explorar</div></div></div>
+        <div class="spec">Fila de ranking (destacada y normal)</div></div>
+      <div class="cell" style="align-items:stretch;width:300px;max-width:100%"><div class="src-links"><button class="main">Abrir en Steam</button><div class="chips"><span class="chip">Web oficial</span><span class="chip">IGDB</span><span class="chip">Wikipedia</span><span class="chip">Wikidata</span></div></div><div class="spec">Dónde encontrarlo</div></div>
+    </div>
+  </section>
   <section id="reccard"><h2 class="sec">Tarjeta de recomendación</h2><p class="sec-desc">Extensión. Imagen a sangre con velo, chip de categoría sobre la imagen, título en display y <b>motivo real</b> en una cápsula translúcida. Variantes: con imagen, fallback de categoría, NEW. Acciones: descartar, deshacer, conservar.</p>
     <div class="stage">
       <div class="cell"><div class="rec" data-insp="reccard"><div class="img imgph"></div><div class="veil"></div>
@@ -399,7 +415,7 @@ const CATS=[['food','Comida'],['movies','Cine'],['series','Series'],['music','M�
 const catHtml=(on)=>CATS.map(([k,n])=>`<span class="cat${on?' cat--on-image':''}" style="--c:var(--cat-${k})"><svg class="ico"><use href="#i-cat-${k}"/></svg>${n}</span>`).join('');
 catGrid.innerHTML=CATS.map(([k,n])=>`<div class="cell"><div style="width:72px;height:72px;border-radius:var(--r-lg);background:var(--cat-${k});display:flex;align-items:center;justify-content:center;color:#fff"><svg class="ico ico--lg"><use href="#i-cat-${k}"/></svg></div><div class="spec">${k} · ${cs().getPropertyValue('--cat-'+k).trim()}</div></div>`).join('');
 catChips.innerHTML=catHtml(false)+'<div class="imgph" style="display:flex;flex-wrap:wrap;gap:8px;padding:12px;border-radius:var(--r-md)">'+catHtml(true)+'</div>';
-const TYPE=[['t-h1','Space Grotesk 700 / 40'],['t-h2','Space Grotesk 700 / 32'],['t-h3','Space Grotesk 700 / 26'],['t-h4','Space Grotesk 700 / 21'],['t-h5','Sistema 600 / 18'],['t-h6','Sistema 600 / 16'],['t-subtitle1','Sistema 500 / 16'],['t-subtitle2','Sistema 600 / 14'],['t-body1','Sistema 400 / 16'],['t-body2','Sistema 400 / 14'],['t-button','Sistema 600 / 15'],['t-caption','Sistema 400 / 12'],['t-overline','Sistema 600 / 11 · mayúsculas'],['t-figure','Space Grotesk 700 / 44 · cifras']];
+const TYPE=[['t-h1','Bricolage Grotesque 700 / 40'],['t-h2','Bricolage Grotesque 700 / 32'],['t-h3','Bricolage Grotesque 700 / 26'],['t-h4','Bricolage Grotesque 700 / 21'],['t-h5','Sistema 600 / 18'],['t-h6','Sistema 600 / 16'],['t-subtitle1','Sistema 500 / 16'],['t-subtitle2','Sistema 600 / 14'],['t-body1','Sistema 400 / 16'],['t-body2','Sistema 400 / 14'],['t-button','Sistema 600 / 15'],['t-caption','Sistema 400 / 12'],['t-overline','Sistema 600 / 11 · mayúsculas'],['t-figure','Bricolage Grotesque 700 / 44 · cifras']];
 typeList.innerHTML=TYPE.map(([n,m])=>`<div class="typerow"><div class="tk">${n}<br>${m}</div><div class="${n}">${n==='t-figure'?'91 %':'Del director de 2001'}</div></div>`).join('');
 const SPACING=[['sp-4',4],['sp-8',8],['sp-12',12],['sp-16',16],['sp-20',20],['sp-24',24],['sp-32',32],['sp-48',48],['sp-64',64]];
 spacingList.innerHTML=SPACING.map(([n,v])=>`<div class="sprow"><div class="lbl">${n} · ${v}px</div><div class="bar" style="width:${v*4}px"></div></div>`).join('');
@@ -431,7 +447,7 @@ const SPECS={
  list:S('List','components/ListItem','Elementos de 1/2/3 líneas con inicio (icono/avatar) y final (acción/meta).',[['primary','string'],['secondary','string?'],['leading','Icon|Avatar?'],['trailing','node?'],['lines','1|2|3','1'],['onPress','() => void?']],[T('texto','on-surface'),T('secundario','muted'),T('hover','action-hover')],[['minHeight','56 / 72 / 88'],['padding','h 16'],['gap','16']]),
  table:S('Table','components/Table','Tabla simple con cifras tabulares alineadas a la derecha.',[['columns','{key,label,numeric?}[]'],['rows','object[]']],[T('cabecera','muted'),T('líneas','border-faint')],[['cellPadding','12 / 16']]),
  tooltip:S('Tooltip','components/Tooltip','Simple (invertido) o enriquecido (superficie elevada).',[['title','string'],['variant','plain|rich','plain']],[T('plain fondo','on-surface'),T('plain texto','surface'),T('rich','surface-raised')],[['radius','--r-sm'],['maxWidth','220']]),
- typography:S('Typography','components/Text','Texto con variantes h1–h6, subtitle1/2, body1/2, button, caption, overline y figure.',[['variant','h1…overline|figure','body1'],['color','onSurface|muted|primaryInk','onSurface'],['numberOfLines','number?']],[{r:'display',n:'font-display',v:'Space Grotesk'},{r:'lectura',n:'font-body',v:'sistema'}],[['escala','~1,25']]),
+ typography:S('Typography','components/Text','Texto con variantes h1–h6, subtitle1/2, body1/2, button, caption, overline y figure.',[['variant','h1…overline|figure','body1'],['color','onSurface|muted|primaryInk','onSurface'],['numberOfLines','number?']],[{r:'display',n:'font-display',v:'Bricolage Grotesque'},{r:'lectura',n:'font-body',v:'sistema'}],[['escala','~1,25']]),
  icon:S('Icon','components/Icon','Icono del sprite, 18/24/28, contorno o relleno; color = currentColor.',[['name','IconName'],['size','18|24|28','24'],['filled','boolean','false']],[{r:'trazo',n:'icon-stroke',v:'1.8'}],[['viewBox','24'],['cap/join','round']]),
  alert:S('Alert','components/Alert','info|success|warning|error con título opcional.',[['severity','info|success|warning|error'],['title','string?'],['message','string'],['action','node?']],[T('info','info'),T('success','success'),T('warning','warning'),T('error','error'),T('texto','on-surface')],[['radius','--r-md'],['tinte','14 %']]),
  dialog:S('Dialog','components/Dialog','Diálogo básico de confirmación; destructivo con verbo explícito.',[['title','string'],['body','string'],['confirmLabel','string'],['destructive','boolean','false'],['onConfirm','() => void'],['onCancel','() => void']],[T('superficie','surface-raised'),T('velo','scrim'),{r:'sombra',n:'elev-3',v:'var(--elev-3)'}],[['radius','--r-xl'],['padding','24'],['width','≤ 320']]),
@@ -439,7 +455,7 @@ const SPECS={
  progress:S('Progress','components/Progress','Lineal (determinado/indeterminado) y circular.',[['variant','linear|circular','linear'],['value','number? (0–100)']],[T('indicador','primary'),T('pista','muted-surface')],[['linear','4'],['circular','36']]),
  skeleton:S('Skeleton','components/Skeleton','Marcador de carga con brillo (sin animación si se reduce el movimiento).',[['width','number|string'],['height','number'],['shape','rect|circle','rect']],[T('base','muted-surface'),T('brillo','surface-raised')],[['radius','--r-sm']]),
  backdrop:S('Backdrop','components/Backdrop','Velo bajo diálogos y hojas.',[['open','boolean']],[T('velo','scrim')],[['zIndex','--z-modal']]),
- appbar:S('AppBar','components/AppBar','small (título a la izquierda), center (pantallas interiores) y transparent (sobre imagen).',[['title','string?'],['variant','small|center|transparent','small'],['leading','IconButton?'],['actions','IconButton[]']],[T('fondo','bg'),T('texto','on-surface')],[['height','56'],['title','Space Grotesk 700 / 20']]),
+ appbar:S('AppBar','components/AppBar','small (título a la izquierda), center (pantallas interiores) y transparent (sobre imagen).',[['title','string?'],['variant','small|center|transparent','small'],['leading','IconButton?'],['actions','IconButton[]']],[T('fondo','bg'),T('texto','on-surface')],[['height','56'],['title','Bricolage Grotesque 700 / 20']]),
  card:S('Card','components/Card','Contenedor tonal u outlined con medio, contenido y acciones.',[['variant','tonal|outlined','tonal'],['media','Image?'],['onPress','() => void?']],[T('superficie','surface'),T('borde','border')],[['radius','--r-lg'],['padding','16']]),
  paper:S('Paper','components/Paper','Superficie base: outlined, elevación 1 y 2.',[['variant','outlined|elevation','elevation'],['elevation','0|1|2|3','1']],[T('e1','surface'),T('e2','surface-raised')],[['radius','--r-lg']]),
  accordion:S('Accordion','components/Accordion','Secciones plegables.',[['items','{title,content}[]'],['expanded','number?']],[T('borde','border'),T('cuerpo','muted')],[['header','56']]),
@@ -450,7 +466,8 @@ const SPECS={
  link:S('Link','components/Link','Enlace de texto subrayado.',[['href','string'],['children','string']],[T('color','link')],[['underline','1px · offset 3']]),
  stepper:S('Stepper','components/Stepper','Pasos horizontales: hecho, activo, pendiente.',[['steps','string[]'],['active','number']],[T('hecho','primary'),T('pendiente','muted-surface')],[['step','26']]),
  speeddial:S('SpeedDial','components/SpeedDial','FAB que despliega acciones con etiqueta.',[['actions','{icon,label}[]'],['open','boolean']],[T('principal','primary'),T('acciones','surface-raised')],[['main','56'],['action','40']]),
- reccard:S('RecommendationCard','components/RecommendationCard','EXTENSIÓN. Imagen a sangre + velo, chip de categoría, NEW, título display, año y MOTIVO REAL; fallback de categoría sin imagen; gestos + botones descartar/deshacer/conservar.',[['item','{title,year?,category,image?}'],['reason','{code,text}'],['isNew','boolean'],['onDismiss','() => void'],['onKeep','() => void'],['onUndo','() => void']],[T('velo','image-veil'),T('fallback','muted-surface'),{r:'sombra',n:'elev-3',v:'var(--elev-3)'}],[['size','300×420 (≈ 0,71)'],['radius','--r-xl'],['title','Space Grotesk 700 / 26']]),
+ aura:S('Aura','components/Aura · CategoryWorld · WhyRecommended · SourceLinks','Halo (AuraBackdrop), cartel (AuraCard / CategoryPoster), fila de ranking (RankedRow) y enlaces de fuente (SourceLinks).',[['color','categoría (hex)'],['featured','boolean (ranking, puestos 1–3)'],['links','{provider,url}[] (ordenados por el servidor)']],[T('cartel','poster-base'),T('texto en cartel','on-poster'),T('afinidad','affinity'),T('acción','primary')],[['radius cartel','--r-xl'],['halo','círculos concéntricos + grano (sin degradados nativos)'],['fundido','--dur-aura']]),
+ reccard:S('RecommendationCard','components/RecommendationCard','EXTENSIÓN. Imagen a sangre + velo, chip de categoría, NEW, título display, año y MOTIVO REAL; fallback de categoría sin imagen; gestos + botones descartar/deshacer/conservar.',[['item','{title,year?,category,image?}'],['reason','{code,text}'],['isNew','boolean'],['onDismiss','() => void'],['onKeep','() => void'],['onUndo','() => void']],[T('velo','image-veil'),T('fallback','muted-surface'),{r:'sombra',n:'elev-3',v:'var(--elev-3)'}],[['size','300×420 (≈ 0,71)'],['radius','--r-xl'],['title','Bricolage Grotesque 700 / 26']]),
  affinity:S('AffinityMeter','components/AffinityMeter','EXTENSIÓN. Anillo + cifra; null → «—» con anillo vacío (nunca 0 %).',[['value','number | null'],['size','md|lg','md'],['caption','string?']],[T('arco','primary'),T('pista','muted-surface'),T('cifra','on-surface')],[['size','56 / 96'],['grosor','5 / 7']]),
  personrow:S('PersonRow','components/PersonRow','EXTENSIÓN. Puesto, avatar, nombre, país, motivo y afinidad.',[['person','{name,country?,avatar?}'],['rank','number?'],['reason','string'],['affinity','number | null']],[T('cifra','primary-ink'),T('motivo','muted')],[['minHeight','64'],['gap','12']]),
  catchip:S('CategoryChip','components/CategoryChip','EXTENSIÓN. Ocho categorías: tinte del 20 %, icono en su color y texto on-surface; variante sobre imagen.',[['category','food|movies|series|music|games|books|culture|podcasts'],['onImage','boolean','false']],[T('comida','cat-food'),T('cine','cat-movies'),T('series','cat-series'),T('música','cat-music'),T('juegos','cat-games'),T('libros','cat-books'),T('cultura','cat-culture'),T('podcasts','cat-podcasts')],[['height','28'],['icon','16']]),

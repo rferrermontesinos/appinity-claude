@@ -1,5 +1,4 @@
 import type {
-  CatalogItemDto,
   ConnectStartDto,
   Category,
   ConnectionDto,
@@ -9,12 +8,14 @@ import type {
   ItemProfileDetailDto,
   ItemProfileDto,
   MeDto,
-  Page,
   PublicPersonDto,
   SoulmatesDto,
   BlockedPersonDto,
   FriendsDto,
   FriendshipResultDto,
+  FollowedPersonDto,
+  CategoryRankingDto,
+  FollowResultDto,
   SettingsDto,
   SourceDto,
   SyncRunDto,
@@ -108,10 +109,21 @@ export const dataKeys = {
   soulmates: ['soulmates'] as const,
   person: (userId: string) => ['person', userId] as const,
   friends: ['friends'] as const,
+  following: ['following'] as const,
   blocks: ['blocks'] as const,
 };
 
 /** Amigos y solicitudes (enviadas y recibidas). */
+/** Orden personal del mosaico de categorías (afinidad con tus almas gemelas y gusto propio). */
+export function useCategoryRanking() {
+  return useQuery({ queryKey: ['categoryRanking'], queryFn: () => apiRequest<CategoryRankingDto>('/v1/me/categories/ranking'), enabled: useHasSession() });
+}
+
+/** Personas que sigues: creadores con perfil público y amigos (2026-10-26). */
+export function useFollowing() {
+  return useQuery({ queryKey: dataKeys.following, queryFn: () => apiRequest<FollowedPersonDto[]>('/v1/me/following'), enabled: useHasSession() });
+}
+
 export function useFriends() {
   return useQuery({ queryKey: dataKeys.friends, queryFn: () => apiRequest<FriendsDto>('/v1/me/friends'), enabled: useHasSession() });
 }
@@ -126,6 +138,7 @@ export type SocialAction =
   | { kind: 'remove'; userId: string }
   | { kind: 'block'; userId: string }
   | { kind: 'unblock'; userId: string }
+  | { kind: 'follow' | 'unfollow'; userId: string }
   | { kind: 'report'; userId: string; reason: 'spam' | 'harassment' | 'inappropriate' | 'impersonation' | 'other'; block: boolean };
 
 /** Acciones sociales. Al terminar se refrescan amigos, bloqueos, ranking y perfiles (un bloqueo los cambia todos). */
@@ -145,6 +158,12 @@ export function useSocialAction() {
         case 'block':
           await apiRequest('/v1/me/blocks', { method: 'POST', body: { userId: action.userId } });
           return null;
+        case 'follow':
+          await apiRequest<FollowResultDto>('/v1/me/follows', { method: 'POST', body: { userId: action.userId } });
+          return null;
+        case 'unfollow':
+          await apiRequest<FollowResultDto>(`/v1/me/follows/${action.userId}`, { method: 'DELETE' });
+          return null;
         case 'unblock':
           await apiRequest(`/v1/me/blocks/${action.userId}`, { method: 'DELETE' });
           return null;
@@ -155,7 +174,7 @@ export function useSocialAction() {
     },
     onSuccess: async () => {
       await Promise.all(
-        [dataKeys.friends, dataKeys.blocks, dataKeys.soulmates, ['person'], ['chat']].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+        [dataKeys.friends, dataKeys.following, dataKeys.blocks, dataKeys.soulmates, ['person'], ['chat']].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
       );
     },
   });
@@ -239,14 +258,6 @@ export function useDisconnect() {
         { method: 'DELETE' },
       ),
     onSuccess: invalidate,
-  });
-}
-
-export function useCatalog(category: Category) {
-  return useQuery({
-    queryKey: dataKeys.catalog(category),
-    queryFn: () => apiRequest<Page<CatalogItemDto> & { total: number }>(`/v1/catalog/items?category=${category}&limit=100`),
-    enabled: useHasSession(),
   });
 }
 

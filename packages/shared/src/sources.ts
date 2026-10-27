@@ -1,5 +1,6 @@
 import type { Category } from './categories.js';
 import type { CatalogImage, CatalogItem, ExternalIdRef } from './catalog.js';
+import type { ConnectStartDto } from './api.js';
 import type { ExternalItemAttributes, NormalizedObservation } from './observation.js';
 
 /**
@@ -27,6 +28,7 @@ export const PLANNED_SOURCE_KEYS = [
   'google_calendar',
   'trakt',
   'anilist',
+  'facebook',
   'apple_music',
   'device_calendar',
   'itchio',
@@ -41,7 +43,10 @@ export interface ExternalIdQuery {
   tmdb?: number;
   anilist?: number;
   mal?: number;
-  kind: 'movie' | 'show' | 'anime' | 'manga';
+  /** Cuenta de Facebook (P2013) o de Instagram (P2003): cualquier categoría del catálogo. */
+  facebook?: string;
+  instagram?: string;
+  kind: 'movie' | 'show' | 'anime' | 'manga' | 'social';
 }
 export type PlannedSourceKey = (typeof PLANNED_SOURCE_KEYS)[number];
 
@@ -258,6 +263,8 @@ export interface EntityIdentifier {
   identifyGoogleBooksVolume?(volumeId: string): Promise<IdentifiedEntity | null>;
   /** Obras y artistas relacionados (misma saga, director, autor, estudio, influencias). Opcional. */
   relatedWorks?(qid: string, category: Category): Promise<Array<{ entity: IdentifiedEntity; relation: string; weight: number }>>;
+  /** Obras populares de una categoría, paginadas (ampliación del catálogo bajo demanda). Opcional. */
+  popularWorks?(category: Category, offset: number, limit?: number): Promise<{ works: IdentifiedEntity[]; exhausted: boolean }>;
   /** Obras por IMDb, TMDB, AniList o MyAnimeList (Wikidata). Opcional. Mismo orden que la entrada. */
   identifyByExternalIds?(items: ExternalIdQuery[]): Promise<Array<IdentifiedEntity | null>>;
   /**
@@ -397,3 +404,15 @@ export interface CatalogProvider {
   resolve(candidate: ExternalItemCandidate): Promise<CatalogMatch | null>;
   getTrending?(context: TrendingContext): Promise<ProviderCatalogItem[]>;
 }
+
+/**
+ * Primera importación tras aceptar las condiciones (alta única): `started` = fuentes ya conectadas (Google Books y
+ * Calendar del inicio de sesión) cuyo primer sync arranca ahora; `next` = el consentimiento de Google Data Portability
+ * que la app abre a continuación (Google no deja pedirlo junto al inicio de sesión), o `null` si ya está conectado o
+ * el servidor no tiene esa fuente.
+ */
+export interface InitialImportDto {
+  started: number;
+  next: ConnectStartDto | null;
+}
+

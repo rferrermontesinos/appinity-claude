@@ -190,3 +190,21 @@ export const catalogRelationChecks = pgTable('catalog_relation_checks', {
   relationsFound: integer('relations_found').notNull().default(0),
   checkedAt: timestamp('checked_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Ampliación del catálogo bajo demanda (2026-10-27): por dónde va la lista de obras populares de Wikidata de cada
+ * categoría y dataset, para que «Cargar más» traiga siempre obras nuevas y no repita la misma página.
+ */
+export const catalogExpansions = pgTable(
+  'catalog_expansions',
+  {
+    dataset: text('dataset', { enum: ['demo', 'live'] }).notNull(),
+    category: text('category').notNull(),
+    nextOffset: integer('next_offset').notNull().default(0),
+    /** Wikidata ya no devuelve más obras con la notoriedad mínima. */
+    exhausted: boolean('exhausted').notNull().default(false),
+    itemsCreated: integer('items_created').notNull().default(0),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.dataset, t.category] })],
+);

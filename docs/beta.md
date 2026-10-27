@@ -62,3 +62,75 @@ Revisión de todas las rutas de `apps/api` (sin herramientas externas):
   «confiar en todo».
 - **Pendiente con servidor real**: revisar las cabeceras del proxy (HSTS) y repetir la revisión con la evaluación CASA
   de Google.
+
+## Prueba con amigos y familiares: alta única (2026-10-26)
+
+### Qué hace ya la app
+
+1. **«Continuar con Google»**: crea la cuenta y concede Google Books y Calendar en el mismo consentimiento. Se guardan
+   los permisos, pero **no se importa nada** todavía.
+2. **Alta**: mayoría de edad y condiciones. Al pulsar «Aceptar y empezar a importar»:
+   - arranca el primer sync de Books y Calendar (`POST /v1/me/connections/initial-import`);
+   - se abre en seguida el consentimiento de **Google Data Portability**: reseñas y guardados de Maps, valoraciones de
+     búsquedas, YouTube y YouTube Music, Google Play y reservas.
+   Google obliga a que esa sea una segunda pantalla suya (no deja mezclar sus scopes con los del inicio de sesión),
+   pero la persona no tiene que ir a Perfil ni conectar fuente a fuente.
+3. El servidor **rechaza importar o conectar** cualquier fuente de una cuenta real que aún no ha aceptado las
+   condiciones. Antes, Books y Calendar se sincronizaban al volver de Google, antes del alta.
+
+Steam, AniList, Trakt y Facebook siguen siendo opcionales en Perfil: son cuentas de otros proveedores y cada una exige
+su propio inicio de sesión (no se pueden autorizar con el consentimiento de Google).
+
+### Puesta en marcha con Cloudflare Tunnel y dominio propio (decisión del titular, 2026-10-26)
+
+La API sigue en el PC; Cloudflare la publica en `https://api.<tu-dominio>`. El acceso de desarrollo (`/v1/dev`, modo
+demo) **no** se publica: el túnel lo responde con 404. El PC tiene que estar encendido durante la prueba.
+
+**Lo que haces tú (una vez):**
+
+1. **Cuenta y dominio**: en [dash.cloudflare.com](https://dash.cloudflare.com) crea la cuenta y, en «Domain
+   Registration → Register Domains», compra el dominio (un `.com` cuesta unos 10 € al año, a precio de coste). Al
+   comprarlo en Cloudflare, su DNS ya queda allí.
+2. **Instalar cloudflared** (en tu terminal): `winget install --id Cloudflare.cloudflared` y abre una terminal nueva.
+3. **Iniciar sesión**: `cloudflared tunnel login`. Se abre el navegador; elige tu dominio y autoriza.
+4. **Crear el túnel**: `pnpm tunnel:setup -Domain tudominio.com`. Crea el túnel `appinity-claude`, el DNS
+   `api.tudominio.com`, la configuración (en `~/.cloudflared`, fuera de Git) y apunta `.env` a la URL pública.
+   Al terminar imprime las URL de vuelta para Google.
+5. **Google Cloud** (consola → «APIs y servicios»):
+   - Credenciales → tu cliente OAuth → «URIs de redireccionamiento autorizados»: añade las tres que imprime el paso 4
+     (`/v1/auth/google/callback`, `/v1/connect/google_books/callback` y `/v1/connect/google_portability/callback`).
+     Deja también las de `http://localhost:3100`.
+   - Pantalla de consentimiento → «Branding» → dominios autorizados: añade `tudominio.com`.
+   - Pantalla de consentimiento → «Audience» → usuarios de prueba: añade el Gmail de cada persona (máximo 100).
+6. **Reiniciar** `pnpm api` y `pnpm worker`. Después, en otra pestaña, `pnpm tunnel` (déjala abierta).
+7. **Comprobar**: `https://api.tudominio.com/health` responde, y `https://api.tudominio.com/v1/dev/session`
+   devuelve 404.
+
+**Lo que hago yo después**: `pnpm android:beta -ApiUrl https://api.tudominio.com` → `dist/appinity-beta.apk` (la app
+empaquetada; no necesita Metro), y la prueba completa del alta con Google desde el teléfono.
+
+**Para tus amigos**: les pasas el APK (Drive o WhatsApp como archivo); en Android tienen que permitir «instalar apps
+desconocidas». Al entrar con Google verán «Google no ha verificado esta app» → «Continuar», porque la app está en modo
+Testing. El permiso de Data Portability caduca a los 7 días.
+
+**Para volver a solo local**: `pnpm public-url --local` y reiniciar la API.
+
+### Lo que falta para que funcione en el teléfono de otra persona (decisiones del titular)
+
+1. **Una URL pública con HTTPS para la API.** Google solo vuelve a `localhost` o a un https, y el teléfono de un amigo
+   no llega al PC. Opciones:
+   - **Cloudflare Tunnel con un dominio propio** (recomendada): la API sigue en el PC, gratis salvo el dominio (unos
+     10 € al año). URL fija; el PC tiene que estar encendido durante la prueba.
+   - Túnel rápido de Cloudflare (`trycloudflare.com`): gratis y sin cuenta, pero la URL cambia en cada arranque y
+     obliga a registrarla de nuevo en Google y a recompilar el APK. Solo sirve para una prueba de una tarde.
+   - Servidor (VPS) y dominio: el plan de la beta (arriba), de pago.
+2. **Google Cloud** (modo Testing, sin verificación):
+   - añadir el **Gmail de cada persona como usuario de prueba** (máximo 100);
+   - registrar las URL de vuelta `https://<dominio>/v1/auth/google/callback` y la de Data Portability
+     (`/v1/connect/google_portability/callback`);
+   - Google mostrará el aviso de «app no verificada» (hay que pulsar «Continuar»), y el permiso de Data Portability
+     caduca a los 7 días.
+3. **APK de prueba**: el actual (`pnpm android:build`) es de desarrollo y necesita Metro en el PC. Hace falta un APK
+   con la app empaquetada y `EXPO_PUBLIC_API_URL=https://<dominio>`; con `PUBLIC_API_URL` igual en la API.
+4. **Tiempos**: Google prepara el export de Data Portability en minutos u horas; los gustos van apareciendo solos.
+

@@ -50,6 +50,7 @@ export function createCatalogIdentifier(options: CatalogIdentifierOptions): Enti
     identifyGoogleBooksVolume: (volumeId) => works.identifyGoogleBooksVolume(volumeId),
     identifyByExternalIds: (items) => works.identifyByExternalIds(items),
     relatedWorks: (qid, category) => works.relatedWorks(qid, category),
+    popularWorks: (category, offset, limit) => works.popularWorks(category, offset, limit),
     identifyPlace: (place) => places.identifyPlace(place),
     identifyPlaces: (list, onProgress) => places.identifyPlaces(list, onProgress),
     identifyWork: (work) => works.identifyWork(work),

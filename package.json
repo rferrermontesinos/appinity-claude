@@ -35,7 +35,11 @@
     "fixtures:catalog": "node scripts/fixtures/build-catalog-snapshot.mjs",
     "secret:set": "node scripts/set-secret.mjs",
     "db:backup": "node scripts/backup-db.mjs",
-    "android:build": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/android-dev-build.ps1"
+    "android:build": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/android-dev-build.ps1",
+    "android:beta": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/android-beta-build.ps1",
+    "tunnel": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/tunnel.ps1 -Action run",
+    "tunnel:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/tunnel.ps1 -Action setup",
+    "public-url": "node scripts/set-public-url.mjs"
   },
   "devDependencies": {
     "@appinity/algorithms": "workspace:*",

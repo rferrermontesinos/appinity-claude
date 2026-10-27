@@ -47,6 +47,10 @@ export interface SettingsDto {
   discoverableByContacts: boolean;
   /** Aparecer en el ranking de almas gemelas de otras personas. */
   discoverableAsSoulmate: boolean;
+  /** Perfil público de creador: cualquiera puede seguirte y tus gustos aparecen con tu nombre a quien te sigue. */
+  publicCreator: boolean;
+  /** Insignia de verificación (la concede el equipo; solo con el perfil público activo). */
+  creatorVerified: boolean;
   notificationFrequency: NotificationFrequency;
 }
 
@@ -217,6 +221,36 @@ export interface PublicPersonDto {
   friendship: { state: 'none' | 'pending_out' | 'pending_in' | 'friends'; requestId: string | null };
   /** Relación de chat vista por quien consulta (una solicitud ignorada se le sigue mostrando «enviada»). */
   chat: ChatStateDto;
+  /** Seguir (2026-10-26): solo a creadores con perfil público o a amigos. */
+  follow: { state: 'following' | 'not_following'; canFollow: boolean };
+  creator: { public: boolean; verified: boolean };
+}
+
+/** Ampliación del catálogo de una categoría: en cola, agotada (Wikidata no da más) o no aplicable (lugares). */
+export interface CatalogExpansionDto {
+  status: 'queued' | 'exhausted' | 'not_expandable';
+}
+
+/** Orden personal del mosaico de categorías: afinidad con tus almas gemelas en cada una y tu propio gusto. */
+export interface CategoryRankingDto {
+  version: string;
+  items: Array<{ category: Category; score: number; affinity: number | null; likes: number }>;
+}
+
+/** Persona que sigues: creador con perfil público o amigo. */
+export interface FollowedPersonDto {
+  userId: string;
+  displayName: string;
+  countryCode: string | null;
+  avatarUrl: string | null;
+  /** Mi afinidad hacia esa persona; NULL («—») sin evidencia comparable. */
+  affinity: number | null;
+  creator: boolean;
+  verified: boolean;
+}
+
+export interface FollowResultDto {
+  state: 'following' | 'not_following';
 }
 
 /** Chat (§16, fase 12A): interés → match → conversación. */
@@ -376,17 +410,52 @@ export interface BlockedPersonDto {
  * Bloques principales (70/20/10) y respaldos cuando se agotan (fase 9): comunidad (valorado por varias personas de
  * APPINITY), conservados en otra sesión y explorar (sin señales todavía). Cada tarjeta dice de dónde sale.
  */
-export type RecommendationBlockDto = 'consensus' | 'discovery' | 'trending' | 'content' | 'community' | 'kept' | 'explore';
+export type RecommendationBlockDto = 'consensus' | 'discovery' | 'followed' | 'trending' | 'content' | 'community' | 'kept' | 'explore';
 
 /**
  * Motivo verificable de una tarjeta (§2 y §12): para el consenso, cuántas almas gemelas la apoyan (nunca quiénes); para
  * el descubrimiento, la persona que la aporta; para Trending, cuántas personas de la zona la votaron este año.
  */
+/**
+ * Desglose numérico del motivo (0–100, enteros), para explicar por qué un objeto está en la lista. Solo agregados de
+ * las almas gemelas (nunca quién en concreto), salvo en descubrimiento, que ya se atribuye a una persona por su nombre.
+ */
+export interface RecommendationEvidenceDto {
+  /** Puntuación del bloque con la que se ordena (0–100). */
+  score: number;
+  /** Quienes lo apoyan entre quienes tienen opinión sobre él (0–100). */
+  support?: number;
+  /** Cuánto gusta, de media, a quienes lo apoyan (preferencia positiva × 100). */
+  likeLevel?: number;
+  /** Confianza media de esa evidencia (0–100). */
+  confidence?: number;
+  /** Afinidad global media contigo de quienes lo apoyan (en descubrimiento, la de esa persona). */
+  supporterAffinity?: number;
+  /** Cuántas de las personas que lo apoyan tienen contigo afinidad mutua excepcional. */
+  exceptionalSupporters?: number;
+  /** Trending: valoración media en la zona (de −1…1 a 0–100), radio y año de los votos. */
+  areaRating?: number;
+  radiusKm?: number | null;
+  year?: number;
+  /** Por contenido: cuántos de tus gustos llevan a este objeto. */
+  relatedLikes?: number;
+}
+
 export interface RecommendationReasonDto {
   code: RecommendationBlockDto;
+  evidence?: RecommendationEvidenceDto;
   supporters?: number;
   opinionated?: number;
   contributor?: { userId: string; displayName: string };
+  /** Bloque de seguidos: afinidad con la persona que sigues (NULL si no hay evidencia comparable). */
+  contributorAffinity?: number | null;
+  /** Descubrimiento: el alma gemela que lo aporta es alguien a quien sigues. */
+  contributorFollowed?: boolean;
+  /**
+   * Motivo combinado (2026-10-26): personas que sigues a las que también les encanta. Solo nombres de quienes sigues
+   * (creadores con perfil público o amigos); nunca de almas gemelas desconocidas.
+   */
+  followedBy?: { names: string[]; count: number };
   positiveVoters?: number;
   totalVoters?: number;
   /** Por contenido: el gusto propio que lleva a esta tarjeta y la relación (misma saga, mismo director…). */
@@ -397,7 +466,7 @@ export interface RecommendationDto {
   item: CatalogItemDto;
   block: RecommendationBlockDto;
   /** Ocupa el hueco de otro bloque sin candidatos (la cuota 70/20/10 es un objetivo, no se rellena inventando). */
-  fillsFor: 'consensus' | 'discovery' | 'trending' | null;
+  fillsFor: 'consensus' | 'discovery' | 'followed' | 'trending' | null;
   reason: RecommendationReasonDto;
   /** NEW: APPINITY nunca había mostrado este objeto a este usuario (no significa estreno). */
   isNew: boolean;
@@ -413,7 +482,35 @@ export interface HomeActionResultDto {
 
 export interface HomeUndoResultDto {
   itemId: string;
-  action: 'dismiss' | 'keep';
+  action: 'dismiss' | 'keep' | 'vote';
+}
+
+/** Voto en Inicio (2026-10-27): −2, −1, +1, +2 o «No lo conozco». */
+/** −1 «No me gusta», +1 «Me gusta», +2 «Me encanta» (modelo binario + «Me encanta», 2026-10-27). */
+export type VoteValueDto = -1 | 1 | 2;
+
+/** Tu voto sobre una obra, para la ficha. `vote` −2 solo en votos antiguos; null si no hay voto. */
+export interface ItemOpinionDto {
+  voted: boolean;
+  vote: -2 | -1 | 1 | 2 | null;
+}
+
+/**
+ * «Entre tus almas gemelas» en la ficha: qué opina tu Top 50 de una obra (solo recuentos, nunca quién) y a quiénes de
+ * los que sigues les gusta (solo nombres de seguidos). opinionated = love + like + mixed + dislike.
+ */
+export interface ItemCircleDto {
+  soulmates: number;
+  opinionated: number;
+  love: number;
+  like: number;
+  mixed: number;
+  dislike: number;
+  followedLikers: { names: string[]; count: number };
+}
+
+export interface HomeVoteResultDto {
+  actionId: string;
 }
 
 export interface RecommendationsDto {

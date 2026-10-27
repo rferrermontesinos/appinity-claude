@@ -1,6 +1,6 @@
-import { EntityResolver, LocalDiskStorage, WikidataSnapshotProvider, WikimediaImages, cacheCatalogImage, enrichDetailsFromWikidata, enrichImagesFromWikidata } from '@appinity/catalog';
+import { EntityResolver, LocalDiskStorage, WikidataSnapshotProvider, WikimediaImages, cacheCatalogImage, WikipediaSummaries, enrichDetailsFromWikidata, enrichImagesFromWikidata, enrichPosters, enrichSummariesFromWikipedia } from '@appinity/catalog';
 import { createDatabase } from '@appinity/database';
-import { buildContentRelations, createProducerQueues, enqueueAffinity, enqueueImage, enqueueSync, recomputeAffinities, runConnectionSync, scheduleDueSyncs, sendDueDigests, checkDigestReceipts } from '@appinity/ingestion';
+import { buildContentRelations, createProducerQueues, expandCatalog, enqueueAffinity, enqueueImage, enqueueSync, recomputeAffinities, runConnectionSync, scheduleDueSyncs, sendDueDigests, checkDigestReceipts } from '@appinity/ingestion';
 import { ExpoPushSender, createAdapterRegistry, createCatalogIdentifier, portabilityGroups } from '@appinity/integrations';
 import {
   QUEUES,
@@ -9,6 +9,8 @@ import {
   type AffinityJob,
   type CatalogImageJob,
   type PingJob,
+  type ExpandCatalogJob,
+  isCategory,
   type ProfileSyncJob,
 } from '@appinity/shared';
 import { DelayedError, Queue, UnrecoverableError, Worker, type Job } from 'bullmq';
@@ -44,6 +46,17 @@ const registry = createAdapterRegistry({
           clientId: process.env.ANILIST_CLIENT_ID.trim(),
           clientSecret: process.env.ANILIST_CLIENT_SECRET.trim(),
           redirectUri: process.env.ANILIST_REDIRECT_URI?.trim() || 'http://localhost:3100/v1/connect/anilist/callback',
+          identifier: catalogIdentifier,
+        },
+      }
+    : {}),
+  ...(process.env.FACEBOOK_APP_ID?.trim() && process.env.FACEBOOK_APP_SECRET?.trim()
+    ? {
+        facebook: {
+          appId: process.env.FACEBOOK_APP_ID.trim(),
+          appSecret: process.env.FACEBOOK_APP_SECRET.trim(),
+          redirectUri: process.env.FACEBOOK_REDIRECT_URI?.trim() || 'http://localhost:3100/v1/connect/facebook/callback',
+          graphVersion: process.env.FACEBOOK_GRAPH_VERSION?.trim() || 'v23.0',
           identifier: catalogIdentifier,
         },
       }
@@ -97,6 +110,24 @@ const workers: Worker[] = [
         if (receipts.checked) console.log(`[push] recibos: ${JSON.stringify(receipts)}`);
         return { ...result, receipts };
       }
+      // Ampliación del catálogo bajo demanda (Categorías, «Cargar más»): obras populares de Wikidata y, de lo nuevo,
+      // imágenes y detalles enseguida para que no salgan vacías.
+      if (job.name === 'expand-catalog') {
+        const data = job.data as unknown as ExpandCatalogJob;
+        const popular = catalogIdentifier.popularWorks;
+        if (!isCategory(data.category) || !popular) return { skipped: true };
+        const result = await expandCatalog(database.db, resolver, { popularWorks: (c, o, l) => popular(c, o, l) }, { dataset: data.dataset, category: data.category });
+        if (result.itemsCreated) {
+          const wikimedia = new WikimediaImages({ userAgent: env.catalogUserAgent });
+          const images = await enrichImagesFromWikidata(database.db, wikimedia, { dataset: data.dataset });
+          for (const id of images.imageIds) await enqueueImage(producer, id);
+          await enrichDetailsFromWikidata(database.db, wikimedia, { dataset: data.dataset });
+          await enrichSummariesFromWikipedia(database.db, new WikipediaSummaries({ userAgent: env.catalogUserAgent }), { dataset: data.dataset });
+          await enrichPosters(database.db, { userAgent: env.catalogUserAgent, dataset: data.dataset, ...(env.tmdbApiKey ? { tmdbApiKey: env.tmdbApiKey } : {}) });
+        }
+        console.log(`[catálogo] ampliación de ${data.category} (${data.dataset}): ${result.itemsCreated} obras nuevas de ${result.requested}${result.exhausted ? ' · fin de la lista' : ''}`);
+        return result;
+      }
       // Enriquecimiento del catálogo real (prioridad 2 del diagnóstico): imágenes libres de Wikidata y Commons.
       if (job.name === 'enrich-catalog') {
         // Primero las relaciones por contenido (crean objetos nuevos); después, sus imágenes.
@@ -108,10 +139,27 @@ const workers: Worker[] = [
         for (const id of images.imageIds) await enqueueImage(producer, id);
         if (images.inserted || images.updated || images.removed)
           console.log(`[catálogo] imágenes de Wikimedia: ${images.inserted} nuevas, ${images.updated} cambiadas, ${images.removed} quitadas (${images.candidates} revisadas)`);
+        // Carteles de películas y series (TVmaze; TMDb con clave): prioridad sobre logotipos y fotos de Commons.
+        // También la demo: sus obras son reales (Wikidata) y los carteles se sirven por enlace.
+        for (const dataset of ['live', 'demo'] as const) {
+          const posters = await enrichPosters(database.db, { userAgent: env.catalogUserAgent, dataset, ...(env.tmdbApiKey ? { tmdbApiKey: env.tmdbApiKey } : {}) });
+          if (posters.tvmaze || posters.tmdb) console.log(`[catálogo] carteles (${dataset}): ${posters.tvmaze} de TVmaze y ${posters.tmdb} de TMDb (${posters.candidates} revisados)`);
+        }
         // Línea de contexto de las tarjetas: descripción, personas y géneros (solo objetos aún no revisados).
         const details = await enrichDetailsFromWikidata(database.db, new WikimediaImages({ userAgent: env.catalogUserAgent }));
         if (details.updated) console.log(`[catálogo] detalles de Wikidata en ${details.updated} objetos`);
-        return { relations, images: { ...images, imageIds: images.imageIds.length }, details };
+        // Sinopsis de la ficha (Wikipedia, CC BY-SA): también la demo, cuyas obras son reales. Un fallo no tumba el resto.
+        const summaries: Record<string, unknown> = {};
+        for (const dataset of ['live', 'demo'] as const) {
+          try {
+            const s = await enrichSummariesFromWikipedia(database.db, new WikipediaSummaries({ userAgent: env.catalogUserAgent }), { dataset });
+            summaries[dataset] = s;
+            if (s.candidates) console.log(`[catálogo] sinopsis de Wikipedia (${dataset}): ${s.withSummary} de ${s.candidates} objetos revisados`);
+          } catch (error) {
+            console.error(`[catálogo] sinopsis de Wikipedia (${dataset}): ${error instanceof Error ? error.message : String(error)}`);
+          }
+        }
+        return { relations, images: { ...images, imageIds: images.imageIds.length }, details, summaries };
       }
       return { pong: `${job.data.requestedAt} → ${new Date().toISOString()}` };
     },

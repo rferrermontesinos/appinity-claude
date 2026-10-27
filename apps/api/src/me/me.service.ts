@@ -10,6 +10,7 @@ export interface SettingsPatch {
   radiusKm?: number;
   discoverableByContacts?: boolean;
   discoverableAsSoulmate?: boolean;
+  publicCreator?: boolean;
   notificationFrequency?: SettingsDto['notificationFrequency'];
   location?: { label: string; latitude: number; longitude: number; source: 'manual' | 'device' } | null;
 }
@@ -47,6 +48,8 @@ export class MeService {
         timeZone: s.timeZone,
         discoverableByContacts: s.discoverableByContacts,
         discoverableAsSoulmate: s.discoverableAsSoulmate,
+        publicCreator: s.publicCreator,
+        creatorVerified: s.publicCreator && s.creatorVerifiedAt !== null,
         notificationFrequency: s.notificationFrequency,
         location:
           s.locationLatitude !== null && s.locationLongitude !== null && s.locationSource
@@ -70,6 +73,7 @@ export class MeService {
     if (patch.radiusKm !== undefined) set.radiusKm = patch.radiusKm;
     if (patch.discoverableByContacts !== undefined) set.discoverableByContacts = patch.discoverableByContacts;
     if (patch.discoverableAsSoulmate !== undefined) set.discoverableAsSoulmate = patch.discoverableAsSoulmate;
+    if (patch.publicCreator !== undefined) set.publicCreator = patch.publicCreator;
     if (patch.notificationFrequency !== undefined) set.notificationFrequency = patch.notificationFrequency;
     if (patch.location !== undefined) {
       if (patch.location === null) {

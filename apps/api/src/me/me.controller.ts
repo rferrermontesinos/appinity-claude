@@ -18,6 +18,7 @@ const settingsSchema = z
     radiusKm: z.number().int().min(1).max(50).optional(),
     discoverableByContacts: z.boolean().optional(),
     discoverableAsSoulmate: z.boolean().optional(),
+    publicCreator: z.boolean().optional(),
     notificationFrequency: z.enum(['daily', 'three_per_week', 'weekly', 'off']).optional(),
     location: z
       .object({

@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>APPINITY · Aura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+<style>
+/* «Aura» · propuesta de dirección (maqueta, no es la app). Datos de ejemplo. */
+:root{
+  --bg:#0C0C0E; --surface:#17161B; --raised:#211F27; --line:rgb(255 255 255 / .08);
+  --text:#F5F3F0; --muted:#B4B0AA; --faint:#938F88;
+  --spark:#FF5E4D; --on-spark:#1A0806;      /* acción principal */
+  --lime:#D4F45A;  --on-lime:#141A02;       /* afinidad y almas gemelas */
+  --cat-food:#E4572E; --cat-movies:#7B4BD6; --cat-series:#2E86DE; --cat-music:#E0367A;
+  --cat-games:#2BAE66; --cat-books:#A0522D; --cat-culture:#D4A017; --cat-podcasts:#0F9D9A;
+  --display:"Bricolage Grotesque",system-ui,sans-serif;
+  --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --spring:cubic-bezier(.34,1.56,.64,1);
+  --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+}
+*{box-sizing:border-box;margin:0}
+body{background:#050506;color:var(--text);font:15px/1.45 var(--body);padding:32px 16px 64px}
+svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.intro{max-width:1100px;margin:0 auto 28px}
+.intro h1{font:800 clamp(32px,6vw,56px)/1 var(--display);letter-spacing:-.03em}
+.intro p{color:var(--muted);max-width:62ch;margin-top:10px}
+.tag{display:inline-block;font:600 11px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;padding:6px 9px;border-radius:99px;background:var(--raised);color:var(--muted);margin-top:14px}
+.stage{display:flex;flex-wrap:wrap;gap:40px;justify-content:center}
+.phone{width:390px;max-width:100%;height:844px;border-radius:44px;background:var(--bg);position:relative;overflow:hidden;
+  box-shadow:0 0 0 10px #1b1b1f,0 30px 80px rgb(0 0 0 / .6);isolation:isolate}
+.cap{text-align:center;color:var(--faint);font-size:13px;margin-top:22px}
+
+/* Aura: luz ambiental con grano, toma el color de lo que se muestra */
+.aura{position:absolute;inset:-20%;z-index:-1;transition:background .5s ease;
+  background:
+    radial-gradient(45% 35% at 30% 28%, color-mix(in oklch,var(--c) 85%,white 15%) 0%,transparent 70%),
+    radial-gradient(50% 40% at 78% 60%, color-mix(in oklch,var(--c2) 80%,transparent) 0%,transparent 70%),
+    radial-gradient(60% 40% at 50% 100%, color-mix(in oklch,var(--c) 45%,transparent) 0%,transparent 75%);
+  opacity:.55;filter:blur(30px)}
+.grain{position:absolute;inset:0;z-index:-1;background:var(--grain);opacity:.18;mix-blend-mode:overlay;pointer-events:none}
+
+/* Barra superior */
+.top{display:flex;align-items:center;justify-content:space-between;padding:50px 22px 10px}
+.brand{font:800 22px/1 var(--display);letter-spacing:-.04em}
+.brand b{color:var(--spark)}
+.stack{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.stack .avs{display:flex}
+.av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:700 12px/1 var(--display);color:#fff;
+  border:2px solid var(--bg);margin-left:-9px;background:linear-gradient(135deg,var(--a),var(--b))}
+.avs .av:first-child{margin-left:0}
+
+/* Tarjeta */
+.deck{position:relative;margin:4px 18px 0;height:500px}
+.card,.peek{position:absolute;inset:0;border-radius:30px;overflow:hidden}
+.peek{transform:translateY(14px) scale(.94) rotate(3deg);background:var(--raised);opacity:.6}
+.card{background:var(--surface);box-shadow:0 24px 60px -20px color-mix(in oklch,var(--c) 70%,transparent),0 0 0 1px var(--line);
+  transition:box-shadow .5s ease, transform .45s var(--spring)}
+.card.swap{transform:translateX(-24px) rotate(-3deg)}
+.cover{height:280px;position:relative;overflow:hidden;
+  background:linear-gradient(160deg,color-mix(in oklch,var(--c) 70%,black 30%),color-mix(in oklch,var(--c) 30%,black 70%))}
+.cover::after{content:"";position:absolute;inset:0;background:var(--grain);opacity:.35;mix-blend-mode:overlay}
+.cover .big{position:absolute;left:-10px;bottom:-34px;font:800 190px/.8 var(--display);letter-spacing:-.06em;
+  color:transparent;-webkit-text-stroke:2px color-mix(in oklch,var(--c) 40%,white 60%);opacity:.55;white-space:nowrap}
+.cover .glyph{position:absolute;right:22px;top:22px;width:96px;height:96px;color:color-mix(in oklch,var(--c) 30%,white 70%);opacity:.9;stroke-width:1.2}
+.cover .band{position:absolute;width:140%;height:70px;left:-20%;top:120px;transform:rotate(-12deg);
+  background:color-mix(in oklch,var(--c) 60%,white 15%);opacity:.18}
+.chip{position:absolute;left:16px;top:16px;display:flex;align-items:center;gap:6px;padding:7px 11px 7px 8px;border-radius:99px;
+  background:rgb(12 12 14 / .7);backdrop-filter:blur(8px);font:600 12px/1 var(--body);letter-spacing:.04em;text-transform:uppercase}
+.chip .dot{width:8px;height:8px;border-radius:50%;background:var(--c)}
+.chip svg.i{width:16px;height:16px}
+.kind{position:absolute;left:16px;bottom:14px;font-size:11px;color:rgb(255 255 255 / .75)}
+.body{padding:18px 20px 0}
+.title{font:800 30px/1.02 var(--display);letter-spacing:-.025em}
+.ctx{color:var(--muted);margin-top:6px;font-size:14px}
+.why{display:flex;align-items:center;gap:12px;margin-top:16px;padding:12px;border-radius:18px;background:var(--raised)}
+.why p{font-size:14px;line-height:1.3;flex:1}
+.why p b{font-weight:600}
+.pct{font:800 30px/1 var(--display);letter-spacing:-.04em;color:var(--lime);text-align:right}
+.pct small{display:block;font:500 10px/1.2 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+.trend{font:700 12px/1 var(--body);letter-spacing:.06em;text-transform:uppercase;padding:8px 10px;border-radius:99px;
+  background:color-mix(in oklch,var(--c) 25%,var(--raised));color:var(--text)}
+
+/* Acciones */
+.actions{display:flex;justify-content:center;align-items:flex-end;gap:22px;margin-top:16px}
+.act{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;color:var(--muted);background:none;border:0;cursor:pointer}
+.btn{border-radius:50%;display:grid;place-items:center;transition:transform .3s var(--spring)}
+.act:active .btn{transform:scale(.88)}
+.btn.no{width:60px;height:60px;background:var(--raised);color:var(--text);box-shadow:0 0 0 1px var(--line)}
+.btn.undo{width:48px;height:48px;background:transparent;color:var(--muted);box-shadow:0 0 0 1px var(--line)}
+.btn.yes{width:72px;height:72px;background:var(--spark);color:var(--on-spark);box-shadow:0 10px 30px -6px color-mix(in oklch,var(--spark) 70%,transparent)}
+.btn.yes svg.i{width:30px;height:30px;stroke-width:2.2}
+
+/* Barra inferior */
+.nav{position:absolute;left:14px;right:14px;bottom:18px;height:66px;border-radius:24px;display:flex;justify-content:space-around;align-items:center;
+  background:rgb(23 22 27 / .82);backdrop-filter:blur(16px);box-shadow:0 0 0 1px var(--line)}
+.nav a{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--faint);text-decoration:none;position:relative}
+.nav a.on{color:var(--text)}
+.nav a.on::before{content:"";position:absolute;top:-8px;width:20px;height:3px;border-radius:3px;background:var(--spark)}
+.nav .badge{position:absolute;top:-4px;right:2px;min-width:17px;height:17px;border-radius:9px;background:var(--spark);color:var(--on-spark);font:700 10px/17px var(--body);text-align:center}
+
+/* Selector de la demo */
+.switch{display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.switch button{font:600 13px/1 var(--body);padding:10px 14px;border-radius:99px;border:0;cursor:pointer;background:#1b1b1f;color:var(--muted)}
+.switch button[aria-pressed=true]{background:var(--text);color:var(--bg)}
+
+/* Personas */
+.scroll{position:absolute;inset:0;overflow-y:auto;padding-bottom:110px;scrollbar-width:none}
+.h1{font:800 40px/1 var(--display);letter-spacing:-.035em;padding:58px 22px 0}
+.tabs{display:flex;gap:6px;padding:16px 22px 4px}
+.tabs span{padding:9px 14px;border-radius:99px;font:600 13px/1 var(--body);background:var(--surface);color:var(--muted)}
+.tabs span.on{background:var(--text);color:var(--bg)}
+.hero{margin:16px 18px 0;border-radius:30px;padding:22px;position:relative;overflow:hidden;isolation:isolate;
+  background:linear-gradient(150deg,#26300A 0%,#151A07 55%,#1A0F1D 100%);box-shadow:0 0 0 1px var(--line)}
+.hero::before{content:"";position:absolute;inset:-30%;z-index:-1;filter:blur(40px);opacity:.6;
+  background:radial-gradient(40% 35% at 20% 20%,var(--lime),transparent 70%),radial-gradient(40% 40% at 90% 85%,var(--cat-music),transparent 70%)}
+.hero::after{content:"";position:absolute;inset:0;z-index:-1;background:var(--grain);opacity:.25;mix-blend-mode:overlay}
+.hero .who{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text)}
+.hero .who .av{width:40px;height:40px;margin:0;font-size:15px;border-color:var(--lime)}
+.hero .who .av + .av{margin-left:-14px}
+.hero .kicker{font:600 11px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--lime);margin-top:18px}
+.hero .num{font:800 112px/.85 var(--display);letter-spacing:-.06em;margin-top:8px}
+.hero .num sup{font-size:44px;vertical-align:top;margin-left:4px;letter-spacing:0}
+.hero .ver{font-size:12px;color:rgb(245 243 240 / .7);margin-top:6px}
+.bars{margin-top:18px;display:grid;gap:10px}
+.bar{display:grid;grid-template-columns:20px 64px 1fr 34px;align-items:center;gap:8px;font-size:13px}
+.bar svg.i{width:18px;height:18px}
+.bar .t{height:8px;border-radius:8px;background:rgb(255 255 255 / .1);overflow:hidden}
+.bar .t i{display:block;height:100%;border-radius:8px;background:var(--k);transform-origin:left;animation:grow .9s var(--spring) both}
+.bar b{font:700 14px/1 var(--display);text-align:right}
+@keyframes grow{from{transform:scaleX(0)}}
+.unite{margin-top:18px;font-size:13px;color:rgb(245 243 240 / .8)}
+.unite b{color:var(--text);font-weight:600}
+.hero .cta{display:flex;gap:10px;margin-top:18px}
+.pill{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;height:48px;border-radius:99px;font:600 14px/1 var(--body);border:0}
+.pill.main{background:var(--lime);color:var(--on-lime)}
+.pill.ghost{background:rgb(255 255 255 / .1);color:var(--text)}
+.sec{display:flex;justify-content:space-between;align-items:baseline;padding:26px 22px 8px}
+.sec h2{font:700 20px/1 var(--display);letter-spacing:-.02em}
+.sec span{font-size:13px;color:var(--faint)}
+.row{display:flex;align-items:center;gap:14px;padding:12px 22px}
+.row .av{width:52px;height:52px;margin:0;font-size:18px;border:0;box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--ring)}
+.row .nm{flex:1;min-width:0}
+.row .nm b{display:block;font-weight:600;font-size:15px}
+.row .nm small{color:var(--muted);font-size:13px;display:flex;align-items:center;gap:6px}
+.row .nm small i{font-style:normal;font:600 10px/1 var(--body);letter-spacing:.06em;text-transform:uppercase;padding:4px 6px;border-radius:6px;background:var(--raised);color:var(--muted)}
+.row .score{font:800 24px/1 var(--display);letter-spacing:-.03em;text-align:right;min-width:52px}
+.row .score small{display:block;font:500 10px/1.2 var(--body);color:var(--faint);letter-spacing:.04em}
+.row .score.none{color:var(--faint)}
+.row .go{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--surface);color:var(--text)}
+
+/* Sistema */
+.sys{max-width:1100px;margin:56px auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.box{background:#111114;border-radius:22px;padding:20px;box-shadow:0 0 0 1px var(--line)}
+.box h3{font:700 18px/1.1 var(--display);margin-bottom:12px}
+.sw{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.sw div{border-radius:12px;height:58px;padding:6px;font:600 10px/1.2 var(--body);display:flex;align-items:flex-end}
+.box ul{padding-left:18px;color:var(--muted);font-size:14px;display:grid;gap:6px}
+.box ul b{color:var(--text);font-weight:600}
+.spec{font:800 44px/1 var(--display);letter-spacing:-.04em}
+.spec2{font:600 20px/1.1 var(--display);margin-top:8px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10l9-7 9 7v10a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></symbol>
+  <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.8 7L3 21l2-5.6A8 8 0 1 1 21 12z"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 1 0-7.8 7.8L12 21.2l8.8-8.8a5.5 5.5 0 0 0 0-7.8z"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+  <symbol id="i-cat-movies" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 3v18M17 3v18M3 8h4M3 12h18M3 16h4M17 8h4M17 16h4"/></symbol>
+  <symbol id="i-cat-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+  <symbol id="i-cat-games" viewBox="0 0 24 24"><path d="M6 11h4M8 9v4M15 12h.01M18 10h.01"/><path d="M17.3 5H6.7a4 4 0 0 0-4 3.6l-.8 7A3 3 0 0 0 4.9 19c1 0 1.9-.5 2.5-1.4L9 15h6l1.6 2.6c.6.9 1.5 1.4 2.5 1.4a3 3 0 0 0 3-3.4l-.8-7A4 4 0 0 0 17.3 5z"/></symbol>
+</svg>
+
+<header class="intro">
+  <h1>Aura</h1>
+  <p>Vibrante, cómplice, sobremesa. Cada pantalla toma la luz de lo que muestra; la afinidad es el gran momento y las
+    personas van delante de las obras. Maqueta de dirección: no es la app.</p>
+  <span class="tag">Datos de ejemplo · portadas generadas, sin fotos</span>
+</header>
+
+<div class="stage">
+  <!-- INICIO -->
+  <div>
+    <div class="phone" id="home" style="--c:var(--cat-movies);--c2:var(--cat-music)">
+      <div class="aura"></div><div class="grain"></div>
+      <div class="top">
+        <div class="brand">appinity<b>.</b></div>
+        <div class="stack"><div class="avs">
+          <span class="av" style="--a:#E0367A;--b:#FF5E4D">L</span>
+          <span class="av" style="--a:#2E86DE;--b:#0F9D9A">M</span>
+          <span class="av" style="--a:#2BAE66;--b:#D4F45A">A</span></div>12 almas gemelas</div>
+      </div>
+      <div class="deck">
+        <div class="peek"></div>
+        <article class="card" id="card" aria-label="Recomendación">
+          <div class="cover">
+            <div class="band"></div>
+            <div class="big" id="big">2001</div>
+            <svg class="i glyph" id="glyph"><use href="#i-cat-movies"/></svg>
+            <span class="chip"><span class="dot"></span><svg class="i" id="chipi"><use href="#i-cat-movies"/></svg><span id="chipt">Cine</span></span>
+            <span class="kind">Portada generada · sin imagen libre</span>
+          </div>
+          <div class="body">
+            <h2 class="title" id="title">2001: una odisea del espacio</h2>
+            <p class="ctx" id="ctx">Stanley Kubrick · 1968 · Ciencia ficción</p>
+            <div class="why" id="why"></div>
+          </div>
+        </article>
+      </div>
+      <div class="actions">
+        <button class="act"><span class="btn no"><svg class="i"><use href="#i-close"/></svg></span>Descartar</button>
+        <button class="act"><span class="btn undo"><svg class="i"><use href="#i-undo"/></svg></span>Deshacer</button>
+        <button class="act"><span class="btn yes"><svg class="i"><use href="#i-heart"/></svg></span>Conservar</button>
+      </div>
+      <nav class="nav">
+        <a class="on"><svg class="i"><use href="#i-home"/></svg>Inicio</a>
+        <a><svg class="i"><use href="#i-grid"/></svg>Categorías</a>
+        <a><svg class="i"><use href="#i-people"/></svg>Personas<span class="badge">2</span></a>
+        <a><svg class="i"><use href="#i-user"/></svg>Perfil</a>
+      </nav>
+    </div>
+    <div class="switch" role="group" aria-label="Probar otra tarjeta">
+      <button data-k="movies" aria-pressed="true">Cine · almas gemelas</button>
+      <button data-k="music" aria-pressed="false">Música · consenso</button>
+      <button data-k="games" aria-pressed="false">Juegos · trending</button>
+    </div>
+    <p class="cap">Inicio · el halo cambia con la categoría de la tarjeta</p>
+  </div>
+
+  <!-- PERSONAS -->
+  <div>
+    <div class="phone" style="--c:var(--cat-music);--c2:#3a4a10">
+      <div class="aura" style="opacity:.3"></div><div class="grain"></div>
+      <div class="scroll">
+        <h1 class="h1">Personas</h1>
+        <div class="tabs"><span class="on">Almas gemelas</span><span>Amigos</span><span>Buscar</span></div>
+
+        <section class="hero" aria-label="Tu alma gemela más cercana">
+          <div class="who">
+            <span class="av" style="--a:#E0367A;--b:#FF5E4D">L</span><span class="av" style="--a:#3a3a40;--b:#55555c">T</span>
+            <span><b>Laura</b> y tú · Valencia</span>
+          </div>
+          <p class="kicker">Vuestra afinidad</p>
+          <div class="num"><span id="count">91</span><sup>%</sup></div>
+          <p class="ver">Calculada desde tus fuentes y las suyas · modelo v3 · lo que ella ve de ti puede ser distinto</p>
+          <div class="bars">
+            <div class="bar" style="--k:var(--cat-music)"><svg class="i"><use href="#i-cat-music"/></svg>Música<span class="t"><i style="width:94%"></i></span><b>94</b></div>
+            <div class="bar" style="--k:var(--cat-movies)"><svg class="i"><use href="#i-cat-movies"/></svg>Cine<span class="t"><i style="width:88%"></i></span><b>88</b></div>
+            <div class="bar" style="--k:var(--cat-games)"><svg class="i"><use href="#i-cat-games"/></svg>Juegos<span class="t"><i style="width:0"></i></span><b style="color:var(--faint)">—</b></div>
+          </div>
+          <p class="unite">Lo que os une: <b>Radiohead</b>, <b>2001</b> y <b>Rosalía</b></p>
+          <div class="cta">
+            <button class="pill main"><svg class="i"><use href="#i-chat"/></svg>Escribir</button>
+            <button class="pill ghost">Ver perfil</button>
+          </div>
+        </section>
+
+        <div class="sec"><h2>Más almas gemelas</h2><span>Top 50</span></div>
+        <div class="row" style="--ring:var(--cat-series)">
+          <span class="av" style="--a:#2E86DE;--b:#0F9D9A">M</span>
+          <div class="nm"><b>Marc</b><small>Barcelona <i>Amigo</i></small></div>
+          <div class="score">86<small>%</small></div>
+          <span class="go"><svg class="i"><use href="#i-chat"/></svg></span>
+        </div>
+        <div class="row" style="--ring:var(--cat-games)">
+          <span class="av" style="--a:#2BAE66;--b:#D4F45A">A</span>
+          <div class="nm"><b>Aitana</b><small>Bilbao</small></div>
+          <div class="score">79<small>%</small></div>
+          <span class="go"><svg class="i"><use href="#i-chat"/></svg></span>
+        </div>
+        <div class="row" style="--ring:var(--cat-books)">
+          <span class="av" style="--a:#A0522D;--b:#D4A017">J</span>
+          <div class="nm"><b>Jon</b><small>Madrid · aún conectando fuentes</small></div>
+          <div class="score none">—<small>sin datos</small></div>
+          <span class="go"><svg class="i"><use href="#i-chat"/></svg></span>
+        </div>
+      </div>
+      <nav class="nav">
+        <a><svg class="i"><use href="#i-home"/></svg>Inicio</a>
+        <a><svg class="i"><use href="#i-grid"/></svg>Categorías</a>
+        <a class="on"><svg class="i"><use href="#i-people"/></svg>Personas<span class="badge">2</span></a>
+        <a><svg class="i"><use href="#i-user"/></svg>Perfil</a>
+      </nav>
+    </div>
+    <p class="cap">Personas · la afinidad como momento Wrapped</p>
+  </div>
+</div>
+
+<section class="sys">
+  <div class="box">
+    <h3>Color</h3>
+    <div class="sw">
+      <div style="background:#0C0C0E;box-shadow:0 0 0 1px var(--line)">Fondo</div>
+      <div style="background:#17161B">Superficie</div>
+      <div style="background:var(--spark);color:var(--on-spark)">Chispa · acción</div>
+      <div style="background:var(--lime);color:var(--on-lime)">Lima · afinidad</div>
+      <div style="background:var(--cat-food)">Comida</div><div style="background:var(--cat-movies)">Cine</div>
+      <div style="background:var(--cat-series)">Series</div><div style="background:var(--cat-music)">Música</div>
+      <div style="background:var(--cat-games)">Juegos</div><div style="background:var(--cat-books)">Libros</div>
+      <div style="background:var(--cat-culture);color:#1a1400">Cultura</div><div style="background:var(--cat-podcasts)">Podcasts</div>
+    </div>
+  </div>
+  <div class="box">
+    <h3>Tipografía</h3>
+    <div class="spec">91 % · Aa</div>
+    <div class="spec2">Bricolage Grotesque — titulares y cifras</div>
+    <p style="color:var(--muted);margin-top:8px">Fuente del sistema para leer. Bricolage es gratuita (Google Fonts, OFL) y tiene un tamaño óptico propio para las cifras grandes.</p>
+  </div>
+  <div class="box">
+    <h3>Reglas</h3>
+    <ul>
+      <li><b>Halo</b> = luz de fondo con grano; el texto nunca va sobre el halo sin superficie.</li>
+      <li><b>Chispa</b> solo en la acción principal; <b>lima</b> solo en afinidad y almas gemelas.</li>
+      <li><b>Portadas generadas</b> cuando no hay imagen libre, rotuladas como tales.</li>
+      <li><b>Movimiento</b> elástico al deslizar, cifras que cuentan, halo que se funde (0,5 s). Se apaga con «reducir movimiento».</li>
+      <li>Afinidad sin datos = <b>—</b>. Trending no muestra afinidad.</li>
+    </ul>
+  </div>
+</section>
+
+<script>
+const D={
+  movies:{c:'--cat-movies',c2:'--cat-music',big:'2001',icon:'i-cat-movies',chip:'Cine',title:'2001: una odisea del espacio',ctx:'Stanley Kubrick · 1968 · Ciencia ficción',
+    why:'<span class="avs" style="display:flex"><span class="av" style="--a:#E0367A;--b:#FF5E4D">L</span><span class="av" style="--a:#2E86DE;--b:#0F9D9A">M</span></span><p><b>Laura y Marc</b> la adoran, y tu afinidad con ellos es alta</p><div class="pct">91 %<small>con Laura</small></div>'},
+  music:{c:'--cat-music',c2:'--cat-food',big:'Radio',icon:'i-cat-music',chip:'Música',title:'Radiohead',ctx:'Rock alternativo · Oxford · desde 1985',
+    why:'<span class="avs" style="display:flex"><span class="av" style="--a:#E0367A;--b:#FF5E4D">L</span><span class="av" style="--a:#2BAE66;--b:#D4F45A">A</span><span class="av" style="--a:#A0522D;--b:#D4A017">+3</span></span><p><b>5 de tus 50 almas gemelas</b> la escuchan a menudo</p>'},
+  games:{c:'--cat-games',c2:'--cat-podcasts',big:'Hades',icon:'i-cat-games',chip:'Juegos',title:'Hades',ctx:'Supergiant Games · 2020 · Roguelike',
+    why:'<span class="trend">Trending</span><p>Muy bien valorado este año por gente de <b>Valencia</b></p>'}
+};
+const $=id=>document.getElementById(id), home=$('home');
+function show(k){const d=D[k];
+  home.style.setProperty('--c',`var(${d.c})`);home.style.setProperty('--c2',`var(${d.c2})`);
+  $('big').textContent=d.big;$('title').textContent=d.title;$('ctx').textContent=d.ctx;$('chipt').textContent=d.chip;
+  $('glyph').innerHTML=$('chipi').innerHTML=`<use href="#${d.icon}"/>`;$('why').innerHTML=d.why;
+  const c=$('card');c.classList.add('swap');setTimeout(()=>c.classList.remove('swap'),220);
+  document.querySelectorAll('.switch button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.k===k));}
+document.querySelectorAll('.switch button').forEach(b=>b.onclick=()=>show(b.dataset.k));
+show('movies');
+// Cifra que cuenta (se omite con «reducir movimiento»)
+if(!matchMedia('(prefers-reduced-motion: reduce)').matches){let n=0;const el=$('count');const t=setInterval(()=>{n+=3;if(n>=91){n=91;clearInterval(t)}el.textContent=n},18)}
+</script>
+</body>
+</html>

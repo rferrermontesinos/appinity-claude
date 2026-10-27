@@ -25,6 +25,613 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-27 (7) · Diagnóstico completo y plan de beta cerrada
+
+- [diagnostico-2026-10-27.md](diagnostico-2026-10-27.md): estado por niveles, lo que falta de la especificación,
+  veredicto (beta cerrada en Android con Gmail, hasta 100 personas), olas de 5–8, 25–40 y 100, base de datos e
+  infraestructura, requisitos con costes y orden propuesto.
+- Datos medidos en la BD local: 2 cuentas reales, 97 gustos reales y 0 afinidades reales; 260 obras reales y 132 de
+  demo. `main` solo tiene el commit inicial y hay 23 PR abiertos.
+
+## Entrega 2026-10-27 (6) · Sinopsis en la ficha, sello inmediato y «Me encanta» en rosa
+
+### Qué se ha hecho
+
+- «Sobre esto»: sinopsis de 3–4 frases (máx. 480 caracteres) del comienzo del artículo de Wikipedia, con
+  «Texto: Wikipedia · CC BY-SA 4.0 ↗». El worker la guarda en `metadata.summary` (es y en) en la pasada
+  `enrich-catalog` (al arrancar y cada 6 h, catálogo real y demo). Sin artículo, la descripción corta de siempre.
+- Al deslizar, el sello aparece a los 12 px (medio transparente) y se completa en el umbral (100 px, borde marcado);
+  el tinte también empieza enseguida. Sin subtítulo en el sello.
+- «Me encanta» con color propio (token `love`, rosa «Flechazo»), relleno y con brillo en el botón, el sello, el tinte,
+  la ficha y «Entre tus almas gemelas». «Me gusta» sigue en lima.
+
+### Comprobaciones
+
+- Tests nuevos de `trimSummary` (frases, límite, abreviaturas, pronunciación, ancho cero) y del cliente (fetch
+  simulado). `pnpm test`: 43 ficheros y 397 tests OK. Tras el último retoque (solo cómo se construye la expresión de
+  ancho cero) se repitieron los 7 tests de sinopsis, `pnpm lint` y `pnpm typecheck`: limpios.
+- Worker con red real: sinopsis en 183 de 192 objetos del catálogo real y 113 de 131 de la demo. Cobertura en español
+  baja en restaurantes (2 de 15) y podcasts (2 de 12); en esos casos se usa la inglesa, avisando «en inglés». Media de
+  363 caracteres (máximo 480); ninguna con pronunciación ni caracteres invisibles.
+- Vista web (375 × 812): con 30 px de arrastre el sello «Me gusta» ya se ve (opacidad 0,68); hacia arriba, sello rosa
+  relleno; volver al centro y soltar no vota ni abre la ficha.
+
+### Pendiente
+
+- Aceptación en el teléfono (JS: recargar).
+- Un objeto se revisa una sola vez (`summaryCheckedAt`): si Wikipedia crea el artículo después, no se recoge todavía.
+
+## Entrega 2026-10-27 (5) · Ficha rediseñada: «Entre tus almas gemelas» y doble toque
+
+### Qué se ha hecho
+
+- Ficha con cabecera compacta (miniatura + categoría, título, autoría · año) en lugar del cartel grande que repetía
+  la tarjeta de Inicio.
+- Sección nueva «Entre tus almas gemelas»: cuántas de tus 50 más afines la han valorado y cómo (barra + leyenda) y a
+  quién de los que sigues le gusta. Endpoint `GET /v1/me/home/items/:id/circle` (solo recuentos; nombres solo de seguidos).
+- «Sobre esto» muestra todos los géneros y el país de origen.
+- Corregido: el doble toque en la tarjeta abría dos fichas apiladas (`useOpenItem`, también en Recomendaciones y en
+  el modelo de datos).
+
+### Comprobaciones
+
+- Test nuevo de la API: recuentos coherentes (suma, Top 50, apoyos del consenso = les encanta + les gusta), sin IDs,
+  400/404. `pnpm test`: 42 ficheros y 390 tests OK; `pnpm lint` y `pnpm typecheck` limpios.
+- Vista web (375 × 812, Marta demo): Merlí muestra «La han valorado 3 de tus 5 almas gemelas más afines», «Les encanta
+  3», «A Clara (demo), a quien sigues, le gusta», géneros y país. Doble clic en la tarjeta: una sola ficha (un «atrás»
+  vuelve a Inicio).
+
+### Pendiente
+
+- Aceptación en el teléfono (solo JS: recargar). En Hermes, si no hay `Intl.DisplayNames`, el país sale como código ISO.
+- Decidir si «Me encanta» pasa al doble toque (recomendación: no; ver decisions.md).
+
+## Entrega 2026-10-27 (4) · Motor v3: 4 opciones, sin guardar y tarjeta simplificada
+
+### Qué se ha hecho
+
+- Cuatro opciones: → Me gusta, ← No me gusta, ↑ Me encanta, ↓ No lo conozco; un toque abre la ficha. Cuatro botones.
+- «No lo conozco» no cuenta, no vuelve a Inicio hasta 30 días después y sigue en Recomendaciones.
+- Guardar desaparece (API sin `keep`; las acciones antiguas no cuentan). Recomendaciones excluye solo lo votado.
+- Tarjeta: portada más alta, motivo en una línea, sin caja de motivo ni enlace «Ver ficha».
+- Corregido: «Lo guardaste» en todas las categorías (100 «Conservar» antiguos de Laura) y ninguna recomendación de
+  almas gemelas (se excluía todo lo visto en Inicio).
+
+### Comprobaciones
+
+- Tests de votos y recomendaciones adaptados. `pnpm test`: 42 ficheros y 389 tests OK; `pnpm lint` y `pnpm typecheck` limpios.
+- API con Laura (demo): sin bloques «kept»; Series vuelve a mostrar consenso (Merlí). El conjunto demo es pequeño:
+  quedan 5 de consenso, 2 de descubrimiento y 4 de seguidos en total.
+- Vista web (375×812, Marta): sellos de las 4 direcciones; cancelar no vota ni abre la ficha; un toque la abre; los
+  4 botones caben sin cortar etiquetas.
+- Fallo encontrado y corregido: arrastrar y volver al centro abría la ficha (se tomaba como toque).
+
+### Pendiente
+
+- Probar en el teléfono (sin cambios nativos: recargar el JavaScript).
+
+## Entrega 2026-10-27 (3) · Votación binaria + «Me encanta», «Paso» mensual y voto desde la ficha
+
+### Qué se ha hecho
+
+- Auditoría de los 4 niveles y cambio de modelo elegido por el titular (ver decisions.md): derecha «Me gusta»,
+  izquierda «No me gusta», doble toque «Me encanta», arriba «Guardar», abajo «Paso». Cinco botones equivalentes.
+- «Paso» vuelve a Inicio a los 30 días del último paso; Recomendaciones solo muestra lo guardado y lo nunca salido en
+  Inicio.
+- Ficha: «Tu opinión» (votar y guardar) con `GET /v1/me/home/items/:id/opinion`.
+- La tarjeta registra la acción aunque la animación no llegue a terminar.
+
+### Comprobaciones
+
+- Tests de votos y de recomendaciones adaptados (paso que vuelve al mes; −2 y «unknown» rechazados; opinión de la
+  ficha). `pnpm test`: 42 ficheros y 389 tests OK; `pnpm lint` y `pnpm typecheck` limpios.
+- Vista web (375×812, demo de Marta): sellos correctos en las 4 direcciones, sin acción al soltar en el centro;
+  botón «Me encanta» registra el voto y «Deshacer» lo revierte; ficha: votar muestra «Tu voto: Me encanta · Deshacer»
+  y deshacer lo revierte; los 5 botones caben sin cortar etiquetas. Votos de prueba deshechos.
+- En el panel del navegador oculto las animaciones no avanzan (pausa del navegador): por eso el tope de 1,2 s.
+
+### Pendiente
+
+- Probar en el teléfono (sin cambios nativos: recargar el JavaScript).
+
+## Entrega 2026-10-27 (2) · Motor de votos: tarjeta de votación y pestaña Recomendaciones
+
+### Qué se ha hecho
+
+- **Motor** (commit `784a573`): votar es una fuente declarada `appinity` con el mismo peso que una nota externa
+  (−1, −0,5, +0,5, +1); «No lo conozco» no cuenta; una obra votada no vuelve a recomendarse; `item_votes`
+  (migración 0019) y `POST /v1/me/home/votes`. Ver decisions.md.
+- **Tarjeta de Inicio** (/creative L2 en «Aura»): arrastrar en horizontal con 4 niveles por distancia y sello visible
+  antes de soltar; abajo, «No lo conozco»; doble toque, guardar. Botones equivalentes (4 niveles, «No lo conozco»,
+  «Guardar») y acciones para lector de pantalla. «Deshacer» pasa a una barra con la última acción.
+- **Pestaña «Recomendaciones»** (antes Categorías): «Guardadas» primero en cada categoría; textos actualizados.
+
+### Comprobaciones
+
+- `pnpm test`: 42 ficheros y 389 tests OK; `pnpm lint` y typecheck de la app limpios; `pnpm db:migrate` aplicado.
+- Vista web (375×812, eventos táctiles simulados con Laura, demo): sello «Me gusta» a 80 px, «Me encanta» a 170 px,
+  sin sello al volver al centro y sin voto al soltar; «No lo conozco» hacia abajo; doble toque guarda (Merlí aparece
+  en Series › Guardadas); botón «Me encanta» registra el voto y «Deshacer» lo revierte.
+- Fallo encontrado y corregido: en la web el punto de inicio del toque llegaba vacío y todo arrastre contaba como
+  «No me gusta»; ahora el desplazamiento sale del historial de toques del sistema de respuesta.
+
+### Pendiente
+
+- Probar el gesto en el teléfono (sin cambios nativos: basta con recargar el JavaScript del APK actual).
+
+## Entrega 2026-10-27 · Categorías sin fin, orden personal y Perfil simplificado
+
+### Qué se ha hecho
+
+- **Reparto de sesiones**: esta sesión lleva producto, backend y operación; «Rediseño visual ambicioso», solo diseño.
+- **Categorías sin fin**: cada categoría se carga de 10 en 10 con «Cargar más» y separa «Recomendado con datos»
+  (almas gemelas, seguidos, Trending, por contenido, comunidad) de «Para explorar» (sin datos de nadie). Al agotarse,
+  el worker amplía el catálogo con obras populares de Wikidata (por número de Wikipedias, ≥ 25) y completa imágenes y
+  detalles; `catalog_expansions` (migración 0018) recuerda la página. Restaurantes y cultura no se amplían.
+- **Orden personal del mosaico de Categorías** (`category-ranking-v1`): 60 % afinidad con las 10 almas gemelas más
+  afines en la categoría, 40 % gustos propios (tope 30); cada cartel dice por qué.
+- **Perfil simplificado**: cartel sin «gustos claros», Tus gustos y dos accesos (Fuentes, Ajustes) a pantallas
+  propias; fuentes públicas limitadas a las conectables para cuentas reales.
+- Lint: imports sin usar tras la revisión de diseño.
+
+### Comprobaciones
+
+- `pnpm test`: 42 ficheros y 387 tests OK; lint y typecheck limpios.
+- Wikidata real: 10 series en 6 s y 20 artistas en 12 s. Extremo a extremo con Laura (demo): Series agotada tras
+  3, ampliación en cola, 10 nuevas «para explorar» a los 12 s (23 dadas de alta; 20 con imagen, 23 con detalles).
+- Vista web: apartados, «Cargar más» y Perfil reorganizado.
+
+### Pendiente
+
+- Probar en el teléfono (APK de desarrollo actual; sin cambios nativos).
+
+## Entrega 2026-10-26 (18) · Revisión de diseño de la navegación y correcciones (/design-review)
+
+### Diagnóstico
+
+- L2, cadena completa (visual, heurísticas, accesibilidad, sistema de diseño, movimiento). 14 hallazgos: 0 P0, 3 P1,
+  7 P2 y 4 P3. Al revisar Perfil apareció uno más: texto en color de categoría bajo AA.
+
+### Correcciones
+
+- **#1 y #9 · Cabecera única de detalle** (`DetailHeader`): «Volver» redondo de 48 y título opcional, sin barra
+  nativa, en categoría, objeto, persona y chat. El nombre ya no se repite en barra y cartel.
+- **#2 · Alta en Aura**: cartel de bienvenida con los tres pasos; filas de interruptores de 48.
+- **#3 · Áreas táctiles**: chips de fuentes 44, enviar 48, campo del chat 48, segmentos de Personas 44, chips del
+  modelo 44. Los chips de Ajustes (44) y ProfileHero los hizo la otra sesión.
+- **#4 y #5 · Tipografía**: `theme.type` (display, figure, h1–h4, body, caption, overline: la escala de la guía).
+  `Title` en h4 y como encabezado para el lector de pantalla. Se quitan los tamaños sueltos de los títulos.
+- **#6 y #11 · Estados**: `EmptyState` en categoría, chats, amigos y seguidos; `Skeleton` (pulso suave, quieto con
+  «reducir movimiento») en Inicio, categoría, objeto, persona, chats, amigos, seguidos y match.
+- **#7 · Chat**: burbuja propia en contenedor tonal (11,69:1); la chispa queda para «Enviar».
+- **#8 · Match**: cartel Aura a pantalla completa (brillo lima, caras con aro lima, título en Bricolage).
+- **#12, #13 y #14**: radios a `radius.*`; colores de cartel a `onPoster` (`track`, `glass`); conteo de 0,9 s a 0,6 s.
+- **Nuevo · etiquetas de categoría**: `Badge` con modo `dot` (texto en el color del tema y punto de color) en «Tus
+  gustos». Lo mismo en los filtros del modelo. Libros como texto daba unos 3:1.
+- **Tema claro**: el botón de cabecera usa la superficie del tema (no un cristal oscuro, que en claro no se veía).
+
+### Comprobaciones
+
+- `pnpm --filter @appinity/mobile typecheck` y `lint` limpios.
+- Vista web (390×844, demo): Personas con los tres segmentos, Chats, conversación, ficha de persona, Perfil y
+  detalle de Restaurantes. El alta (necesita una cuenta sin alta) y el match se revisan en código.
+- Metro web estaba atascado tras la compilación del APK: reiniciado (proceso de este proyecto).
+- **APK de prueba validado**: `pnpm android:beta -ApiUrl https://api.ejemplo.invalid` → `dist/appinity-beta.apk`
+  (48 MB, con la URL dentro). Fallaba por el límite de 260 caracteres de Windows en CMake; ahora compila desde un
+  worktree en `C:ppb` (lo último con commit). La unidad virtual `subst` no servía: pnpm resuelve la ruta real.
+
+### Nota de coordinación
+
+- El commit a543ab2 de la otra sesión incluye por error la primera tanda de estas correcciones, que yo había dejado
+  preparada en el índice compartido. Desde ahora, cada sesión hace sus commits con su propio índice o con
+  `git commit -- <rutas>`.
+
+## Entrega 2026-10-26 (17) · Túnel de Cloudflare y APK de prueba (preparados)
+
+### Qué se ha hecho
+
+- `pnpm tunnel:setup -Domain <dominio>` (`scripts/tunnel.ps1`): crea el túnel `appinity-claude`, el DNS `api.<dominio>`
+  y su configuración en `~/.cloudflared`, fuera de Git. **`/v1/dev` responde 404 en el túnel**: el acceso de
+  desarrollo del modo demo no se publica. Después ejecuta `pnpm public-url`.
+- `pnpm tunnel`: arranca el túnel.
+- `pnpm public-url <https://…>` (`scripts/set-public-url.mjs`): fija en `.env` `PUBLIC_API_URL`, las URL de vuelta de
+  Google y de las demás fuentes, y `TRUST_PROXY=loopback`. Imprime lo que hay que registrar en Google Cloud.
+  `--local` lo deshace.
+- `pnpm android:beta -ApiUrl <https://…>` (`scripts/android-beta-build.ps1`): APK release con la app empaquetada (no
+  necesita Metro) y la API pública, firmado con la clave de depuración, en `dist/appinity-beta.apk`.
+- Guía paso a paso (lo que hace el titular y lo que se hace después): [beta.md](beta.md).
+
+### Comprobaciones
+
+- Los argumentos llegan bien sin `--` (`pnpm android:beta -ApiUrl …`); con `--`, PowerShell los recibe mal. URL sin
+  https: rechazada por los dos scripts.
+- Compilación de prueba del APK con una URL de marcador: ver la entrada siguiente.
+
+### Pendiente (titular)
+
+- Comprar el dominio en Cloudflare, `cloudflared tunnel login`, `pnpm tunnel:setup` y los pasos de Google Cloud de
+  beta.md. Después: APK definitivo y prueba del alta desde el teléfono.
+
+## Entrega 2026-10-26 (16) · Alta única: aceptar y empezar a importar todo Google
+
+### Qué se ha hecho
+
+- `POST /v1/me/connections/initial-import`: con las condiciones aceptadas, arranca el primer sync de lo conectado y
+  nunca sincronizado (Books y Calendar del inicio de sesión). Devuelve el consentimiento de Data Portability para
+  abrirlo a continuación.
+- **Consentimiento**: una cuenta real sin mayoría de edad ni condiciones no importa ni conecta nada
+  (`ConnectionsService.consentGiven`). Antes, Books y Calendar se sincronizaban al volver de Google, antes del alta.
+- **App**: el alta llama a la importación tras aceptar y abre el consentimiento de Google sin pasar por Perfil.
+  Botón «Aceptar y empezar a importar» y textos nuevos (es/en).
+
+### Comprobaciones
+
+- `apps/api/test/onboarding-import.int.test.ts` (2 tests):
+  - sin alta: ni sync, ni conexión, ni importación;
+  - con alta: 1 sync, consentimiento de Data Portability, sin duplicar al repetir;
+  - URL de vuelta ajena: rechazada.
+- `pnpm test`: ver el commit. Lint y typecheck limpios.
+
+### Bloqueos (decisiones del titular)
+
+- URL pública con HTTPS, usuarios de prueba en Google Cloud y un APK de prueba con la app empaquetada:
+  [beta.md](beta.md#prueba-con-amigos-y-familiares-alta-única-2026-10-26).
+
+## Entrega 2026-10-26 (15) · Guía del sistema de diseño en «Aura»
+
+### Qué se ha hecho
+
+- `styles.css`: tokens de oscuro y claro con los valores de `theme.ts`. Chispa como `--primary` y lima como `--affinity`
+  (nuevo); también `--poster-*`, Bricolage Grotesque en `--font-display`, `--r-xl` 30, muelle y `--dur-aura`. El
+  medidor de afinidad pasa a lima. No queda violeta ni Space Grotesk.
+- Clases nuevas (solo tokens): `.aura-halo`, `.aura-poster`, `.rank-row` (`.is-top`) y `.src-links`.
+- `index.html`: cabecera y descripción de «Aura», y una sección **Aura** con sus demostraciones y ficha para el
+  inspector (Dev Mode). Las fuentes cargan Bricolage. Recompilado con `build.mjs`.
+- `README.md` de la guía reescrito: decisiones, contraste y estado de «Aura» en la app. Se quita el aviso de guía
+  desactualizada.
+
+### Comprobaciones
+
+- `node docs/design/design-system/src/build.mjs` → `ok: index.html, concept.html, icons.html (43 iconos)`.
+- Revisada en el servidor de la guía (8093): botones en chispa, cifras en Bricolage y la sección Aura (halo, carteles,
+  ranking y «Dónde encontrarlo»).
+
+### Pendiente
+
+- Aceptación de toda la dirección «Aura» en el teléfono.
+
+## Entrega 2026-10-26 (14) · «Aura» en la barra inferior
+
+### Qué se ha hecho
+
+- Barra anclada con esquinas superiores de 24, borde fino y sombra suave (sin la elevación de sistema).
+- Pestaña activa: icono **relleno** (la forma también marca dónde estás, no solo el color), etiqueta en claro y una
+  línea de chispa encima. Se retira la píldora antigua. El aviso de chats va en chispa.
+- Títulos de cabecera de las pestañas en Bricolage grueso (26).
+- No es flotante como en la maqueta: el contenido quedaría debajo, y sin acceso a la altura real de la barra no se
+  puede compensar con seguridad. Se puede revisar más adelante.
+
+### Comprobaciones
+
+- `pnpm typecheck` y `pnpm lint` limpios. Etiquetas inactivas: 4,97:1 sobre la barra. Se mantiene el límite de 1,3× del
+  texto grande.
+- Vista web (390×844): barra en Personas.
+
+### Pendiente
+
+- Ver toda la dirección «Aura» en el teléfono. Último paso de diseño: actualizar la guía `docs/design/design-system/`.
+
+## Entrega 2026-10-26 (13) · «Aura» en Perfil
+
+### Qué se ha hecho
+
+- **Tu cartel** (`ProfileHero.tsx`, sobre `AuraCard`): avatar con aro lima, nombre, @usuario y país, y tres cifras
+  reales (fuentes activas, gustos claros y almas gemelas, esta en lima). Se tiñe con la categoría más presente en tus
+  gustos y lo dice («Lo que más hay en tus gustos: Películas»); sin gustos, invita a conectar una fuente.
+- **Orden**: cartel → identidad (insignias y cambio de usuario de demo) → **Fuentes** (el núcleo, ahora justo debajo)
+  → Tus gustos → Premium → Ajustes → Cuenta → Créditos → Diagnóstico.
+- **Ajustes**: chips en píldora (el elegido, en claro, con 40 de alto mínimo).
+- **Piezas comunes**: `Card` con radio 18 y borde fino, y `Title` en Bricolage. Afecta a todas las pantallas que las
+  usan.
+
+### Comprobaciones
+
+- `pnpm typecheck` y `pnpm lint` limpios.
+- Vista web (390×844, Laura demo): 5 fuentes activas, 10 gustos claros, 5 almas gemelas y Películas como categoría
+  principal; los ajustes con los chips nuevos.
+
+### Pendiente
+
+- Ver en el teléfono. Siguientes: barra inferior y guía del sistema de diseño (`docs/design/design-system/`).
+
+## Entrega 2026-10-26 (12) · Ficha de objeto: dónde encontrarlo y diseño «Aura»
+
+### Qué se ha hecho
+
+- **Enlaces de fuente** (`packages/catalog/src/links.ts`): el DTO del catálogo junta los enlaces guardados (Wikipedia,
+  web oficial…) con los derivados de los IDs externos y los ordena por categoría. Lo primero es dónde se consume:
+  - juegos → Steam;
+  - música → Spotify, Apple Music, YouTube;
+  - podcasts → Spotify, Apple Podcasts;
+  - lugares → Google Maps (por CID o, si falta, búsqueda por las coordenadas del lugar) y OpenStreetMap;
+  - cine y series → IMDb;
+  - libros → Open Library, Goodreads.
+  Después van las referencias (MusicBrainz, Discogs, IGDB, Wikipedia) y, al final, Wikidata. Cada ID se valida con su
+  patrón y solo se generan URLs https de dominios fijos; los IDs internos (fixtures, exportaciones, Freebase) no
+  enlazan.
+- **Ficha** (§2: enlace externo con icono y etiqueta accesible; atribución en el detalle):
+  - cartel con la categoría, el título en 30 y la línea de contexto;
+  - atribución de la foto visible bajo el cartel;
+  - «Dónde encontrarlo»: botón principal «Abrir en …» (solo un sitio de consumo, nunca Wikidata ni Wikipedia) y el
+    resto como chips con icono y nombre;
+  - «Sobre esto», «Tu relación con esto» (Known, Consumed y Preference por separado) y «Datos técnicos» plegados (IDs
+    externos y evidencias);
+  - todo en el mundo de su categoría.
+
+### Comprobaciones
+
+- `links.test.ts` (5 tests: orden, validación, https, Maps por CID y por coordenadas, sin duplicados). `pnpm test`: 39
+  ficheros y 377 tests OK. Lint y typecheck limpios.
+- Vista web: ficha de Lasarte con el diseño nuevo. **Los enlaces derivados necesitan reiniciar `pnpm api`.**
+
+### Verificado tras reiniciar la API (2026-10-26)
+
+- Lasarte: Google Maps (principal), Wikipedia, Wikidata. Celeste: Steam `store.steampowered.com/app/504230/`
+  (principal), web oficial, IGDB, Wikipedia, Wikidata. Arctic Monkeys: Spotify (principal), Apple Music, MusicBrainz,
+  Discogs, Wikipedia, Wikidata.
+- Mejora tras la revisión: la búsqueda en Maps sin CID usaba coordenadas (abría una chincheta). Ahora busca por
+  «nombre, localidad» para abrir la ficha del sitio, y solo sin localidad usa las coordenadas. Test actualizado; hace
+  falta reiniciar `pnpm api` para verlo.
+
+### Pendiente
+
+- Ver en el teléfono. Siguientes: Perfil, barra inferior y guía del sistema de diseño.
+
+## Entrega 2026-10-26 (11) · El «mundo» de la categoría en las pantallas de detalle (/creative)
+
+### Qué se ha hecho
+
+- **«El cartel se abre»** (`CategoryWorld.tsx`): al entrar en una categoría, su cartel de la cuadrícula pasa a ser la
+  cabecera, con el mismo fondo teñido, brillo, grano e icono gigante, el nombre en 40 y qué recomienda. La barra
+  superior se funde con el fondo y hay un halo del color detrás.
+- **Tintes derivados** de los 8 colores existentes (sin tokens nuevos de sistema): fondo (7 %), filas (8 %),
+  destacadas (12 %), borde (35 %) y `ink` (color aclarado) para el puesto de los 3 primeros. El lima queda solo para
+  personas y afinidad.
+- **Ficha de objeto**: fondo y barra con el tinte de su categoría, y portada con borde y brillo de su color.
+- `Screen` acepta `background`.
+
+### Comprobaciones
+
+- Contraste en el peor caso (Cultura): texto atenuado sobre fila 7,39:1 y sobre el halo 5,60:1; puesto 8,35:1. El gris
+  tenue sobre fila destacada (4,12:1) solo se usa en el icono del motivo (mínimo 3:1).
+- `pnpm typecheck` y `pnpm lint` limpios (sin cambios de servidor).
+- Vista web (390×844): Restaurantes y la ficha de Alkimia.
+- Corregido (titular): el fondo se partía en una zona granulada y otra lisa. Había dos causas: el halo tenía altura
+  fija (360 px) y la barra nativa era lisa. Ahora el halo cubre toda la pantalla y el detalle no tiene barra nativa:
+  lleva un botón «Volver» propio sobre el fondo, con el margen del área segura. En Inicio, el halo cubre todo el
+  contenido desplazable.
+
+### Pendiente
+
+- Ver en el teléfono. Siguientes: Perfil, barra inferior y guía del sistema de diseño.
+
+## Entrega 2026-10-26 (10) · Detalle de categoría: listado único y sin catálogo (decisiones del titular)
+
+### Qué se ha hecho
+
+- **Listado único** (`RankedRow`): puesto, portada, título, motivo y sus cifras. Los 3 primeros, solo un poco más
+  destacados (puesto en lima, portada de 72 en lugar de 60 y superficie elevada). Se retira el podio con casillas.
+- **Solo dos cifras** en consenso: «N/M almas gemelas lo recomiendan» y «X % afinidad media contigo». Fuera «cuánto
+  les gusta» (en la práctica, 100, 50 o 0), la puntuación y la confianza. En los demás motivos, su equivalente:
+  afinidad de quien lo descubre, votos de la zona, personas de la comunidad o gustos tuyos. Se mantiene la línea
+  de «alma gemela excepcional» cuando la hay. El servidor sigue calculando el desglose completo; la app no lo muestra.
+- **Sin pestaña «Catálogo»**: la especificación (§3) no la pide y solo servía para revisar la demo. Se retiran el
+  selector, la cuadrícula, `useCatalog` y sus textos. El endpoint `/v1/catalog/items` sigue existiendo (lo usa la
+  pantalla del modelo de datos de la demo).
+
+### Comprobaciones
+
+- `pnpm lint`, `pnpm typecheck` y `pnpm test` (37 ficheros y 367 tests) OK.
+- Vista web (Restaurantes, demo): 1 Lasarte (2/3 · 57 %), 2 Alkimia (2/2 · 67 %) y 3 Cinc Sentits (2/3 · 57 %);
+  a partir del 4, «Para explorar» sin cifras.
+
+### Pendiente
+
+- Ver en el teléfono. Siguientes: Perfil, barra inferior y guía del sistema de diseño.
+
+## Entrega 2026-10-26 (9) · Por qué está cada recomendación (detalle de categoría)
+
+### Qué se ha hecho
+
+- **Servidor**: cada recomendación lleva `reason.evidence`, el desglose numérico (0–100) con el que se ordena:
+  - consenso: puntuación, apoyo (quienes lo apoyan / quienes opinan), cuánto les gusta, confianza, **afinidad media**
+    contigo de quienes lo apoyan y **cuántos** de ellos son almas gemelas excepcionales;
+  - descubrimiento: afinidad y gusto de esa persona (ya atribuida por su nombre) y si es excepcional;
+  - Trending: votos positivos / totales, valoración media de la zona, radio y año;
+  - comunidad: apoyos; por contenido: cuántos de tus gustos llevan a ese objeto.
+  Solo agregados: nunca se expone quién apoya qué (decisions.md).
+- **App**: los 3 primeros con evidencia forman un **podio** (el n.º 1 con portada ancha): puesto y motivo, cifras en
+  casillas grandes (personas y afinidad en lima), insignia si lo recomienda un alma gemela excepcional y, al pie, la
+  puntuación y la confianza. Del 4 en adelante, filas con el puesto y las dos cifras principales. «Para explorar» y
+  «conservados» no ocupan el podio porque no tienen cifras.
+
+### Comprobaciones
+
+- Test nuevo (`recommendations.int.test.ts`): el desglose del consenso coincide con los datos sembrados y no contiene
+  identificadores de quienes lo apoyan. `pnpm test`: 37 ficheros y 367 tests OK. Lint y typecheck limpios.
+- Vista web (Restaurantes, demo): podio con «2/3 almas gemelas lo recomiendan» en Lasarte. **El resto de cifras
+  necesita reiniciar `pnpm api`** (en marcha en la terminal del titular; no se detiene un proceso cuya línea de
+  comandos no lleva `APPINITY CLAUDE`).
+
+### Verificado tras reiniciar la API (titular, 2026-10-26)
+
+- Restaurantes (demo): n.º 1 Lasarte (2/3, gusto 100, afinidad media 57 %, puntuación 32, confianza 100 %);
+  n.º 2 Alkimia (2/2, gusto 100, 67 %, puntuación 29, confianza 60 %); n.º 3 Cinc Sentits (2/3, gusto 50, 57 %,
+  puntuación 16). La confianza explica que 2/3 supere a 2/2. En la demo no hay almas gemelas excepcionales, así que
+  la insignia no aparece.
+
+### Pendiente
+
+- Ver en el teléfono. Siguientes: Perfil, barra inferior y guía del sistema de diseño.
+
+## Entrega 2026-10-26 (8) · «Aura» en Categorías
+
+### Qué se ha hecho
+
+- **Cuadrícula**: las ocho categorías como carteles en dos columnas (base oscura teñida, brillo proporcional al
+  cartel, grano, icono grande de fondo y brillo exterior del color). Nombre en Bricolage y, debajo, qué recomienda
+  («Artistas», «Series y temporadas») o su alcance (Local / Global).
+- **Detalle**: selector neutro con la pestaña elegida en claro y un punto del color de la categoría (el color nunca es
+  fondo de texto); filas de recomendación con borde fino, portada de 68, título en Bricolage y motivo con su icono
+  (lima si viene de personas); catálogo con esquinas y títulos nuevos.
+- `REASON_ICON` e `isPeopleReason` exportados desde `RecommendationCard` para compartirlos.
+
+### Comprobaciones
+
+- Corregido durante la verificación: los brillos de la portada generada, pensados para la tarjeta ancha, cubrían
+  los carteles pequeños y bajaban el contraste. Los carteles tienen ahora su propio fondo.
+- Contraste calculado en el peor caso (Cultura con la banda): nombre 6,28:1 y texto atenuado 4,55:1.
+- `pnpm lint` y `pnpm typecheck` limpios; `pnpm test`: 37 ficheros y 366 tests OK.
+- Vista web (390×844, demo): cuadrícula, Música › Recomendado y Música › Catálogo.
+
+### Pendiente
+
+- Ver en el teléfono. Siguientes: Perfil, barra inferior y guía del sistema de diseño.
+
+## Entrega 2026-10-26 (7) · «Aura» en la ficha de persona
+
+### Qué se ha hecho
+
+- **Cartel de persona** (`AuraCard`, componente común con la tarjeta de Personas): avatar con aro lima, nombre, país,
+  «Tu afinidad con …» (direccional) con la cifra en 64, «Afinidad mutua excepcional» si procede y la aclaración de
+  cómo se calcula. Se tiñe con la categoría más afín de esa persona.
+- **Afinidad por categoría**: las ocho en orden canónico, con icono, nombre, recuento de objetos en común (solo el
+  número), cifra en Bricolage y barra del color de la categoría. Sin datos: «—» y barra vacía.
+- Se retira `AffinityFigure` (ya no se usaba). Texto nuevo `people.personKicker` (es/en).
+
+### Comprobaciones
+
+- `pnpm lint` y `pnpm typecheck` limpios; `pnpm test`: 37 ficheros y 366 tests OK.
+- Vista web (390×844, demo): ficha de Vera (demo), con 28 %, Películas con 2 objetos en común y el resto «—».
+  Personas sigue igual tras extraer `AuraCard`.
+
+### Pendiente
+
+- Ver en el teléfono. Siguientes: Categorías, Perfil, barra inferior y guía del sistema de diseño.
+
+## Entrega 2026-10-26 (6) · «Aura» en Personas (momento Wrapped)
+
+### Qué se ha hecho
+
+- **Tarjeta de afinidad** (`SoulmateHero.tsx`): el alma gemela n.º 1 con la cifra enorme, que cuenta al aparecer; sus 3
+  categorías más afines, con barras que crecen; «Tenéis N gustos en común», que suma `commonItems` (solo el recuento,
+  nunca cuáles); la versión del cálculo y el aviso de que la afinidad de la otra persona hacia ti puede ser distinta;
+  «Afinidad mutua excepcional» si procede, y «Ver perfil». Datos reales de `/v1/people/:id`. No se inventan obras en
+  común: la maqueta las nombraba, pero la API no las expone (privacidad).
+- **Filas** del resto del Top 50: avatar con aro lima, cifra en Bricolage y flecha. Avatar sin foto con un color
+  estable según el nombre, solo decorativo.
+- Textos nuevos en es/en. Respeta «reducir movimiento» (sin conteo ni crecimiento).
+
+### Comprobaciones
+
+- Contraste calculado en el peor caso (brillo lima al máximo y acento más claro): texto 7,62:1, texto atenuado 5,39:1
+  y lima 6,79:1; inicial del avatar ≥ 6,66:1.
+- `pnpm lint` y `pnpm typecheck` limpios; `pnpm test`: 37 ficheros y 366 tests OK.
+- Vista web (390×844, demo): «Clara (demo) y tú», 86 %, Películas, Libros y Restaurantes, 10 gustos en común.
+- Ajuste del titular: cifra más pequeña (64 en lugar de 104) y tarjeta más compacta para dar más peso al listado;
+  en 390×844 se ven dos almas gemelas más y asoma la tercera (antes, una).
+- Nota: la vista web lee `packages/i18n/dist`; tras añadir textos hay que ejecutar `pnpm build`.
+
+### Pendiente
+
+- Ver Inicio y Personas en el teléfono (recargar la app).
+- Categorías, Perfil, ficha de persona, barra inferior y guía del sistema de diseño.
+
+## Entrega 2026-10-26 (5) · «Aura» en tokens y en Inicio
+
+### Qué se ha hecho
+
+- **Tokens** (`apps/mobile/src/theme.ts`): neutros fríos-oscuros (`#0C0C0E` → `#17161B` → `#211F27`), chispa
+  `#FF5E4D` para la acción principal, token nuevo `affinity` (lima `#D4F45A`; oliva `#4D6A00` en claro) para afinidad
+  y almas gemelas, y `motion` (muelle y fundido de 0,5 s). Las claves antiguas siguen como alias: el resto de
+  pantallas cambia de color sin tocarlas. La cifra de afinidad (`Affinity.tsx`) pasa a lima.
+- **Tipografía**: Bricolage Grotesque 600/700/800 (`@expo-google-fonts/bricolage-grotesque`, OFL) en lugar de Space
+  Grotesk; `fonts.displayHeavy` para la marca, el título de la tarjeta y las cifras.
+- **Inicio**: marca «appinity.»; halo del color de la categoría de la tarjeta, que se funde al cambiar (sin
+  degradados nativos: círculos concéntricos y grano en `assets/grain.png`; nada de módulos nativos nuevos, no hace
+  falta otro APK); tarjeta con portada arriba y panel de texto debajo, brillo de su categoría, motivo en caja elevada
+  (icono lima si viene de personas, etiqueta «Trending» si es de la zona); botones con etiqueta y conservar en
+  chispa con brillo. Respeta «reducir movimiento».
+- **Portada generada** (`CatalogImage`): base teñida, brillo, banda diagonal, primera palabra del título enorme,
+  icono y rótulo «Portada generada». También en la ficha y en Categorías.
+
+### Comprobaciones
+
+- Contraste calculado (WCAG) de todos los pares nuevos en ambos temas: mínimo 4,76:1 (texto tenue sobre
+  `surfaceAlt`).
+- `pnpm typecheck` y `pnpm lint` limpios; `pnpm test`: 37 ficheros y 366 tests OK.
+- Vista web (8092, 390×844, demo): Inicio con halo, tarjeta y botones por encima de la barra; portada generada de
+  Radiolab en su ficha. Durante la prueba se descartó una tarjeta de la demo.
+
+### Pendiente
+
+- **Ver en el teléfono** (Expo Go o APK actual): recargar la app. Comprobar el halo, el grano y el brillo de la
+  tarjeta en Android (las sombras `boxShadow` necesitan la nueva arquitectura, activa en SDK 57).
+- La guía `docs/design/design-system/` sigue en «Noche de cine»: actualizarla con los tokens Aura.
+- Siguientes pantallas: Personas (momento Wrapped de la maqueta), Categorías y Perfil; la barra inferior aún usa la
+  píldora antigua.
+
+## Entrega 2026-10-26 (4) · Rediseño: dirección «Aura» y maqueta
+
+### Qué se ha hecho
+
+- `/creative` (design-superpowers, nivel L2: ya existía el sistema «Noche de cine»). El titular eligió **rehacer**
+  con tono vibrante y social (Spotify Wrapped, Hinge/Tinder) y, de tres variantes, la **B · «Aura»**
+  (decisions.md, 2026-10-26).
+- Maqueta HTML de **Inicio** (con selector cine / música / juegos para ver el halo y los tres tipos de motivo:
+  almas gemelas, consenso y trending) y **Personas** (afinidad como momento Wrapped, «—» sin datos):
+  `docs/design/aura/mockup.html`. Datos de ejemplo; portadas generadas.
+
+### Comprobaciones
+
+- Revisada en el navegador integrado: corregido el solape de los botones del mazo con la barra inferior.
+- Contraste calculado de los pares de texto nuevos (texto apagado `#938F88` ≥ 4,9:1 sobre fondo, superficie y superficie elevada;
+  chispa y lima con su texto ≥ 4,5:1). Falta comprobar el texto sobre el halo de Personas en el teléfono.
+
+### Siguiente paso
+
+- Aceptación de la maqueta por el titular. Después: paleta y tipografía completas (Palette Architect y Typography
+  Director), tokens en `styles.css` y `apps/mobile/src/theme.ts`, y aplicación pantalla a pantalla empezando por Inicio.
+
+## Entrega 2026-10-26 (4) · Fuentes sociales, competencia y seguir a creadores y amigos
+
+### Qué se ha hecho
+
+- **Fuentes sociales** (docs/source-candidates.md): Facebook (`user_likes`) implementado como fuente, como Steam, con
+  Facebook y Wikidata simulados; **bloqueado** porque el titular no puede darse de alta como desarrollador de Meta (no
+  llega el SMS). Instagram solo por archivo (descartado por el titular). Pinterest, TikTok (DMA), Twitch, Reddit, X y
+  LinkedIn analizados.
+- **Competencia**: análisis de Hypelist (docs/competencia-hypelist.md).
+- **Seguir a creadores y amigos** (decisions.md, propuesta en docs/propuesta-seguir-creadores.md):
+  - tabla `follows` (migración 0017) y «perfil público de creador» con verificación;
+  - al aceptar una amistad, os seguís los dos (también las amistades ya existentes); bloquear deja de seguir;
+  - `recommendation-v2`: bloque «seguidos» (mezcla 70/10/10/10; sin seguidos, 70/20/10 como antes) y motivo
+    combinado («A Rosalía, a quien sigues, y a 34 de tus almas gemelas les encanta»). Los seguidos nunca votan en el
+    consenso del Top 50;
+  - app: Personas con tres segmentos (Almas gemelas · Siguiendo · Chats), botón «Seguir» en el perfil de un creador o
+    amigo, insignia de creador y ajuste «Perfil público de creador» en Perfil.
+
+### Comprobaciones
+
+- `pnpm test`: 39 ficheros y 380 tests OK. Tests nuevos: bloque de seguidos y mezcla; quién se puede seguir, amistad
+  mutua, bloqueo y consenso intacto al seguir a alguien.
+- Lint y typecheck limpios. Migración 0017 aplicada en la base local.
+
+### Pendiente
+
+- Reiniciar `pnpm api` y `pnpm worker` (en las pestañas del titular) y probar Siguiendo en el teléfono.
+- Facebook: crear la app de Meta cuando el titular consiga registrarse.
+
 ## Entrega 2026-10-26 (3) · Imágenes más representativas y siguiente paso de diseño
 
 ### Qué se ha hecho
