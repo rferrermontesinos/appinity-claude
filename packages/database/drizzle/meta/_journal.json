@@ -134,6 +134,13 @@
       "when": 1793096113119,
       "tag": "0018_petite_vulcan",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793110337769,
+      "tag": "0019_wealthy_namorita",
+      "breakpoints": true
     }
   ]
 }

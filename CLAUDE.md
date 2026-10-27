@@ -8,7 +8,7 @@ Este repositorio parte de cero. No leer, importar, copiar, ejecutar ni modificar
 
 - Concepto: Descubre recomendaciones de tus almas gemelas y conoce a las personas que comparten tus gustos.
 - Ocho categorías y cuatro pestañas. Música recomienda artistas; podcasts recomienda programas.
-- Los gustos proceden exclusivamente de fuentes externas consentidas. Swipes, Keep, Undo, enlaces, amistad y chat nunca cambian preferencias.
+- Los gustos proceden de fuentes externas consentidas y de los **votos explícitos en la app** (fuente declarada `appinity`, mismo peso que una nota externa; decisión del titular, 2026-10-27). «No lo conozco», guardar, deshacer (salvo deshacer un voto), enlaces, amistad y chat nunca cambian preferencias.
 - Known, Consumed y Preference son independientes. NULL expresa falta de evidencia, no rechazo.
 - Catálogo canónico con IDs externos e imagen persistente o referencia y fallback.
 - Adapters de perfil separados de proveedores de catálogo. Sin dependencias de proveedores en el motor.

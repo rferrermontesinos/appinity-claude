@@ -420,6 +420,8 @@ Se actualiza tras sync significativa y mediante jobs periódicos e incrementales
 
 ## 12 Recomendaciones de consenso y descubrimiento
 
+> **Cambio aprobado (2026-10-27, decisions.md): votos en la app.** Votar una tarjeta (−1, −0,5, +0,5, +1) es una fuente declarada con el mismo peso que una nota externa y cuenta para el perfil y la afinidad; «No lo conozco» no cuenta. Una obra votada no vuelve a recomendarse. Guardar (doble toque) no cambia gustos.
+
 > **Cambio aprobado (2026-10-26, decisions.md):** la mezcla pasa a **70 % consenso, 10 % descubrimiento por alma gemela, 10 % personas que sigues (creadores y amigos) y 10 % Trending**. Los seguidos no votan en el consenso; si no sigues a nadie, su hueco vuelve al descubrimiento. A futuro se prevé un 10 % patrocinado, siempre marcado.
 
 La mezcla objetivo de Home es **70 % consenso de almas gemelas, 20 % descubrimiento individual y 10 % Trending**. Las cuotas se aplican a bloques o sesiones suficientemente largos; en una cola de 10 tarjetas completa se busca 7, 2 y 1. No se promete esa proporción exacta en tres tarjetas.

@@ -482,7 +482,14 @@ export interface HomeActionResultDto {
 
 export interface HomeUndoResultDto {
   itemId: string;
-  action: 'dismiss' | 'keep';
+  action: 'dismiss' | 'keep' | 'vote';
+}
+
+/** Voto en Inicio (2026-10-27): −2, −1, +1, +2 o «No lo conozco». */
+export type VoteValueDto = -2 | -1 | 1 | 2 | 'unknown';
+
+export interface HomeVoteResultDto {
+  actionId: string;
 }
 
 export interface RecommendationsDto {

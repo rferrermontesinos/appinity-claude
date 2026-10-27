@@ -1,9 +1,12 @@
 import { catalogItems, homeDismissals, recommendationActions, recommendationImpressions, users, type Database } from '@appinity/database';
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
-import { NotFoundError } from './errors.js';
+import { ConflictError, NotFoundError } from './errors.js';
+import { hasVoted, removeVote } from './votes.js';
 
 /**
- * Acciones de Home (§2). Ninguna toca user_item_profiles ni las afinidades: solo deciden qué se muestra.
+ * Acciones de Home (§2). Descartar y guardar no tocan user_item_profiles ni las afinidades: solo deciden qué se
+ * muestra. Los votos (votes.ts, 2026-10-27) sí: son una fuente declarada. Una obra votada no se puede guardar ni
+ * descartar.
  * - Descartar: el objeto no vuelve a Home mientras se conserve el descarte (Categories lo sigue mostrando).
  * - Conservar: pasa a la siguiente tarjeta; puede reaparecer en otra sesión (no crea una lista).
  * - Deshacer: revierte la última acción no deshecha y devuelve la tarjeta. No borra impresiones.
@@ -11,7 +14,7 @@ import { NotFoundError } from './errors.js';
 export type HomeAction = 'dismiss' | 'keep';
 
 /** El objeto debe ser del mismo dataset que el usuario (la demo no toca el catálogo real y al revés). */
-async function assertItemVisible(db: Database, userId: string, itemId: string) {
+export async function assertItemVisible(db: Database, userId: string, itemId: string) {
   const [row] = await db
     .select({ id: catalogItems.id })
     .from(catalogItems)
@@ -47,6 +50,7 @@ export async function unseenItems(db: Database, userId: string, itemIds: readonl
 
 export async function applyHomeAction(db: Database, userId: string, itemId: string, action: HomeAction, now = new Date()): Promise<{ actionId: string }> {
   await assertItemVisible(db, userId, itemId);
+  if (await hasVoted(db, userId, itemId)) throw new ConflictError('Ya has votado esta obra');
   return db.transaction(async (tx) => {
     const [row] = await tx
       .insert(recommendationActions)
@@ -60,7 +64,7 @@ export async function applyHomeAction(db: Database, userId: string, itemId: stri
 }
 
 /** Deshace la última acción vigente del usuario. Devuelve el objeto para volver a mostrarlo, o null si no hay nada. */
-export async function undoLastHomeAction(db: Database, userId: string, now = new Date()): Promise<{ itemId: string; action: HomeAction } | null> {
+export async function undoLastHomeAction(db: Database, userId: string, now = new Date()): Promise<{ itemId: string; action: HomeAction | 'vote'; profileChanged: boolean } | null> {
   return db.transaction(async (tx) => {
     const [last] = await tx
       .select()
@@ -74,6 +78,7 @@ export async function undoLastHomeAction(db: Database, userId: string, now = new
     if (last.action === 'dismiss') {
       await tx.delete(homeDismissals).where(and(eq(homeDismissals.userId, userId), eq(homeDismissals.catalogItemId, last.catalogItemId)));
     }
-    return { itemId: last.catalogItemId, action: last.action };
+    const profileChanged = last.action === 'vote' ? await removeVote(tx, userId, last.catalogItemId) : false;
+    return { itemId: last.catalogItemId, action: last.action, profileChanged };
   });
 }

@@ -1154,3 +1154,19 @@ Propuesta en [propuesta-seguir-creadores.md](propuesta-seguir-creadores.md).
   matches» y la palabra «match» de la interfaz.
 - Protecciones: bloqueos y reportes, límites de mensajes (20/min, 500/día) y 30 conversaciones nuevas al día. El ajuste
   `CHAT_SOULMATES_PREMIUM` (chat con almas gemelas solo Premium) sigue disponible para más adelante.
+
+## 2026-10-27 · Votos en la app: nuevo motor de gustos (decisiones del titular)
+
+Cambia la regla «ninguna acción en la app cambia gustos». Ahora:
+
+- **Votar una tarjeta de Inicio** (gesto horizontal en 4 niveles): «Lo odio» −1, «No me gusta» −0,5, «Me gusta» +0,5,
+  «Me encanta» +1. Es una observación de la fuente interna `appinity` (nota explícita, confianza 1): **el mismo peso que
+  una nota de una fuente externa**. Recalcula el perfil y, unos segundos después, la afinidad (cuenta para las almas
+  gemelas y para lo que se recomienda a otros). No hace falta tener fuentes externas.
+- **«No lo conozco»** (deslizar abajo): no influye en el perfil ni en la afinidad.
+- **Votar es definitivo para esa obra** (también «No lo conozco»): no vuelve a salir en Inicio ni en Recomendaciones y no
+  se puede guardar ni descartar. Solo «Deshacer» lo revierte (borra el voto y su observación).
+- **Doble toque = guardar.** Lo guardado no vuelve a Inicio; en **Recomendaciones** (la pestaña antes llamada
+  Categorías) aparece primero. Recomendaciones solo muestra lo guardado y lo que aún no ha salido en el carrusel.
+- Sin cuestionario de gustos en el alta.
+- Tabla `item_votes` (migración 0019); `recommendation_actions` admite `vote`.

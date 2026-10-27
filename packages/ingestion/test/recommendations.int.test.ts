@@ -249,18 +249,21 @@ describe('recomendador (fase 7)', () => {
 });
 
 describe('Home: acciones e impresiones (fase 8)', () => {
-  it('descartar quita la tarjeta de Home; deshacer la devuelve; conservar no la filtra en la siguiente sesión', async () => {
+  it('descartar quita la tarjeta de Home; deshacer la devuelve; guardar la saca de Home (va a Recomendaciones)', async () => {
     await database.db.delete(homeDismissals);
     const ids = async () => (await recommendFor(database.db, viewer, { now: NOW, limit: 100 })).items.map((r) => r.itemId);
     expect(await ids()).toContain(items.consenso);
     await applyHomeAction(database.db, viewer, items.consenso!, 'dismiss');
     expect(await ids()).not.toContain(items.consenso);
-    expect(await undoLastHomeAction(database.db, viewer)).toEqual({ itemId: items.consenso, action: 'dismiss' });
+    expect(await undoLastHomeAction(database.db, viewer)).toEqual({ itemId: items.consenso, action: 'dismiss', profileChanged: false });
     expect(await ids()).toContain(items.consenso);
+    // Guardar (2026-10-27): ya no vuelve a Inicio; la lista de Recomendaciones la muestra primero.
     await applyHomeAction(database.db, viewer, items.cerca!, 'keep');
-    expect(await ids()).toContain(items.cerca);
+    expect(await ids()).not.toContain(items.cerca);
+    const saved = await recommendFor(database.db, viewer, { now: NOW, limit: 100, applyHomeDismissals: false });
+    expect(saved.items[0]).toMatchObject({ itemId: items.cerca, block: 'kept' });
     // Deshacer revierte solo la última acción vigente; después ya no queda nada.
-    expect(await undoLastHomeAction(database.db, viewer)).toEqual({ itemId: items.cerca, action: 'keep' });
+    expect(await undoLastHomeAction(database.db, viewer)).toEqual({ itemId: items.cerca, action: 'keep', profileChanged: false });
     expect(await undoLastHomeAction(database.db, viewer)).toBeNull();
   });
 
@@ -300,7 +303,7 @@ describe('Home: acciones e impresiones (fase 8)', () => {
 });
 
 describe('feed continuo: respaldos honestos (fase 9)', () => {
-  it('cuando se agotan los bloques principales siguen comunidad, conservados y explorar, cada uno con su motivo', async () => {
+  it('cuando se agotan los bloques principales siguen comunidad y explorar, cada uno con su motivo; lo guardado no vuelve a Home', async () => {
     await database.db.delete(homeDismissals);
     await item('sinSenales', 'movies');
     await item('conservado', 'books');
@@ -313,7 +316,8 @@ describe('feed continuo: respaldos honestos (fase 9)', () => {
     expect(blocks.slice(firstFallback).every((b) => ['community', 'kept', 'explore'].includes(b))).toBe(true);
     const byItem = new Map(all.items.map((r) => [r.itemId, r]));
     expect(byItem.get(items.persona51!)).toMatchObject({ block: 'community', community: { supporters: 2 } });
-    expect(byItem.get(items.conservado!)?.block).toBe('kept');
+    // Guardado (2026-10-27): no vuelve a Inicio.
+    expect(byItem.has(items.conservado!)).toBe(false);
     expect(byItem.get(items.sinSenales!)?.block).toBe('explore');
     // Los filtros siguen valiendo: lo conocido y los lugares fuera del radio tampoco salen como respaldo.
     expect(byItem.has(items.conocido!)).toBe(false);

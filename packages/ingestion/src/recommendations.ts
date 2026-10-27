@@ -26,6 +26,8 @@ import {
   catalogRelations,
   categoryAffinities,
   homeDismissals,
+  itemVotes,
+  recommendationImpressions,
   recommendationActions,
   userAffinities,
   userItemProfiles,
@@ -158,9 +160,25 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
     .from(userItemProfiles)
     .where(and(eq(userItemProfiles.userId, userId), gte(userItemProfiles.knownConfidence, params.knownThreshold)));
   for (const k of known) excluded.add(k.itemId);
+  // Votadas (2026-10-27): un voto es definitivo, también «No lo conozco»; no vuelven en ningún sitio.
+  const voted = await db.select({ itemId: itemVotes.catalogItemId }).from(itemVotes).where(eq(itemVotes.userId, userId));
+  for (const v of voted) excluded.add(v.itemId);
+  // Guardadas (doble toque): no vuelven a Inicio; en Recomendaciones van primero, en su propio apartado.
+  const keptRows = await db
+    .selectDistinct({ itemId: recommendationActions.catalogItemId })
+    .from(recommendationActions)
+    .where(and(eq(recommendationActions.userId, userId), eq(recommendationActions.action, 'keep'), isNull(recommendationActions.undoneAt)));
+  const keptIds = new Set(keptRows.map((k) => k.itemId).filter((id) => !excluded.has(id)));
+  const sessionSeen = new Set(options.excludeItemIds ?? []);
   if (options.applyHomeDismissals !== false) {
     const dismissed = await db.select({ itemId: homeDismissals.catalogItemId }).from(homeDismissals).where(eq(homeDismissals.userId, userId));
     for (const d of dismissed) excluded.add(d.itemId);
+    for (const id of keptIds) excluded.add(id);
+  } else {
+    // Recomendaciones: solo lo guardado o lo que aún no ha salido en el carrusel de Inicio.
+    const shown = await db.select({ itemId: recommendationImpressions.catalogItemId }).from(recommendationImpressions).where(eq(recommendationImpressions.userId, userId));
+    for (const r of shown) excluded.add(r.itemId);
+    for (const id of keptIds) excluded.add(id);
   }
 
   // Almas gemelas: SOLO el Top 50 (la persona 51 no influye en el consenso ni en el descubrimiento).
@@ -295,7 +313,18 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
       ? (await db.select({ id: userProfiles.userId, name: userProfiles.displayName }).from(userProfiles).where(inArray(userProfiles.userId, [...new Set([...soulmateIds, ...followedIds])]))).map((r) => [r.id, r.name])
       : [],
   );
-  const mixed = mixRecommendations({ consensus, discovery, followed, trending }, limit, params);
+  const savedFirst: RecommendationItem[] = [];
+  if (options.applyHomeDismissals === false && keptIds.size) {
+    const keptMeta = await itemMeta(db, [...keptIds].filter((id) => !sessionSeen.has(id)), userId, hasLocation, radiusM);
+    for (const [id, m] of keptMeta) {
+      if (options.category && m.category !== options.category) continue;
+      if (LOCAL_CATEGORIES.includes(m.category) && m.inRadius !== true) continue;
+      const end = m.eventEndsAt ?? m.eventStartsAt;
+      if (end && end < now) continue;
+      savedFirst.push({ itemId: id, block: 'kept', fillsFor: null, score: 0, isNew: false });
+    }
+  }
+  const mixed = mixRecommendations({ consensus, discovery, followed, trending }, Math.max(0, limit - savedFirst.length), params);
   const followedAffinity = new Map(
     followedIds.length
       ? (await db.select({ target: userAffinities.targetUserId, score: userAffinities.score }).from(userAffinities).where(and(eq(userAffinities.sourceUserId, userId), inArray(userAffinities.targetUserId, followedIds)))).map((a) => [a.target, a.score])
@@ -307,7 +336,7 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
     return likers.length ? { followedBy: { names: likers.slice(0, 2).map((id) => names.get(id) ?? '—'), count: likers.length } } : {};
   };
   const soulmateBy = new Map(soulmates.map((s) => [s.userId, s]));
-  const items: RecommendationItem[] = mixed.map(({ block, fillsFor, candidate }) => {
+  const mainItems: RecommendationItem[] = mixed.map(({ block, fillsFor, candidate }) => {
     const base = { itemId: candidate.itemId, block, fillsFor, score: (candidate as { score: number }).score, isNew: false };
     if (block === 'consensus') {
       const c = candidate as ConsensusCandidate;
@@ -366,6 +395,8 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
     };
     return { ...base, trending: { positiveVoters: t.positiveVoters, totalVoters: t.totalVoters, averageScore: t.averageScore }, evidence };
   });
+
+  const items: RecommendationItem[] = [...savedFirst, ...mainItems];
 
   // Respaldos, en este orden y solo si los bloques principales no llenan la página.
   const available = { consensus: consensus.length, discovery: discovery.length, followed: followed.length, trending: trending.length, content: 0, community: 0, kept: 0, explore: 0 };
@@ -428,17 +459,7 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
       if (take(c.itemId)) items.push({ itemId: c.itemId, block: 'community', fillsFor: null, score: c.score, isNew: false, community: { supporters: c.supporters }, evidence: { score: pct((c.score + 1) / 2), support: pct(c.supporters / c.opinionated) } });
     }
 
-    // Conservados en otra sesión (solo Home): pueden volver (§2).
-    if (options.applyHomeDismissals !== false && items.length < limit) {
-      const kept = await db
-        .selectDistinct({ itemId: recommendationActions.catalogItemId })
-        .from(recommendationActions)
-        .where(and(eq(recommendationActions.userId, userId), eq(recommendationActions.action, 'keep'), isNull(recommendationActions.undoneAt)));
-      for (const [id, m] of await itemMeta(db, kept.map((k) => k.itemId).filter((id) => !meta.has(id)), userId, hasLocation, radiusM)) meta.set(id, m);
-      const keptIds = kept.map((k) => k.itemId).filter(eligible).sort();
-      available.kept = keptIds.length;
-      for (const itemId of keptIds) if (take(itemId)) items.push({ itemId, block: 'kept', fillsFor: null, score: 0, isNew: false });
-    }
+    available.kept = savedFirst.length;
 
     // Explorar: objetos del catálogo sin señales (obras, no ediciones ni temporadas), en orden estable por día.
     if (items.length < limit) {
