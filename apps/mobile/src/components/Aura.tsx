@@ -73,7 +73,8 @@ export function AuraBackdrop({ color, width, style }: { color: string; width: nu
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: reduce ? 1 : fade }]}>
         <AuraLayer color={shown} width={width} />
       </Animated.View>
-      <Grain opacity={0.5} />
+      {/* Grano sutil (0,15): con 0,5 el fondo de Inicio se veía sucio (titular, 2026-10-27). */}
+      <Grain opacity={0.15} />
     </View>
   );
 }
