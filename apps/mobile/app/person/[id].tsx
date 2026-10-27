@@ -10,8 +10,8 @@ import { ChatActions } from '../../src/components/ChatActions';
 import { DetailHeader } from '../../src/components/DetailHeader';
 import { PersonActions } from '../../src/components/PersonActions';
 import { PersonAvatar, formatAffinity } from '../../src/components/PersonAvatar';
-import { Body, Card, ErrorCard, Loading, Screen, Skeleton, Small } from '../../src/components/ui';
-import { fonts, radius, spacing, type, usePalette } from '../../src/theme';
+import { Body, Card, ErrorCard, Screen, Skeleton, Small } from '../../src/components/ui';
+import { radius, spacing, type, usePalette } from '../../src/theme';
 
 /**
  * Perfil público mínimo (§4, «Aura»): cartel con la persona y tu afinidad hacia ella (direccional), teñido con su

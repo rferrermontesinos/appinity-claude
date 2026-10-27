@@ -5,7 +5,7 @@ import { Pressable, Text, View } from 'react-native';
 import { useFollowing, useFriends, useSocialAction } from '../api/queries';
 import { spacing, usePalette } from '../theme';
 import { PersonAvatar, formatAffinity } from './PersonAvatar';
-import { Badge, Body, Button, Card, EmptyState, ErrorCard, Loading, Skeleton, Small, Title } from './ui';
+import { Badge, Button, Card, EmptyState, ErrorCard, Skeleton, Small, Title } from './ui';
 
 function Row({ person, badge, children }: { person: FollowedPersonDto | FriendDto; badge?: { label: string; color: string } | null; children?: React.ReactNode }) {
   const { t } = useTranslation();

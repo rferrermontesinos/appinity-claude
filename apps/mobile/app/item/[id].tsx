@@ -12,7 +12,7 @@ import { CatalogImage } from '../../src/components/CatalogImage';
 import { CategoryChipOnImage, ImageVeil } from '../../src/components/ImageVeil';
 import { Dimensions, formatPreference } from '../../src/components/Dimensions';
 import { SourceLinks, openExternal } from '../../src/components/SourceLinks';
-import { Body, Card, ErrorCard, Loading, Row, Screen, Skeleton, Small, Title } from '../../src/components/ui';
+import { Body, Card, ErrorCard, Row, Screen, Skeleton, Small, Title } from '../../src/components/ui';
 import { DataBanner } from '../../src/components/DataBanner';
 import { DetailHeader } from '../../src/components/DetailHeader';
 import { onImage, radius, spacing, type, usePalette } from '../../src/theme';

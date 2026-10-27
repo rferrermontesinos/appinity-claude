@@ -6,7 +6,7 @@ import { useBlocked, useFriends, useSocialAction } from '../api/queries';
 import { spacing, usePalette } from '../theme';
 import { PersonAvatar, formatAffinity } from './PersonAvatar';
 import { ContactsFinder } from './ContactsFinder';
-import { Body, Button, Card, EmptyState, ErrorCard, Loading, Skeleton, Small, Title } from './ui';
+import { Body, Button, Card, EmptyState, ErrorCard, Skeleton, Small, Title } from './ui';
 
 function PersonLine({ person, children }: { person: FriendDto; children?: React.ReactNode }) {
   const { t } = useTranslation();

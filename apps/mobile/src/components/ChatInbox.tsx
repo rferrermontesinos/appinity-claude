@@ -5,7 +5,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useChatAction, useChatInbox } from '../api/queries';
 import { radius, spacing, usePalette } from '../theme';
 import { PersonAvatar, formatAffinity } from './PersonAvatar';
-import { Badge, Body, Button, Card, EmptyState, ErrorCard, Loading, Skeleton, Small, Title } from './ui';
+import { Badge, Body, Button, Card, EmptyState, ErrorCard, Skeleton, Small, Title } from './ui';
 
 /** Hora si es de hoy; si no, fecha corta. */
 export function shortTime(iso: string, locale: string): string {

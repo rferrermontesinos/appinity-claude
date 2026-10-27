@@ -17,7 +17,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
-import { fonts, radius, spacing, type, usePalette } from '../theme';
+import { radius, spacing, type, usePalette } from '../theme';
 
 export function Screen({
   children,
