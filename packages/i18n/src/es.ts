@@ -471,7 +471,7 @@ export const es = {
     newMatches: 'Conversaciones nuevas',
     messages: 'Mensajes',
     you: 'Tú: ',
-    empty: 'Todavía no hay conversaciones. Abre el perfil de un alma gemela, de un amigo o de alguien a quien sigues y pulsa «Escribir».',
+    empty: 'Abre el perfil de un alma gemela, de un amigo o de alguien a quien sigues y pulsa «Escribir».',
     explore: 'Ver almas gemelas',
     unreadA11y_one: '{{count}} mensaje sin leer',
     unreadA11y_other: '{{count}} mensajes sin leer',

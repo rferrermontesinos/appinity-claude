@@ -471,7 +471,7 @@ export const en: TranslationResources = {
     newMatches: 'New conversations',
     messages: 'Messages',
     you: 'You: ',
-    empty: 'No conversations yet. Open the profile of a soulmate, a friend or someone you follow and tap “Write”.',
+    empty: 'Open the profile of a soulmate, a friend or someone you follow and tap “Write”.',
     explore: 'See soulmates',
     unreadA11y_one: '{{count}} unread message',
     unreadA11y_other: '{{count}} unread messages',
