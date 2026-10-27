@@ -1170,3 +1170,21 @@ Cambia la regla «ninguna acción en la app cambia gustos». Ahora:
   Categorías) aparece primero. Recomendaciones solo muestra lo guardado y lo que aún no ha salido en el carrusel.
 - Sin cuestionario de gustos en el alta.
 - Tabla `item_votes` (migración 0019); `recommendation_actions` admite `vote`.
+
+## 2026-10-27 · Tarjeta de votación en Inicio (diseño, /creative L2 dentro de «Aura»)
+
+- **Gesto**: la distancia horizontal elige el nivel. Menos de 56 px no vota (soltar cancela); de 56 a 150 px, nivel
+  suave («No me gusta» / «Me gusta»); desde 150 px, intenso («Lo odio» / «Me encanta»). Hacia abajo (110 px),
+  «No lo conozco». Doble toque, guardar. Antes de soltar, un sello sobre la portada muestra el nivel, un medidor de
+  4 segmentos y si cuenta o no para tus gustos; la tarjeta se tiñe (coral en negativo, lima en positivo).
+- **Color sin depender solo del color**: cada nivel tiene icono propio (corazón roto, pulgar abajo, pulgar arriba,
+  corazón), texto y posición en el medidor. Lima = el color de las almas gemelas (votar en positivo te acerca a ellas).
+- **Botones equivalentes siempre visibles**: los 4 niveles (los extremos, más grandes; «Me encanta», relleno) y debajo
+  «No lo conozco» y «Guardar». Lanzan la tarjeta con la misma animación y sello que el gesto. Con lector de pantalla,
+  la tarjeta es un solo elemento con acciones (votar, no lo conozco, guardar; activar abre la ficha).
+- **Deshacer sigue teniendo sentido** (un voto es definitivo y cambia el perfil, y el gesto graduado facilita pasarse
+  de nivel), pero deja de ser un botón fijo: la barra «Título: nivel · Deshacer» confirma lo registrado y sigue visible
+  hasta la siguiente acción (sin límite de tiempo, WCAG 2.2.1). Guardar usa marcador; el corazón es «Me encanta».
+- **Pestaña «Recomendaciones»** (antes Categorías): en cada categoría, primero «Guardadas» y después lo que aún no ha
+  salido en Inicio. La etiqueta de la pestaña se encoge hasta un 80 % si no cabe.
+- Sin módulos nativos nuevos: basta con recargar el JavaScript en el APK de desarrollo actual.

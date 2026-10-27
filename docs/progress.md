@@ -25,6 +25,31 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-27 (2) · Motor de votos: tarjeta de votación y pestaña Recomendaciones
+
+### Qué se ha hecho
+
+- **Motor** (commit `784a573`): votar es una fuente declarada `appinity` con el mismo peso que una nota externa
+  (−1, −0,5, +0,5, +1); «No lo conozco» no cuenta; una obra votada no vuelve a recomendarse; `item_votes`
+  (migración 0019) y `POST /v1/me/home/votes`. Ver decisions.md.
+- **Tarjeta de Inicio** (/creative L2 en «Aura»): arrastrar en horizontal con 4 niveles por distancia y sello visible
+  antes de soltar; abajo, «No lo conozco»; doble toque, guardar. Botones equivalentes (4 niveles, «No lo conozco»,
+  «Guardar») y acciones para lector de pantalla. «Deshacer» pasa a una barra con la última acción.
+- **Pestaña «Recomendaciones»** (antes Categorías): «Guardadas» primero en cada categoría; textos actualizados.
+
+### Comprobaciones
+
+- `pnpm test`: 42 ficheros y 389 tests OK; `pnpm lint` y typecheck de la app limpios; `pnpm db:migrate` aplicado.
+- Vista web (375×812, eventos táctiles simulados con Laura, demo): sello «Me gusta» a 80 px, «Me encanta» a 170 px,
+  sin sello al volver al centro y sin voto al soltar; «No lo conozco» hacia abajo; doble toque guarda (Merlí aparece
+  en Series › Guardadas); botón «Me encanta» registra el voto y «Deshacer» lo revierte.
+- Fallo encontrado y corregido: en la web el punto de inicio del toque llegaba vacío y todo arrastre contaba como
+  «No me gusta»; ahora el desplazamiento sale del historial de toques del sistema de respuesta.
+
+### Pendiente
+
+- Probar el gesto en el teléfono (sin cambios nativos: basta con recargar el JavaScript del APK actual).
+
 ## Entrega 2026-10-27 · Categorías sin fin, orden personal y Perfil simplificado
 
 ### Qué se ha hecho

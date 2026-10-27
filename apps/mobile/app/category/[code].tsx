@@ -15,33 +15,42 @@ import { fonts, spacing, usePalette } from '../../src/theme';
  * Filas de la lista: las recomendaciones con datos (almas gemelas, seguidos, Trending, por contenido o de la
  * comunidad) y, aparte, «para explorar» (sin datos de nadie todavía). Cada apartado lleva su cabecera.
  */
-type Row = { kind: 'header'; section: 'data' | 'explore' } | { kind: 'item'; r: RecommendationDto; rank: number };
+type Section = 'saved' | 'data' | 'explore';
+type Row = { kind: 'header'; section: Section } | { kind: 'item'; r: RecommendationDto; rank: number };
 
-const sectionOf = (r: RecommendationDto): 'data' | 'explore' => (r.block === 'explore' || r.block === 'kept' ? 'explore' : 'data');
+/** Lo guardado (doble toque en Inicio) va primero y aparte; el puesto se cuenta sin ello. */
+const sectionOf = (r: RecommendationDto): Section => (r.block === 'kept' ? 'saved' : r.block === 'explore' ? 'explore' : 'data');
+const SECTION_TEXT = {
+  saved: ['categoriesScreen.sectionSaved', 'categoriesScreen.sectionSavedHint'],
+  data: ['categoriesScreen.sectionData', 'categoriesScreen.sectionDataHint'],
+  explore: ['categoriesScreen.sectionExplore', 'categoriesScreen.sectionExploreHint'],
+} as const;
 
 function toRows(items: RecommendationDto[]): Row[] {
   const rows: Row[] = [];
-  let current: 'data' | 'explore' | null = null;
-  items.forEach((r, i) => {
+  let current: Section | null = null;
+  let saved = 0;
+  let ranked = 0;
+  for (const r of items) {
     const section = sectionOf(r);
     if (section !== current) {
       rows.push({ kind: 'header', section });
       current = section;
     }
-    rows.push({ kind: 'item', r, rank: i + 1 });
-  });
+    rows.push({ kind: 'item', r, rank: section === 'saved' ? ++saved : ++ranked });
+  }
   return rows;
 }
 
-function SectionHeader({ section }: { section: 'data' | 'explore' }) {
+function SectionHeader({ section }: { section: Section }) {
   const { t } = useTranslation();
   const c = usePalette();
   return (
     <View style={{ gap: 2, marginTop: spacing.md }}>
       <Text accessibilityRole="header" style={{ color: c.text, fontFamily: fonts.display, fontSize: 18 }}>
-        {t(section === 'data' ? 'categoriesScreen.sectionData' : 'categoriesScreen.sectionExplore')}
+        {t(SECTION_TEXT[section][0])}
       </Text>
-      <Small>{t(section === 'data' ? 'categoriesScreen.sectionDataHint' : 'categoriesScreen.sectionExploreHint')}</Small>
+      <Small>{t(SECTION_TEXT[section][1])}</Small>
     </View>
   );
 }

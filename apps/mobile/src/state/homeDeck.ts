@@ -1,16 +1,24 @@
-import type { HomeUndoResultDto, RecommendationDto, RecommendationsDto } from '@appinity/shared';
+import type { HomeUndoResultDto, RecommendationDto, RecommendationsDto, VoteValueDto } from '@appinity/shared';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { apiRequest } from '../api/client';
+import { ApiError, apiRequest } from '../api/client';
 
 /**
- * Mazo de Home de la sesión (§2):
+ * Mazo de Home de la sesión (§2, motor de votos 2026-10-27):
  * - La cola se pide al recomendador excluyendo todo lo ya visto en la sesión (sin tarjetas repetidas).
  * - La impresión se registra cuando una tarjeta pasa a ser la primera (se ve de verdad), no al precargarla.
- * - Descartar y conservar se envían a la API; deshacer revierte la última acción y devuelve la tarjeta arriba.
- * Nada de esto cambia gustos ni afinidades.
+ * - Votar (4 niveles) cuenta para tus gustos y tus almas gemelas, con el mismo peso que una nota externa;
+ *   «No lo conozco» no cuenta. Guardar (doble toque) no cambia gustos y lleva la obra a Recomendaciones.
+ * - Votar o guardar es definitivo para esa obra; solo «Deshacer» revierte la última acción.
  */
 const BATCH = 10;
 const REFILL_BELOW = 3;
+
+export type DeckAction = { kind: 'vote'; value: VoteValueDto } | { kind: 'save' };
+export interface DeckEntry {
+  item: RecommendationDto;
+  action: DeckAction;
+}
 
 export interface HomeDeck {
   current: RecommendationDto | undefined;
@@ -20,17 +28,20 @@ export interface HomeDeck {
   /** Lo último que dijo el recomendador (estado de Trending, filtro de lugares…), para explicar un mazo vacío. */
   meta: Omit<RecommendationsDto, 'items'> | null;
   exhausted: boolean;
+  /** Última acción de la sesión (se muestra con su «Deshacer» hasta la siguiente). */
+  last: DeckEntry | null;
   canUndo: boolean;
   busy: boolean;
-  dismiss: () => Promise<void>;
-  keep: () => Promise<void>;
+  vote: (value: VoteValueDto) => Promise<void>;
+  save: () => Promise<void>;
   undo: () => Promise<void>;
   reload: () => void;
 }
 
 export function useHomeDeck(enabled: boolean): HomeDeck {
+  const queryClient = useQueryClient();
   const [queue, setQueue] = useState<RecommendationDto[]>([]);
-  const [history, setHistory] = useState<RecommendationDto[]>([]);
+  const [history, setHistory] = useState<DeckEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
@@ -87,24 +98,37 @@ export function useHomeDeck(enabled: boolean): HomeDeck {
     void apiRequest('/v1/me/home/impressions', { method: 'POST', body: { itemId: current.item.id } }).catch(() => undefined);
   }, [current]);
 
+  /** Un voto cambia el perfil: lo que muestra «Tus gustos» y el mosaico de categorías se vuelve a pedir. */
+  const refreshTastes = useCallback(() => {
+    for (const queryKey of [['profiles'], ['profile'], ['categoryRanking']]) void queryClient.invalidateQueries({ queryKey });
+  }, [queryClient]);
+
   const act = useCallback(
-    async (action: 'dismiss' | 'keep') => {
+    async (action: DeckAction) => {
       const top = queue[0];
       if (!top || busy) return;
       setBusy(true);
       // Optimista: la tarjeta desaparece al instante; si la API falla, vuelve.
       setQueue((q) => q.slice(1));
       try {
-        await apiRequest('/v1/me/home/actions', { method: 'POST', body: { itemId: top.item.id, action } });
-        setHistory((h) => [...h, top]);
+        if (action.kind === 'vote') {
+          await apiRequest('/v1/me/home/votes', { method: 'POST', body: { itemId: top.item.id, value: action.value } });
+          if (action.value !== 'unknown') refreshTastes();
+        } else {
+          await apiRequest('/v1/me/home/actions', { method: 'POST', body: { itemId: top.item.id, action: 'keep' } });
+        }
+        setHistory((h) => [...h, { item: top, action }]);
       } catch (e) {
-        setQueue((q) => [top, ...q]);
-        setError(e);
+        // 409: ya estaba votada (otra sesión u otro dispositivo); no vuelve al mazo.
+        if (!(e instanceof ApiError && e.status === 409)) {
+          setQueue((q) => [top, ...q]);
+          setError(e);
+        }
       } finally {
         setBusy(false);
       }
     },
-    [queue, busy],
+    [queue, busy, refreshTastes],
   );
 
   const undo = useCallback(async () => {
@@ -112,18 +136,17 @@ export function useHomeDeck(enabled: boolean): HomeDeck {
     setBusy(true);
     try {
       const result = await apiRequest<HomeUndoResultDto>('/v1/me/home/undo', { method: 'POST' });
-      const restored = [...history].reverse().find((r) => r.item.id === result.itemId);
-      setHistory((h) => {
-        const index = h.map((r) => r.item.id).lastIndexOf(result.itemId);
-        return index >= 0 ? [...h.slice(0, index), ...h.slice(index + 1)] : h;
-      });
-      if (restored) setQueue((q) => [restored, ...q.filter((r) => r.item.id !== restored.item.id)]);
+      const index = history.map((e) => e.item.item.id).lastIndexOf(result.itemId);
+      const restored = index >= 0 ? history[index] : undefined;
+      if (index >= 0) setHistory((h) => [...h.slice(0, index), ...h.slice(index + 1)]);
+      if (restored) setQueue((q) => [restored.item, ...q.filter((r) => r.item.id !== result.itemId)]);
+      if (restored?.action.kind === 'vote' && restored.action.value !== 'unknown') refreshTastes();
     } catch (e) {
       setError(e);
     } finally {
       setBusy(false);
     }
-  }, [history, busy]);
+  }, [history, busy, refreshTastes]);
 
   return {
     current,
@@ -132,10 +155,11 @@ export function useHomeDeck(enabled: boolean): HomeDeck {
     error,
     meta,
     exhausted: exhausted && !queue.length,
+    last: history[history.length - 1] ?? null,
     canUndo: history.length > 0 && !busy,
     busy,
-    dismiss: () => act('dismiss'),
-    keep: () => act('keep'),
+    vote: (value) => act({ kind: 'vote', value }),
+    save: () => act({ kind: 'save' }),
     undo,
     reload,
   };

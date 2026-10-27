@@ -60,9 +60,9 @@ export default function TabsLayout() {
             tabBarAccessibilityLabel: tab.name === 'people' && badge ? `${t(tab.titleKey)} (${badge})` : t(tab.titleKey),
             tabBarBadge: tab.name === 'people' && badge ? badge : undefined,
             // La barra tiene altura fija: la etiqueta crece con el tamaño de texto del sistema solo hasta 1,3× (pauta de
-            // Material para la navegación inferior); el icono y la etiqueta accesible siguen ahí con cualquier tamaño.
+            // Material para la navegación inferior); «Recomendaciones» se encoge hasta un 80 % si no cabe en pantallas estrechas.
             tabBarLabel: ({ color, children }) => (
-              <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ color, fontSize: 11, fontWeight: '600', marginTop: 2 }}>
+              <Text maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ color, fontSize: 11, fontWeight: '600', letterSpacing: -0.2, marginTop: 2 }}>
                 {children}
               </Text>
             ),
