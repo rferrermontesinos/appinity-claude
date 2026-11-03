@@ -1,43 +1,50 @@
 /* =========================================================================
-   APPINITY Design System — «Noche de cine» (dirección A, docs/design/D0-direccion.md)
-   Guía de referencia: Material (tokens) + MUI (catálogo y props `variant/size/color`), multiplataforma.
-   Oscuro cálido por defecto; modo claro en :root[data-theme="light"]. Solo cambia esta capa de tokens.
-   Paleta: neutros cálidos derivados en OKLCH (tono ~60°, croma bajo) a partir de #121110; el violeta es la ÚNICA
-   familia de interacción (afinidad + acción principal); el ámbar señala lo nuevo/«match»; las 8 categorías llevan
-   su color fijo como señal, nunca como fondo de texto.
+   APPINITY Design System — «Aura» (docs/design/aura/, decisions.md 2026-10-26)
+   Sustituye a «Noche de cine». Guía de referencia: Material (tokens) + MUI (catálogo y props), multiplataforma.
+   Oscuro por defecto; modo claro en :root[data-theme="light"]. Solo cambia esta capa de tokens.
+   Paleta: neutros casi negros (#0C0C0E → #17161B → #211F27). DOS acentos con papel fijo:
+   - chispa (coral #FF5E4D): SOLO la acción principal;
+   - lima (#D4F45A): SOLO afinidad y almas gemelas.
+   El ámbar señala NEW y los datos de ejemplo. Las 8 categorías tiñen halos, carteles y el «mundo» de sus pantallas
+   de detalle (tintes del 7–12 %), nunca el fondo de un texto pequeño.
    Contraste comprobado con la fórmula WCAG (ver README): cada relleno va con su --on-*.
+   Fuente de verdad en la app: apps/mobile/src/theme.ts (mismos valores).
    ========================================================================= */
 :root{
   /* ---- Color · oscuro (por defecto) ---- */
-  --primary:#8E78F0;        --on-primary:#120F1F;       --primary-strong:#A797F5;
-  --primary-ink:#B3A6F7;                                  /* violeta como texto sobre superficie */
-  --primary-container:#2C2547; --on-primary-container:#DCD5FF;
+  --primary:#FF5E4D;        --on-primary:#1A0806;       --primary-strong:#FF7A6B;
+  --primary-ink:#FF8A7D;                                  /* chispa como texto sobre superficie */
+  --primary-container:#3A1A17; --on-primary-container:#FFD5CF;
   --secondary:#E8B04B;      --on-secondary:#1F1606;     /* ámbar: NEW, match, momentos */
   --accent:#E8B04B;         --on-accent:#1F1606;
 
-  --bg:#121110;             --on-bg:#F3EEE8;
-  --surface:#1C1A18;        --on-surface:#F3EEE8;
-  --surface-raised:#262320;                               /* hojas, menús, diálogos */
-  --surface-sunken:#161413;
-  --muted-surface:#2A2724;  --on-muted-surface:#D2C9BF;
-  --muted:#B5ABA0; --subtle:#8E857B;
-  --border:#3A3531; --border-faint:#2A2724;
-  --hairline:rgb(243 238 232 / .08);
-  --scrim:rgb(8 7 6 / .64);
-  --image-veil:linear-gradient(180deg,rgb(18 17 16 / 0) 35%,rgb(18 17 16 / .92) 100%);
+  --bg:#0C0C0E;             --on-bg:#F5F3F0;
+  --surface:#17161B;        --on-surface:#F5F3F0;
+  --surface-raised:#211F27;                               /* hojas, menús, diálogos */
+  --surface-sunken:#09090B;
+  --muted-surface:#26242C;  --on-muted-surface:#D6D2CC;
+  --muted:#B4B0AA; --subtle:#938F88;
+  --border:#34323A; --border-faint:#26242C;
+  --hairline:rgb(255 255 255 / .08);
+  --scrim:rgb(5 5 6 / .66);
+  --image-veil:linear-gradient(180deg,rgb(12 12 14 / 0) 35%,rgb(12 12 14 / .92) 100%);
 
   --success:#4CC38A; --on-success:#06180F;
   --error:#FF7A70;   --on-error:#200605;
   --warning:#F2B33D; --on-warning:#1F1505;
   --info:#73AEF5;    --on-info:#06121F;
   --link:var(--primary-ink);
-  --inverse-primary:#4A2FC4;                             /* acción sobre la superficie invertida (snackbar) */
+  --inverse-primary:#B42318;                             /* acción sobre la superficie invertida (snackbar) */
 
   /* Acción (estados MUI `action.*`) */
-  --action-hover:rgb(243 238 232 / .06); --action-selected:rgb(142 120 240 / .16);
-  --action-focus:rgb(142 120 240 / .24);  --action-disabled:rgb(243 238 232 / .32);
+  --action-hover:rgb(243 238 232 / .06); --action-selected:rgb(255 94 77 / .16);
+  --action-focus:rgb(255 94 77 / .24);  --action-disabled:rgb(243 238 232 / .32);
 
   /* Categorías (fijas, docs del producto): señal de color + icono + nombre, nunca solo color */
+  /* Afinidad y almas gemelas: lima (no es la acción principal) */
+  --affinity:#D4F45A; --on-affinity:#141A02;
+  /* Carteles «Aura» (fondo oscuro fijo en ambos temas: halo, cartel de persona y de categoría) */
+  --poster-base:#141708; --on-poster:#F5F3F0; --on-poster-muted:rgb(245 243 240 / .78);
   --cat-food:#E4572E; --cat-movies:#7B4BD6; --cat-series:#2E86DE; --cat-music:#E0367A;
   --cat-games:#2BAE66; --cat-books:#A0522D; --cat-culture:#D4A017; --cat-podcasts:#0F9D9A;
 
@@ -50,7 +57,7 @@
   --target-min:48px;
 
   /* ---- Forma: suave, con la tarjeta de recomendación como pieza más redonda ---- */
-  --r-none:0; --r-xs:4px; --r-sm:8px; --r-md:12px; --r-lg:18px; --r-xl:28px; --r-full:999px;
+  --r-none:0; --r-xs:4px; --r-sm:8px; --r-md:12px; --r-lg:18px; --r-xl:30px; --r-full:999px;
 
   /* ---- Elevación: TONAL en oscuro (la superficie se aclara) + sombra mínima de contacto ---- */
   --shadow-ink:0 0 0;
@@ -59,19 +66,20 @@
   --elev-2:0 2px 6px rgb(var(--shadow-ink)/.40), 0 8px 24px rgb(var(--shadow-ink)/.35);
   --elev-3:0 12px 40px rgb(var(--shadow-ink)/.55);
 
-  --ring:rgb(142 120 240 / .55);
+  --ring:rgb(255 94 77 / .6);
   --focus-ring:0 0 0 2px var(--bg), 0 0 0 4px var(--ring);
   --signature:var(--primary);
   --wash:var(--surface);
 
-  /* ---- Tipografía: lectura con la fuente del sistema; Space Grotesk solo para titulares y cifras ---- */
-  --font-display:'Space Grotesk','Segoe UI',Roboto,sans-serif;
+  /* ---- Tipografía: lectura con la fuente del sistema; Bricolage Grotesque (OFL) en titulares y cifras ---- */
+  --font-display:'Bricolage Grotesque','Segoe UI',Roboto,sans-serif;
   --font-body:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
   --font-mono:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
 
   /* ---- Movimiento ---- */
   --dur-fast:120ms; --dur-base:220ms; --dur-slow:360ms;
-  --ease:cubic-bezier(.2,.8,.2,1); --ease-spring:cubic-bezier(.34,1.4,.5,1);
+  --ease:cubic-bezier(.2,.8,.2,1); --ease-spring:cubic-bezier(.34,1.56,.64,1);
+  --dur-aura:500ms;
 
   /* ---- Capas (MUI z-index) y puntos de corte ---- */
   --z-appbar:1100; --z-drawer:1200; --z-modal:1300; --z-snackbar:1400; --z-tooltip:1500;
@@ -84,10 +92,10 @@
 }
 
 :root[data-theme="light"]{
-  --primary:#5B3FD9;        --on-primary:#FFFFFF;       --primary-strong:#4A2FC4;
-  --primary-ink:#4A2FC4;
-  --inverse-primary:#C9BEFF;
-  --primary-container:#E9E4FF; --on-primary-container:#2A1A78;
+  --primary:#FF5E4D;        --on-primary:#1A0806;       --primary-strong:#E5483A;
+  --primary-ink:#B42318;
+  --inverse-primary:#FF8A7D;
+  --primary-container:#FFE3DE; --on-primary-container:#6B1A12;
   --secondary:#9A5F00;      --on-secondary:#FFFFFF;
   --accent:#9A5F00;         --on-accent:#FFFFFF;
   --bg:#F6F4F1;             --on-bg:#1D1A17;
@@ -103,13 +111,14 @@
   --error:#C2362B;   --on-error:#FFFFFF;
   --warning:#9A5F00; --on-warning:#FFFFFF;
   --info:#2459B8;    --on-info:#FFFFFF;
-  --action-hover:rgb(29 26 23 / .05); --action-selected:rgb(91 63 217 / .12);
-  --action-focus:rgb(91 63 217 / .20); --action-disabled:rgb(29 26 23 / .32);
+  --action-hover:rgb(29 26 23 / .05); --action-selected:rgb(255 94 77 / .14);
+  --action-focus:rgb(255 94 77 / .22); --action-disabled:rgb(29 26 23 / .32);
   --shadow-ink:52 40 28;
   --elev-1:0 1px 2px rgb(var(--shadow-ink)/.08), 0 2px 6px rgb(var(--shadow-ink)/.06);
   --elev-2:0 2px 4px rgb(var(--shadow-ink)/.06), 0 8px 24px rgb(var(--shadow-ink)/.12);
   --elev-3:0 12px 40px rgb(var(--shadow-ink)/.18);
-  --ring:rgb(91 63 217 / .45);
+  --ring:rgb(180 35 24 / .5);
+  --affinity:#4D6A00; --on-affinity:#FFFFFF;
   color-scheme:light;
 }
 
@@ -378,7 +387,7 @@
 /* Medidor de afinidad: anillo + cifra; sin datos → «—» (nunca 0 %) */
 .affinity{display:inline-flex;align-items:center;gap:var(--sp-12)}
 .affinity .ring{--v:0;width:56px;height:56px;border-radius:var(--r-full);display:flex;align-items:center;justify-content:center;
-  background:conic-gradient(var(--primary) calc(var(--v) * 1%),var(--muted-surface) 0);position:relative}
+  background:conic-gradient(var(--affinity) calc(var(--v) * 1%),var(--muted-surface) 0);position:relative}
 .affinity .ring::before{content:"";position:absolute;inset:5px;border-radius:var(--r-full);background:var(--surface)}
 .affinity .ring span{position:relative;font:700 16px var(--font-display);color:var(--on-surface);font-variant-numeric:tabular-nums}
 .affinity .ring.is-none{background:var(--muted-surface)}
@@ -420,3 +429,41 @@
 .inset{padding-left:var(--layout-gutter);padding-right:var(--layout-gutter)}
 .stack{display:flex;flex-direction:column;gap:var(--gap-related)}
 .row{display:flex;align-items:center;gap:var(--gap-related)}
+
+/* =========================================================================
+   «Aura» · componentes nuevos (app: Aura.tsx, CategoryWorld.tsx, WhyRecommended.tsx, SourceLinks.tsx)
+   ========================================================================= */
+/* Cartel: fondo oscuro fijo teñido con --c, brillo y grano; texto --on-poster (AA en el peor caso, Cultura) */
+.aura-poster{--c:var(--cat-food);position:relative;overflow:hidden;border-radius:var(--r-xl);padding:var(--sp-20);min-height:196px;
+  display:flex;flex-direction:column;justify-content:space-between;color:var(--on-poster);
+  background:radial-gradient(60% 70% at 10% 0%,color-mix(in oklch,var(--c) 70%,white 15%) 0%,transparent 70%),
+    color-mix(in oklch,var(--c) 38%,black);box-shadow:0 22px 48px -26px var(--c)}
+.aura-poster::after{content:"";position:absolute;inset:0;opacity:.3;mix-blend-mode:overlay;pointer-events:none;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E")}
+.aura-poster .ico-bg{position:absolute;right:-30px;bottom:-40px;width:200px;height:200px;opacity:.2;transform:rotate(-8deg);stroke-width:1.2}
+.aura-poster .name{position:relative;font:800 40px/1.05 var(--font-display);letter-spacing:-.035em}
+.aura-poster .sub{position:relative;font:400 14px/1.4 var(--font-body);color:var(--on-poster-muted)}
+.aura-poster .kicker{font:700 11px/1 var(--font-body);letter-spacing:.1em;text-transform:uppercase;color:var(--affinity)}
+.aura-poster .big{font:800 64px/1 var(--font-display);letter-spacing:-.04em}
+/* Halo: luz ambiental del color de lo que se muestra; nunca texto encima sin superficie */
+.aura-halo{--c:var(--cat-music);position:relative;border-radius:var(--r-lg);height:160px;overflow:hidden;background:var(--bg);
+  background-image:radial-gradient(45% 55% at 30% 30%,color-mix(in oklch,var(--c) 85%,white 15%) 0%,transparent 70%),
+    radial-gradient(50% 60% at 80% 85%,var(--c) 0%,transparent 70%)}
+/* Fila del ranking de una categoría: los 3 primeros, solo un poco más destacados */
+.rank-row{--c:var(--cat-food);display:flex;align-items:center;gap:var(--sp-12);padding:var(--sp-12) var(--sp-12);border-radius:var(--r-lg);
+  background:color-mix(in oklch,var(--surface) 92%,var(--c));border:1px solid var(--hairline)}
+.rank-row.is-top{background:color-mix(in oklch,var(--surface-raised) 88%,var(--c));border-color:color-mix(in oklch,var(--bg) 65%,var(--c))}
+.rank-row .n{width:24px;text-align:center;font:600 15px var(--font-display);color:var(--subtle)}
+.rank-row.is-top .n{font:800 20px var(--font-display);color:color-mix(in oklch,var(--c) 55%,white)}
+.rank-row .th{width:60px;height:60px;border-radius:var(--r-md);background:color-mix(in oklch,var(--c) 45%,black);flex:none}
+.rank-row.is-top .th{width:72px;height:72px;border:1.5px solid color-mix(in oklch,var(--bg) 65%,var(--c))}
+.rank-row .t{font:700 16px/1.2 var(--font-display);color:var(--on-surface)}
+.rank-row .m{font:400 13px/1.4 var(--font-body);color:var(--muted)}
+.rank-row .m b{color:var(--affinity)}
+/* «Dónde encontrarlo»: acción principal en chispa + chips de referencias */
+.src-links{display:flex;flex-direction:column;gap:var(--sp-12)}
+.src-links .main{display:flex;align-items:center;justify-content:center;gap:var(--sp-8);min-height:52px;border-radius:var(--r-full);border:0;
+  background:var(--primary);color:var(--on-primary);font:700 16px var(--font-body);box-shadow:0 10px 28px -10px var(--primary)}
+.src-links .chips{display:flex;flex-wrap:wrap;gap:var(--sp-8)}
+.src-links .chip{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 var(--sp-12);border-radius:var(--r-full);
+  border:1px solid var(--border);background:transparent;color:var(--on-surface);font:600 13px var(--font-body)}

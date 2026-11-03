@@ -19,7 +19,7 @@ export function PremiumCard() {
   const data = premium.data;
   return (
     <Card>
-      <Title style={{ fontSize: 16 }}>{t('premium.title')}</Title>
+      <Title>{t('premium.title')}</Title>
       {data ? (
         data.premium ? (
           <Badge

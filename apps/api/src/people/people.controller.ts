@@ -1,5 +1,5 @@
 import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
-import type { AffinityDto, PublicPersonDto, SoulmatesDto } from '@appinity/shared';
+import type { AffinityDto, CategoryRankingDto, PublicPersonDto, SoulmatesDto } from '@appinity/shared';
 import type { AuthContext } from '../auth/auth.types.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import { PeopleService } from './people.service.js';
@@ -12,6 +12,12 @@ export class PeopleController {
   @Get('me/soulmates')
   soulmates(@CurrentUser() auth: AuthContext): Promise<SoulmatesDto> {
     return this.people.soulmates(auth.userId);
+  }
+
+  /** Orden personal del mosaico de categorías (afinidad con tus almas gemelas y gusto propio). */
+  @Get('me/categories/ranking')
+  categoryRanking(@CurrentUser() auth: AuthContext): Promise<CategoryRankingDto> {
+    return this.people.categoryRanking(auth.userId);
   }
 
   /** Afinidad «yo → otra persona», global y por categoría. */

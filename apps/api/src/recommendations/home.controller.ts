@@ -1,25 +1,55 @@
-import { Body, Controller, HttpCode, Inject, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Inject, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import { type DatabaseHandle } from '@appinity/database';
-import { NotFoundError, applyHomeAction, recordImpression, undoLastHomeAction } from '@appinity/ingestion';
-import type { HomeActionResultDto, HomeImpressionResultDto, HomeUndoResultDto } from '@appinity/shared';
+import { NotFoundError, applyHomeAction, assertItemVisible, castVote, enqueueAffinity, itemCircle, itemOpinion, recordImpression, undoLastHomeAction, type ProducerQueues } from '@appinity/ingestion';
+import type { HomeActionResultDto, HomeImpressionResultDto, HomeUndoResultDto, HomeVoteResultDto, ItemCircleDto, ItemOpinionDto } from '@appinity/shared';
 import { z } from 'zod';
 import type { AuthContext } from '../auth/auth.types.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import { ZodPipe } from '../common/zod.pipe.js';
-import { DATABASE } from '../infra/tokens.js';
+import { DATABASE, QUEUES } from '../infra/tokens.js';
 
 const itemSchema = z.object({ itemId: z.uuid() }).strict();
-const actionSchema = z.object({ itemId: z.uuid(), action: z.enum(['dismiss', 'keep']) }).strict();
+// Motor v3: la única acción sin voto es «No lo conozco» (dismiss). Guardar (keep) ya no existe.
+const actionSchema = z.object({ itemId: z.uuid(), action: z.enum(['dismiss']) }).strict();
+const voteSchema = z.object({ itemId: z.uuid(), value: z.union([z.literal(-1), z.literal(1), z.literal(2)]) }).strict();
 
 /**
- * Home (§2): impresiones y acciones de la tarjeta. Todo parte del usuario de la sesión y solo afecta a lo que se muestra
- * en Home; nunca a gustos ni afinidades.
+ * Home (§2): impresiones, votos y acciones de la tarjeta. Guardar y descartar solo afectan a lo que se muestra; un voto
+ * (2026-10-27) es una fuente declarada: cambia el perfil y, poco después, la afinidad.
  */
 @Controller('v1/me/home')
 export class HomeController {
-  constructor(@Inject(DATABASE) private readonly database: DatabaseHandle) {}
+  constructor(
+    @Inject(DATABASE) private readonly database: DatabaseHandle,
+    @Inject(QUEUES) private readonly queues: ProducerQueues,
+  ) {}
+
+  /** Votar una tarjeta: definitivo para esa obra (salvo deshacer). La afinidad se recalcula a los pocos segundos. */
+  @Post('votes')
+  @HttpCode(200)
+  async vote(@CurrentUser() auth: AuthContext, @Body(new ZodPipe(voteSchema)) body: z.infer<typeof voteSchema>): Promise<HomeVoteResultDto> {
+    await assertItemVisible(this.database.db, auth.userId, body.itemId);
+    const result = await castVote(this.database.db, auth.userId, body.itemId, body.value);
+    if (result.profileChanged) await enqueueAffinity(this.queues, auth.userId);
+    return { actionId: result.actionId };
+  }
+
+  /** Tu voto, para la ficha (solo tus propios datos). */
+  @Get('items/:id/opinion')
+  async opinion(@CurrentUser() auth: AuthContext, @Param('id', new ParseUUIDPipe()) id: string): Promise<ItemOpinionDto> {
+    await assertItemVisible(this.database.db, auth.userId, id);
+    return itemOpinion(this.database.db, auth.userId, id);
+  }
+
+  /** «Entre tus almas gemelas» (ficha): recuentos del Top 50 y nombres solo de quienes sigues. */
+  @Get('items/:id/circle')
+  async circle(@CurrentUser() auth: AuthContext, @Param('id', new ParseUUIDPipe()) id: string): Promise<ItemCircleDto> {
+    await assertItemVisible(this.database.db, auth.userId, id);
+    return itemCircle(this.database.db, auth.userId, id);
+  }
 
   /** La tarjeta se ha mostrado de verdad (no precargada). */
+
   @Post('impressions')
   @HttpCode(200)
   async impression(@CurrentUser() auth: AuthContext, @Body(new ZodPipe(itemSchema)) body: z.infer<typeof itemSchema>): Promise<HomeImpressionResultDto> {
@@ -38,6 +68,7 @@ export class HomeController {
   async undo(@CurrentUser() auth: AuthContext): Promise<HomeUndoResultDto> {
     const result = await undoLastHomeAction(this.database.db, auth.userId);
     if (!result) throw new NotFoundError('No hay ninguna acción que deshacer');
-    return result;
+    if (result.profileChanged) await enqueueAffinity(this.queues, auth.userId);
+    return { itemId: result.itemId, action: result.action };
   }
 }

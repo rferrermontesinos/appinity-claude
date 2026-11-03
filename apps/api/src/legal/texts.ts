@@ -24,7 +24,7 @@ export const PRIVACY_ES = `
   que elijas, tu país y la confirmación de que eres mayor de edad.</li>
   <li><strong>Tus gustos</strong>: solo los que importamos de las fuentes que tú conectas, cada una con su propio
   permiso: Steam (juegos y horas), Google (valoraciones y lugares de Maps, YouTube y YouTube Music, Google Play, libros
-  de Google Books y planes de Google Calendar), Trakt (cine y series) y AniList (anime y manga). De cada fuente
+  de Google Books y planes de Google Calendar), Trakt (cine y series), AniList (anime y manga) y Facebook (las páginas que te gustan). De cada fuente
   guardamos las obras y lugares identificados y la evidencia necesaria (por ejemplo, una nota o que lo has visto). Del
   calendario solo guardamos el lugar u obra identificado, cuántas veces y la fecha más reciente; nunca títulos,
   descripciones ni asistentes.</li>
@@ -60,7 +60,7 @@ APPINITY; no los vendemos, no los usamos para publicidad ni los compartimos con 
 modelos de inteligencia artificial.</p>
 
 <h2>6. Con quién se comparten</h2>
-<p>Con nadie para fines propios. Los proveedores que conectas (Google, Steam, Trakt, AniList) reciben las peticiones
+<p>Con nadie para fines propios. Los proveedores que conectas (Google, Steam, Trakt, AniList, Facebook) reciben las peticiones
 necesarias para leer tus datos. Usamos servicios técnicos para alojar la app y enviar notificaciones, que actúan por
 cuenta nuestra. Para identificar lugares y obras consultamos fuentes públicas (Wikidata y OpenStreetMap): les enviamos solo el
 nombre del lugar u obra, nunca datos que te identifiquen.</p>

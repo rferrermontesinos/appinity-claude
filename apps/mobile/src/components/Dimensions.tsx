@@ -74,7 +74,7 @@ export function scenarioKeys(p: ItemProfileDto & { notes?: ConsolidationNotes | 
 export function Tag({ label }: { label: string }) {
   const c = usePalette();
   return (
-    <View style={{ backgroundColor: `${c.accent}18`, borderRadius: 999, paddingHorizontal: spacing.sm, paddingVertical: 2 }}>
+    <View style={{ backgroundColor: `${c.accent}18`, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2 }}>
       <Text style={{ color: c.accent, fontSize: 11, fontWeight: '600' }}>{label}</Text>
     </View>
   );

@@ -58,12 +58,36 @@ export const recommendationActions = pgTable(
     catalogItemId: uuid('catalog_item_id')
       .notNull()
       .references(() => catalogItems.id, { onDelete: 'cascade' }),
-    action: text('action', { enum: ['dismiss', 'keep'] }).notNull(),
+    /** `vote` (2026-10-27): un voto en Inicio; deshacerlo borra el voto y su observación. */
+    action: text('action', { enum: ['dismiss', 'keep', 'vote'] }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     undoneAt: timestamp('undone_at', { withTimezone: true }),
   },
   (t) => [
     index('recommendation_actions_user_idx').on(t.userId, t.createdAt),
-    check('recommendation_actions_action_valid', sql`${t.action} IN ('dismiss', 'keep')`),
+    check('recommendation_actions_action_valid', sql`${t.action} IN ('dismiss', 'keep', 'vote')`),
+  ],
+);
+
+/**
+ * Votos en la app (decisión del titular, 2026-10-27): −2 «Lo odio», −1 «No me gusta», +1 «Me gusta», +2 «Me encanta» o
+ * «No lo conozco» (`value` NULL). Un voto es definitivo para esa obra: ya no sale en recomendaciones (salvo deshacer).
+ * Los votos con valor son además una observación de la fuente interna `appinity` (mismo peso que una nota externa).
+ */
+export const itemVotes = pgTable(
+  'item_votes',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    catalogItemId: uuid('catalog_item_id')
+      .notNull()
+      .references(() => catalogItems.id, { onDelete: 'cascade' }),
+    value: integer('value'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.catalogItemId] }),
+    check('item_votes_value_valid', sql`${t.value} IS NULL OR ${t.value} IN (-2, -1, 1, 2)`),
   ],
 );

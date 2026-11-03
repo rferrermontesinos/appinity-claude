@@ -11,13 +11,15 @@ export function CreditsCard() {
   const c = usePalette();
   return (
     <Card>
-      <Title style={{ fontSize: 16 }}>{t('credits.title')}</Title>
+      <Title>{t('credits.title')}</Title>
       <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(OSM_COPYRIGHT)}>
         <Small style={{ color: c.accent }}>{t('credits.osm')}</Small>
       </Pressable>
       <Small>{t('credits.wikidata')}</Small>
       <Small>{t('credits.steam')}</Small>
       <Small>{t('credits.google')}</Small>
+      {/* Atribución exigida por TMDb (carteles de películas) y TVmaze (carteles de series). */}
+      <Small>{t('credits.posters')}</Small>
     </Card>
   );
 }

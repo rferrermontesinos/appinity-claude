@@ -1,5 +1,6 @@
 import { CATEGORIES, CATEGORY_META, type Category } from '@appinity/shared';
-import { Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
+import { useOpenItem } from '../src/catalog/openItem';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, Pressable, ScrollView, Text, View } from 'react-native';
@@ -18,15 +19,20 @@ function FilterChip({ label, selected, color, onPress }: { label: string; select
       accessibilityState={{ selected }}
       onPress={onPress}
       style={{
+        minHeight: 44,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
         paddingHorizontal: spacing.md,
-        paddingVertical: spacing.xs + 2,
-        borderRadius: 999,
+        borderRadius: radius.full,
         borderWidth: 1,
-        borderColor: selected ? color : c.border,
-        backgroundColor: selected ? `${color}22` : c.surface,
+        borderColor: selected ? c.text : c.border,
+        backgroundColor: selected ? c.surfaceRaised : c.surface,
       }}
     >
-      <Text style={{ color: selected ? color : c.text, fontWeight: selected ? '700' : '500', fontSize: 13 }}>{label}</Text>
+      {/* El color de categoría es una señal (punto); el texto, en el color del tema (AA). */}
+      <View style={{ width: 8, height: 8, borderRadius: radius.full, backgroundColor: color }} />
+      <Text style={{ color: c.text, fontWeight: selected ? '700' : '500', fontSize: 13 }}>{label}</Text>
     </Pressable>
   );
 }
@@ -82,7 +88,7 @@ function ProfileRow({ profile, onPress }: { profile: ProfileView; onPress: () =>
  */
 export default function ModelScreen() {
   const { t } = useTranslation();
-  const router = useRouter();
+  const openItem = useOpenItem();
   const c = usePalette();
   const [category, setCategory] = useState<Category | undefined>(undefined);
   const profiles = useItemProfiles(category);
@@ -107,7 +113,7 @@ export default function ModelScreen() {
             <DataBanner detailed />
             <Body muted>{live ? t('tastes.intro') : t('model.intro')}</Body>
             <Card>
-              <Title style={{ fontSize: 15 }}>{t('model.legendTitle')}</Title>
+              <Title>{t('model.legendTitle')}</Title>
               <Small>{t('model.legendKnown')}</Small>
               <Small>{t('model.legendConsumed')}</Small>
               <Small>{t('model.legendPreference')}</Small>
@@ -131,7 +137,7 @@ export default function ModelScreen() {
         }
         ListEmptyComponent={profiles.isSuccess ? <Body muted>{t('model.empty')}</Body> : null}
         renderItem={({ item }) => (
-          <ProfileRow profile={item} onPress={() => router.push({ pathname: '/item/[id]', params: { id: item.item.id } })} />
+          <ProfileRow profile={item} onPress={() => openItem(item.item.id)} />
         )}
       />
     </View>

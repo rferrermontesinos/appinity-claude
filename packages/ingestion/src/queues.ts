@@ -1,4 +1,4 @@
-import { QUEUES, type AffinityJob, type CatalogImageJob, type ProfileSyncJob } from '@appinity/shared';
+import { QUEUES, type AffinityJob, type CatalogImageJob, type ExpandCatalogJob, type ProfileSyncJob } from '@appinity/shared';
 import { Queue, type JobsOptions } from 'bullmq';
 import { Redis } from 'ioredis';
 
@@ -14,6 +14,8 @@ export interface ProducerQueues {
   profileSync: Queue<ProfileSyncJob>;
   catalogImages: Queue<CatalogImageJob>;
   affinity: Queue<AffinityJob>;
+  /** Trabajos de sistema pedidos desde la API (p. ej., ampliar el catálogo). */
+  system: Queue<ExpandCatalogJob>;
   connection: Redis;
   close(): Promise<void>;
 }
@@ -24,13 +26,15 @@ export function createProducerQueues(redisUrl: string, prefix: string): Producer
   const profileSync = new Queue<ProfileSyncJob>(QUEUES.profileSync, { connection, prefix, defaultJobOptions: DEFAULT_JOB_OPTIONS });
   const catalogImages = new Queue<CatalogImageJob>(QUEUES.catalogImages, { connection, prefix, defaultJobOptions: DEFAULT_JOB_OPTIONS });
   const affinity = new Queue<AffinityJob>(QUEUES.affinity, { connection, prefix, defaultJobOptions: DEFAULT_JOB_OPTIONS });
+  const system = new Queue<ExpandCatalogJob>(QUEUES.system, { connection, prefix, defaultJobOptions: { ...DEFAULT_JOB_OPTIONS, attempts: 2 } });
   return {
     profileSync,
     catalogImages,
     affinity,
+    system,
     connection,
     async close() {
-      await Promise.allSettled([profileSync.close(), catalogImages.close(), affinity.close()]);
+      await Promise.allSettled([profileSync.close(), catalogImages.close(), affinity.close(), system.close()]);
       await connection.quit().catch(() => undefined);
     },
   };

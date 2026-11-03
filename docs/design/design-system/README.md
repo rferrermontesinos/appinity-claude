@@ -1,31 +1,40 @@
-# Sistema de diseño de APPINITY · «Noche de cine»
+# Sistema de diseño de APPINITY · «Aura»
 
-D1 de las fases de diseño (D0 en `../D0-direccion.md`). Guía de referencia: **Material (tokens) + MUI (catálogo y
-props `variant/size/color`)**, multiplataforma (Expo / React Native).
+Dirección «Aura» (2026-10-26): vibrante, cómplice, sobremesa. Sustituye a «Noche de cine» (D0). Maqueta de dirección
+en `../aura/mockup.html`; decisión y motivos en `docs/decisions.md`. Guía de referencia: **Material (tokens) + MUI
+(catálogo y props `variant/size/color`)**, multiplataforma (Expo / React Native).
 
 | Fichero | Qué es |
 |---|---|
-| `styles.css` | **Fuente de verdad**: tokens (oscuro por defecto y `:root[data-theme="light"]`) y clases de componentes |
-| `index.html` | Guía viva: fundamentos y 44 componentes, con Dev Mode (inspector) y «Copiar como prompt» (React Native primero) |
-| `concept.html` | Dos pantallas de concepto, solo con componentes: «Para ti» (carrusel) y el perfil de un alma gemela |
+| `styles.css` | Tokens de la guía (oscuro por defecto y `:root[data-theme="light"]`) y clases de componentes. Mismos valores que `apps/mobile/src/theme.ts`, que es la fuente de verdad en la app |
+| `index.html` | Guía viva: fundamentos, la sección **Aura** y 44 componentes, con Dev Mode (inspector) y «Copiar como prompt» (React Native primero) |
+| `concept.html` | Dos pantallas de concepto, solo con componentes (de la etapa anterior; con los tokens nuevos) |
 | `icons.html` | Sprite de 43 iconos propios (estilo Material/Lucide, licencias abiertas; nunca emoji) |
 | `theme.js` | Selector claro/oscuro compartido |
 | `src/` | Fuentes (`*.src.html`), `build.mjs` (incrusta el sprite) y `serve.mjs` (servidor local en 8093) |
 
-Abrir: doble clic en `index.html` (funciona con `file://`). Tras editar `src/`: `node docs/design/design-system/src/build.mjs`.
+Abrir con el servidor (`node docs/design/design-system/src/serve.mjs`, puerto 8093): con `file://` algunos visores no
+cargan `styles.css`. Tras editar `src/`: `node docs/design/design-system/src/build.mjs`.
 
 ## Decisiones
 
-- **Una familia de interacción**: el violeta, solo para la afinidad y la acción principal. El ámbar se reserva para NEW
-  y los momentos especiales. El color de cada categoría es una **señal** (punto, icono o tinte del 20 %), nunca el fondo
-  de un texto.
-- **Neutros cálidos** derivados de `#121110` (tono ~60° en OKLCH, croma bajo). **Elevación tonal** en oscuro: la
-  superficie se aclara (bg → surface → surface-raised).
-- **Tipografía**: lectura con la fuente del sistema; Space Grotesk (Google Fonts, OFL) solo en titulares, títulos de
-  obras y cifras de afinidad.
-- **Afinidad sin datos = «—»**, nunca 0 %.
-- **Contraste**: todos los pares `relleno / --on-*` superan **AA (4,5:1)** con la fórmula WCAG, en ambos temas. El más
-  justo es el primario en oscuro, con 5,47. La acción del snackbar usa `--inverse-primary` (7,30).
+- **Dos acentos con papel fijo**: **chispa** (coral `#FF5E4D`, texto `#1A0806`) solo para la acción principal;
+  **lima** (`#D4F45A`, texto `#141A02`; `#4D6A00` en claro) solo para afinidad y almas gemelas. El ámbar se queda para
+  NEW y los datos de ejemplo. Se retira el violeta (aspecto genérico de «app de IA»).
+- **Neutros casi negros**: `#0C0C0E` → `#17161B` → `#211F27` (elevación tonal: la superficie se aclara).
+- **Categorías**: los 8 colores tiñen el **halo**, los **carteles** y el «mundo» de las pantallas de detalle (fondo 7 %,
+  filas 8 %, destacadas 12 %, borde 35 %). Nunca son el fondo de un texto pequeño; siempre van con icono y nombre.
+- **Halo**: luz ambiental del color de lo que se muestra, con grano, siempre detrás de una superficie. En la app se
+  hace con círculos concéntricos y una textura PNG (sin degradados nativos ni módulos nuevos).
+- **Carteles** (`--poster-base`, `--on-poster`): fondo oscuro fijo en ambos temas para alma gemela, perfil y categoría.
+- **Tipografía**: lectura con la fuente del sistema; **Bricolage Grotesque** (Google Fonts, OFL) en titulares, títulos de
+  obras y cifras (600/700/800).
+- **Movimiento**: muelle al soltar (`--ease-spring`), cifras que cuentan y fundido del halo (`--dur-aura`, 500 ms). Todo se
+  apaga con «reducir movimiento».
+- **Afinidad sin datos = «—»**, nunca 0 %. **Recomendaciones**: solo cifras reales y agregadas (almas gemelas que lo
+  recomiendan, afinidad media).
+- **Contraste**: todos los pares de texto superan AA (4,5:1), en ambos temas y en el peor tinte (Cultura). El gris tenue
+  sobre fila destacada (4,12:1) solo se usa en iconos (3:1). Cálculos en `docs/progress.md`.
 
 ## Catálogo (44)
 
@@ -38,6 +47,8 @@ Abrir: doble clic en `index.html` (funciona con `file://`). Tras editar `src/`: 
 - **Extensiones de APPINITY (6)**: Tarjeta de recomendación, Medidor de afinidad, Fila de persona, Chip de categoría,
   Tarjeta de fuente y Estado vacío.
 
+- **Aura (sección propia)**: halo, cartel de categoría y de alma gemela, fila de ranking y «Dónde encontrarlo».
+
 ## Cómo ampliar
 
 - **Token nuevo**: añádelo en `:root` **y** en `:root[data-theme="light"]` si cambia con el tema. Un relleno siempre
@@ -46,12 +57,10 @@ Abrir: doble clic en `index.html` (funciona con `file://`). Tras editar `src/`: 
   en `src/index.src.html`, una entrada en `SPECS` y el enlace en la barra lateral. Después, ejecuta `build.mjs`.
 - **Otro tema**: cambia solo la capa de tokens; la guía y el concepto lo reflejan sin tocar los componentes.
 
-## Estado de D4 (2026-10-23)
+## Estado de «Aura» en la app (2026-10-26)
 
-- **Hecho**:
-  - tokens en `apps/mobile/src/theme.ts`, con oscuro por defecto;
-  - Space Grotesk y barra inferior con píldora;
-  - tarjeta de recomendación y botones del mazo;
-  - botones en píldora;
-  - cifra de afinidad y barras por categoría (`Affinity.tsx`).
-- **Pendiente**: Categorías, People (fila de persona), Perfil (tarjeta de fuente) y estados vacíos.
+- **Hecho**: tokens y fuente (`theme.ts`), Inicio, Personas (momento Wrapped), ficha de persona, Categorías (carteles,
+  detalle con ranking y mundo de la categoría), ficha de objeto («Dónde encontrarlo»), Perfil (tu cartel) y barra
+  inferior. Rama `diseno-aura`, PR rferrermontesinos/appinity-claude#24.
+- **Pendiente**: aceptación en el teléfono; barra inferior flotante (necesita la altura real de la barra); chat,
+  alta y pantallas secundarias con los componentes nuevos.

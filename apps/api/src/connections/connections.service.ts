@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
-import { providerConsents, sourceSyncRuns, userConnections, userItemObservations, type DatabaseHandle } from '@appinity/database';
+import { providerConsents, sourceSyncRuns, userConnections, userItemObservations, users, type DatabaseHandle } from '@appinity/database';
 import {
   attachConnection,
   completeConnect,
@@ -15,7 +15,7 @@ import {
   type SyncTrigger,
 } from '@appinity/ingestion';
 import { googleBooksConnection, googleCalendarConnection, type AdapterRegistry } from '@appinity/integrations';
-import type { ConnectStartDto, ConnectionDto, SyncRunDto } from '@appinity/shared';
+import type { ConnectStartDto, ConnectionDto, InitialImportDto, SyncRunDto } from '@appinity/shared';
 import { randomBytes } from 'node:crypto';
 import type { Redis } from 'ioredis';
 import { APP_ENV, type AppEnv } from '../config/env.js';
@@ -122,6 +122,7 @@ export class ConnectionsService {
    * un `state` de un solo uso (10 min) y se devuelve la URL del proveedor; la conexión se crea en el callback.
    */
   async connect(userId: string, sourceKey: string, baseUrl: string, returnUrl: string | undefined): Promise<ConnectStartDto> {
+    if (!(await this.consentGiven(userId))) throw new UnavailableError('Acepta las condiciones antes de conectar fuentes');
     const state = randomBytes(24).toString('base64url');
     // El state va en la ruta: algunos proveedores añaden su propia query a la URL de vuelta.
     const redirectUri = `${baseUrl}/v1/connect/${sourceKey}/callback/${state}`;
@@ -161,14 +162,58 @@ export class ConnectionsService {
   async attachGoogleBooks(userId: string, tokens: { access_token: string; refresh_token?: string; expires_in?: number; scope?: string }): Promise<void> {
     if (!this.hasSource('google_books')) return;
     const connection = await attachConnection(this.database.db, this.registry, userId, 'google_books', googleBooksConnection(tokens, { shared: true }), this.credentialsOption().credentialsKey);
-    await this.startSync(userId, connection.id, 'connect', 'full');
+    // Sin condiciones aceptadas no se importa nada: el primer sync lo arranca `initialImport` al terminar el alta.
+    if (await this.consentGiven(userId)) await this.startSync(userId, connection.id, 'connect', 'full');
   }
 
   /** Google Calendar concedido en «Continuar con Google»: conecta y lanza el primer sync. */
   async attachGoogleCalendar(userId: string, tokens: { access_token: string; refresh_token?: string; expires_in?: number; scope?: string }): Promise<void> {
     if (!this.hasSource('google_calendar')) return;
     const connection = await attachConnection(this.database.db, this.registry, userId, 'google_calendar', googleCalendarConnection(tokens), this.credentialsOption().credentialsKey);
-    await this.startSync(userId, connection.id, 'connect', 'full');
+    if (await this.consentGiven(userId)) await this.startSync(userId, connection.id, 'connect', 'full');
+  }
+
+  /**
+   * ¿Puede importarse ya? Una cuenta real necesita mayoría de edad y condiciones aceptadas (el alta es el único
+   * momento de consentimiento). Las cuentas de la demo no pasan por el alta.
+   */
+  async consentGiven(userId: string): Promise<boolean> {
+    const [row] = await this.database.db
+      .select({ dataset: users.dataset, adult: users.adultConfirmedAt, terms: users.termsAcceptedAt })
+      .from(users)
+      .where(eq(users.id, userId));
+    if (!row) return false;
+    return row.dataset !== 'live' || (row.adult !== null && row.terms !== null);
+  }
+
+  /**
+   * Primera importación al aceptar las condiciones: arranca el primer sync de lo que ya está conectado sin haberse
+   * sincronizado nunca (Books y Calendar del inicio de sesión) y devuelve el consentimiento de Data Portability para
+   * que la app lo abra a continuación, sin pasar por Perfil. Así el alta conecta todas las fuentes de Google de una vez.
+   */
+  async initialImport(userId: string, baseUrl: string, returnUrl: string | undefined): Promise<InitialImportDto> {
+    if (!(await this.consentGiven(userId))) throw new UnavailableError('Acepta las condiciones para empezar a importar tus gustos');
+    const rows = await this.database.db
+      .select({ id: userConnections.id, sourceKey: userConnections.sourceKey, status: userConnections.status })
+      .from(userConnections)
+      .where(eq(userConnections.userId, userId));
+    const active = rows.filter((r) => r.status === 'active');
+    const runs = active.length
+      ? await this.database.db
+          .select({ connectionId: sourceSyncRuns.connectionId })
+          .from(sourceSyncRuns)
+          .where(inArray(sourceSyncRuns.connectionId, active.map((r) => r.id)))
+      : [];
+    const synced = new Set(runs.map((r) => r.connectionId));
+    let started = 0;
+    for (const connection of active) {
+      if (synced.has(connection.id)) continue;
+      await this.startSync(userId, connection.id, 'connect', 'full');
+      started += 1;
+    }
+    const hasPortability = active.some((r) => r.sourceKey === 'google_portability');
+    const next = this.hasSource('google_portability') && !hasPortability ? await this.connect(userId, 'google_portability', baseUrl, returnUrl) : null;
+    return { started, next };
   }
 
   private credentialsOption(): { credentialsKey?: string } {

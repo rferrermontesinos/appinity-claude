@@ -1071,3 +1071,201 @@ El acuerdo de desarrolladores de Twitch exige permiso escrito para guardar sus d
   adicional); Stremio (Cinemeta) usa IDs de IMDb y sirve el arte desde MetaHub, derivado de esas mismas fuentes.
   Los pósteres reales exigen un acuerdo comercial con TMDb o TheTVDB: sigue siendo la decisión de negocio pendiente
   (2026-10-09).
+
+## 2026-10-26 · Rediseño visual: dirección «Aura» (/creative)
+
+- **Motivo (titular)**: la app parece genérica, no transmite «personas», las imágenes son pobres y le falta pulido.
+  Alcance elegido: **rehacer** la identidad. Tono: vibrante, social y juguetón. Referencias: Spotify Wrapped y
+  Hinge/Tinder.
+- **Elegida la B, «Aura»** (vibrante, cómplice, sobremesa), frente a «Bento» (segura) y «Fanzine» (neubrutalista).
+  Cada pantalla toma la luz de lo que muestra (halo degradado con grano), la afinidad es el gran momento y las personas
+  van delante de las obras.
+- **Se conserva**: datos reales, de ejemplo y pendientes distinguidos; «—» sin datos; contraste AA; icono y nombre en
+  cada categoría; botón alternativo para cada gesto; los 8 colores de categoría y los iconos propios.
+- **Se retira**: el violeta `#8E78F0` como único acento (aspecto genérico de «app de IA»), Space Grotesk (grotesca
+  de startup sin calidez), las superficies planas sin profundidad y el cartel de sustitución gris.
+- **Propuesta (sin aplicar aún en la app)**: acento «chispa» `#FF5E4D` solo para la acción principal; «lima»
+  `#D4F45A` solo para afinidad y almas gemelas; Bricolage Grotesque (Google Fonts, OFL) para titulares y cifras;
+  portadas generadas con color, icono y tipografía, rotuladas como tales (nunca imágenes inventadas por IA);
+  movimiento elástico que se apaga con «reducir movimiento». Maqueta: `docs/design/aura/mockup.html`.
+- **Aplicado en tokens e Inicio (2026-10-26)**: `theme.ts` con los valores de la maqueta y el token `affinity`;
+  Bricolage Grotesque sustituye a Space Grotesk. El halo se hace con capas de vistas y una textura de grano, sin
+  módulos nativos (mismo criterio que el velo de la tarjeta). La guía `docs/design/design-system/` queda desactualizada
+  hasta su revisión.
+
+## 2026-10-26 · Desglose numérico de las recomendaciones (petición del titular)
+
+- Cada recomendación expone `reason.evidence` (0–100): los factores reales con los que se ordena. Así la app explica
+  por qué un objeto está arriba (p. ej., 2/3 apoyos con más gusto y confianza puede superar 2/2).
+- **Privacidad (§4 y §16)**: en consenso solo agregados. Se muestra la afinidad **media** de quienes lo apoyan, no la
+  máxima: la máxima, comparada con el Top 50, señalaría a una persona concreta. Se cuentan las almas gemelas
+  excepcionales que lo apoyan, sin nombrarlas. Riesgo residual: con un único alma gemela excepcional, «1 lo
+  recomienda» la identifica. Se acepta como motivo permitido, igual que descubrimiento, que ya nombra a quien aporta
+  el objeto.
+- «Cuánto les gusta» es la preferencia positiva media × 100, no una nota en estrellas: las preferencias pueden venir
+  de escuchas o de «me gusta», no solo de valoraciones.
+- **Revisión del titular (mismo día)**: el detalle es un listado; los 3 primeros, solo un poco más destacados. Solo se
+  muestran «almas gemelas que lo recomiendan» y «afinidad media contigo»: «cuánto les gusta» no discriminaba (100, 50
+  o 0) y la puntuación y la confianza sobraban. Se retira la pestaña «Catálogo» de Categorías porque la
+  especificación no la pide.
+
+
+## 2026-10-26 · Seguir a creadores y amigos (decisiones del titular)
+
+Propuesta en [propuesta-seguir-creadores.md](propuesta-seguir-creadores.md).
+
+- **A quién**: creadores (personas con «perfil público de creador» activado, que consienten que sus gustos sean
+  visibles) y amigos con amistad aceptada. No se crean perfiles de famosos sin cuenta.
+- **Mezcla de Inicio**: 70 consenso · 10 descubrimiento por alma gemela · 10 seguidos · 10 Trending (antes 70/20/10).
+  Si no sigues a nadie, el hueco vuelve al descubrimiento. Los seguidos **nunca votan** en el consenso del Top 50.
+- **Motivo combinado**: si una tarjeta de consenso o descubrimiento también le encanta a alguien que sigues, el motivo
+  lo dice («A Rosalía, a quien sigues, y a 34 de tus almas gemelas les encanta»). No cambia el orden.
+- **Lugares de los seguidos**: sin restricción (decisión del titular), como cualquier otra recomendación.
+- **Futuro**: a la larga, otro 10 % basado en publicidad (p. ej., un evento que quiere anunciarse), siempre marcado como
+  patrocinado. Queda anotado; no se implementa ahora.
+- Seguir nunca cambia gustos ni afinidades. Bloquear a alguien elimina el seguimiento en ambos sentidos.
+- **Guía actualizada (2026-10-26)**: `docs/design/design-system/` pasa a «Aura» (tokens, tipografía y una sección con
+  los componentes nuevos). `theme.ts` sigue siendo la fuente de verdad en la app; la guía replica sus valores.
+
+## 2026-10-26 · Alta única: aceptar y empezar a importar (petición del titular)
+
+- Al aceptar las condiciones empieza la importación de todo Google sin conectar fuente a fuente. Google obliga a que
+  Data Portability sea una segunda pantalla suya, que se abre sola tras el alta.
+- **Nada se importa antes de aceptar las condiciones** (cuentas reales): los permisos de Books y Calendar del inicio
+  de sesión se guardan, pero su primer sync espera al alta. Conectar otra fuente también lo exige.
+- Steam, AniList, Trakt y Facebook siguen opcionales en Perfil (cada proveedor exige su inicio de sesión).
+
+
+## 2026-10-27 · Carteles de películas y series (fase no comercial)
+
+- **Series → TVmaze** (sin clave): datos CC BY-SA 4.0, uso comercial permitido con crédito, imágenes por enlace. Se
+  identifica por el ID de IMDb de Wikidata (P345). Prueba: 31 de 39 series de la demo con su cartel en 27 s.
+- **Películas → TMDb**, solo con `TMDB_API_KEY`: gratis para **uso no comercial** y con atribución. El titular confirma
+  que hoy no hay beneficio comercial. **Antes de monetizar: acuerdo comercial con TMDb o quitar la clave** (sin ella,
+  vuelven las imágenes de Commons). Revierte la parte de imágenes de «TMDb descartada» (2026-10-09) solo para esta fase.
+- Un cartel tiene prioridad sobre el logotipo o la foto de Commons; se sirve por enlace (no se cachea) y lleva su
+  crédito (fuente y licencia) en la ficha.
+
+## 2026-10-27 · Chat sin match (decisión del titular)
+
+- **Siempre se puede escribir** a una persona visible (alma gemela, amigo o alguien a quien sigues): «Escribir» abre la
+  conversación sin esperar a nadie (`POST /v1/me/chats/open`). Sustituye al modelo «interés → match» de la fase 12A.
+- **El chat solo aparece cuando alguien escribe**: la bandeja lista conversaciones con mensajes; fuera «nuevos
+  matches» y la palabra «match» de la interfaz.
+- Protecciones: bloqueos y reportes, límites de mensajes (20/min, 500/día) y 30 conversaciones nuevas al día. El ajuste
+  `CHAT_SOULMATES_PREMIUM` (chat con almas gemelas solo Premium) sigue disponible para más adelante.
+
+## 2026-10-27 · Votos en la app: nuevo motor de gustos (decisiones del titular)
+
+Cambia la regla «ninguna acción en la app cambia gustos». Ahora:
+
+- **Votar una tarjeta de Inicio** (gesto horizontal en 4 niveles): «Lo odio» −1, «No me gusta» −0,5, «Me gusta» +0,5,
+  «Me encanta» +1. Es una observación de la fuente interna `appinity` (nota explícita, confianza 1): **el mismo peso que
+  una nota de una fuente externa**. Recalcula el perfil y, unos segundos después, la afinidad (cuenta para las almas
+  gemelas y para lo que se recomienda a otros). No hace falta tener fuentes externas.
+- **«No lo conozco»** (deslizar abajo): no influye en el perfil ni en la afinidad.
+- **Votar es definitivo para esa obra** (también «No lo conozco»): no vuelve a salir en Inicio ni en Recomendaciones y no
+  se puede guardar ni descartar. Solo «Deshacer» lo revierte (borra el voto y su observación).
+- **Doble toque = guardar.** Lo guardado no vuelve a Inicio; en **Recomendaciones** (la pestaña antes llamada
+  Categorías) aparece primero. Recomendaciones solo muestra lo guardado y lo que aún no ha salido en el carrusel.
+- Sin cuestionario de gustos en el alta.
+- Tabla `item_votes` (migración 0019); `recommendation_actions` admite `vote`.
+
+## 2026-10-27 · Tarjeta de votación en Inicio (diseño, /creative L2 dentro de «Aura»)
+
+- **Gesto**: la distancia horizontal elige el nivel. Menos de 56 px no vota (soltar cancela); de 56 a 150 px, nivel
+  suave («No me gusta» / «Me gusta»); desde 150 px, intenso («Lo odio» / «Me encanta»). Hacia abajo (110 px),
+  «No lo conozco». Doble toque, guardar. Antes de soltar, un sello sobre la portada muestra el nivel, un medidor de
+  4 segmentos y si cuenta o no para tus gustos; la tarjeta se tiñe (coral en negativo, lima en positivo).
+- **Color sin depender solo del color**: cada nivel tiene icono propio (corazón roto, pulgar abajo, pulgar arriba,
+  corazón), texto y posición en el medidor. Lima = el color de las almas gemelas (votar en positivo te acerca a ellas).
+- **Botones equivalentes siempre visibles**: los 4 niveles (los extremos, más grandes; «Me encanta», relleno) y debajo
+  «No lo conozco» y «Guardar». Lanzan la tarjeta con la misma animación y sello que el gesto. Con lector de pantalla,
+  la tarjeta es un solo elemento con acciones (votar, no lo conozco, guardar; activar abre la ficha).
+- **Deshacer sigue teniendo sentido** (un voto es definitivo y cambia el perfil, y el gesto graduado facilita pasarse
+  de nivel), pero deja de ser un botón fijo: la barra «Título: nivel · Deshacer» confirma lo registrado y sigue visible
+  hasta la siguiente acción (sin límite de tiempo, WCAG 2.2.1). Guardar usa marcador; el corazón es «Me encanta».
+- **Pestaña «Recomendaciones»** (antes Categorías): en cada categoría, primero «Guardadas» y después lo que aún no ha
+  salido en Inicio. La etiqueta de la pestaña se encoge hasta un 80 % si no cabe.
+- Sin módulos nativos nuevos: basta con recargar el JavaScript en el APK de desarrollo actual.
+
+## 2026-10-27 · Modelo binario + «Me encanta» (sustituye a los 4 niveles; decisión del titular tras auditoría)
+
+Auditoría de los 4 niveles por distancia: mezclaban valorar lo que conoces con decidir sobre lo que no conoces (la
+tarea principal de una app de recomendaciones quedaba escondida), la intensidad por píxeles es ruidosa, los gestos no
+se descubren y más opciones por tarjeta dan menos tarjetas votadas. En el motor, consenso y Trending tratan igual
+«Me gusta» y «Me encanta» (umbral 0,5) y la afinidad depende sobre todo de cuántas obras valoradas se comparten.
+
+- **Gestos**: derecha «Me gusta» (+0,5), izquierda «No me gusta» (−0,5), doble toque «Me encanta» (+1, convención de
+  Instagram), arriba «Guardar», abajo «Paso». Umbral único de 100 px; sin medir distancias. Cinco botones equivalentes
+  (No me gusta · Paso · Guardar · Me gusta · Me encanta) y acciones para lector de pantalla.
+- **«Paso»** sustituye a «No lo conozco»: no cambia gustos y la obra **vuelve a Inicio cada mes** (30 días desde el
+  último paso) para valorarla. Es el descarte de Inicio (`home_dismissals`), ahora con caducidad.
+- **Recomendaciones** solo muestra lo guardado y lo que **nunca** ha salido en Inicio (ni votado, ni pasado, ni visto).
+- **Ficha**: «Tu opinión» con la misma escala y «Guardar», para votar lo guardado cuando ya se conoce. Votar es
+  definitivo; «Deshacer» solo justo después de votar en esa ficha. `GET /v1/me/home/items/:id/opinion`.
+- La API solo acepta −1, +1 y +2; los votos antiguos de −2 («Lo odio») se conservan (−1 en el perfil).
+- La tarjeta registra la acción aunque la animación no termine (app en segundo plano): tope de 1,2 s.
+
+## 2026-10-27 · Motor v3: 4 opciones, sin guardar, tarjeta simplificada (decisión del titular; /creative L2)
+
+Sustituye al modelo «binario + Me encanta» de esta misma fecha: «Guardar» y «Paso» eran demasiado parecidos.
+
+- **Cuatro opciones**: «No me gusta» (−0,5), «Me gusta» (+0,5), «Me encanta» (+1) y «No lo conozco» (no cuenta).
+- **«No lo conozco»** (auditoría de la palabra): describe un hecho (no conocerlo), no un juicio, y vale para las ocho
+  categorías (un artista, un restaurante, un libro). Se descartaron «Paso» (suena a rechazo, y la obra sigue en
+  Recomendaciones), «No lo he visto» (no sirve para música, libros ni lugares), «Ni idea» (coloquial, ambiguo) y
+  «Aún no lo conozco» (no cabe bajo un botón). Icono de interrogación, color neutro.
+- **Gestos**: derecha «Me gusta», izquierda «No me gusta», **arriba «Me encanta»** y **abajo «No lo conozco»**.
+  Arriba = más (escala vertical: lo mejor arriba; convención del «super like»); abajo = dejarlo pasar, sin energía y
+  sin juicio. **Un toque abre la ficha** (sustituye al doble toque: es el gesto que todo el mundo prueba primero y
+  ya no compite con ninguna acción). Arrastrar y volver al centro no cuenta como toque.
+- **Tarjeta con menos texto**: portada más alta (1,1), título, una línea de contexto y el motivo en una línea
+  («Clara y 3 almas gemelas»). Fuera la caja del motivo y el enlace «Ver ficha». La frase completa sigue para el
+  lector de pantalla y en las listas.
+- **Botones** en escala: No me gusta · No lo conozco (más pequeño: no es un voto) · Me gusta · Me encanta (relleno).
+- **Reglas**: lo votado no vuelve en ningún sitio; «No lo conozco» no vuelve a Inicio hasta 30 días después
+  (`home_dismissals`, `PASS_RETURN_DAYS`) y **sí** aparece en Recomendaciones si es una recomendación.
+  **Recomendaciones excluye solo lo votado** (antes excluía todo lo visto en Inicio y anteponía lo guardado).
+- **Guardar desaparece**: la API ya no acepta `keep`; las acciones «keep» antiguas no cuentan (la demo de Laura
+  tenía 100 «Conservar» del modelo anterior que llenaban Recomendaciones de «Lo guardaste»). Ficha: solo votar.
+
+## 2026-10-27 · Ficha de una obra: lo que la tarjeta no cuenta (/creative L2, Layout Strategist, dentro de «Aura»)
+
+- **Problema** (titular): la ficha repetía la tarjeta de Inicio (cartel grande con título encima).
+- **Composición nueva** (móvil, una columna, espaciado de `theme.spacing`):
+  1. Cabecera compacta: miniatura de 112 px (2:3 en cine, series y libros; cuadrada en lo demás) con el brillo de su
+     categoría, y al lado categoría, título y autoría completa · año (o la localidad en lugares). Atribución debajo.
+  2. **«Entre tus almas gemelas»** (nuevo): cuántas de tus 50 almas gemelas más afines la han valorado y cómo
+     (barra de reparto + leyenda: les encanta ≥ 0,8 · les gusta ≥ 0,5 · ni fu ni fa · no les gusta ≤ −0,5, con
+     confianza ≥ 0,5), y a quiénes de los que sigues les gusta. Mismos umbrales y mismo Top 50 que el consenso:
+     «les encanta» + «les gusta» = apoyos de la tarjeta. Sin valoraciones se dice tal cual.
+  3. «Tu opinión» (votar). 4. «Sobre esto»: descripción, **todos** los géneros, fecha, país. 5. «Dónde encontrarlo»,
+     tu relación (Known/Consumed/Preference) y datos técnicos plegados.
+- **Privacidad**: de las almas gemelas solo recuentos, nunca quién ni su historial; nombres solo de personas que
+  sigues (la misma regla que el motivo combinado de Inicio). Endpoint `GET /v1/me/home/items/:id/circle`, con la
+  visibilidad del objeto comprobada en backend.
+- **Doble toque**: abría la ficha dos veces (dos pantallas apiladas). Ahora todas las aperturas pasan por
+  `useOpenItem`, que ignora otra apertura durante 800 ms.
+- **«Me encanta» por doble toque: no** (por ahora sigue ↑). Motivos: obligaría a retrasar ~300 ms cada toque simple
+  para saber si llega un segundo (la ficha se abriría siempre más lenta); «Me encanta» es el voto más fuerte y es
+  definitivo (la tarjeta se va), así que un doble toque accidental cuesta más que en Instagram, donde el corazón se
+  quita con otro toque; y rompe la regla «deslizar = opinar, tocar = mirar». Pendiente de que el titular decida.
+
+## 2026-10-27 · Sinopsis de Wikipedia, sello inmediato y color propio para «Me encanta» (/creative L2)
+
+- **Sinopsis** (titular: «una pequeña sinopsis», 3–4 frases): comienzo del artículo de Wikipedia (TextExtracts,
+  texto plano), recortado a 4 frases y 480 caracteres sin partir frases (abreviaturas «EE. UU.» y «Dr.» respetadas; se
+  quita la pronunciación AFI). Fuente revisada: el texto de Wikipedia es **CC BY-SA 4.0**, que permite uso comercial
+  con atribución y misma licencia; se muestra «Texto: Wikipedia · CC BY-SA 4.0» con enlace al artículo. API de
+  Wikimedia con User-Agent identificable y por lotes (50 QID, 20 títulos), a ritmo limitado. Se descartan TMDb
+  (solo no comercial) y Google Places (sin licencia para mostrar textos).
+  Idioma: el de la app; en español, si no hay artículo, la versión inglesa avisando «en inglés». Sin ninguno, la
+  descripción corta de Wikidata (no se inventa texto).
+- **Sello al deslizar**: aparecía al llegar al umbral (100 px). Ahora se ve a los 12 px (opacidad 0,6 → 1 y escala
+  0,86 → 1 hasta el umbral) y se «arma» al pasarlo (borde marcado: al soltar, cuenta). Sin subtítulo (titular).
+- **«Me encanta» con color propio** (titular: el verde era el mismo que en «Me gusta»). Token nuevo `love` / `onLove`
+  (claro #B0176A / blanco, 6,6:1; oscuro #FF5DB1 / #2A0618; sobre imagen #FF5DB1). Rosa con componente azul: con
+  daltonismo rojo-verde se distingue del coral de «No me gusta». Se aplica al botón (relleno y brillo), al sello
+  (píldora rellena), al tinte hacia arriba, a la ficha y a «Entre tus almas gemelas». «Me gusta» sigue en lima, el
+  color de las almas gemelas.

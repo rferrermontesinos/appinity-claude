@@ -1,7 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import { createDatabase, userAffinities, userBlocks, users, type DatabaseHandle } from '@appinity/database';
 import { DEMO_USERS, recomputeAffinities, seedDemo } from '@appinity/ingestion';
-import { CATEGORIES, type AffinityDto, type ChatConfigDto, type ChatConversationDto, type ChatInboxDto, type ChatMatchResultDto, type FriendsDto, type PublicPersonDto, type RecommendationsDto, type SoulmatesDto } from '@appinity/shared';
+import { CATEGORIES, type AffinityDto, type CategoryRankingDto, type ChatConfigDto, type ChatConversationDto, type ChatInboxDto, type ChatMatchResultDto, type FollowedPersonDto, type FriendsDto, type ItemCircleDto, type PublicPersonDto, type RecommendationsDto, type SoulmatesDto } from '@appinity/shared';
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { testEnv, truncateAll } from '../../../test/helpers.js';
@@ -95,7 +95,7 @@ describe('almas gemelas y perfil público (fase 6)', () => {
     const res = await get(`/v1/people/${byHandle('demo_clara').id}`);
     expect(res.status).toBe(200);
     const body = (await res.json()) as PublicPersonDto;
-    expect(Object.keys(body).sort()).toEqual(['affinity', 'avatarUrl', 'chat', 'countryCode', 'displayName', 'friendship', 'userId']);
+    expect(Object.keys(body).sort()).toEqual(['affinity', 'avatarUrl', 'chat', 'countryCode', 'creator', 'displayName', 'follow', 'friendship', 'userId']);
     expect(body.friendship).toEqual({ state: 'none', requestId: null });
     expect(body.chat).toEqual({ state: 'none' });
     expect(body.displayName).toBe('Clara (demo)');
@@ -119,7 +119,7 @@ describe('recomendaciones (fase 7)', () => {
     const res = await get('/v1/me/recommendations?limit=20');
     expect(res.status).toBe(200);
     const body = (await res.json()) as RecommendationsDto;
-    expect(body.algorithmVersion).toBe('recommendation-v1');
+    expect(body.algorithmVersion).toBe('recommendation-v2');
     expect(body.trending.year).toBe(new Date().getFullYear());
     for (const r of body.items) {
       expect(r.reason.code).toBe(r.block);
@@ -283,5 +283,181 @@ describe('Chat (fase 12A)', () => {
     expect((await call(irisToken, 'POST', '/v1/me/blocks', { userId: laura.id })).status).toBe(204);
     expect((await call(token, 'POST', `/v1/me/chats/${conv}/messages`, { body: '¿sigues ahí?' })).status).toBe(404);
     expect((await call(irisToken, 'DELETE', `/v1/me/blocks/${laura.id}`)).status).toBe(204);
+  });
+});
+
+describe('Seguir a creadores y amigos (2026-10-26)', () => {
+  async function tokenFor(handle: string) {
+    const res = await fetch(`${base}/v1/dev/session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle }) });
+    return ((await res.json()) as { token: string }).token;
+  }
+  const call = (tok: string, method: string, path: string, body?: unknown) =>
+    fetch(`${base}${path}`, { method, headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
+  const byHandle = (h: string) => DEMO_USERS.find((u) => u.handle === h)!;
+  const followingIds = async (tok: string) => ((await (await call(tok, 'GET', '/v1/me/following')).json()) as FollowedPersonDto[]).map((p) => p.userId);
+
+  it('solo se sigue a creadores con perfil público o a amigos; la amistad aceptada sigue en ambos sentidos; bloquear deja de seguir', async () => {
+    const jordi = byHandle('demo_jordi');
+    const leo = byHandle('demo_leo');
+    const jordiToken = await tokenFor(jordi.handle);
+    const leoToken = await tokenFor(leo.handle);
+    // Ni creador ni amigo: no se puede seguir.
+    expect((await call(token, 'POST', '/v1/me/follows', { userId: jordi.id })).status).toBe(403);
+    // Con el perfil público de creador, sí.
+    expect((await call(jordiToken, 'PATCH', '/v1/me/settings', { publicCreator: true })).status).toBe(200);
+    expect(await (await call(token, 'POST', '/v1/me/follows', { userId: jordi.id })).json()).toEqual({ state: 'following' });
+    const profile = (await (await call(token, 'GET', `/v1/people/${jordi.id}`)).json()) as PublicPersonDto;
+    expect(profile.follow).toEqual({ state: 'following', canFollow: true });
+    expect(profile.creator).toEqual({ public: true, verified: false });
+    expect(await followingIds(token)).toContain(jordi.id);
+    // Amistad aceptada: os seguís los dos; dejar de seguir no rompe la amistad.
+    await call(token, 'POST', '/v1/me/friends/requests', { userId: leo.id });
+    const incoming = ((await (await call(leoToken, 'GET', '/v1/me/friends')).json()) as FriendsDto).incoming;
+    await call(leoToken, 'POST', `/v1/me/friends/requests/${incoming.find((f) => f.userId === laura.id)!.requestId}/accept`);
+    expect(await followingIds(token)).toContain(leo.id);
+    expect(await followingIds(leoToken)).toContain(laura.id);
+    expect(await (await call(token, 'DELETE', `/v1/me/follows/${leo.id}`)).json()).toEqual({ state: 'not_following' });
+    expect(((await (await call(token, 'GET', '/v1/me/friends')).json()) as FriendsDto).friends.map((f) => f.userId)).toContain(leo.id);
+    // Bloquear deja de seguir en ambos sentidos (y desbloquear no lo restaura).
+    expect((await call(jordiToken, 'POST', '/v1/me/blocks', { userId: laura.id })).status).toBe(204);
+    expect((await call(jordiToken, 'DELETE', `/v1/me/blocks/${laura.id}`)).status).toBe(204);
+    expect(await followingIds(token)).not.toContain(jordi.id);
+    // Limpieza para los tests siguientes.
+    await call(token, 'DELETE', `/v1/me/friends/${leo.id}`);
+    await call(jordiToken, 'PATCH', '/v1/me/settings', { publicCreator: false });
+  });
+
+  it('seguir no altera el consenso de las almas gemelas: añade el bloque de seguidos y el motivo combinado', async () => {
+    const clara = byHandle('demo_clara');
+    const claraToken = await tokenFor(clara.handle);
+    const recs = async () => (await (await call(token, 'GET', '/v1/me/recommendations?limit=30')).json()) as RecommendationsDto;
+    const before = await recs();
+    expect(before.algorithmVersion).toBe('recommendation-v2');
+    await call(claraToken, 'PATCH', '/v1/me/settings', { publicCreator: true });
+    expect((await call(token, 'POST', '/v1/me/follows', { userId: clara.id })).status).toBe(200);
+    const after = await recs();
+    // Los 7 primeros de consenso, idénticos y con los mismos apoyos: los seguidos no votan en el consenso.
+    const head = (r: RecommendationsDto) => r.items.filter((i) => i.block === 'consensus').slice(0, 7).map((i) => [i.item.id, i.reason.supporters]);
+    expect(head(after)).toEqual(head(before));
+    // Clara aparece como autora de una tarjeta de seguidos o en el motivo combinado.
+    const credited = after.items.some(
+      (i) => (i.block === 'followed' && i.reason.contributor?.userId === clara.id) || i.reason.followedBy?.names.includes(clara.displayName),
+    );
+    expect(credited).toBe(true);
+    // Nunca se repite a la autora de la tarjeta en el motivo combinado; si descubre ella, se dice «a quien sigues».
+    for (const i of after.items) expect(i.reason.followedBy?.names ?? []).not.toContain(i.reason.contributor?.displayName ?? '∅');
+    const discoveredByClara = after.items.filter((i) => i.block === 'discovery' && i.reason.contributor?.userId === clara.id);
+    for (const i of discoveredByClara) expect(i.reason.contributorFollowed).toBe(true);
+    expect(before.items.some((i) => i.reason.followedBy)).toBe(false);
+    await call(token, 'DELETE', `/v1/me/follows/${clara.id}`);
+    await call(claraToken, 'PATCH', '/v1/me/settings', { publicCreator: false });
+  });
+});
+
+describe('Orden personal de Categorías (2026-10-26)', () => {
+  it('ocho categorías ordenadas por afinidad y gusto propio; cada persona ve su propio orden', async () => {
+    const ranking = async (tok: string) => (await (await fetch(`${base}/v1/me/categories/ranking`, { headers: { Authorization: `Bearer ${tok}` } })).json()) as CategoryRankingDto;
+    const lauraRank = await ranking(token);
+    expect(lauraRank.version).toBe('category-ranking-v1');
+    expect(lauraRank.items.map((i) => i.category).sort()).toEqual([...CATEGORIES].sort());
+    const scores = lauraRank.items.map((i) => i.score);
+    expect([...scores].sort((a, b) => b - a)).toEqual(scores);
+    const res = await fetch(`${base}/v1/dev/session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle: 'demo_alex' }) });
+    const alexRank = await ranking(((await res.json()) as { token: string }).token);
+    expect(alexRank.items[0]!.category).not.toBe(lauraRank.items[0]!.category);
+    expect(['games', 'music']).toContain(alexRank.items[0]!.category);
+  });
+});
+
+describe('Escribir siempre, sin match (2026-10-27)', () => {
+  it('se abre la conversación sin esperar; solo aparece en la bandeja cuando alguien escribe; bloquear la cierra', async () => {
+    const tokenFor = async (handle: string) =>
+      ((await (await fetch(`${base}/v1/dev/session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle }) })).json()) as { token: string }).token;
+    const call = (tok: string, method: string, path: string, body?: unknown) =>
+      fetch(`${base}${path}`, { method, headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
+    const ona = DEMO_USERS.find((u) => u.handle === 'demo_ona')!;
+    const onaToken = await tokenFor(ona.handle);
+    const opened = await call(token, 'POST', '/v1/me/chats/open', { userId: ona.id });
+    expect(opened.status).toBe(200);
+    const { conversationId } = (await opened.json()) as { conversationId: string };
+    // Abrir otra vez devuelve la misma conversación.
+    expect(((await (await call(token, 'POST', '/v1/me/chats/open', { userId: ona.id })).json()) as { conversationId: string }).conversationId).toBe(conversationId);
+    // Sin mensajes no aparece en la bandeja de Ona (ni cuenta en el aviso).
+    let inbox = (await (await call(onaToken, 'GET', '/v1/me/chats')).json()) as ChatInboxDto;
+    expect(inbox.conversations.map((c) => c.conversationId)).not.toContain(conversationId);
+    expect(inbox.badge).toBe(0);
+    expect((await call(token, 'POST', `/v1/me/chats/${conversationId}/messages`, { body: 'Hola Ona', clientId: 'laura-ona-1' })).status).toBe(201);
+    inbox = (await (await call(onaToken, 'GET', '/v1/me/chats')).json()) as ChatInboxDto;
+    expect(inbox.conversations.find((c) => c.conversationId === conversationId)).toMatchObject({ unread: 1, lastMessage: { body: 'Hola Ona', mine: false } });
+    expect(inbox.badge).toBe(1);
+    // Nadie puede abrir chat consigo mismo; tras un bloqueo, la otra persona ya no es visible.
+    expect((await call(token, 'POST', '/v1/me/chats/open', { userId: laura.id })).status).toBe(403);
+    expect((await call(onaToken, 'POST', '/v1/me/blocks', { userId: laura.id })).status).toBe(204);
+    expect((await call(token, 'POST', '/v1/me/chats/open', { userId: ona.id })).status).toBe(404);
+    expect((await call(onaToken, 'DELETE', `/v1/me/blocks/${laura.id}`)).status).toBe(204);
+  });
+});
+
+describe('Votos en Inicio (motor v3, 2026-10-27)', () => {
+  it('un voto es una nota con el mismo peso que una externa; «No lo conozco» no toca el perfil; votado = definitivo', async () => {
+    // Sesión de Laura (ya abierta): pedir otra superaría el límite de sesiones de desarrollo por minuto.
+    const tok = token;
+    const call = (method: string, path: string, body?: unknown) =>
+      fetch(`${base}${path}`, { method, headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
+    const recsRes = await call('GET', '/v1/me/recommendations?limit=10');
+    const recs = (await recsRes.json()) as RecommendationsDto;
+    if (!recs.items) throw new Error(`recomendaciones: HTTP ${recsRes.status} ${JSON.stringify(recs).slice(0, 300)}`);
+    const [liked = '', unknown = ''] = recs.items.map((i) => i.item.id);
+    expect(liked && unknown).toBeTruthy();
+    const opinion = async (id: string) => (await (await call('GET', `/v1/me/home/items/${id}/opinion`)).json()) as { voted: boolean; vote: number | null };
+    // Me gusta: observación «appinity» con preferencia +0,5 y confianza 1 (mismo peso que una nota externa).
+    expect((await call('POST', '/v1/me/home/votes', { itemId: liked, value: 1 })).status).toBe(200);
+    const profile = (await (await call('GET', `/v1/me/item-profiles/${liked}`)).json()) as { observations: Array<{ sourceKey: string; preferenceScore: number; preferenceConfidence: number; preferenceBasis: string }> };
+    expect(profile.observations.find((o) => o.sourceKey === 'appinity')).toMatchObject({ preferenceScore: 0.5, preferenceConfidence: 1, preferenceBasis: 'explicit_rating' });
+    expect(await opinion(liked)).toEqual({ voted: true, vote: 1 });
+    // Solo −1, +1 y +2; «No lo conozco» es una acción, no un voto. Guardar ya no existe.
+    expect((await call('POST', '/v1/me/home/votes', { itemId: unknown, value: 'unknown' })).status).toBe(400);
+    expect((await call('POST', '/v1/me/home/votes', { itemId: unknown, value: -2 })).status).toBe(400);
+    expect((await call('POST', '/v1/me/home/actions', { itemId: unknown, action: 'keep' })).status).toBe(400);
+    // No lo conozco: sin observación; fuera de Inicio (hasta 30 días después), pero sigue en Recomendaciones.
+    expect((await call('POST', '/v1/me/home/actions', { itemId: unknown, action: 'dismiss' })).status).toBe(200);
+    const unknownProfile = (await (await call('GET', `/v1/me/item-profiles/${unknown}`)).json()) as { observations: Array<{ sourceKey: string }> };
+    expect(unknownProfile.observations.filter((o) => o.sourceKey === 'appinity')).toEqual([]);
+    expect(await opinion(unknown)).toEqual({ voted: false, vote: null });
+    const ids = async (context: 'home' | 'category') =>
+      ((await (await call('POST', '/v1/me/recommendations/query', { limit: 50, context })).json()) as RecommendationsDto).items.map((i) => i.item.id);
+    expect(await ids('home')).not.toContain(unknown);
+    expect(await ids('category')).toContain(unknown);
+    // Votado = definitivo: no se vuelve a votar ni sale en Inicio ni en Recomendaciones.
+    expect((await call('POST', '/v1/me/home/votes', { itemId: liked, value: 2 })).status).toBe(409);
+    expect((await call('POST', '/v1/me/home/actions', { itemId: liked, action: 'dismiss' })).status).toBe(409);
+    for (const context of ['home', 'category'] as const) expect(await ids(context)).not.toContain(liked);
+    // Deshacer «No lo conozco» y después el voto (la última acción primero).
+    expect(((await (await call('POST', '/v1/me/home/undo')).json()) as { action: string; itemId: string })).toMatchObject({ action: 'dismiss', itemId: unknown });
+    expect(((await (await call('POST', '/v1/me/home/undo')).json()) as { action: string; itemId: string })).toMatchObject({ action: 'vote', itemId: liked });
+    const reverted = (await (await call('GET', `/v1/me/item-profiles/${liked}`)).json()) as { observations: Array<{ sourceKey: string }> };
+    expect(reverted.observations.filter((o) => o.sourceKey === 'appinity')).toEqual([]);
+    expect(await opinion(liked)).toEqual({ voted: false, vote: null });
+  });
+
+  it('ficha «Entre tus almas gemelas»: recuentos del Top 50 coherentes con el consenso, sin IDs ni nombres de almas gemelas', async () => {
+    const call = (path: string) => fetch(`${base}${path}`, { headers: { Authorization: `Bearer ${token}` } });
+    const recs = (await (await call('/v1/me/recommendations?limit=20')).json()) as RecommendationsDto;
+    expect(recs.items.length).toBeGreaterThan(0);
+    for (const r of recs.items.slice(0, 8)) {
+      const res = await call(`/v1/me/home/items/${r.item.id}/circle`);
+      expect(res.status).toBe(200);
+      const circle = (await res.json()) as ItemCircleDto;
+      expect(Object.keys(circle).sort()).toEqual(['dislike', 'followedLikers', 'like', 'love', 'mixed', 'opinionated', 'soulmates']);
+      expect(JSON.stringify(circle)).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/);
+      expect(circle.soulmates).toBeLessThanOrEqual(50);
+      expect(circle.opinionated).toBe(circle.love + circle.like + circle.mixed + circle.dislike);
+      expect(circle.opinionated).toBeLessThanOrEqual(circle.soulmates);
+      expect(circle.followedLikers.names.length).toBe(Math.min(2, circle.followedLikers.count));
+      // Mismo Top 50 y mismos umbrales que un apoyo del consenso: «les encanta» + «les gusta» = apoyos de la tarjeta.
+      if (r.block === 'consensus') expect(circle.love + circle.like).toBe(r.reason.supporters);
+    }
+    expect((await call('/v1/me/home/items/no-uuid/circle')).status).toBe(400);
+    expect((await call('/v1/me/home/items/00000000-0000-4000-8000-000000000000/circle')).status).toBe(404);
   });
 });

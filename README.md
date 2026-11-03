@@ -356,6 +356,35 @@ Comprobaciones esperadas:
 | «Incremental auth is not allowed for the requested scopes» · `Error 400: invalid_request` | Data Portability no admite añadir permisos a una autorización existente (pasó al añadir YouTube) | Corregido: al renovar, APPINITY libera antes la autorización anterior y pide todos los permisos de nuevo. Reinicia `pnpm api` y vuelve a pulsar «Renovar permiso». Lo importado se conserva |
 | La cuenta es de empresa o de un centro educativo | Su administrador puede bloquear apps no verificadas | Usa una cuenta personal de Gmail (mayor de 18 años) |
 
+## Conectar tu cuenta de Facebook (páginas que te gustan)
+
+Implementado y probado con Facebook simulado; **pendiente de validar con tu cuenta**. Solo lee las páginas que te
+gustan (restaurantes, series, películas, grupos, libros, podcasts y juegos) y nada más.
+
+1. En <https://developers.facebook.com> regístrate como desarrollador (verificación por SMS) y crea una app de tipo
+   **«Consumidor»** o con el caso de uso **«Autenticar y solicitar datos a los usuarios con el inicio de sesión con
+   Facebook»**. Nombre: `APPINITY (desarrollo)`.
+2. En **Inicio de sesión con Facebook → Configuración**, añade en «URI de redireccionamiento de OAuth válidos»:
+   `http://localhost:3100/v1/connect/facebook/callback`.
+3. En **Casos de uso → Permisos**, añade `user_likes`. En modo desarrollo funciona sin revisión para las cuentas con rol
+   en la app (la tuya, como administrador).
+4. En **Configuración de la app → Básica**, copia el **identificador de la app** y ejecuta:
+
+   ```bash
+   pnpm secret:set FACEBOOK_APP_ID --clipboard
+   ```
+
+   Después copia la **clave secreta** y ejecuta:
+
+   ```bash
+   pnpm secret:set FACEBOOK_APP_SECRET --clipboard
+   ```
+
+5. Reinicia `pnpm api` y `pnpm worker`. En la vista web del PC (`http://localhost:8092`), Perfil → Fuentes →
+   Facebook → **Conectar**. Facebook vuelve a `localhost`, así que se conecta desde el PC, como Google.
+
+Para la beta: App Review de `user_likes` y verificación del negocio en Meta.
+
 ## Comandos
 
 | Comando | Qué hace |

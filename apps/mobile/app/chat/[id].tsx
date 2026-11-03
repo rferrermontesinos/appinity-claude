@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Pressable, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ApiError } from '../../src/api/client';
 import {
@@ -18,9 +18,10 @@ import {
   useSocialAction,
 } from '../../src/api/queries';
 import { shortTime } from '../../src/components/ChatInbox';
+import { DetailHeader, HeaderButton } from '../../src/components/DetailHeader';
 import { PersonAvatar, formatAffinity } from '../../src/components/PersonAvatar';
 import { Body, Button, Card, ErrorCard, Loading, Small } from '../../src/components/ui';
-import { radius, spacing, usePalette } from '../../src/theme';
+import { radius, spacing, type, usePalette } from '../../src/theme';
 
 interface Pending {
   clientId: string;
@@ -63,15 +64,16 @@ function Bubble({ body, mine, meta, failed, onRetry }: { body: string; mine: boo
     >
       <View
         style={{
-          backgroundColor: failed ? `${c.danger}22` : mine ? c.accent : c.surfaceAlt,
-          borderRadius: 18,
+          // La chispa es solo la acción principal («Aura»): el mensaje propio va en su contenedor tonal.
+          backgroundColor: failed ? `${c.danger}22` : mine ? c.primaryContainer : c.surfaceAlt,
+          borderRadius: radius.lg,
           borderBottomRightRadius: mine ? 4 : 18,
           borderBottomLeftRadius: mine ? 18 : 4,
           paddingHorizontal: spacing.md,
           paddingVertical: spacing.sm,
         }}
       >
-        <Text style={{ color: failed ? c.danger : mine ? c.accentText : c.text, fontSize: 15, lineHeight: 20 }}>{body}</Text>
+        <Text style={{ color: failed ? c.danger : mine ? c.onPrimaryContainer : c.text, ...type.body }}>{body}</Text>
       </View>
       {meta ? <Small style={{ color: failed ? c.danger : c.textMuted }}>{meta}</Small> : null}
     </Pressable>
@@ -174,22 +176,16 @@ export default function ChatScreen() {
 
   return (
     // Android 15+ dibuja la app de borde a borde: la ventana ya no se encoge con el teclado y «height» deja la caja de
-    // texto debajo. «padding» en ambas plataformas, desplazado por la cabecera (barra de estado + 56 dp o 44 pt).
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: c.background }}
-      behavior="padding"
-      keyboardVerticalOffset={insets.top + (Platform.OS === 'ios' ? 44 : 56)}
-    >
-      <Stack.Screen
-        options={{
-          title: person?.displayName ?? t('chat.tabChats'),
-          headerRight: () => (
-            <Pressable accessibilityRole="button" accessibilityLabel={t('chat.options')} onPress={() => setMenu((m) => (m ? null : 'open'))} hitSlop={12}>
-              <MaterialCommunityIcons name="dots-vertical" size={24} color={c.text} />
-            </Pressable>
-          ),
-        }}
-      />
+    // texto debajo. «padding» en ambas plataformas; sin barra nativa (cabecera única de detalle), sin desplazamiento.
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: c.background }} behavior="padding" keyboardVerticalOffset={0}>
+      <Stack.Screen options={{ headerShown: false, title: person?.displayName ?? t('chat.tabChats') }} />
+      <View style={{ paddingHorizontal: spacing.lg }}>
+        <DetailHeader
+          fallback="/people"
+          title={person?.displayName ?? t('chat.tabChats')}
+          right={<HeaderButton icon="dots-vertical" label={t('chat.options')} onPress={() => setMenu((m) => (m ? null : 'open'))} />}
+        />
+      </View>
       {conversation.isLoading ? <Loading /> : null}
       {conversation.error ? (
         <View style={{ padding: spacing.lg }}>
@@ -242,7 +238,7 @@ export default function ChatScreen() {
                   style={{ alignItems: 'center', gap: spacing.xs }}
                 >
                   <PersonAvatar name={person.displayName} url={person.avatarUrl} size={72} />
-                  <Text style={{ color: c.text, fontWeight: '800', fontSize: 17 }}>{person.displayName}</Text>
+                  <Text style={{ color: c.text, ...type.h4 }}>{person.displayName}</Text>
                   <Small>
                     {t('chat.matchedOn', { date: new Date(data.conversation.matchedAt).toLocaleDateString(i18n.language, { day: 'numeric', month: 'long' }) })}
                     {person.affinity !== null ? ` · ${t('chat.matchAffinity', { value: formatAffinity(person.affinity) })}` : ''}
@@ -270,7 +266,7 @@ export default function ChatScreen() {
               accessibilityLabel={t('chat.placeholder')}
               multiline
               maxLength={1000}
-              style={{ flex: 1, maxHeight: 120, color: c.text, backgroundColor: c.surfaceAlt, borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, fontSize: 15 }}
+              style={{ flex: 1, minHeight: 48, maxHeight: 120, color: c.text, backgroundColor: c.surfaceAlt, borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, ...type.body }}
             />
             <Pressable
               accessibilityRole="button"
@@ -278,9 +274,9 @@ export default function ChatScreen() {
               disabled={!draft.trim()}
               onPress={() => submit()}
               style={({ pressed }) => ({
-                width: 42,
-                height: 42,
-                borderRadius: 21,
+                width: 48,
+                height: 48,
+                borderRadius: radius.full,
                 backgroundColor: c.accent,
                 alignItems: 'center',
                 justifyContent: 'center',

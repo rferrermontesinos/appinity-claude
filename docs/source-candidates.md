@@ -152,3 +152,44 @@ Conclusión: las grandes plataformas de consumo exigen licencia comercial. Lo in
 - Google, con un solo consentimiento;
 - Steam, Trakt y AniList (ya integradas);
 - Hardcover y Mixcloud, si se confirman sus condiciones.
+
+## Facebook e Instagram como fuente (revisión 2026-10-26)
+
+| Vía | Qué da | Estado | Valoración |
+|---|---|---|---|
+| **Facebook Login + permiso `user_likes`** (Graph API `/me/likes`) | Páginas que te gustan, con nombre, categoría de la página (restaurante, programa de TV, grupo, libro, podcast…), ubicación, web y fecha | Vigente. Uso permitido: «personalizar la experiencia relacionando o mostrando contenido sobre los gustos de la persona» ([permisos](https://developers.facebook.com/docs/permissions/)) | **Viable, como Steam**: conexión aparte, sync periódico. En modo desarrollo funciona con las cuentas con rol en la app (el titular) sin revisión; en producción exige App Review y verificación del negocio |
+| **Instagram Graph API** | Solo cuentas profesionales; no hay permiso para leer a quién sigue una cuenta personal | Instagram Basic Display cerró en diciembre de 2024 | **No viable** por API |
+| **Exportación «Descargar tu información» (Meta)** | JSON con las cuentas que sigues en Instagram y las páginas que te gustan o sigues en Facebook | Disponible para cualquier usuario | Viable como **subida de archivo**. Instagram solo da el nombre de usuario: se identifica con Wikidata (P2003), útil para artistas, series o marcas y poco para restaurantes |
+| **Portabilidad DMA de Meta** (destino en «Exportar tu información») | El flujo empieza en Meta; la documentación no detalla categorías ([guía](https://developers.facebook.com/docs/data-portability)) | Requiere alta como destino | Por estudiar; no prioritaria |
+
+Identificación: Wikidata tiene el usuario de Facebook (P2013) y de Instagram (P2003), así que una página de un artista,
+serie, película, libro o podcast se identifica de forma exacta cuando Wikidata la conoce. Un restaurante se identifica
+por su ubicación y nombre con OpenStreetMap, como los lugares de Google.
+
+Intensidad de la señal: un «me gusta» de página es un gusto explícito pero débil y a veces antiguo (`explicit_like` con
+confianza moderada y decaimiento por antigüedad); seguir una cuenta de Instagram indica interés (Known y preferencia
+débil). Nunca un disgusto: no seguir algo no es rechazo (NULL).
+
+## Otras redes sociales (revisión 2026-10-26)
+
+Leyenda: **Comprobado** (página oficial leída hoy) · **Secundario** (fuentes no oficiales) · **Previo** (conocimiento
+previo, pendiente de comprobar antes de implementar).
+
+| Red | Vía | Qué aportaría | Estado | Valoración |
+|---|---|---|---|---|
+| **Pinterest** | API v5 con OAuth (PKCE), `boards:read`, `pins:read` | Tableros y pines propios: recetas, restaurantes, viajes, libros, películas (por los enlaces de cada pin) | Secundario: acceso Trial para empezar y Standard tras revisión ([niveles de acceso](https://developers.pinterest.com/docs/key-concepts/access-tiers/)). No confirmado un permiso para «a quién sigues» | **Viable con trabajo de identificación**: un pin es una imagen con enlace; se identifica por el dominio y la página enlazada (IMDb, Goodreads, web del restaurante) |
+| **TikTok** | Data Portability API (DMA, UE) | Me gusta, favoritos, seguidos, sonidos favoritos (música) | Previo (ya en la tabla de APIs DMA): requiere solicitud y aprobación | **Viable en la UE** tras la solicitud; los sonidos favoritos son la señal más útil (artistas) |
+| **LinkedIn** | Sign In with LinkedIn (OpenID) | Solo nombre, email y foto | Previo: los intereses y las páginas seguidas solo están en programas de socios | **No viable** y de poco valor para gustos culturales |
+| **X (Twitter)** | API v2 | Cuentas seguidas y me gusta | Previo: la lectura exige un plan de pago | **Descartada** mientras sea de pago |
+| **Reddit** | Data API (`mysubreddits`) | Comunidades a las que te suscribes (series, juegos, grupos) | Previo: gratis solo para uso no comercial; comercial con acuerdo | **C** (como TMDb): necesita acuerdo |
+| **Twitch** | Helix con `user:read:follows` | Canales seguidos (juegos que ves en directo) | Secundario: los endpoints de seguidos exigen token de usuario ([foro de Twitch](https://discuss.dev.twitch.com/t/follows-endpoints-and-eventsub-subscription-type-are-now-available-in-open-beta/43322)) | **Viable**, señal débil para videojuegos; comprobar condiciones comerciales |
+| **Spotify** | Web API | Artistas seguidos y top | Previo (ya analizado): el modo desarrollo limita usuarios y la cuota ampliada exige escala | Pendiente de escala, como ya se decidió |
+
+### Propuesta de orden
+
+1. **Facebook (`user_likes`)**: la más parecida a Steam y de alcance global. Empieza en modo desarrollo con la cuenta del
+   titular, sin revisión; para la beta, App Review y verificación del negocio.
+2. **Exportación de Meta (Instagram y Facebook)** como subida de archivo: sin trámites, el usuario sube su JSON.
+3. **Pinterest**: buen complemento para restaurantes, recetas y viajes; requiere identificar por enlaces.
+4. **TikTok (DMA)**: cuando haya solicitud aprobada; útil para música.
+5. Twitch como señal débil de videojuegos, si se confirma su uso comercial.
