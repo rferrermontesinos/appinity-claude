@@ -1,7 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import { createDatabase, userAffinities, userBlocks, users, type DatabaseHandle } from '@appinity/database';
 import { DEMO_USERS, recomputeAffinities, seedDemo } from '@appinity/ingestion';
-import { CATEGORIES, type AffinityDto, type CategoryRankingDto, type ChatConfigDto, type ChatConversationDto, type ChatInboxDto, type ChatMatchResultDto, type FollowedPersonDto, type FriendsDto, type ItemCircleDto, type PublicPersonDto, type RecommendationsDto, type SoulmatesDto } from '@appinity/shared';
+import { CATEGORIES, type AffinityDto, type CategoryRankingDto, type ChatConfigDto, type ChatConversationDto, type ChatInboxDto, type ChatMatchResultDto, type FollowedPersonDto, type DefiningTastesDto, type FriendsDto, type ItemCircleDto, type PublicPersonDto, type SharedTastesDto, type RecommendationsDto, type SoulmatesDto } from '@appinity/shared';
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { testEnv, truncateAll } from '../../../test/helpers.js';
@@ -438,6 +438,23 @@ describe('Votos en Inicio (motor v3, 2026-10-27)', () => {
     const reverted = (await (await call('GET', `/v1/me/item-profiles/${liked}`)).json()) as { observations: Array<{ sourceKey: string }> };
     expect(reverted.observations.filter((o) => o.sourceKey === 'appinity')).toEqual([]);
     expect(await opinion(liked)).toEqual({ voted: false, vote: null });
+  });
+
+  it('«Lo que os une» y «Lo que te define»: solo con personas visibles y con sus límites', async () => {
+    const call = (path: string) => fetch(`${base}${path}`, { headers: { Authorization: `Bearer ${token}` } });
+    const soulmates = (await (await call('/v1/me/soulmates')).json()) as SoulmatesDto;
+    const other = soulmates.items[0]!.userId;
+    const res = await call(`/v1/people/${other}/shared`);
+    expect(res.status).toBe(200);
+    const shared = (await res.json()) as SharedTastesDto;
+    expect(shared.status).toBe('ok');
+    expect(shared.items.length).toBeLessThanOrEqual(5);
+    expect(shared.total).toBeGreaterThanOrEqual(shared.items.length);
+    expect((await call('/v1/people/no-uuid/shared')).status).toBe(400);
+    expect((await call('/v1/people/00000000-0000-4000-8000-000000000000/shared')).status).toBe(404);
+    const defining = (await (await call('/v1/me/defining')).json()) as DefiningTastesDto;
+    expect(defining.items.length).toBeGreaterThan(0);
+    expect(defining.items.length).toBeLessThanOrEqual(6);
   });
 
   it('ficha «Entre tus almas gemelas»: recuentos del Top 50 coherentes con el consenso, sin IDs ni nombres de almas gemelas', async () => {

@@ -152,6 +152,17 @@ export function SettingsCard({ settings }: { settings: SettingsDto }) {
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <View style={{ flex: 1, gap: 2 }}>
+          <Body>{t('profile.shareCommonTastes')}</Body>
+          <Small>{t('profile.shareCommonTastesHint')}</Small>
+        </View>
+        <Switch
+          value={settings.shareCommonTastes}
+          onValueChange={(value) => save({ shareCommonTastes: value })}
+          accessibilityLabel={t('profile.shareCommonTastes')}
+        />
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View style={{ flex: 1, gap: 2 }}>
           <Body>{t('follow.publicCreator')}</Body>
           <Small>{t('follow.publicCreatorHint')}</Small>
         </View>

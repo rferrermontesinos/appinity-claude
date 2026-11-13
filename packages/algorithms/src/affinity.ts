@@ -196,6 +196,15 @@ export function affinity(source: PreferenceIndex, target: PreferenceIndex, param
   };
 }
 
+/**
+ * Peso por rareza de una obra: 1 + ln((N + 1) / (n + 1)), con N las personas comparables del dataset y n las que tienen
+ * preferencia sobre la obra. Lo que conoce casi todo el mundo pesa ~1; lo que conocen pocas, más (con 1.000 personas,
+ * una obra de 2 pesa ~6,8 y una de 500, ~1,7). Nunca baja de 1, y con muy poca gente todo pesa casi igual.
+ */
+export function rarityWeight(holders: number, population: number): number {
+  return Math.max(1, 1 + Math.log((Math.max(population, 0) + 1) / (Math.max(holders, 0) + 1)));
+}
+
 /** «Afinidad mutua excepcional» (§4): ambas direcciones ≥ 90. */
 export function isExceptionalMutual(aToB: number | null, bToA: number | null): boolean {
   return aToB !== null && bToA !== null && aToB >= 90 && bToA >= 90;

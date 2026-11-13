@@ -10,13 +10,14 @@ import { ChatActions } from '../../src/components/ChatActions';
 import { DetailHeader } from '../../src/components/DetailHeader';
 import { PersonActions } from '../../src/components/PersonActions';
 import { PersonAvatar, formatAffinity } from '../../src/components/PersonAvatar';
+import { SharedTastes } from '../../src/components/TasteList';
 import { Body, Card, ErrorCard, Screen, Skeleton, Small } from '../../src/components/ui';
 import { radius, spacing, type, usePalette } from '../../src/theme';
 
 /**
  * Perfil público mínimo (§4, «Aura»): cartel con la persona y tu afinidad hacia ella (direccional), teñido con su
- * categoría más afín; después, las ocho afinidades por categoría en orden canónico. NULL se muestra como raya. Nunca
- * muestra el historial de la persona: de lo que compartís, solo el recuento.
+ * categoría más afín; «Lo que os une» (hasta 5 obras que os gustan a los dos, si los dos lo permitís) y las ocho
+ * afinidades por categoría en orden canónico. NULL se muestra como raya. Nunca muestra el historial de la persona.
  */
 export default function PersonScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -64,6 +65,7 @@ export default function PersonScreen() {
             <Text style={{ color: onPoster.muted, fontSize: 12, lineHeight: 17, marginTop: spacing.xs }}>{t('people.affinityHint')}</Text>
           </AuraCard>
           <ChatActions person={data} />
+          <SharedTastes userId={data.userId} />
           <Card>
             <Text accessibilityRole="header" style={{ color: c.text, ...type.h3 }}>
               {t('people.byCategory')}

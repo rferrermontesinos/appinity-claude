@@ -1,0 +1,1 @@
+ALTER TABLE "user_settings" ADD COLUMN "share_common_tastes" boolean DEFAULT true NOT NULL;

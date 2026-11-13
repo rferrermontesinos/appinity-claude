@@ -141,6 +141,13 @@
       "when": 1793110337769,
       "tag": "0019_wealthy_namorita",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1794580929434,
+      "tag": "0020_huge_madelyne_pryor",
+      "breakpoints": true
     }
   ]
 }

@@ -91,6 +91,7 @@ export default function HowItWorksScreen() {
           <Section title={t('howItWorks.others.title')}>
             <Point icon="card-account-details-outline" text={t('howItWorks.others.profile')} />
             <Point icon="counter" text={t('howItWorks.others.counts')} />
+            <Point icon="vector-link" text={t('howItWorks.others.shared')} />
           </Section>
 
           <Section title={t('howItWorks.controls.title')}>

@@ -47,6 +47,8 @@ export interface SettingsDto {
   discoverableByContacts: boolean;
   /** Aparecer en el ranking de almas gemelas de otras personas. */
   discoverableAsSoulmate: boolean;
+  /** «Lo que os une»: mostrar las obras que os gustan a los dos (recíproco). */
+  shareCommonTastes: boolean;
   /** Perfil público de creador: cualquiera puede seguirte y tus gustos aparecen con tu nombre a quien te sigue. */
   publicCreator: boolean;
   /** Insignia de verificación (la concede el equipo; solo con el perfil público activo). */
@@ -211,6 +213,24 @@ export interface SoulmatesDto {
 }
 
 /** Perfil público mínimo (§4): nombre, país, foto y afinidades. Sin historiales importados. */
+/** Obra de «Lo que os une» o «Lo que te define». `rarity`: «rara» (≤ 10 % de la gente) o «poco común» (≤ 30 %). */
+export interface TasteItemDto {
+  item: CatalogItemDto;
+  rarity: 'rare' | 'uncommon' | null;
+}
+
+/** «Lo que os une»: `off_you` si lo has desactivado; `off_them` si lo ha desactivado la otra persona. */
+export interface SharedTastesDto {
+  status: 'ok' | 'off_you' | 'off_them';
+  total: number;
+  items: TasteItemDto[];
+}
+
+/** «Lo que te define»: solo para la propia persona. */
+export interface DefiningTastesDto {
+  items: TasteItemDto[];
+}
+
 export interface PublicPersonDto {
   userId: string;
   displayName: string;

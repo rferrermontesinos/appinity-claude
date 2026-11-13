@@ -27,3 +27,4 @@ export * from './catalog-expansion.js';
 export * from './votes.js';
 export * from './item-circle.js';
 export * from './transparency.js';
+export * from './shared-tastes.js';

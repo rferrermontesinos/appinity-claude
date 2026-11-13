@@ -5,6 +5,7 @@ import { Pressable, Text, View } from 'react-native';
 import { useConnections, useMe } from '../../src/api/queries';
 import { DataBanner } from '../../src/components/DataBanner';
 import { ProfileHero } from '../../src/components/ProfileHero';
+import { DefiningCard } from '../../src/components/TasteList';
 import { TastesCard } from '../../src/components/TastesCard';
 import { ErrorCard, Loading, Screen, Small } from '../../src/components/ui';
 import { radius, spacing, usePalette } from '../../src/theme';
@@ -62,6 +63,7 @@ export default function ProfileScreen() {
       {me.data ? (
         <>
           <ProfileHero me={me.data} />
+          <DefiningCard />
           <TastesCard />
           <NavRow
             icon="link-variant"

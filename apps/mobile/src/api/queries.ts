@@ -10,6 +10,8 @@ import type {
   MeDto,
   PublicPersonDto,
   SoulmatesDto,
+  SharedTastesDto,
+  DefiningTastesDto,
   BlockedPersonDto,
   FriendsDto,
   FriendshipResultDto,
@@ -192,6 +194,20 @@ export function usePerson(userId: string) {
     queryFn: () => apiRequest<PublicPersonDto>(`/v1/people/${userId}`),
     enabled: useHasSession() && Boolean(userId),
   });
+}
+
+/** «Lo que os une» con otra persona (recíproco y desactivable). */
+export function useSharedTastes(userId: string) {
+  return useQuery({
+    queryKey: ['sharedTastes', userId],
+    queryFn: () => apiRequest<SharedTastesDto>(`/v1/people/${userId}/shared`),
+    enabled: useHasSession() && Boolean(userId),
+  });
+}
+
+/** «Lo que te define»: tus obras más características. */
+export function useDefiningTastes() {
+  return useQuery({ queryKey: ['definingTastes'], queryFn: () => apiRequest<DefiningTastesDto>('/v1/me/defining'), enabled: useHasSession() });
 }
 
 export function useSources() {

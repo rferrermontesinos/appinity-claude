@@ -89,6 +89,8 @@ export const userSettings = pgTable(
     discoverableByContacts: boolean('discoverable_by_contacts').notNull().default(true),
     /** Aparecer en el ranking de almas gemelas de otras personas (§4: disponibles conforme a los ajustes de privacidad). */
     discoverableAsSoulmate: boolean('discoverable_as_soulmate').notNull().default(true),
+    /** «Lo que os une» (2026-10-27): mostrar hasta 5 obras que os gustan a los dos. Recíproco: apagado, tampoco ves el de nadie. */
+    shareCommonTastes: boolean('share_common_tastes').notNull().default(true),
     /**
      * Perfil público de creador (decisiones 2026-10-26): la persona consiente que cualquiera pueda seguirla y que sus
      * gustos aparezcan atribuidos a su nombre en las recomendaciones de quienes la siguen. Desactivado por defecto.
