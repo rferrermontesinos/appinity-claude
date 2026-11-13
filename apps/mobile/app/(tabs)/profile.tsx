@@ -44,8 +44,9 @@ function NavRow({ icon, title, subtitle, onPress }: { icon: keyof typeof Materia
 }
 
 /**
- * Perfil (2026-10-26): corto. Tu cartel, Tus gustos y dos accesos: Fuentes (de donde salen tus gustos) y Ajustes
- * (preferencias, privacidad, cuenta, Premium y diagnóstico), cada uno en su pantalla.
+ * Perfil (2026-10-26): corto. Tu cartel, Tus gustos y tres accesos: Fuentes (de donde salen tus gustos), Ajustes
+ * (preferencias, privacidad, cuenta, Premium y diagnóstico) y «Cómo funciona APPINITY» (transparencia), cada uno en su
+ * pantalla.
  */
 export default function ProfileScreen() {
   const { t } = useTranslation();
@@ -69,6 +70,7 @@ export default function ProfileScreen() {
             onPress={() => router.push('/sources')}
           />
           <NavRow icon="cog-outline" title={t('profile.settings')} subtitle={t('profile.settingsRowHint')} onPress={() => router.push('/settings')} />
+          <NavRow icon="shield-search" title={t('howItWorks.title')} subtitle={t('howItWorks.rowHint')} onPress={() => router.push('/how-it-works')} />
         </>
       ) : null}
     </Screen>

@@ -509,6 +509,23 @@ export interface ItemCircleDto {
   followedLikers: { names: string[]; count: number };
 }
 
+/**
+ * «Cómo funciona APPINITY» (público): cifras y versiones reales del motor, de las mismas constantes que usa el cálculo.
+ * `neverUsed`: lo que el motor no lee nunca (claves de texto de la app).
+ */
+export interface TransparencyDto {
+  affinityVersion: string;
+  recommendationVersion: string;
+  votes: { dislike: number; like: number; love: number };
+  consensus: { soulmates: number; minSupporters: number };
+  discovery: { minAffinity: number };
+  trending: { minVoters: number };
+  /** Porcentajes objetivo de la mezcla de Inicio. */
+  mix: { consensus: number; discovery: number; followed: number; trending: number };
+  unknownReturnDays: number;
+  neverUsed: string[];
+}
+
 export interface HomeVoteResultDto {
   actionId: string;
 }

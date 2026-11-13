@@ -1,5 +1,5 @@
 import { affinity, indexPreferences, type PreferenceIndex } from '@appinity/algorithms';
-import { catalogItems, createDatabase, userBlocks, userItemProfiles, users, type DatabaseHandle } from '@appinity/database';
+import { catalogItems, createDatabase, follows, friendships, userBlocks, userItemProfiles, userProfiles, users, type DatabaseHandle } from '@appinity/database';
 import type { Category } from '@appinity/shared';
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -157,5 +157,35 @@ describe('Top 50 con más de 50 candidatas', () => {
   it('es estable: dos consultas seguidas devuelven el mismo orden', async () => {
     const viewer = people[5]!;
     expect(await topSoulmates(database.db, viewer)).toEqual(await topSoulmates(database.db, viewer));
+  });
+});
+
+/**
+ * Principio de producto (transparencia, 2026-10-27; «Cómo funciona APPINITY»): el ranking de personas solo lee gustos.
+ * Nunca nombre, país, foto, seguidores, amistades ni nada que mida lo popular que es alguien.
+ */
+describe('El ranking de personas no usa popularidad ni datos personales', () => {
+  it('cambiar el perfil de todas las candidatas y hacer «popular» a la última no mueve ni el orden ni las cifras', async () => {
+    const viewer = people[7]!;
+    await recomputeAffinities(database.db);
+    const snapshot = async () => (await topSoulmates(database.db, viewer)).map((s) => ({ userId: s.userId, score: s.score, confidence: s.confidence }));
+    const before = await snapshot();
+    expect(before.length).toBeGreaterThan(3);
+    const others = people.filter((p) => p !== viewer);
+    const last = before[before.length - 1]!.userId;
+    for (const [i, id] of others.entries()) {
+      await database.db
+        .update(userProfiles)
+        .set({ displayName: `Cambiada ${i}`, countryCode: i % 2 ? 'FR' : 'JP', avatarUrl: `https://example.invalid/${i}.png` })
+        .where(eq(userProfiles.userId, id));
+    }
+    // La última del ranking pasa a ser la más «popular»: la siguen todas y es amiga de todas.
+    for (const id of others) {
+      if (id === last) continue;
+      await database.db.insert(follows).values({ followerUserId: id, followedUserId: last }).onConflictDoNothing();
+      await database.db.insert(friendships).values({ requesterId: id, addresseeId: last, status: 'accepted', respondedAt: new Date() });
+    }
+    await recomputeAffinities(database.db);
+    expect(await snapshot()).toEqual(before);
   });
 });
