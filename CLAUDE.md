@@ -13,6 +13,10 @@ Este repositorio parte de cero. No leer, importar, copiar, ejecutar ni modificar
 - Catálogo canónico con IDs externos e imagen persistente o referencia y fallback.
 - Adapters de perfil separados de proveedores de catálogo. Sin dependencias de proveedores en el motor.
 - Afinidad calculada, direccional y versionada; nunca porcentajes constantes disfrazados de cálculos.
+- El ranking de personas y la afinidad solo leen gustos: nunca fotos, galería, edad, género u origen, popularidad, tiempo
+  mirando ni mensajes (pantalla «Cómo funciona APPINITY» y test de garantía). Coincidir en lo poco común pesa más
+  (`affinity-v5`). De otra persona solo se muestran hasta 5 obras que os gustan a los dos («Lo que os une», recíproco y
+  desactivable); nunca su historial.
 - Consenso solo Top 50, igual peso por persona. Mezcla objetivo 70/20/10 cuando existan candidatos.
 - Trending: ratings explícitos externos de usuarios de la zona, sin peso de afinidad; año actual dinámico y reglas temporales de la especificación.
 - Distinguir en UI y docs datos reales, fixtures y funcionalidades pendientes.

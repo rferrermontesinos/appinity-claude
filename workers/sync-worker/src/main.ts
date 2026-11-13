@@ -1,6 +1,6 @@
 import { EntityResolver, LocalDiskStorage, WikidataSnapshotProvider, WikimediaImages, cacheCatalogImage, WikipediaSummaries, enrichDetailsFromWikidata, enrichImagesFromWikidata, enrichPosters, enrichSummariesFromWikipedia } from '@appinity/catalog';
 import { createDatabase } from '@appinity/database';
-import { buildContentRelations, createProducerQueues, expandCatalog, enqueueAffinity, enqueueImage, enqueueSync, recomputeAffinities, runConnectionSync, scheduleDueSyncs, sendDueDigests, checkDigestReceipts } from '@appinity/ingestion';
+import { buildContentRelations, createProducerQueues, expandCatalog, enqueueAffinity, enqueueImage, enqueueSync, hasStaleAffinities, recomputeAffinities, runConnectionSync, scheduleDueSyncs, sendDueDigests, checkDigestReceipts } from '@appinity/ingestion';
 import { ExpoPushSender, createAdapterRegistry, createCatalogIdentifier, portabilityGroups } from '@appinity/integrations';
 import {
   QUEUES,
@@ -251,6 +251,11 @@ await systemQueue.upsertJobScheduler('send-digests', { every: 30 * 60 * 1000 }, 
 // Recálculo completo diario de afinidades (cubre cambios no ligados a un sync, como un usuario que deja de ser elegible).
 const affinityQueue = new Queue<AffinityJob>(QUEUES.affinity, { connection, prefix: env.queuePrefix });
 await affinityQueue.upsertJobScheduler('recompute-affinities', { every: 24 * 60 * 60 * 1000 }, { name: 'recompute-all', data: {} });
+// Si cambió la versión del motor (p. ej. affinity-v5), se recalcula todo al arrancar en vez de esperar al diario.
+if (await hasStaleAffinities(database.db)) {
+  await affinityQueue.add('recompute-all', {}, { removeOnComplete: true });
+  console.log('[afinidad] hay afinidades de una versión anterior del motor: recálculo completo en cola');
+}
 
 console.log(
   `Worker escuchando colas [${workers.map((w) => w.name).join(', ')}] con prefijo ${env.queuePrefix}` +

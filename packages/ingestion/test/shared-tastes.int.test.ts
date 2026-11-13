@@ -100,7 +100,7 @@ describe('Lo que te define', () => {
     expect(ids.filter((id) => series.includes(id))).toHaveLength(2);
     expect(ids.filter((id) => [items.A, items.B, items.C].includes(id))).toHaveLength(2);
     // B (la conoce todo el mundo) queda por detrás de A aunque a Vera le guste igual.
-    expect(ids.indexOf(items.B)).toBeGreaterThan(ids.indexOf(items.A));
+    expect(ids.indexOf(items.B!)).toBeGreaterThan(ids.indexOf(items.A!));
   });
 });
 

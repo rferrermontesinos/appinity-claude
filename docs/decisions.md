@@ -1269,3 +1269,44 @@ Sustituye al modelo «binario + Me encanta» de esta misma fecha: «Guardar» y 
   daltonismo rojo-verde se distingue del coral de «No me gusta». Se aplica al botón (relleno y brillo), al sello
   (píldora rellena), al tinte hacia arriba, a la ficha y a «Entre tus almas gemelas». «Me gusta» sigue en lima, el
   color de las almas gemelas.
+
+## 2026-10-27 · Transparencia, «Lo que os une» y rareza en la afinidad (decisiones del titular, tras analizar un vídeo sobre Tinder)
+
+Contexto: un vídeo muy compartido (@ayoships) desmonta Tinder: puntúa a la gente por «cuánto se la desea» (RSRR), lo
+predice con un modelo sobre sus fotos, escanea la galería y vende «Super Likes» a quien da like a alguien «popular».
+APPINITY toma el camino contrario y lo hace visible.
+
+**1. Transparencia (hecho)**
+- Pantalla «Cómo funciona APPINITY» (Perfil): de dónde salen los gustos, cómo se calculan almas gemelas y
+  recomendaciones, lo que nunca se usa, qué ven los demás y tus controles. Las cifras salen de `GET /v1/transparency`
+  (público), construido con las mismas constantes que el motor: la página no puede contar otra cosa.
+- Principio de producto (también en CLAUDE.md): el ranking de personas y la afinidad solo leen gustos. Nunca fotos,
+  galería, edad, género u origen, popularidad (seguidores, amistades, solicitudes, likes recibidos), tiempo mirando una
+  tarjeta ni mensajes. Test de garantía: cambiar el perfil de todas las candidatas y hacer «popular» a la última no
+  mueve ni el orden ni las cifras del Top 50.
+- Descartado del vídeo: usar el tiempo mirando como señal de gusto (contradice «solo votos y fuentes»), puntuar a las
+  personas y muros de pago basados en la popularidad de otra persona.
+
+**2. «Lo que os une» y «Lo que te define» (hecho)**
+- Ficha de persona: hasta 5 obras que os gustan a los dos (≥ 0,5 y confianza ≥ 0,5, los umbrales de un apoyo del
+  consenso), de la menos común a la más común, y el total. Nunca disgustos ni obras que solo le gustan a una persona.
+- **Cambia una regla anterior** («nunca qué objetos coinciden»). Salvaguardas: solo personas visibles para ti
+  (`canSeePerson`), máximo 5, sin notas, y un ajuste **recíproco** `share_common_tastes` (activado por defecto): si
+  una de las dos lo apaga, ninguna ve el de la otra. Riesgo aceptado: votar muchas obras para sondear los gustos de
+  alguien solo revela, como mucho, 5 obras que ya os gustan a los dos.
+- **Por confirmar en la verificación de Google**: mostrar a otra persona obras que vienen de datos de Google puede exigir
+  consentimiento afirmativo; si es así, el ajuste pasará a desactivado por defecto o se excluirán esas obras.
+- Perfil: «Lo que te define», tus obras con más gusto y menos conocidas (gusto × rareza, máx. 2 por categoría). Solo la
+  ves tú.
+- Etiquetas: «Rara» (≤ 10 % de las personas comparables la conoce) y «Poco común» (≤ 30 %); sin etiqueta con menos de
+  10 personas.
+
+**3. Rareza en la afinidad: `affinity-v5` (hecho)**
+- r_i = 1 + ln((N + 1) / (n_i + 1)), con N personas comparables del dataset y n_i las que tienen preferencia sobre la
+  obra. Solo reparte el peso dentro del acuerdo de cada categoría; la evidencia y la confianza no cambian, así que la
+  rareza nunca crea cifras altas con pocas obras en común. Con muy poca gente, todo pesa casi igual.
+- El worker recalcula todo al arrancar si quedan afinidades de otra versión.
+- **Efecto medido en la demo: ninguno.** Sus datos sintéticos tienen acuerdos simétricos (p. ej., Laura y Pau
+  discrepan igual en obras raras y comunes), así que la media ponderada coincide. Los tests unitarios demuestran el
+  efecto (coincidir en lo raro sube, discrepar en lo raro baja). **Calibración pendiente con los datos de la beta**: si
+  la diferencia entre obras comunes y raras resulta excesiva, se suaviza (por ejemplo, con la raíz del logaritmo).

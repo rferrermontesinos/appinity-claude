@@ -164,7 +164,7 @@ export const en: TranslationResources = {
     noOpinion_one: 'For {{count}}, we only know you know it or have consumed it, with no opinion.',
     noOpinion_other: 'For {{count}}, we only know you know them or have consumed them, with no opinion.',
     fromSources: 'Where it comes from',
-    onlySources: 'Only your connected sources count. Swiping, saving, friends and chat never change your tastes.',
+    onlySources: 'Your connected sources and your votes in the app (“appinity”) count. “Don’t know it”, friends and chat never change your tastes.',
     open: 'See your tastes',
     empty: 'No tastes yet. Connect a source to start.',
     intro:

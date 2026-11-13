@@ -1,4 +1,4 @@
-import { affinity, indexPreferences, type PreferenceIndex } from '@appinity/algorithms';
+import { affinity, indexPreferences, rarityWeight, type PreferenceIndex } from '@appinity/algorithms';
 import { catalogItems, createDatabase, follows, friendships, userBlocks, userItemProfiles, userProfiles, users, type DatabaseHandle } from '@appinity/database';
 import type { Category } from '@appinity/shared';
 import { eq } from 'drizzle-orm';
@@ -60,9 +60,14 @@ async function createPeople(from: number, count: number) {
 /** Ranking esperado calculado de forma EXHAUSTIVA (todas las parejas) con el mismo motor y el mismo orden estable. */
 function exhaustiveRanking(viewer: string, excluded: Set<string> = new Set()) {
   const index = (u: string): PreferenceIndex => indexPreferences(prefsByUser.get(u)!.length >= 3 ? prefsByUser.get(u)! : []);
+  // affinity-v5: la misma rareza que el motor (personas comparables con preferencia sobre cada obra).
+  const eligible = people.filter((p) => prefsByUser.get(p)!.length >= 3);
+  const holders = new Map<string, number>();
+  for (const p of eligible) for (const pref of prefsByUser.get(p)!) holders.set(pref.itemId, (holders.get(pref.itemId) ?? 0) + 1);
+  const rarity = new Map([...holders].map(([id, n]) => [id, rarityWeight(n, eligible.length)]));
   return people
     .filter((p) => p !== viewer && !excluded.has(p) && prefsByUser.get(p)!.length >= 3)
-    .map((p) => ({ userId: p, result: affinity(index(viewer), index(p)) }))
+    .map((p) => ({ userId: p, result: affinity(index(viewer), index(p), undefined, rarity) }))
     .filter((r) => r.result.score !== null)
     .sort(
       (a, b) =>

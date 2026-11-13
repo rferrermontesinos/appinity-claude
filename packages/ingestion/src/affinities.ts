@@ -1,7 +1,7 @@
-import { AFFINITY_PARAMS_V1, AFFINITY_VERSION, affinity, indexPreferences, type AffinityParams, type PreferenceIndex } from '@appinity/algorithms';
+import { AFFINITY_PARAMS_V1, AFFINITY_VERSION, affinity, indexPreferences, rarityWeight, type AffinityParams, type PreferenceIndex } from '@appinity/algorithms';
 import { catalogItems, categoryAffinities, userAffinities, userItemProfiles, users, type Database } from '@appinity/database';
 import { isCategory, type Category } from '@appinity/shared';
-import { and, eq, inArray, isNotNull, isNull, or, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, isNull, ne, or, sql } from 'drizzle-orm';
 
 /**
  * Recálculo de afinidades direccionales (§11).
@@ -82,6 +82,12 @@ function candidatesOf(userId: string, profiles: Map<string, PreferenceIndex>, us
  * Recalcula y guarda las afinidades. Sustituye, en una transacción, todas las filas en las que interviene un usuario
  * del foco (como origen o como destino); con el dataset entero, todas las del dataset.
  */
+/** ¿Quedan afinidades calculadas con otra versión del motor? El worker lo comprueba al arrancar y lo recalcula todo. */
+export async function hasStaleAffinities(db: Database): Promise<boolean> {
+  const [row] = await db.select({ id: userAffinities.sourceUserId }).from(userAffinities).where(ne(userAffinities.algorithmVersion, AFFINITY_VERSION)).limit(1);
+  return Boolean(row);
+}
+
 export async function recomputeAffinities(db: Database, options: AffinityRecomputeOptions = {}): Promise<AffinityRecomputeResult[]> {
   const params = options.params ?? AFFINITY_PARAMS_V1;
   const computedAt = options.now ?? new Date();
@@ -99,6 +105,8 @@ export async function recomputeAffinities(db: Database, options: AffinityRecompu
     for (const [userId, index] of profiles) {
       for (const byItem of index.values()) for (const itemId of byItem.keys()) usersByItem.set(itemId, [...(usersByItem.get(itemId) ?? []), userId]);
     }
+    // affinity-v5: rareza de cada obra entre las personas comparables del dataset (las mismas que entran en el cálculo).
+    const rarity = new Map([...usersByItem].map(([itemId, holders]) => [itemId, rarityWeight(holders.length, profiles.size)]));
     const datasetUsers = (await db.select({ id: users.id }).from(users).where(eq(users.dataset, dataset))).map((u) => u.id);
     const inDataset = new Set(datasetUsers);
     const focus = options.userIds ? [...new Set(options.userIds)].filter((id) => inDataset.has(id)) : datasetUsers;
@@ -116,7 +124,7 @@ export async function recomputeAffinities(db: Database, options: AffinityRecompu
     const userRows: Array<typeof userAffinities.$inferInsert> = [];
     const categoryRows: Array<typeof categoryAffinities.$inferInsert> = [];
     for (const [source, target] of pairs.values()) {
-      const result = affinity(profiles.get(source)!, profiles.get(target)!, params);
+      const result = affinity(profiles.get(source)!, profiles.get(target)!, params, rarity);
       if (result.score === null) continue;
       userRows.push({
         sourceUserId: source,

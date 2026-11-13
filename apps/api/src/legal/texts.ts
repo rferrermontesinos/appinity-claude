@@ -44,13 +44,17 @@ gustos: solo cuentan tus fuentes.</p>
 <ul>
   <li>Calcular tu afinidad con otras personas y recomendarte obras y lugares: ejecución del servicio que pides.</li>
   <li>Importar datos de cada fuente: tu consentimiento, que retiras al desconectarla.</li>
-  <li>Mostrarte a otras personas como alma gemela o a tus contactos: tu consentimiento, con interruptores en Perfil.</li>
+  <li>Mostrarte a otras personas como alma gemela o a tus contactos, y mostrar «Lo que os une»: tu consentimiento, con
+interruptores en Ajustes.</li>
   <li>Seguridad, prevención de abusos y copias de seguridad: interés legítimo.</li>
 </ul>
 
 <h2>4. Qué ven los demás</h2>
 <p>Tu nombre visible, tu país y vuestra afinidad (global y por categoría). Nunca tu historial, tus valoraciones, los
 lugares que has visitado ni lo que has visto. Una recomendación atribuida a otra persona solo revela la obra y el motivo.</p>
+<p><strong>Lo que os une</strong>: si los dos lo permitís (interruptor en Ajustes, activado por defecto y recíproco), la
+otra persona ve hasta 5 obras que os gustan a ambos, sin vuestras notas. Nunca obras que solo te gustan a ti ni las que
+no te gustan.</p>
 
 <h2>5. Datos de Google: uso limitado</h2>
 <p>El uso y la transferencia a cualquier otra aplicación de la información recibida de las API de Google se ajustan a la

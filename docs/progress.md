@@ -25,6 +25,32 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-11-13 · Transparencia, «Lo que os une» y rareza en la afinidad (`affinity-v5`)
+
+### Qué se ha hecho
+
+- **«Cómo funciona APPINITY»** (Perfil) con `GET /v1/transparency`: cifras y versiones reales del motor, lo que nunca
+  se usa y tus controles. Test de garantía: el ranking de personas no cambia con perfil, seguidores ni amistades.
+- **«Lo que os une»** (ficha de persona): hasta 5 obras que os gustan a los dos, las menos comunes primero; recíproco y
+  desactivable (ajuste nuevo, migración 0020). **«Lo que te define»** (Perfil): tus obras más características.
+- **`affinity-v5`**: coincidir en lo poco común pesa más; el worker lo recalcula todo al arrancar.
+- Textos: política de privacidad («Lo que os une»), nota de «Tus gustos» (ya no decía que los votos cuentan) y regla de
+  producto en CLAUDE.md.
+
+### Comprobaciones
+
+- `pnpm test`: 44 ficheros y 409 tests OK (nuevos: rareza, «Lo que os une», «Lo que te define», transparencia y la
+  garantía del ranking). `pnpm lint` y `pnpm typecheck` limpios. Migración 0020 revisada (una columna) y aplicada.
+- Worker: recálculo completo con `affinity-v5` (62 parejas en la demo). Las cifras de la demo no cambian (acuerdos
+  simétricos en los datos sintéticos; ver decisions.md).
+- Vista web (375 × 812, Laura demo): la página muestra 50, 2, 70/10/10/10, 30 días y `affinity-v5`; con Clara,
+  «Lo que os une» enseña 5 obras («Poco común») y «y 4 más en común»; Perfil enseña «Lo que te define» (6 obras).
+
+### Pendiente
+
+- Aceptación en el teléfono (solo JS: recargar).
+- Calibrar la rareza con datos reales (beta) y confirmar con Google el consentimiento de «Lo que os une».
+
 ## Entrega 2026-10-27 (7) · Diagnóstico completo y plan de beta cerrada
 
 - [diagnostico-2026-10-27.md](diagnostico-2026-10-27.md): estado por niveles, lo que falta de la especificación,

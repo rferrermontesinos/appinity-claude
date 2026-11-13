@@ -162,7 +162,7 @@ export const es = {
     noOpinion_one: 'De {{count}} solo consta que lo conoces o lo has consumido, sin opinión.',
     noOpinion_other: 'De {{count}} solo consta que los conoces o los has consumido, sin opinión.',
     fromSources: 'De dónde sale',
-    onlySources: 'Solo cuentan tus fuentes conectadas. Deslizar, guardar, tus amistades y el chat no cambian tus gustos.',
+    onlySources: 'Cuentan tus fuentes conectadas y tus votos en la app («appinity»). «No lo conozco», tus amistades y el chat no cambian tus gustos.',
     open: 'Ver tus gustos',
     empty: 'Aún no hay gustos. Conecta una fuente para empezar.',
     intro:

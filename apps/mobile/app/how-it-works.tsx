@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 import { apiRequest } from '../src/api/client';
 import { Card, ErrorCard, Loading, Screen, Small, Title } from '../src/components/ui';
-import { spacing, type, usePalette } from '../src/theme';
+import { spacing, usePalette } from '../src/theme';
 
 type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
 
@@ -51,9 +51,6 @@ export default function HowItWorksScreen() {
   return (
     <Screen refreshing={facts.isRefetching} onRefresh={() => void facts.refetch()}>
       <Stack.Screen options={{ title: t('howItWorks.title') }} />
-      <Text accessibilityRole="header" style={{ color: c.text, ...type.h2 }}>
-        {t('howItWorks.title')}
-      </Text>
       <Text style={{ color: c.textMuted, fontSize: 15, lineHeight: 21 }}>{t('howItWorks.intro')}</Text>
       {facts.isLoading ? <Loading /> : null}
       {facts.isError ? <ErrorCard error={facts.error} onRetry={() => void facts.refetch()} /> : null}
@@ -67,6 +64,7 @@ export default function HowItWorksScreen() {
 
           <Section title={t('howItWorks.soulmates.title')}>
             <Point icon="vector-intersection" text={t('howItWorks.soulmates.compare')} />
+            <Point icon="diamond-stone" text={t('howItWorks.soulmates.rare')} />
             <Point icon="scale-balance" text={t('howItWorks.soulmates.evidence')} />
             <Point icon="swap-horizontal" text={t('howItWorks.soulmates.symmetric')} />
           </Section>
