@@ -10,6 +10,8 @@ import type {
   ItemProfileDto,
   MeDto,
   Page,
+  PublicPersonDto,
+  SoulmatesDto,
   SettingsDto,
   SourceDto,
   SyncRunDto,
@@ -93,7 +95,23 @@ export const dataKeys = {
   profiles: (category?: Category) => ['profiles', category ?? 'all'] as const,
   profile: (itemId: string) => ['profile', itemId] as const,
   item: (itemId: string) => ['item', itemId] as const,
+  soulmates: ['soulmates'] as const,
+  person: (userId: string) => ['person', userId] as const,
 };
+
+/** Top 50 almas gemelas (afinidades ya calculadas en segundo plano). */
+export function useSoulmates() {
+  return useQuery({ queryKey: dataKeys.soulmates, queryFn: () => apiRequest<SoulmatesDto>('/v1/me/soulmates'), enabled: useHasSession() });
+}
+
+/** Perfil público mínimo de otra persona con sus afinidades por categoría. */
+export function usePerson(userId: string) {
+  return useQuery({
+    queryKey: dataKeys.person(userId),
+    queryFn: () => apiRequest<PublicPersonDto>(`/v1/people/${userId}`),
+    enabled: useHasSession() && Boolean(userId),
+  });
+}
 
 export function useSources() {
   const enabled = useHasSession();

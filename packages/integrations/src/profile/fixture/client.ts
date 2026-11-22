@@ -4,6 +4,7 @@ import audio from './fixtures/audio.json' with { type: 'json' };
 import diary from './fixtures/diary.json' with { type: 'json' };
 import play from './fixtures/play.json' with { type: 'json' };
 import screen from './fixtures/screen.json' with { type: 'json' };
+import { personaRecords } from './personas.js';
 import { fixtureFileSchema, type FixtureFile } from './schemas.js';
 
 const FILES: Record<FixtureSourceKey, unknown> = {
@@ -25,9 +26,13 @@ export class FixtureClient {
     this.file = fixtureFileSchema.parse(FILES[source]);
   }
 
-  /** Registros del usuario (vacío si el usuario simulado no tiene actividad en esta fuente). */
+  /**
+   * Registros del usuario (vacío si el usuario simulado no tiene actividad en esta fuente). Las personas sintéticas de
+   * la fase 6 derivan los suyos de los de otra persona de demo (personas.ts).
+   */
   recordsFor(userId: string): unknown[] {
-    return this.file.users.find((u) => u.userId === userId)?.records ?? [];
+    const own = this.file.users.find((u) => u.userId === userId)?.records;
+    return own ?? personaRecords(this.source, userId, (from) => this.file.users.find((u) => u.userId === from)?.records ?? []);
   }
 
   /** Página de registros por desplazamiento, para simular paginación con cursor persistido. */

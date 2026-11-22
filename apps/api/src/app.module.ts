@@ -1,7 +1,6 @@
 import { type DynamicModule, Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { AffinityController } from './affinity/affinity.controller.js';
 import { AuthGuard } from './auth/auth.guard.js';
 import { DevAuthController } from './auth/dev-auth.controller.js';
 import { DevAuthService } from './auth/dev-auth.service.js';
@@ -19,6 +18,8 @@ import { InfraModule } from './infra/infra.module.js';
 import { PipelineModule } from './infra/pipeline.module.js';
 import { MeController } from './me/me.controller.js';
 import { MeService } from './me/me.service.js';
+import { PeopleController } from './people/people.controller.js';
+import { PeopleService } from './people/people.service.js';
 import { ItemProfilesController } from './profiles/item-profiles.controller.js';
 import { SourcesController } from './sources/sources.controller.js';
 
@@ -47,7 +48,7 @@ export class AppModule {
         CatalogController,
         MediaController,
         ItemProfilesController,
-        AffinityController,
+        PeopleController,
       ],
       providers: [
         DevAuthService,
@@ -55,6 +56,7 @@ export class AppModule {
         MeService,
         ConnectionsService,
         CatalogQueryService,
+        PeopleService,
         { provide: APP_GUARD, useClass: ThrottlerGuard },
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_FILTER, useClass: DomainErrorsFilter },

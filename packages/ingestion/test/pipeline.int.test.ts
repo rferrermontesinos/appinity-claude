@@ -84,7 +84,10 @@ describe('seed de demo y sync idempotente', () => {
   it('importa el catálogo real completo y sincroniza las fuentes simuladas', () => {
     expect(firstSeed.catalog.total).toBeGreaterThan(100);
     expect(firstSeed.catalog.created).toBe(firstSeed.catalog.total);
-    expect(firstSeed.syncs.length).toBe(14);
+    // 14 de las personas de demo originales y 13 de las 7 personas sintéticas de la fase 6.
+    expect(firstSeed.syncs.length).toBe(27);
+    // La actividad derivada de las personas sintéticas es válida: ningún sync falla.
+    expect(firstSeed.syncs.filter((s) => s.status === 'failed')).toEqual([]);
     expect(firstSeed.syncs.reduce((s, x) => s + x.observationsInserted, 0)).toBeGreaterThan(70);
   });
 
@@ -92,7 +95,7 @@ describe('seed de demo y sync idempotente', () => {
     expect(secondSeed.catalog.created).toBe(0);
     expect(secondSeed.syncs.every((s) => s.observationsInserted === 0 && s.observationsUpdated === 0)).toBe(true);
     const connections = await database.db.select().from(userConnections);
-    expect(connections).toHaveLength(14);
+    expect(connections).toHaveLength(27);
   });
 
   it('un registro inválido queda como error parcial sin detener el resto', () => {

@@ -182,6 +182,35 @@ export interface AffinityDto {
   computedAt: string | null;
 }
 
+/** Una persona del ranking de almas gemelas: perfil mínimo y afinidad global (nunca historiales). */
+export interface SoulmateDto {
+  rank: number;
+  userId: string;
+  displayName: string;
+  countryCode: string | null;
+  avatarUrl: string | null;
+  score: number;
+  confidence: number;
+  categoriesCompared: number;
+  exceptionalMutual: boolean;
+}
+
+export interface SoulmatesDto {
+  items: SoulmateDto[];
+  /** Máximo de la versión gratuita (50). Puede haber menos personas: no se rellena. */
+  limit: number;
+  algorithmVersion: string;
+}
+
+/** Perfil público mínimo (§4): nombre, país, foto y afinidades. Sin historiales importados. */
+export interface PublicPersonDto {
+  userId: string;
+  displayName: string;
+  countryCode: string | null;
+  avatarUrl: string | null;
+  affinity: AffinityDto;
+}
+
 export interface ItemProfileDto {
   item: CatalogItemDto;
   knownConfidence: number;

@@ -1,6 +1,6 @@
 # Arquitectura · APPINITY Claude
 
-Documento vivo. Describe lo implementado (fases 0 a 5) y marca lo pendiente. Requisitos:
+Documento vivo. Describe lo implementado (fases 0 a 6) y marca lo pendiente. Requisitos:
 [APPINITY_Especificacion.md](APPINITY_Especificacion.md). Decisiones y parámetros: [decisions.md](decisions.md).
 
 ## Vista general
@@ -73,6 +73,7 @@ Tablas de la fase 1:
 | `user_item_observations` | Evidencia normalizada. **Clave idempotente `(connection_id, source_record_id, observation_kind)`**. Rangos 0–1 y −1..+1, `consumed ≤ known`, preferencia/confianza/base NULL a la vez, `occurred_at` y precisión juntos, huella de contenido, `synced_at` separado de `occurred_at` |
 | `user_item_profiles` | Una fila por usuario y objeto (PK compuesta): tres dimensiones, base ganadora, número de evidencias y fuentes, conflicto, notas de consolidación, primera y última actividad, versión |
 | `user_affinities` (fase 5) | Una fila por pareja ordenada con afinidad: puntuación 0–100, confianza, categorías comparadas, objetos comunes, versión y fecha. Sin autorreferencia; índice de ranking por origen |
+| `user_blocks` (fase 6) | Bloqueo por pareja ordenada (sin autorreferencia). Excluye en ambas direcciones del ranking, del perfil y de la afinidad |
 | `category_affinities` (fase 5) | Una fila por pareja ordenada y categoría con resultado (sin fila = NULL): puntuación, confianza, evidencia efectiva, acuerdo, cobertura y versión |
 
 ## Pipeline de ingesta (§14)
@@ -162,6 +163,8 @@ recomputeAffinities: preferencias consolidadas de usuarios elegibles del mismo d
   → affinity-v1 (A → B y B → A) por categoría y global
   → transacción con bloqueo por dataset: sustituye las filas del foco en user_affinities y category_affinities
 API: GET /v1/me/affinities/:userId → «yo → otra persona» (8 categorías, NULL = «—»), sin objetos
+Fase 6: topSoulmates (orden estable, máx. 50, sin bloqueos ni inelegibles) → GET /v1/me/soulmates → pestaña Personas
+        GET /v1/people/:id → perfil mínimo (nombre, país, foto, afinidades) → pantalla person/[id]
 ```
 
 ## Resolución de entidades (§6)
