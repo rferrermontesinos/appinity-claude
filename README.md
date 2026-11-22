@@ -435,6 +435,12 @@ docs/                Especificación, arquitectura, decisiones, progreso, capaci
 Más detalle en [docs/architecture.md](docs/architecture.md), [docs/decisions.md](docs/decisions.md) y
 [docs/integration-capabilities.md](docs/integration-capabilities.md).
 
+## Herramientas de Claude Code
+
+`.claude/` incluye el kit Claude Code Game Studios (skills como `/sprint-plan`, `/bug-triage`, `/security-audit`,
+`/ux-review`) con sus hooks automáticos desactivados. Qué comandos encajan con esta app y cuáles no:
+[docs/claude-code-game-studios.md](docs/claude-code-game-studios.md).
+
 ## Seguridad y datos
 
 - Secretos solo en `.env` (ignorado por Git), generados por `pnpm setup`. Las credenciales de proveedores se cifrarán
