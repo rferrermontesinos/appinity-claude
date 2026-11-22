@@ -402,6 +402,9 @@ export interface FriendshipResultDto {
 /** Máximo de contactos (hashes) por petición de coincidencias. */
 export const CONTACT_HASH_BATCH_MAX = 500;
 
+/** Máximo de contactos distintos que una cuenta puede comprobar al día (la app envía hasta 5 lotes por búsqueda). */
+export const CONTACT_HASH_DAILY_MAX = 5000;
+
 /**
  * Normalización de un email de la agenda antes de calcular su SHA-256 en el dispositivo. Debe coincidir con la del
  * servidor: minúsculas y sin espacios. Devuelve null si no parece un email.

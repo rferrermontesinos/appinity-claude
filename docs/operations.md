@@ -44,7 +44,8 @@ qué está ya preparado y probado.
 | `STEAM_WEB_API_KEY` | Steam | steamcommunity.com/dev/apikey |
 | `REVENUECAT_WEBHOOK_AUTH` | Webhook de Premium | Panel de RevenueCat |
 | `EXPO_ACCESS_TOKEN` | Solo con la seguridad reforzada de push | EAS |
-| `CATALOG_USER_AGENT` | Identificarse ante Wikidata y OSM | «APPINITY/1.0 (contacto)» |
+| `OUTBOUND_CONTACT` | Contacto del proyecto (URL o email) en el User-Agent de Wikidata, Wikimedia y Nominatim. Vacía: el origen de `PUBLIC_API_URL`. Nunca un dato personal | Email de soporte o web del proyecto |
+| `CATALOG_USER_AGENT` | Sustituye el User-Agent entero del worker (raro: basta `OUTBOUND_CONTACT`) | «APPINITY/0.1 (+contacto)» |
 | `NOMINATIM_URL` | Geocodificación propia (recomendada con muchos usuarios) | Instancia propia de Nominatim |
 
 **Rotación**:

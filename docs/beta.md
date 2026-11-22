@@ -81,6 +81,14 @@ Revisión de todas las rutas de `apps/api` (sin herramientas externas):
   - los datos del titular en los textos legales;
   - 1 aviso alto en `pnpm audit` (zod 3 dentro de `@expo/cli`, solo al compilar).
 
+### Tercera revisión (2026-11-22, fase B2)
+
+- `/health` en producción ya no enseña versiones, latencias ni errores.
+- El User-Agent de las peticiones a Wikimedia y Nominatim usa el contacto del proyecto (`OUTBOUND_CONTACT` o el dominio
+  de la API), no el usuario de GitHub del titular.
+- La búsqueda por contactos tiene un cupo de 5.000 comprobaciones al día por cuenta.
+- `pnpm audit --prod`: ningún aviso en la API ni en el worker (los que quedan son de `@expo/cli`, solo al compilar).
+
 ## Prueba con amigos y familiares: alta única (2026-10-26)
 
 ### Qué hace ya la app

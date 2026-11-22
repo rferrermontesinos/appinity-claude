@@ -2,7 +2,7 @@ import type { INestApplication } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { authSessions, createDatabase, users, type DatabaseHandle } from '@appinity/database';
 import { createSession, findOrCreateUserForIdentity } from '@appinity/ingestion';
-import type { AuthProvidersDto, AuthSessionDto, ContactMatchDto, MeDto } from '@appinity/shared';
+import { CONTACT_HASH_DAILY_MAX, type AuthProvidersDto, type AuthSessionDto, type ContactMatchDto, type MeDto } from '@appinity/shared';
 import { eq } from 'drizzle-orm';
 import { Redis } from 'ioredis';
 import { SignJWT, createLocalJWKSet, exportJWK, generateKeyPair } from 'jose';
@@ -12,6 +12,7 @@ import { GoogleOidc } from '../dist/auth/google-oidc.js';
 import { createApp } from '../dist/bootstrap.js';
 import { loadEnv } from '../dist/config/env.js';
 import { isAllowedReturnUrl } from '../dist/connections/return-url.js';
+import { contactsQuotaKey } from '../dist/people/contacts-quota.js';
 
 /** Valores SOLO de test (no reales). */
 const AUTH_SECRET = 'secreto-de-sesion-solo-para-tests-0123456789';
@@ -228,5 +229,34 @@ describe('amigos desde los contactos (SHA-256 de emails verificados)', () => {
     const statuses: number[] = [];
     for (let i = 0; i < 6; i++) statuses.push((await call('POST', '/v1/me/contacts/match', leo.token, { hashes: [] })).status);
     expect(statuses.at(-1)).toBe(429);
+  });
+
+  it('cupo diario: no deja recorrer emails más allá de dos agendas completas al día (SEC-004)', async () => {
+    const ana = await signedUp('contacto-cupo', 'Cupo');
+    // Instancia propia de la API: el límite por minuto (por IP, en memoria) ya lo agotó el test anterior.
+    const fresh = await createApp(loadEnv(env), { logger: false });
+    await fresh.listen(0, '127.0.0.1');
+    const freshBase = `http://127.0.0.1:${(fresh.getHttpServer().address() as { port: number }).port}`;
+    const match = (hashes: string[]) =>
+      fetch(`${freshBase}/v1/me/contacts/match`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${ana.token}` },
+        body: JSON.stringify({ hashes }),
+      });
+    try {
+      const key = contactsQuotaKey(env.QUEUE_PREFIX!, ana.userId);
+      // Quedan 100 comprobaciones hoy: un lote de 101 se rechaza entero y no gasta cupo; uno de 100 (con duplicados) pasa.
+      await redis.set(key, String(CONTACT_HASH_DAILY_MAX - 100), 'EX', 3600);
+      const over = await match(Array.from({ length: 101 }, (_, i) => sha(`cupo${i}`)));
+      expect(over.status).toBe(429);
+      expect(((await over.json()) as { message: string }).message).toMatch(/máximo de 5000 contactos/);
+      expect(Number(await redis.get(key))).toBe(CONTACT_HASH_DAILY_MAX - 100);
+      const fits = Array.from({ length: 100 }, (_, i) => sha(`cupo${i}`));
+      expect((await match([...fits, ...fits.slice(0, 50)])).status).toBe(200);
+      expect(Number(await redis.get(key))).toBe(CONTACT_HASH_DAILY_MAX);
+      expect((await match([sha('una-mas')])).status).toBe(429);
+    } finally {
+      await fresh.close();
+    }
   });
 });

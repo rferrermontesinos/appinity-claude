@@ -1,3 +1,5 @@
+import { outboundUserAgent } from '@appinity/shared';
+
 export interface WorkerEnv {
   nodeEnv: string;
   demoMode: boolean;
@@ -52,6 +54,7 @@ export function loadWorkerEnv(): WorkerEnv {
     ...(process.env.NOMINATIM_URL?.trim() ? { nominatimUrl: process.env.NOMINATIM_URL.trim() } : {}),
     ...(process.env.EXPO_ACCESS_TOKEN?.trim() ? { expoAccessToken: process.env.EXPO_ACCESS_TOKEN.trim() } : {}),
     ...(process.env.TMDB_API_KEY?.trim() ? { tmdbApiKey: process.env.TMDB_API_KEY.trim() } : {}),
-    catalogUserAgent: process.env.CATALOG_USER_AGENT?.trim() || 'APPINITY-Claude/0.1 (desarrollo; https://github.com/rferrermontesinos/appinity-claude)',
+    // Sin «Claude» (Cloudflare lo bloquea como bot) y sin datos personales en producción (SEC-009).
+    catalogUserAgent: process.env.CATALOG_USER_AGENT?.trim() || outboundUserAgent(process.env),
   };
 }

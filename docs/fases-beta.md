@@ -7,8 +7,8 @@ Android» del proyecto; este fichero es su copia en el repositorio.
 
 | Fase | Qué entrega | Criterio de salida | Estado |
 |---|---|---|---|
-| B1 · Formato y CI | Prettier con el ancho de línea real del código (160), todo el repositorio formateado y `pnpm format:check` en la CI | `prettier --check` limpio y la CI lo comprueba | PR abierta |
-| B2 · Restos de seguridad | `/health` sin versiones ni errores en producción, User-Agent sin datos personales, cupo diario en la búsqueda por contactos y nueva pasada de `pnpm audit` | Un test por arreglo y ningún aviso alto en la API | Pendiente |
+| B1 · Formato y CI | Prettier con el ancho de línea real del código (160), todo el repositorio formateado y `pnpm format:check` en la CI | `prettier --check` limpio y la CI lo comprueba | PR abierta (#27) |
+| B2 · Restos de seguridad | `/health` sin versiones ni errores en producción, User-Agent sin datos personales, cupo diario en la búsqueda por contactos y nueva pasada de `pnpm audit` | Un test por arreglo y ningún aviso alto en la API | PR abierta |
 | B3 · Textos legales y derechos | Política y condiciones coherentes con la app, datos del responsable por variables de entorno con huecos marcados, página pública para pedir la baja (la exige Play) y exportación de los datos de una persona por comando | Tests de las páginas y ningún dato inventado | Pendiente |
 | B4 · Observabilidad (Sentry) | Sentry en la API, el worker y la app, apagado mientras no haya DSN, sin datos personales ni tokens en los eventos | Tests del filtro de datos; sin DSN no se envía nada | Pendiente |
 | B5 · Canal de feedback | «Enviar comentario» en Perfil, guardado en la base de datos con versión y plataforma, y un comando para leerlos | Tests de la API (autorización, longitud y cupo) y pantalla revisada en la vista web | Pendiente |

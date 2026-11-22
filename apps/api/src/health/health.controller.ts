@@ -9,6 +9,15 @@ import { Public } from '../common/public.decorator.js';
 import { DATABASE, REDIS } from '../infra/tokens.js';
 import { API_VERSION } from '../version.js';
 
+/**
+ * En producción, /health es público y solo dice si cada pieza responde: sin versiones (PostGIS), latencias, latido del
+ * worker ni textos de error, que ayudan a un atacante y pueden llevar nombres internos (auditoría 2026-11-22, SEC-007).
+ * Fuera de producción se mantiene el detalle para `pnpm doctor` y el diagnóstico de la app.
+ */
+export function publicCheck(check: CheckResult, production: boolean): CheckResult {
+  return production ? { ok: check.ok } : check;
+}
+
 async function timed(fn: () => Promise<string | undefined>): Promise<CheckResult> {
   const started = performance.now();
   try {
@@ -53,6 +62,7 @@ export class HealthController {
     ]);
     // El worker es necesario para syncs, pero no para servir la API: no degrada el estado.
     const ok = database.ok && postgis.ok && redis.ok;
+    const production = this.env.NODE_ENV === 'production';
     res.status(ok ? HttpStatus.OK : HttpStatus.SERVICE_UNAVAILABLE);
     return {
       status: ok ? 'ok' : 'degraded',
@@ -60,7 +70,12 @@ export class HealthController {
       version: API_VERSION,
       time: new Date().toISOString(),
       mode: { environment: this.env.NODE_ENV, demoMode: this.env.DEMO_MODE, devAuth: this.env.DEV_AUTH_ENABLED },
-      checks: { database, postgis, redis, worker },
+      checks: {
+        database: publicCheck(database, production),
+        postgis: publicCheck(postgis, production),
+        redis: publicCheck(redis, production),
+        worker: publicCheck(worker, production),
+      },
     };
   }
 }

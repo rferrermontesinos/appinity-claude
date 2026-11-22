@@ -22,9 +22,33 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 11 | **Paso 1 implementado** (Google: Play, pedidos y guardados), comprobado automáticamente y en parte con servicios reales; falta un export real | Entrega 2026-10-14 · fase 11 (rama `fase-11-fuentes`). Análisis en [source-candidates.md](source-candidates.md) |
 | 12 | **12C (push, servidor) implementada y comprobada automáticamente**; envío real pendiente de build de desarrollo y FCM · **12B (Premium, servidor) implementada y comprobada automáticamente**; compra en la app pendiente de cuentas y build de desarrollo · **12A (chat) implementada, comprobada automáticamente y verificada en la vista web**; 12B (Premium/RevenueCat) y 12C (push) pendientes | Entrega 2026-10-14 · fase 12A (rama `fase-12a-chat`, basada en `fase-10-people`) |
 | 13 | **Preparada**: auth de producción, alta, eliminación de cuenta y despliegue probados en local; beta real pendiente de dominio, servidor y cuentas ([beta.md](beta.md)) · auditoría de seguridad de la API hecha (2026-10-26) · textos legales en borrador (2026-10-26) | Entrega 2026-10-15 · fase 13 (rama `fase-13-beta`) |
-| Beta (B1–B10) | **En curso** (2026-11-22): B1 con PR abierta | Plan y estado en [fases-beta.md](fases-beta.md); cada fase en su PR encadenada sobre la PR #26 |
+| Beta (B1–B10) | **En curso** (2026-11-22): B1 y B2 con PR abierta | Plan y estado en [fases-beta.md](fases-beta.md); cada fase en su PR encadenada sobre la PR #26 |
 
 ---
+
+## Entrega 2026-11-22 · B2: restos de la auditoría de seguridad
+
+Rama `claude/beta-b2-seguridad`, PR contra `claude/project-thread-a97mv1` (B1). Detalle en
+[decisions.md](decisions.md).
+
+### Qué se ha hecho
+
+- `/health` en producción sin versiones, latencias ni errores (SEC-007).
+- User-Agent saliente sin el usuario de GitHub del titular en producción: `OUTBOUND_CONTACT` o el origen de
+  `PUBLIC_API_URL` (SEC-009).
+- Cupo diario de 5.000 contactos comprobados por cuenta (SEC-004).
+- `pnpm audit --prod` revisado: ningún aviso en la API ni en el worker; 1 alto y 3 moderados en `@expo/cli` (solo al
+  compilar).
+
+### Comprobaciones
+
+- Tests nuevos: User-Agent (5 unitarios), `/health` con una API arrancada en modo producción y cupo diario (lote
+  rechazado sin gastar cupo, duplicados contados una vez y 429 al agotarlo).
+- `pnpm format:check`, `pnpm lint` y `pnpm typecheck` limpios; `pnpm test` 45 ficheros y 422 tests OK.
+
+### Pendiente
+
+- Nada propio de B2. Siguiente fase: B3 (textos legales y derechos).
 
 ## Entrega 2026-11-22 · B1: formato del código y comprobación en la CI
 

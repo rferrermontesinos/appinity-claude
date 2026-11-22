@@ -24,11 +24,14 @@ import {
   type FriendsDto,
   type FriendshipResultDto,
 } from '@appinity/shared';
+import type { Redis } from 'ioredis';
 import { z } from 'zod';
 import type { AuthContext } from '../auth/auth.types.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import { ZodPipe } from '../common/zod.pipe.js';
-import { DATABASE } from '../infra/tokens.js';
+import { APP_ENV, type AppEnv } from '../config/env.js';
+import { DATABASE, REDIS } from '../infra/tokens.js';
+import { reserveContactChecks } from './contacts-quota.js';
 
 const userSchema = z.object({ userId: z.uuid() }).strict();
 const contactsSchema = z.object({ hashes: z.array(z.string().regex(/^[0-9a-f]{64}$/)).max(CONTACT_HASH_BATCH_MAX) }).strict();
@@ -47,7 +50,11 @@ const reportSchema = z
  */
 @Controller('v1/me')
 export class SocialController {
-  constructor(@Inject(DATABASE) private readonly database: DatabaseHandle) {}
+  constructor(
+    @Inject(DATABASE) private readonly database: DatabaseHandle,
+    @Inject(REDIS) private readonly redis: Redis,
+    @Inject(APP_ENV) private readonly env: AppEnv,
+  ) {}
 
   @Get('friends')
   friends(@CurrentUser() auth: AuthContext): Promise<FriendsDto> {
@@ -81,12 +88,13 @@ export class SocialController {
 
   /**
    * Coincidencias con los contactos del dispositivo (SHA-256 de emails normalizados). No se guarda nada de lo recibido;
-   * límite bajo para que no sirva para recorrer emails.
+   * límite bajo por minuto y cupo diario para que no sirva para recorrer emails.
    */
   @Post('contacts/match')
   @HttpCode(200)
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
-  matchContacts(@CurrentUser() auth: AuthContext, @Body(new ZodPipe(contactsSchema)) body: z.infer<typeof contactsSchema>): Promise<ContactMatchDto[]> {
+  async matchContacts(@CurrentUser() auth: AuthContext, @Body(new ZodPipe(contactsSchema)) body: z.infer<typeof contactsSchema>): Promise<ContactMatchDto[]> {
+    await reserveContactChecks(this.redis, this.env.QUEUE_PREFIX, auth.userId, new Set(body.hashes).size);
     return matchContacts(this.database.db, auth.userId, body.hashes);
   }
 

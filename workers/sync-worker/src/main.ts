@@ -267,12 +267,16 @@ const workers: Worker[] = [
     { connection, prefix: env.queuePrefix, concurrency: 1 },
   ),
   // Caché de imágenes del catálogo, con ritmo limitado para no sobrecargar el origen (Wikimedia).
-  new Worker<CatalogImageJob>(QUEUES.catalogImages, async (job) => ({ outcome: await cacheCatalogImage(database.db, storage, job.data.imageId) }), {
-    connection,
-    prefix: env.queuePrefix,
-    concurrency: 2,
-    limiter: { max: 4, duration: 1_000 },
-  }),
+  new Worker<CatalogImageJob>(
+    QUEUES.catalogImages,
+    async (job) => ({ outcome: await cacheCatalogImage(database.db, storage, job.data.imageId, fetch, env.catalogUserAgent) }),
+    {
+      connection,
+      prefix: env.queuePrefix,
+      concurrency: 2,
+      limiter: { max: 4, duration: 1_000 },
+    },
+  ),
 ];
 
 for (const worker of workers) {

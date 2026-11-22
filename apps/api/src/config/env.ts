@@ -37,6 +37,14 @@ const envSchema = z
         'TRUST_PROXY: rangos con nombre (loopback, linklocal, uniquelocal) o subredes, separados por comas',
       ),
     PUBLIC_API_URL: z.union([z.literal(''), z.url()]).optional(),
+    /**
+     * Contacto del proyecto (URL o email) en el User-Agent de las peticiones a Wikimedia y Nominatim, que lo exigen. Vacío:
+     * el origen de PUBLIC_API_URL. Nunca un dato personal (ver packages/shared/src/user-agent.ts).
+     */
+    OUTBOUND_CONTACT: z
+      .string()
+      .optional()
+      .transform((v) => (v ? v.trim() : undefined)),
     STORAGE_DIR: z.string().default('.data/media'),
     QUEUE_PREFIX: z
       .string()
