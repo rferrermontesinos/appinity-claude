@@ -2,7 +2,7 @@ import { Global, Inject, Module, type OnApplicationShutdown } from '@nestjs/comm
 import { EntityResolver, LocalDiskStorage, WikidataSnapshotProvider } from '@appinity/catalog';
 import type { DatabaseHandle } from '@appinity/database';
 import { createProducerQueues, type ProducerQueues } from '@appinity/ingestion';
-import { createAdapterRegistry } from '@appinity/integrations';
+import { createAdapterRegistry, portabilityGroups } from '@appinity/integrations';
 import { APP_ENV, type AppEnv } from '../config/env.js';
 import { ADAPTER_REGISTRY, DATABASE, ENTITY_RESOLVER, QUEUES, STORAGE } from './tokens.js';
 
@@ -33,12 +33,15 @@ import { ADAPTER_REGISTRY, DATABASE, ENTITY_RESOLVER, QUEUES, STORAGE } from './
                   clientId: env.GOOGLE_OAUTH_CLIENT_ID,
                   clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET,
                   redirectUri: env.GOOGLE_OAUTH_REDIRECT_URI,
+                  // Sin evaluación CASA (de pago), producción solo pide los grupos sensibles.
+                  groups: portabilityGroups((env.GOOGLE_RESTRICTED_SCOPES ?? (env.NODE_ENV === 'production' ? 'false' : 'true')) === 'true'),
                 },
                 googleBooks: {
                   clientId: env.GOOGLE_OAUTH_CLIENT_ID,
                   clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET,
                   redirectUri: env.GOOGLE_BOOKS_REDIRECT_URI,
                 },
+                googleCalendar: { clientId: env.GOOGLE_OAUTH_CLIENT_ID, clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET },
               }
             : {}),
         }),

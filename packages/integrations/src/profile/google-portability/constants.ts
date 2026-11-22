@@ -42,6 +42,17 @@ export const PHASE11_RESOURCE_GROUPS = ['play.library', 'order_reserve.purchases
 
 /** Todos los grupos que importa APPINITY (los que pide el consentimiento por defecto). */
 export const ALL_RESOURCE_GROUPS = [...PHASE3_RESOURCE_GROUPS, ...PHASE4_RESOURCE_GROUPS, ...PHASE11_RESOURCE_GROUPS] as const;
+
+/**
+ * Grupos con scope RESTRINGIDO según Google (developers.google.com/data-portability/user-guide/scopes, 2026-10-22).
+ * En producción exigen una evaluación de seguridad anual de pago (CASA); el resto son sensibles (verificación gratuita).
+ */
+export const RESTRICTED_RESOURCE_GROUPS = ['maps.starred_places', 'myactivity.youtube'] as const;
+
+/** Grupos que se piden: todos, o solo los sensibles si los restringidos no están habilitados. */
+export function portabilityGroups(includeRestricted: boolean): ResourceGroup[] {
+  return ALL_RESOURCE_GROUPS.filter((g) => includeRestricted || !(RESTRICTED_RESOURCE_GROUPS as readonly string[]).includes(g));
+}
 export type ResourceGroup = (typeof ALL_RESOURCE_GROUPS)[number];
 export type YouTubeGroup = (typeof PHASE4_RESOURCE_GROUPS)[number];
 

@@ -1,7 +1,7 @@
 import { EntityResolver, LocalDiskStorage, WikidataSnapshotProvider, cacheCatalogImage } from '@appinity/catalog';
 import { createDatabase } from '@appinity/database';
 import { createProducerQueues, enqueueAffinity, enqueueSync, recomputeAffinities, runConnectionSync, scheduleDueSyncs, sendDueDigests, checkDigestReceipts } from '@appinity/ingestion';
-import { ExpoPushSender, createAdapterRegistry, createCatalogIdentifier } from '@appinity/integrations';
+import { ExpoPushSender, createAdapterRegistry, createCatalogIdentifier, portabilityGroups } from '@appinity/integrations';
 import {
   QUEUES,
   isSourceError,
@@ -52,6 +52,7 @@ const registry = createAdapterRegistry({
     ? {
         google: {
           ...env.google,
+          groups: portabilityGroups((process.env.GOOGLE_RESTRICTED_SCOPES?.trim() || (env.nodeEnv === 'production' ? 'false' : 'true')) === 'true'),
           // Lugares con OpenStreetMap y obras con Wikidata (licencias de uso comercial).
           identifier: catalogIdentifier,
           // Estructura del export SIN datos personales: sirve para contrastar el formato real con el documentado.
@@ -65,6 +66,7 @@ const registry = createAdapterRegistry({
           redirectUri: process.env.GOOGLE_BOOKS_REDIRECT_URI?.trim() || 'http://localhost:3100/v1/connect/google_books/callback',
           identifier: catalogIdentifier,
         },
+        googleCalendar: { clientId: env.google.clientId, clientSecret: env.google.clientSecret, identifier: catalogIdentifier },
       }
     : {}),
 });

@@ -73,8 +73,9 @@ async function like(userId: string, key: string, score: number, confidence = 1, 
 }
 
 /** Voto de Trending: perfil + observación explícita con su fecha real (occurred_at) y una fecha de sync distinta. */
-async function vote(userId: string, key: string, score: number, occurredAt: string) {
-  await like(userId, key, score);
+/** `secondSource`: la misma persona vuelve a valorar el objeto desde otra fuente (su perfil ya existe). */
+async function vote(userId: string, key: string, score: number, occurredAt: string, secondSource = false) {
+  if (!secondSource) await like(userId, key, score);
   const [connection] = await database.db
     .insert(userConnections)
     .values({ userId, sourceKey: `test_${++seq}`, status: 'active' })
@@ -111,6 +112,8 @@ beforeAll(async () => {
   await item('votosFuera', 'food', { latitude: 41.391, longitude: 2.173 });
   await item('estreno2026', 'movies', { releaseDate: '2026-03-01', releaseDatePrecision: 'day' });
   await item('clasico', 'movies', { releaseDate: '1942-11-26', releaseDatePrecision: 'day' });
+  // Un artista con carrera antigua: sin regla de estreno, participa por las valoraciones de este año (§10).
+  await item('artistaAntiguo', 'music', { itemType: 'artist', releaseDate: '1970-01-01', releaseDatePrecision: 'year' });
 
   viewer = await person('test_rec_destino', BCN);
   for (let i = 0; i < 6; i++) await like(viewer, `base${i}`, 1);
@@ -138,6 +141,9 @@ beforeAll(async () => {
     await vote(voter, 'votado2025', 1, '2025-06-01T12:00:00Z');
     await vote(voter, 'estreno2026', 1, '2026-04-01T12:00:00Z');
     await vote(voter, 'clasico', 1, '2026-04-01T12:00:00Z');
+    await vote(voter, 'artistaAntiguo', 1, '2026-03-01T12:00:00Z');
+    // El mismo voto desde una segunda fuente no cuenta dos veces.
+    if (v === 0) await vote(voter, 'trending', 1, '2026-05-11T12:00:00Z', true);
     const far = await person(`test_rec_lejano_${v}`, GIRONA);
     await vote(far, 'votosFuera', 1, '2026-05-10T12:00:00Z');
   }
@@ -195,7 +201,7 @@ describe('recomendador (fase 7)', () => {
     const trending = result.items.filter((r) => r.block === 'trending' || r.trending).map((r) => r.itemId);
     const all = await recommendFor(database.db, viewer, { now: NOW, limit: 100 });
     const trendingIds = all.items.filter((r) => r.trending).map((r) => r.itemId);
-    expect(trendingIds).toEqual(expect.arrayContaining([items.trending, items.estreno2026]));
+    expect(trendingIds).toEqual(expect.arrayContaining([items.trending, items.estreno2026, items.artistaAntiguo]));
     expect(trendingIds).not.toContain(items.votado2025); // votado en 2025 aunque se sincronizara hoy
     expect(trendingIds).not.toContain(items.votosFuera); // votantes fuera de la zona
     expect(trendingIds).not.toContain(items.clasico); // estrenada en 1942

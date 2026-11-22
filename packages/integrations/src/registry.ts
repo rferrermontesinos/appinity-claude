@@ -6,6 +6,7 @@ import {
   createGooglePortabilityAdapter,
   type GooglePortabilityAdapterOptions,
 } from './profile/google-portability/index.js';
+import { GOOGLE_CALENDAR_MANIFEST, createGoogleCalendarAdapter, type GoogleCalendarOptions } from './profile/google-calendar/index.js';
 import { GOOGLE_BOOKS_MANIFEST, createGoogleBooksAdapter, type GoogleBooksOptions } from './profile/google-books/index.js';
 import { STEAM_MANIFEST, createSteamAdapter, type SteamAdapterOptions } from './profile/steam/index.js';
 import { ANILIST_MANIFEST, createAniListAdapter, type AniListOptions } from './profile/anilist/index.js';
@@ -34,6 +35,8 @@ export interface RegistryOptions {
   google?: Partial<GooglePortabilityAdapterOptions>;
   /** Google Books: mismo cliente OAuth, con su propia URL de vuelta. */
   googleBooks?: Partial<GoogleBooksOptions>;
+  /** Google Calendar: se concede en «Continuar con Google»; solo hace falta el cliente OAuth. */
+  googleCalendar?: Partial<GoogleCalendarOptions>;
   /** Trakt: solo si el servidor tiene TRAKT_CLIENT_ID. */
   trakt?: Partial<TraktOptions>;
   /** AniList: solo si el servidor tiene ANILIST_CLIENT_ID y ANILIST_CLIENT_SECRET. */
@@ -65,6 +68,10 @@ export function createAdapterRegistry(options: RegistryOptions): AdapterRegistry
   if (books?.clientId && books.clientSecret && books.redirectUri) {
     map.set('google_books', createGoogleBooksAdapter({ ...books, clientId: books.clientId, clientSecret: books.clientSecret, redirectUri: books.redirectUri }));
   }
+  const calendar = options.googleCalendar;
+  if (calendar?.clientId && calendar.clientSecret) {
+    map.set('google_calendar', createGoogleCalendarAdapter({ ...calendar, clientId: calendar.clientId, clientSecret: calendar.clientSecret }));
+  }
   const trakt = options.trakt;
   if (trakt?.clientId && trakt.redirectUri) map.set('trakt', createTraktAdapter({ ...trakt, clientId: trakt.clientId, redirectUri: trakt.redirectUri }));
   const anilist = options.anilist;
@@ -85,6 +92,7 @@ export function createAdapterRegistry(options: RegistryOptions): AdapterRegistry
       ...unconfigured(map, TRAKT_MANIFEST, 'Falta TRAKT_CLIENT_ID en el .env del servidor (crea la app en Trakt)'),
       ...unconfigured(map, ANILIST_MANIFEST, 'Faltan ANILIST_CLIENT_ID y ANILIST_CLIENT_SECRET en el .env del servidor (crea la app en AniList)'),
       ...unconfigured(map, GOOGLE_BOOKS_MANIFEST, 'Falta el cliente OAuth de Google en el .env del servidor'),
+      ...unconfigured(map, GOOGLE_CALENDAR_MANIFEST, 'Falta el cliente OAuth de Google en el .env del servidor'),
       ...PLANNED_MANIFESTS.filter((p) => !map.has(p.key) && p.key !== 'google_portability' && p.key !== 'google_books').map((p) => ({ ...p, connectable: false })),
     ],
   };

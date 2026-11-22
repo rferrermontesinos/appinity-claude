@@ -14,7 +14,7 @@ import {
   type SyncMode,
   type SyncTrigger,
 } from '@appinity/ingestion';
-import { googleBooksConnection, type AdapterRegistry } from '@appinity/integrations';
+import { googleBooksConnection, googleCalendarConnection, type AdapterRegistry } from '@appinity/integrations';
 import type { ConnectStartDto, ConnectionDto, SyncRunDto } from '@appinity/shared';
 import { randomBytes } from 'node:crypto';
 import type { Redis } from 'ioredis';
@@ -160,7 +160,14 @@ export class ConnectionsService {
   /** Google Books concedido en «Continuar con Google» (mismo consentimiento del alta): conecta y lanza el primer sync. */
   async attachGoogleBooks(userId: string, tokens: { access_token: string; refresh_token?: string; expires_in?: number; scope?: string }): Promise<void> {
     if (!this.hasSource('google_books')) return;
-    const connection = await attachConnection(this.database.db, this.registry, userId, 'google_books', googleBooksConnection(tokens), this.credentialsOption().credentialsKey);
+    const connection = await attachConnection(this.database.db, this.registry, userId, 'google_books', googleBooksConnection(tokens, { shared: true }), this.credentialsOption().credentialsKey);
+    await this.startSync(userId, connection.id, 'connect', 'full');
+  }
+
+  /** Google Calendar concedido en «Continuar con Google»: conecta y lanza el primer sync. */
+  async attachGoogleCalendar(userId: string, tokens: { access_token: string; refresh_token?: string; expires_in?: number; scope?: string }): Promise<void> {
+    if (!this.hasSource('google_calendar')) return;
+    const connection = await attachConnection(this.database.db, this.registry, userId, 'google_calendar', googleCalendarConnection(tokens), this.credentialsOption().credentialsKey);
     await this.startSync(userId, connection.id, 'connect', 'full');
   }
 

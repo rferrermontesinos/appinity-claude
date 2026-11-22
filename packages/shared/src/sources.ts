@@ -24,6 +24,7 @@ export const PLANNED_SOURCE_KEYS = [
   'steam',
   'google_portability',
   'google_books',
+  'google_calendar',
   'trakt',
   'anilist',
   'apple_music',

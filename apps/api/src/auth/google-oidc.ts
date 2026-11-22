@@ -22,6 +22,7 @@ const tokenSchema = z.object({
 });
 export type GoogleSignInTokens = Omit<z.infer<typeof tokenSchema>, 'id_token'>;
 export const GOOGLE_BOOKS_SCOPE = 'https://www.googleapis.com/auth/books';
+export const GOOGLE_CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.events.readonly';
 
 export interface GoogleOidcOptions {
   clientId: string;
@@ -57,15 +58,16 @@ export class GoogleOidc {
    * Con `books`, el mismo consentimiento pide también Google Books (acceso continuado): es el alta, el único momento
    * en que se piden permisos. Google deja a la persona desmarcarlo (consentimiento granular).
    */
-  start(state: string, options: { books?: boolean } = {}): { url: string; pending: PendingSignIn } {
+  start(state: string, options: { books?: boolean; calendar?: boolean } = {}): { url: string; pending: PendingSignIn } {
     const codeVerifier = randomBytes(48).toString('base64url');
     const nonce = randomBytes(16).toString('base64url');
     const url = new URL(GOOGLE_AUTHORIZE_URL);
     url.searchParams.set('client_id', this.options.clientId);
     url.searchParams.set('redirect_uri', this.options.redirectUri);
     url.searchParams.set('response_type', 'code');
-    url.searchParams.set('scope', options.books ? `openid email profile ${GOOGLE_BOOKS_SCOPE}` : 'openid email profile');
-    if (options.books) url.searchParams.set('access_type', 'offline');
+    const extra = [...(options.books ? [GOOGLE_BOOKS_SCOPE] : []), ...(options.calendar ? [GOOGLE_CALENDAR_SCOPE] : [])];
+    url.searchParams.set('scope', ['openid', 'email', 'profile', ...extra].join(' '));
+    if (extra.length) url.searchParams.set('access_type', 'offline');
     url.searchParams.set('state', state);
     url.searchParams.set('nonce', nonce);
     url.searchParams.set('code_challenge', createHash('sha256').update(codeVerifier).digest('base64url'));
