@@ -15,11 +15,47 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 4 | **Implementado y comprobado automáticamente**; pendiente de validar con la cuenta real | Entrega 2026-10-13 · fase 4 (rama `fase-4-youtube`, basada en `fase-3-google`). Falta añadir 3 permisos en Google Cloud y renovar el permiso (README) |
 | 5 | **Implementado y comprobado automáticamente** | Entrega 2026-10-13 · fase 5 (rama `fase-5-afinidad`, basada en `fase-4-youtube`). Calibración en decisions.md |
 | 6 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-13 · fase 6 (rama `fase-6-top50`, basada en `fase-5-afinidad`). Pendiente de aceptación en el teléfono |
-| 7 | Pendiente | Recomendador y Trending |
+| 7 | **Implementado y comprobado automáticamente** | Entrega 2026-10-14 · fase 7 (rama `fase-7-recomendador`, basada en `fase-6-top50`). Sin pantalla: Home llega en la fase 8 |
 | 8–10 | Pendiente | Home, Categories y social |
 | 11 | Pendiente | Fuentes adicionales viables, una por tarea |
 | 12 | Pendiente | Chat, Premium y notificaciones, por subentregas |
 | 13 | Pendiente | Preparación y prueba de beta |
+
+---
+
+## Entrega 2026-10-14 · fase 7 (recomendador y Trending local)
+
+### Qué se ha hecho
+
+- **Motor `recommendation-v1`:**
+  - consenso del Top 50 (una persona = un voto);
+  - descubrimiento atribuido a una persona muy afín;
+  - Trending con votos explícitos de la zona fechados este año;
+  - mezcla 7/2/1 que cede huecos sin inventar apoyos.
+- **Filtros:** conocidos, descartes de Home (tabla nueva `home_dismissals`), lo ya mostrado en la sesión, lugares
+  fuera del radio y eventos terminados.
+- **API:** `GET /v1/me/recommendations?limit&category&exclude&context`. Cada tarjeta incluye su motivo verificable,
+  sin historiales ni ubicaciones ajenas.
+- **Demo:** las personas sintéticas combinan la actividad de varias personas para que haya algo que recomendar.
+
+### Comandos ejecutados y resultados (Windows 11, 2026-10-14)
+
+| Comando | Resultado |
+|---|---|
+| `pnpm lint` / `pnpm typecheck` | 0 errores / OK |
+| `pnpm test` | **22 ficheros, 243 tests OK**. Nuevos: 5 del motor (consenso, descubrimiento, Trending, mezcla, año por zona horaria), 7 de integración y 2 HTTP. Los de integración usan 52 almas gemelas sintéticas y votantes dentro y fuera de la zona. Comprueban que la persona 51 no influye, que conocidos, descartes y lugares lejanos quedan fuera y que descartar no cambia los gustos. También cubren Trending: zona, año del voto y no del sync, estreno, cambio de año en Europe/Madrid y falta de ubicación |
+| `pnpm db:migrate` + `pnpm db:seed` (dos veces) | Seed idempotente. Laura: Merlí, Lasarte, Alkimia, Fundació Miró y Cinc Sentits (consenso). Marta: 5 de consenso y 2 de descubrimiento vía Clara. Àlex: Lasarte como Trending (5 votantes de la zona en 2026, 3 altos). Cuenta real: 0 (sin ubicación ni personas con quien compararse) |
+
+### Limitaciones
+
+- Sin pantalla: la API está lista para Home (fase 8) y Categories (fase 9).
+- Sin recomendación por similitud de contenido como último recurso: si no hay candidatos, la lista queda vacía o
+  corta. No se rellena.
+- Parámetros sin calibrar con usuarios reales.
+
+### Siguiente paso
+
+Fase 8: Home con carrusel (descartar, conservar, deshacer, NEW e impresiones).
 
 ---
 

@@ -1,7 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import { createDatabase, userAffinities, userBlocks, users, type DatabaseHandle } from '@appinity/database';
 import { DEMO_USERS, recomputeAffinities, seedDemo } from '@appinity/ingestion';
-import { CATEGORIES, type AffinityDto, type PublicPersonDto, type SoulmatesDto } from '@appinity/shared';
+import { CATEGORIES, type AffinityDto, type PublicPersonDto, type RecommendationsDto, type SoulmatesDto } from '@appinity/shared';
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { testEnv, truncateAll } from '../../../test/helpers.js';
@@ -109,5 +109,38 @@ describe('almas gemelas y perfil público (fase 6)', () => {
     expect((await get(`/v1/people/${clara}`)).status).toBe(404);
     expect((await get(`/v1/me/affinities/${clara}`)).status).toBe(404);
     await db.db.delete(userBlocks);
+  });
+});
+
+describe('recomendaciones (fase 7)', () => {
+  it('GET /v1/me/recommendations: tarjetas con motivo verificable, sin historiales ni ubicaciones ajenas', async () => {
+    const res = await get('/v1/me/recommendations?limit=20');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as RecommendationsDto;
+    expect(body.algorithmVersion).toBe('recommendation-v1');
+    expect(body.trending.year).toBe(new Date().getFullYear());
+    for (const r of body.items) {
+      expect(r.reason.code).toBe(r.block);
+      expect(r.item.title).toBeTruthy();
+      if (r.block === 'consensus') expect(r.reason.supporters).toBeGreaterThanOrEqual(2);
+      if (r.block === 'discovery') expect(r.reason.contributor?.displayName).toBeTruthy();
+    }
+    // Ninguna tarjeta es algo que Laura ya conoce.
+    const known = (await (await get('/v1/me/item-profiles')).json()) as { items?: Array<{ item: { id: string }; knownConfidence: number }> } | Array<{ item: { id: string }; knownConfidence: number }>;
+    const list = Array.isArray(known) ? known : (known.items ?? []);
+    const knownIds = new Set(list.filter((p) => p.knownConfidence >= 0.8).map((p) => p.item.id));
+    expect(knownIds.size).toBeGreaterThan(0);
+    expect(body.items.filter((r) => knownIds.has(r.item.id))).toEqual([]);
+    expect(JSON.stringify(body)).not.toMatch(/latitude.*voter|voterId|userItemProfiles/);
+  });
+
+  it('exclude evita repetir tarjetas de la sesión y los parámetros se validan', async () => {
+    const first = (await (await get('/v1/me/recommendations?limit=5')).json()) as RecommendationsDto;
+    if (first.items.length) {
+      const again = (await (await get(`/v1/me/recommendations?limit=5&exclude=${first.items[0]!.item.id}`)).json()) as RecommendationsDto;
+      expect(again.items.map((r) => r.item.id)).not.toContain(first.items[0]!.item.id);
+    }
+    expect((await get('/v1/me/recommendations?category=inventada')).status).toBe(400);
+    expect((await get('/v1/me/recommendations?limit=500')).status).toBe(400);
   });
 });

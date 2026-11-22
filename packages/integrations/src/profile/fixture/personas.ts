@@ -24,28 +24,39 @@ const ALEX = '00000000-0000-4000-a000-000000000002';
 const MARTA = '00000000-0000-4000-a000-000000000003';
 const NURIA = '00000000-0000-4000-a000-000000000005';
 
-export const PERSONA_RECIPES: Record<string, Partial<Record<FixtureSourceKey, PersonaRecipe>>> = {
-  // Clara: gemela de Laura en cine, series y libros (mismas notas) y parecida en lugares.
+/**
+ * Recetas por persona y fuente. Una fuente puede combinar varias personas de origen (fase 7): así las personas
+ * sintéticas también conocen cosas que su «gemela» no conoce, y la demo tiene algo que recomendar.
+ */
+export const PERSONA_RECIPES: Record<string, Partial<Record<FixtureSourceKey, PersonaRecipe[]>>> = {
+  // Clara: gemela de Laura en cine, series y libros; además, las series de Núria y los restaurantes de Marta.
   '00000000-0000-4000-a000-000000000007': {
-    fixture_screen: { from: LAURA, mode: 'same' },
-    fixture_diary: { from: LAURA, mode: 'same' },
-    fixture_activity: { from: LAURA, mode: 'similar' },
+    fixture_screen: [{ from: LAURA, mode: 'same' }, { from: NURIA, mode: 'same' }],
+    fixture_diary: [{ from: LAURA, mode: 'same' }],
+    fixture_activity: [{ from: LAURA, mode: 'similar' }, { from: MARTA, mode: 'same' }],
   },
   // Pau: lo contrario de Laura en cine, series y libros.
   '00000000-0000-4000-a000-000000000008': {
-    fixture_screen: { from: LAURA, mode: 'inverse' },
-    fixture_diary: { from: LAURA, mode: 'inverse' },
+    fixture_screen: [{ from: LAURA, mode: 'inverse' }],
+    fixture_diary: [{ from: LAURA, mode: 'inverse' }],
   },
   // Iris: como Marta en restaurantes y cultura.
-  '00000000-0000-4000-a000-000000000009': { fixture_activity: { from: MARTA, mode: 'similar' } },
+  '00000000-0000-4000-a000-000000000009': { fixture_activity: [{ from: MARTA, mode: 'similar' }] },
   // Leo: como Àlex en videojuegos y música.
-  '00000000-0000-4000-a000-000000000010': { fixture_play: { from: ALEX, mode: 'same' }, fixture_audio: { from: ALEX, mode: 'same' } },
-  // Ona: como Núria en series y podcasts.
-  '00000000-0000-4000-a000-000000000011': { fixture_screen: { from: NURIA, mode: 'same' }, fixture_audio: { from: NURIA, mode: 'similar' } },
-  // Teo: cine como Laura y restaurantes al revés que Marta (afinidades por categoría muy distintas).
-  '00000000-0000-4000-a000-000000000012': { fixture_screen: { from: LAURA, mode: 'same' }, fixture_activity: { from: MARTA, mode: 'inverse' } },
-  // Vera: muy poca evidencia en común con Laura.
-  '00000000-0000-4000-a000-000000000013': { fixture_screen: { from: LAURA, mode: 'first3' } },
+  '00000000-0000-4000-a000-000000000010': { fixture_play: [{ from: ALEX, mode: 'same' }], fixture_audio: [{ from: ALEX, mode: 'same' }] },
+  // Ona: como Núria en series y podcasts; además, los restaurantes de Marta.
+  '00000000-0000-4000-a000-000000000011': {
+    fixture_screen: [{ from: NURIA, mode: 'same' }],
+    fixture_audio: [{ from: NURIA, mode: 'similar' }],
+    fixture_activity: [{ from: MARTA, mode: 'same' }],
+  },
+  // Teo: cine como Laura, series como Núria y restaurantes al revés que Marta (afinidades por categoría muy distintas).
+  '00000000-0000-4000-a000-000000000012': {
+    fixture_screen: [{ from: LAURA, mode: 'same' }, { from: NURIA, mode: 'same' }],
+    fixture_activity: [{ from: MARTA, mode: 'inverse' }],
+  },
+  // Vera: muy poca evidencia en común con Laura y con Marta.
+  '00000000-0000-4000-a000-000000000013': { fixture_screen: [{ from: LAURA, mode: 'first3' }], fixture_activity: [{ from: MARTA, mode: 'first3' }] },
 };
 
 type Raw = Record<string, unknown>;
@@ -89,11 +100,39 @@ function transform(source: FixtureSourceKey, record: Raw, mode: PersonaMode, ind
 }
 
 /** Registros derivados de una persona sintética en una fuente (vacío si no tiene receta para esa fuente). */
+/** Objeto al que se refiere un registro en bruto (para no repetir un objeto al combinar recetas). */
+function itemKey(source: FixtureSourceKey, record: Raw): string {
+  const r = record as Record<string, Record<string, unknown> | unknown>;
+  const pick = (obj: unknown, ...keys: string[]) => keys.map((k) => (obj as Record<string, unknown> | undefined)?.[k]).find((v) => v !== undefined);
+  switch (source) {
+    case 'fixture_screen':
+      return `${String(pick(r.media, 'kind'))}:${String(pick(r.media, 'tmdbId'))}`;
+    case 'fixture_diary':
+      return String(pick(r.ref, 'imdb', 'isbn13', 'openlibrary', 'title'));
+    case 'fixture_activity':
+      return `${String(pick(r.entity, 'wikidataId', 'kgId', 'name'))}:${String(r.action)}`;
+    case 'fixture_play':
+      return String(r.appid);
+    case 'fixture_audio':
+      return `${String(r.kind)}:${String(pick(r.artist, 'mbid') ?? pick(r.show, 'appleId'))}:${String(r.id ?? '')}`;
+  }
+}
+
 export function personaRecords(source: FixtureSourceKey, userId: string, recordsOf: (userId: string) => unknown[]): unknown[] {
-  const recipe = PERSONA_RECIPES[userId]?.[source];
-  if (!recipe) return [];
-  const base = recordsOf(recipe.from) as Raw[];
-  const chosen = recipe.mode === 'first3' ? base.slice(0, 3) : base;
-  const prefix = `p${userId.slice(-2)}`;
-  return chosen.map((record, i) => transform(source, record, recipe.mode, i, prefix));
+  const recipes = PERSONA_RECIPES[userId]?.[source] ?? [];
+  const seen = new Set<string>();
+  return recipes.flatMap((recipe, r) => {
+    const base = recordsOf(recipe.from) as Raw[];
+    const chosen = recipe.mode === 'first3' ? base.slice(0, 3) : base;
+    // Prefijo por persona y receta: los ids de registro no chocan aunque dos recetas copien a la misma persona.
+    const prefix = `p${userId.slice(-2)}${r}`;
+    // Si dos personas de origen valoraron el mismo objeto, vale el de la primera receta: una fuente real no da dos
+    // valoraciones del mismo objeto en un export, y repetirlo haría que cada sync reescribiera una con la otra.
+    return chosen.flatMap((record, i) => {
+      const key = itemKey(source, record);
+      if (seen.has(key)) return [];
+      seen.add(key);
+      return [transform(source, record, recipe.mode, i, prefix)];
+    });
+  });
 }

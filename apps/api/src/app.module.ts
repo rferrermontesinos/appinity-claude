@@ -19,6 +19,7 @@ import { PipelineModule } from './infra/pipeline.module.js';
 import { MeController } from './me/me.controller.js';
 import { MeService } from './me/me.service.js';
 import { PeopleController } from './people/people.controller.js';
+import { RecommendationsController } from './recommendations/recommendations.controller.js';
 import { PeopleService } from './people/people.service.js';
 import { ItemProfilesController } from './profiles/item-profiles.controller.js';
 import { SourcesController } from './sources/sources.controller.js';
@@ -49,6 +50,7 @@ export class AppModule {
         MediaController,
         ItemProfilesController,
         PeopleController,
+        RecommendationsController,
       ],
       providers: [
         DevAuthService,
