@@ -35,6 +35,7 @@
     "reports:list": "pnpm build && node --env-file-if-exists=.env packages/ingestion/dist/cli/moderation.js list",
     "account:suspend": "pnpm build && node --env-file-if-exists=.env packages/ingestion/dist/cli/moderation.js suspend",
     "account:unsuspend": "pnpm build && node --env-file-if-exists=.env packages/ingestion/dist/cli/moderation.js unsuspend",
+    "beta:metrics": "pnpm build && node --env-file-if-exists=.env packages/ingestion/dist/cli/beta-metrics.js",
     "push:test": "pnpm build && node --env-file-if-exists=.env workers/sync-worker/dist/cli/push-test.js",
     "api": "pnpm build && node --env-file-if-exists=.env apps/api/dist/main.js",
     "worker": "pnpm build && node --env-file-if-exists=.env workers/sync-worker/dist/main.js",

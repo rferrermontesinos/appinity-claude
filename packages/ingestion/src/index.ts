@@ -32,3 +32,4 @@ export * from './shared-tastes.js';
 export * from './account-data.js';
 export * from './feedback.js';
 export * from './moderation.js';
+export * from './beta-metrics.js';
