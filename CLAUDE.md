@@ -8,11 +8,15 @@ Este repositorio parte de cero. No leer, importar, copiar, ejecutar ni modificar
 
 - Concepto: Descubre recomendaciones de tus almas gemelas y conoce a las personas que comparten tus gustos.
 - Ocho categorías y cuatro pestañas. Música recomienda artistas; podcasts recomienda programas.
-- Los gustos proceden exclusivamente de fuentes externas consentidas. Swipes, Keep, Undo, enlaces, amistad y chat nunca cambian preferencias.
+- Los gustos proceden de fuentes externas consentidas y de los **votos explícitos en la app** (fuente declarada `appinity`, mismo peso que una nota externa; decisión del titular, 2026-10-27). Votos: No me gusta −0,5, Me gusta +0,5, Me encanta +1. «No lo conozco», deshacer (salvo deshacer un voto), enlaces, amistad y chat nunca cambian preferencias. Guardar ya no existe (motor v3).
 - Known, Consumed y Preference son independientes. NULL expresa falta de evidencia, no rechazo.
 - Catálogo canónico con IDs externos e imagen persistente o referencia y fallback.
 - Adapters de perfil separados de proveedores de catálogo. Sin dependencias de proveedores en el motor.
 - Afinidad calculada, direccional y versionada; nunca porcentajes constantes disfrazados de cálculos.
+- El ranking de personas y la afinidad solo leen gustos: nunca fotos, galería, edad, género u origen, popularidad, tiempo
+  mirando ni mensajes (pantalla «Cómo funciona APPINITY» y test de garantía). Coincidir en lo poco común pesa más
+  (`affinity-v5`). De otra persona solo se muestran hasta 5 obras que os gustan a los dos («Lo que os une», recíproco y
+  desactivable); nunca su historial.
 - Consenso solo Top 50, igual peso por persona. Mezcla objetivo 70/20/10 cuando existan candidatos.
 - Trending: ratings explícitos externos de usuarios de la zona, sin peso de afinidad; año actual dinámico y reglas temporales de la especificación.
 - Distinguir en UI y docs datos reales, fixtures y funcionalidades pendientes.

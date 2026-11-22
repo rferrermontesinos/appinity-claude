@@ -32,7 +32,7 @@ export function Diagnostics() {
 
   return (
     <Card>
-      <Title style={{ fontSize: 16 }}>{t('diagnostics.title')}</Title>
+      <Title>{t('diagnostics.title')}</Title>
       <Row label={t('diagnostics.apiUrl')} value={API.url} />
       <Row label={t('diagnostics.apiUrlSource')} value={sourceLabel} />
       <Row label={t('diagnostics.status')} value={status.label} valueColor={status.color} />

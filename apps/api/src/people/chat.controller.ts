@@ -7,6 +7,7 @@ import {
   markConversationRead,
   respondChatRequest,
   sendChatInterest,
+  openChat,
   sendDirectMessage,
   sendMessage,
   unmatch,
@@ -23,6 +24,7 @@ import { ChatPolicyService } from './chat-policy.service.js';
 const body = z.string().trim().min(1).max(CHAT_LIMITS.bodyMaxLength);
 const interestSchema = z.object({ userId: z.uuid() }).strict();
 const directSchema = z.object({ userId: z.uuid(), body }).strict();
+const openSchema = z.object({ userId: z.uuid() }).strict();
 const messageSchema = z
   .object({ body, clientId: z.string().regex(/^[\w-]{1,64}$/).optional() })
   .strict();
@@ -57,6 +59,14 @@ export class ChatController {
   @Throttle({ default: { ttl: 60_000, limit: 30 } })
   interest(@CurrentUser() auth: AuthContext, @Body(new ZodPipe(interestSchema)) input: z.infer<typeof interestSchema>): Promise<ChatMatchResultDto> {
     return sendChatInterest(this.database.db, this.policy, auth.userId, input.userId);
+  }
+
+  /** Escribir siempre (2026-10-27): abre o devuelve la conversación; aparece en la bandeja cuando alguien escribe. */
+  @Post('open')
+  @HttpCode(200)
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  open(@CurrentUser() auth: AuthContext, @Body(new ZodPipe(openSchema)) input: z.infer<typeof openSchema>): Promise<{ conversationId: string }> {
+    return openChat(this.database.db, this.policy, auth.userId, input.userId);
   }
 
   /** Primer mensaje sin match (PREMIUM_DIRECT_MESSAGE). 403 sin entitlement verificado. */

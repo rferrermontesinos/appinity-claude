@@ -7,6 +7,7 @@ import {
   categoryAffinity,
   indexPreferences,
   isExceptionalMutual,
+  rarityWeight,
   type PreferencePoint,
 } from '../src/affinity.js';
 
@@ -154,5 +155,44 @@ describe(`motor de afinidad ${AFFINITY_VERSION}`, () => {
     expect(isExceptionalMutual(95, 91)).toBe(true);
     expect(isExceptionalMutual(95, 89.99)).toBe(false);
     expect(isExceptionalMutual(95, null)).toBe(false);
+  });
+});
+
+describe('affinity-v5: rareza', () => {
+  it('rarityWeight nunca baja de 1, baja cuanta más gente conoce la obra y vale 1 si la conoce todo el mundo', () => {
+    expect(rarityWeight(10, 10)).toBe(1);
+    expect(rarityWeight(50, 10)).toBe(1);
+    expect(rarityWeight(2, 1000)).toBeCloseTo(1 + Math.log(1001 / 3), 6);
+    expect(rarityWeight(2, 1000)).toBeGreaterThan(rarityWeight(500, 1000));
+    // Con muy poca gente todo pesa casi igual.
+    expect(rarityWeight(2, 3)).toBeLessThan(1.3);
+  });
+
+  it('coincidir en lo raro sube y discrepar en lo raro baja; la evidencia y la confianza no cambian', () => {
+    // 6 películas: acuerdo total en las 3 primeras y desacuerdo total en las 3 últimas.
+    const a = idx(profile('movies', 6, 1));
+    const b = idx(profile('movies', 6, (i) => (i < 3 ? 1 : -1)));
+    const ids = [...a.get('movies')!.keys()];
+    const weights = (rareFirst: boolean) => new Map(ids.map((id, i) => [id, (i < 3) === rareFirst ? rarityWeight(2, 1000) : rarityWeight(900, 1000)]));
+    const plain = affinity(a, b);
+    const rareAgreement = affinity(a, b, undefined, weights(true));
+    const rareDisagreement = affinity(a, b, undefined, weights(false));
+    expect(rareAgreement.score!).toBeGreaterThan(plain.score!);
+    expect(rareDisagreement.score!).toBeLessThan(plain.score!);
+    expect(rareAgreement.confidence).toBe(plain.confidence);
+    expect(rareAgreement.categories.movies.effectiveEvidence).toBe(plain.categories.movies.effectiveEvidence);
+  });
+
+  it('la rareza no crea cifras altas con poca evidencia', () => {
+    const few = affinity(idx(profile('movies', 2, 1)), idx(profile('movies', 2, 1)), undefined, new Map([['movies-0', 7], ['movies-1', 7]]));
+    expect(few.score!).toBe(affinity(idx(profile('movies', 2, 1)), idx(profile('movies', 2, 1))).score);
+    expect(few.score!).toBeLessThan(40);
+  });
+
+  it('con el mismo peso en todas las obras coincide con el cálculo sin rareza', () => {
+    const a = idx(profile('music', 8, varied));
+    const b = idx(profile('music', 8, 1));
+    const flat = new Map([...a.get('music')!.keys()].map((id) => [id, 3]));
+    expect(affinity(a, b, undefined, flat).score!).toBeCloseTo(affinity(a, b).score!, 6);
   });
 });

@@ -9,8 +9,13 @@ import { CATEGORIES, type Category } from '@appinity/shared';
  *
  *   C = objetos con preferencia en A y en B
  *   w_i = min(confA_i, confB_i)          n_eff = Σ w_i
+ *   r_i = rarityWeight(personas con preferencia sobre i, personas comparables)   (`affinity-v5`; 1 sin datos)
  *   agreement_i = 1 − |scoreA − scoreB| / 2
- *   agreement = Σ w_i · agreement_i / Σ w_i
+ *   agreement = Σ w_i · r_i · agreement_i / Σ w_i · r_i
+ *
+ * La rareza solo reparte el peso DENTRO del acuerdo: coincidir (o discrepar) en algo poco común cuenta más que en algo
+ * que conoce todo el mundo. La evidencia (n_eff) y la confianza no cambian: la rareza nunca crea cifras altas con
+ * pocas obras en común.
  *   evidenceFactor = 1 − exp(−n_eff / tau_categoría)
  *   dataConfidence = media(w_i)          dataConfidenceFactor = floor + (1 − floor) · dataConfidence
  *   afinidad = 100 · agreement · evidenceFactor · dataConfidenceFactor
@@ -37,8 +42,13 @@ import { CATEGORIES, type Category } from '@appinity/shared';
  *   (A → B = B → A): la «direccionalidad» de §4 venía solo de penalizar lo que el otro no conoce.
  * - `affinity-v4`: encogimiento parcial de cada categoría hacia la calidad global (antes, una pareja podía tener 86 de
  *   global y ninguna categoría por encima de 50, porque cada categoría se penalizaba solo con su propia evidencia).
+ * - `affinity-v5` (2026-10-27): el acuerdo de cada obra pesa por su rareza en el dataset (`rarityWeight`). Con muy poca
+ *   gente todo pesa casi igual; la calibración con datos reales queda para la beta (docs/decisions.md).
  */
-export const AFFINITY_VERSION = 'affinity-v4';
+export const AFFINITY_VERSION = 'affinity-v5';
+
+/** Peso por rareza de cada obra (itemId → r_i ≥ 1). Sin entrada, la obra pesa 1. */
+export type RarityWeights = ReadonlyMap<string, number>;
 
 export interface AffinityParams {
   /** Evidencia efectiva con la que evidenceFactor llega al 63 % (1 − 1/e). Depende del tamaño típico de la categoría. */
@@ -116,11 +126,13 @@ export function categoryAffinity(
   source: ReadonlyMap<string, PreferencePoint> | undefined,
   target: ReadonlyMap<string, PreferencePoint> | undefined,
   params: AffinityParams = AFFINITY_PARAMS_V1,
+  rarity?: RarityWeights,
 ): CategoryAffinity {
   const sourceItems = source?.size ?? 0;
   let common = 0;
   let nEff = 0;
   let weighted = 0;
+  let agreementWeight = 0;
   if (source && target) {
     const [small, large] = source.size <= target.size ? [source, target] : [target, source];
     for (const [itemId, a] of small) {
@@ -129,9 +141,11 @@ export function categoryAffinity(
       const fromSource = small === source ? a : b;
       const fromTarget = small === source ? b : a;
       const w = Math.min(fromSource.confidence, fromTarget.confidence);
+      const r = rarity?.get(itemId) ?? 1;
       common++;
       nEff += w;
-      weighted += w * (1 - Math.abs(fromSource.score - fromTarget.score) / 2);
+      agreementWeight += w * r;
+      weighted += w * r * (1 - Math.abs(fromSource.score - fromTarget.score) / 2);
     }
   }
   const coverage = sourceItems ? common / sourceItems : 0;
@@ -139,7 +153,7 @@ export function categoryAffinity(
   if (common < params.minCommon || nEff < params.minEffective) {
     return { ...base, score: null, confidence: 0, agreement: null, quality: null, evidenceUnits: 0, dataConfidence: null };
   }
-  const agreement = weighted / nEff;
+  const agreement = weighted / agreementWeight;
   const evidenceFactor = 1 - Math.exp(-nEff / params.tau[category]);
   const dataConfidence = nEff / common;
   const dataFactor = params.dataConfidenceFloor + (1 - params.dataConfidenceFloor) * dataConfidence;
@@ -155,7 +169,7 @@ export function categoryAffinity(
 }
 
 /** Afinidad global A → B: media ponderada de las categorías con resultado. */
-export function affinity(source: PreferenceIndex, target: PreferenceIndex, params: AffinityParams = AFFINITY_PARAMS_V1): GlobalAffinity {
+export function affinity(source: PreferenceIndex, target: PreferenceIndex, params: AffinityParams = AFFINITY_PARAMS_V1, rarity?: RarityWeights): GlobalAffinity {
   const categories = {} as Record<Category, CategoryAffinity>;
   let weightSum = 0;
   let qualitySum = 0;
@@ -165,7 +179,7 @@ export function affinity(source: PreferenceIndex, target: PreferenceIndex, param
   let commonItems = 0;
   for (const category of CATEGORIES) {
     const sourceCat = source.get(category);
-    const result = categoryAffinity(category, sourceCat, target.get(category), params);
+    const result = categoryAffinity(category, sourceCat, target.get(category), params, rarity);
     categories[category] = result;
     commonItems += result.commonItems;
     if (result.score === null || result.quality === null || result.dataConfidence === null) continue;
@@ -194,6 +208,15 @@ export function affinity(source: PreferenceIndex, target: PreferenceIndex, param
     commonItems,
     categories,
   };
+}
+
+/**
+ * Peso por rareza de una obra: 1 + ln((N + 1) / (n + 1)), con N las personas comparables del dataset y n las que tienen
+ * preferencia sobre la obra. Lo que conoce casi todo el mundo pesa ~1; lo que conocen pocas, más (con 1.000 personas,
+ * una obra de 2 pesa ~6,8 y una de 500, ~1,7). Nunca baja de 1, y con muy poca gente todo pesa casi igual.
+ */
+export function rarityWeight(holders: number, population: number): number {
+  return Math.max(1, 1 + Math.log((Math.max(population, 0) + 1) / (Math.max(holders, 0) + 1)));
 }
 
 /** «Afinidad mutua excepcional» (§4): ambas direcciones ≥ 90. */

@@ -88,6 +88,17 @@ describe('textos legales', () => {
     // La verificación de Google exige la declaración de uso limitado en la política de privacidad.
     expect(await (await fetch(`${base}/legal/privacidad`)).text()).toMatch(/requisitos de uso limitado/);
   });
+
+  it('«Cómo funciona» es público y sus cifras son las del motor', async () => {
+    const res = await fetch(`${base}/v1/transparency`);
+    expect(res.status).toBe(200);
+    const facts = (await res.json()) as { affinityVersion: string; votes: Record<string, number>; consensus: { soulmates: number }; mix: Record<string, number>; neverUsed: string[] };
+    expect(facts.affinityVersion).toMatch(/^affinity-v\d+$/);
+    expect(facts.votes).toEqual({ dislike: -0.5, like: 0.5, love: 1 });
+    expect(facts.consensus.soulmates).toBe(50);
+    expect(Object.values(facts.mix).reduce((a, b) => a + b, 0)).toBe(100);
+    expect(facts.neverUsed).toEqual(expect.arrayContaining(['photos', 'gallery', 'demographics', 'popularity', 'dwellTime', 'messages']));
+  });
 });
 
 describe('rutas privadas', () => {

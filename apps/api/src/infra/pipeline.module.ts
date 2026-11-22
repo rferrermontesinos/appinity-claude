@@ -26,6 +26,9 @@ import { ADAPTER_REGISTRY, DATABASE, ENTITY_RESOLVER, QUEUES, STORAGE } from './
           ...(env.ANILIST_CLIENT_ID && env.ANILIST_CLIENT_SECRET
             ? { anilist: { clientId: env.ANILIST_CLIENT_ID, clientSecret: env.ANILIST_CLIENT_SECRET, redirectUri: env.ANILIST_REDIRECT_URI } }
             : {}),
+          ...(env.FACEBOOK_APP_ID && env.FACEBOOK_APP_SECRET
+            ? { facebook: { appId: env.FACEBOOK_APP_ID, appSecret: env.FACEBOOK_APP_SECRET, redirectUri: env.FACEBOOK_REDIRECT_URI, graphVersion: env.FACEBOOK_GRAPH_VERSION } }
+            : {}),
           // La API solo conecta y desconecta Google; la identificación de catálogo la hace el worker al sincronizar.
           ...(env.GOOGLE_OAUTH_CLIENT_ID && env.GOOGLE_OAUTH_CLIENT_SECRET
             ? {

@@ -97,6 +97,11 @@ const envSchema = z
     ANILIST_CLIENT_ID: z.string().optional().transform((v) => (v ? v.trim() : undefined)),
     ANILIST_CLIENT_SECRET: z.string().optional().transform((v) => (v ? v.trim() : undefined)),
     ANILIST_REDIRECT_URI: z.url().default('http://localhost:3100/v1/connect/anilist/callback'),
+    /** Facebook (páginas que te gustan): app de developers.facebook.com. El secreto solo vive en el servidor. */
+    FACEBOOK_APP_ID: z.string().optional().transform((v) => (v ? v.trim() : undefined)),
+    FACEBOOK_APP_SECRET: z.string().optional().transform((v) => (v ? v.trim() : undefined)),
+    FACEBOOK_REDIRECT_URI: z.url().default('http://localhost:3100/v1/connect/facebook/callback'),
+    FACEBOOK_GRAPH_VERSION: z.string().regex(/^vd+.d+$/).default('v23.0'),
     GOOGLE_OAUTH_REDIRECT_URI: z.url().default('http://localhost:3100/v1/connect/google_portability/callback'),
   })
   .superRefine((env, ctx) => {

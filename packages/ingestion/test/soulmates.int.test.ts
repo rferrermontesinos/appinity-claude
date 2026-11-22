@@ -1,5 +1,5 @@
-import { affinity, indexPreferences, type PreferenceIndex } from '@appinity/algorithms';
-import { catalogItems, createDatabase, userBlocks, userItemProfiles, users, type DatabaseHandle } from '@appinity/database';
+import { affinity, indexPreferences, rarityWeight, type PreferenceIndex } from '@appinity/algorithms';
+import { catalogItems, createDatabase, follows, friendships, userBlocks, userItemProfiles, userProfiles, users, type DatabaseHandle } from '@appinity/database';
 import type { Category } from '@appinity/shared';
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -60,9 +60,14 @@ async function createPeople(from: number, count: number) {
 /** Ranking esperado calculado de forma EXHAUSTIVA (todas las parejas) con el mismo motor y el mismo orden estable. */
 function exhaustiveRanking(viewer: string, excluded: Set<string> = new Set()) {
   const index = (u: string): PreferenceIndex => indexPreferences(prefsByUser.get(u)!.length >= 3 ? prefsByUser.get(u)! : []);
+  // affinity-v5: la misma rareza que el motor (personas comparables con preferencia sobre cada obra).
+  const eligible = people.filter((p) => prefsByUser.get(p)!.length >= 3);
+  const holders = new Map<string, number>();
+  for (const p of eligible) for (const pref of prefsByUser.get(p)!) holders.set(pref.itemId, (holders.get(pref.itemId) ?? 0) + 1);
+  const rarity = new Map([...holders].map(([id, n]) => [id, rarityWeight(n, eligible.length)]));
   return people
     .filter((p) => p !== viewer && !excluded.has(p) && prefsByUser.get(p)!.length >= 3)
-    .map((p) => ({ userId: p, result: affinity(index(viewer), index(p)) }))
+    .map((p) => ({ userId: p, result: affinity(index(viewer), index(p), undefined, rarity) }))
     .filter((r) => r.result.score !== null)
     .sort(
       (a, b) =>
@@ -157,5 +162,35 @@ describe('Top 50 con más de 50 candidatas', () => {
   it('es estable: dos consultas seguidas devuelven el mismo orden', async () => {
     const viewer = people[5]!;
     expect(await topSoulmates(database.db, viewer)).toEqual(await topSoulmates(database.db, viewer));
+  });
+});
+
+/**
+ * Principio de producto (transparencia, 2026-10-27; «Cómo funciona APPINITY»): el ranking de personas solo lee gustos.
+ * Nunca nombre, país, foto, seguidores, amistades ni nada que mida lo popular que es alguien.
+ */
+describe('El ranking de personas no usa popularidad ni datos personales', () => {
+  it('cambiar el perfil de todas las candidatas y hacer «popular» a la última no mueve ni el orden ni las cifras', async () => {
+    const viewer = people[7]!;
+    await recomputeAffinities(database.db);
+    const snapshot = async () => (await topSoulmates(database.db, viewer)).map((s) => ({ userId: s.userId, score: s.score, confidence: s.confidence }));
+    const before = await snapshot();
+    expect(before.length).toBeGreaterThan(3);
+    const others = people.filter((p) => p !== viewer);
+    const last = before[before.length - 1]!.userId;
+    for (const [i, id] of others.entries()) {
+      await database.db
+        .update(userProfiles)
+        .set({ displayName: `Cambiada ${i}`, countryCode: i % 2 ? 'FR' : 'JP', avatarUrl: `https://example.invalid/${i}.png` })
+        .where(eq(userProfiles.userId, id));
+    }
+    // La última del ranking pasa a ser la más «popular»: la siguen todas y es amiga de todas.
+    for (const id of others) {
+      if (id === last) continue;
+      await database.db.insert(follows).values({ followerUserId: id, followedUserId: last }).onConflictDoNothing();
+      await database.db.insert(friendships).values({ requesterId: id, addresseeId: last, status: 'accepted', respondedAt: new Date() });
+    }
+    await recomputeAffinities(database.db);
+    expect(await snapshot()).toEqual(before);
   });
 });

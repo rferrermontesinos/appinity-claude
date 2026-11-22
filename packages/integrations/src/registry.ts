@@ -11,6 +11,7 @@ import { GOOGLE_BOOKS_MANIFEST, createGoogleBooksAdapter, type GoogleBooksOption
 import { STEAM_MANIFEST, createSteamAdapter, type SteamAdapterOptions } from './profile/steam/index.js';
 import { ANILIST_MANIFEST, createAniListAdapter, type AniListOptions } from './profile/anilist/index.js';
 import { TRAKT_MANIFEST, createTraktAdapter, type TraktOptions } from './profile/trakt/index.js';
+import { FACEBOOK_MANIFEST, createFacebookAdapter, type FacebookOptions } from './profile/facebook/index.js';
 
 export type VisibleManifest = ProfileSourceManifest & {
   connectable: boolean;
@@ -41,6 +42,8 @@ export interface RegistryOptions {
   trakt?: Partial<TraktOptions>;
   /** AniList: solo si el servidor tiene ANILIST_CLIENT_ID y ANILIST_CLIENT_SECRET. */
   anilist?: Partial<AniListOptions>;
+  /** Facebook: solo si el servidor tiene FACEBOOK_APP_ID y FACEBOOK_APP_SECRET. */
+  facebook?: Partial<FacebookOptions>;
 }
 
 /** Fuente real implementada pero sin su configuración de servidor: visible, no conectable y con el motivo. */
@@ -78,6 +81,10 @@ export function createAdapterRegistry(options: RegistryOptions): AdapterRegistry
   if (anilist?.clientId && anilist.clientSecret && anilist.redirectUri) {
     map.set('anilist', createAniListAdapter({ ...anilist, clientId: anilist.clientId, clientSecret: anilist.clientSecret, redirectUri: anilist.redirectUri }));
   }
+  const facebook = options.facebook;
+  if (facebook?.appId && facebook.appSecret && facebook.redirectUri) {
+    map.set('facebook', createFacebookAdapter({ ...facebook, appId: facebook.appId, appSecret: facebook.appSecret, redirectUri: facebook.redirectUri }));
+  }
   return {
     get: (key) => map.get(key),
     adapters: () => [...map.values()],
@@ -90,6 +97,7 @@ export function createAdapterRegistry(options: RegistryOptions): AdapterRegistry
         'Falta el cliente OAuth de Google en el .env del servidor (ver README, «Conectar tu cuenta de Google»)',
       ),
       ...unconfigured(map, TRAKT_MANIFEST, 'Falta TRAKT_CLIENT_ID en el .env del servidor (crea la app en Trakt)'),
+      ...unconfigured(map, FACEBOOK_MANIFEST, 'Faltan FACEBOOK_APP_ID y FACEBOOK_APP_SECRET en el .env del servidor (crea la app en developers.facebook.com)'),
       ...unconfigured(map, ANILIST_MANIFEST, 'Faltan ANILIST_CLIENT_ID y ANILIST_CLIENT_SECRET en el .env del servidor (crea la app en AniList)'),
       ...unconfigured(map, GOOGLE_BOOKS_MANIFEST, 'Falta el cliente OAuth de Google en el .env del servidor'),
       ...unconfigured(map, GOOGLE_CALENDAR_MANIFEST, 'Falta el cliente OAuth de Google en el .env del servidor'),

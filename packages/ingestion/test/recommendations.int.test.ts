@@ -21,6 +21,7 @@ import {
   createOrResetLocalUser,
   recomputeAffinities,
   recommendFor,
+  PASS_RETURN_DAYS,
   recordImpression,
   topSoulmates,
   undoLastHomeAction,
@@ -174,10 +175,29 @@ describe('recomendador (fase 7)', () => {
     expect(primaryOnly.items.map((r) => r.itemId)).not.toContain(items.persona51);
   });
 
+  it('desglose del consenso: solo agregados (apoyo, gusto, confianza, afinidad media y excepcionales)', async () => {
+    const result = await recommendFor(database.db, viewer, { now: NOW });
+    const found = result.items.find((r) => r.itemId === items.consenso)!;
+    const top = await topSoulmates(database.db, viewer);
+    const backers = top.filter((t) => [soulmates[0], soulmates[1], soulmates[2]].includes(t.userId));
+    expect(backers).toHaveLength(3);
+    expect(found.evidence).toEqual({
+      score: expect.any(Number),
+      support: Math.round((3 / found.consensus!.opinionated) * 100),
+      likeLevel: 100,
+      confidence: 100,
+      supporterAffinity: Math.round(backers.reduce((a, b) => a + b.score, 0) / 3),
+      exceptionalSupporters: backers.filter((b) => b.exceptionalMutual).length,
+    });
+    // Nunca se exponen quiénes lo apoyan.
+    expect(JSON.stringify(found.evidence)).not.toContain(soulmates[0]!);
+  });
+
   it('descubrimiento: identifica a la persona que lo aporta', async () => {
     const result = await recommendFor(database.db, viewer, { now: NOW });
     const found = result.items.find((r) => r.itemId === items.descubierto);
     expect(found).toMatchObject({ block: 'discovery', discovery: { contributorId: soulmates[0], contributorName: 'test_rec_alma_00' } });
+    expect(found?.evidence).toMatchObject({ supporterAffinity: Math.round(found!.discovery!.contributorAffinity), exceptionalSupporters: expect.any(Number) });
   });
 
   it('excluye conocidos, lugares fuera del radio y descartes de Home; descartar no cambia los gustos', async () => {
@@ -189,9 +209,15 @@ describe('recomendador (fase 7)', () => {
     expect(ids).not.toContain(items.lejos);
     expect(ids).toContain(items.cerca);
     expect(ids).not.toContain(items.descartado);
-    // Categories (fase 9) no aplica el descarte de Home.
+    // «No lo conozco» (motor v3): sigue saliendo en Recomendaciones si es una recomendación.
     expect((await recommendFor(database.db, viewer, { now: NOW, applyHomeDismissals: false })).items.map((r) => r.itemId)).toContain(items.descartado);
     expect(await database.db.select().from(userItemProfiles).where(eq(userItemProfiles.userId, viewer))).toEqual(before);
+    // En Inicio no vuelve hasta pasado el plazo desde la última vez.
+    await database.db
+      .update(homeDismissals)
+      .set({ createdAt: new Date(NOW.getTime() - (PASS_RETURN_DAYS + 1) * 86_400_000) })
+      .where(eq(homeDismissals.catalogItemId, items.descartado!));
+    expect((await recommendFor(database.db, viewer, { now: NOW })).items.map((r) => r.itemId)).toContain(items.descartado);
     // Lo ya mostrado en la sesión no se repite.
     expect((await recommendFor(database.db, viewer, { now: NOW, excludeItemIds: [items.cerca!] })).items.map((r) => r.itemId)).not.toContain(items.cerca);
   });
@@ -230,18 +256,21 @@ describe('recomendador (fase 7)', () => {
 });
 
 describe('Home: acciones e impresiones (fase 8)', () => {
-  it('descartar quita la tarjeta de Home; deshacer la devuelve; conservar no la filtra en la siguiente sesión', async () => {
+  it('descartar quita la tarjeta de Home; deshacer la devuelve; guardar la saca de Home (va a Recomendaciones)', async () => {
     await database.db.delete(homeDismissals);
     const ids = async () => (await recommendFor(database.db, viewer, { now: NOW, limit: 100 })).items.map((r) => r.itemId);
     expect(await ids()).toContain(items.consenso);
     await applyHomeAction(database.db, viewer, items.consenso!, 'dismiss');
     expect(await ids()).not.toContain(items.consenso);
-    expect(await undoLastHomeAction(database.db, viewer)).toEqual({ itemId: items.consenso, action: 'dismiss' });
+    expect(await undoLastHomeAction(database.db, viewer)).toEqual({ itemId: items.consenso, action: 'dismiss', profileChanged: false });
     expect(await ids()).toContain(items.consenso);
+    // Guardar ya no existe (motor v3): una acción «keep» antigua no saca la obra de Inicio ni crea un apartado aparte.
     await applyHomeAction(database.db, viewer, items.cerca!, 'keep');
     expect(await ids()).toContain(items.cerca);
+    const category = await recommendFor(database.db, viewer, { now: NOW, limit: 100, applyHomeDismissals: false });
+    expect(category.items.some((r) => r.block === 'kept')).toBe(false);
     // Deshacer revierte solo la última acción vigente; después ya no queda nada.
-    expect(await undoLastHomeAction(database.db, viewer)).toEqual({ itemId: items.cerca, action: 'keep' });
+    expect(await undoLastHomeAction(database.db, viewer)).toEqual({ itemId: items.cerca, action: 'keep', profileChanged: false });
     expect(await undoLastHomeAction(database.db, viewer)).toBeNull();
   });
 
@@ -281,7 +310,7 @@ describe('Home: acciones e impresiones (fase 8)', () => {
 });
 
 describe('feed continuo: respaldos honestos (fase 9)', () => {
-  it('cuando se agotan los bloques principales siguen comunidad, conservados y explorar, cada uno con su motivo', async () => {
+  it('cuando se agotan los bloques principales siguen comunidad y explorar, cada uno con su motivo', async () => {
     await database.db.delete(homeDismissals);
     await item('sinSenales', 'movies');
     await item('conservado', 'books');
@@ -294,7 +323,8 @@ describe('feed continuo: respaldos honestos (fase 9)', () => {
     expect(blocks.slice(firstFallback).every((b) => ['community', 'kept', 'explore'].includes(b))).toBe(true);
     const byItem = new Map(all.items.map((r) => [r.itemId, r]));
     expect(byItem.get(items.persona51!)).toMatchObject({ block: 'community', community: { supporters: 2 } });
-    expect(byItem.get(items.conservado!)?.block).toBe('kept');
+    // Guardar ya no existe (motor v3): una acción «keep» antigua no lo saca de Inicio.
+    expect(byItem.get(items.conservado!)?.block).toBe('explore');
     expect(byItem.get(items.sinSenales!)?.block).toBe('explore');
     // Los filtros siguen valiendo: lo conocido y los lugares fuera del radio tampoco salen como respaldo.
     expect(byItem.has(items.conocido!)).toBe(false);

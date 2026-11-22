@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>APPINITY · Votación de tarjetas</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&display=swap" rel="stylesheet">
+<style>
+/* Propuestas de votación («Aura»). Solo maqueta: no es la app. Datos de ejemplo. */
+:root{
+  --bg:#0C0C0E; --surface:#17161B; --raised:#211F27; --line:rgb(255 255 255 / .08);
+  --text:#F5F3F0; --muted:#B4B0AA; --faint:#938F88;
+  /* Escala de intensidad del gusto (frío → caliente). Siempre con icono y texto, nunca solo color. */
+  --v-skip:#B4B0AA;                       /* No lo conozco: neutro, contorno */
+  --v-no:#9AA6C2;  --on-no:#0E1220;        /* No me gusta: gris azulado frío */
+  --v-like:#D4F45A; --on-like:#141A02;     /* Me gusta: lima */
+  --v-love:#FF5E4D; --on-love:#1A0806;     /* Me encanta: chispa */
+  --cat:#E0367A;
+  --display:"Bricolage Grotesque",system-ui,sans-serif;
+  --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+body{background:#050506;color:var(--text);font:15px/1.45 var(--body);padding:32px 16px 64px}
+svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.intro{max-width:1180px;margin:0 auto 28px}
+.intro h1{font:800 clamp(30px,5vw,48px)/1.05 var(--display);letter-spacing:-.03em}
+.intro p{color:var(--muted);max-width:72ch;margin-top:10px}
+.scale{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:99px;font:700 13px var(--body)}
+.grid{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:40px 28px}
+.variant h2{font:800 24px/1.1 var(--display);letter-spacing:-.02em;margin:14px 0 4px}
+.variant .tag{font:700 11px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--v-like)}
+.variant dl{display:grid;grid-template-columns:96px 1fr;gap:4px 10px;font-size:13px;margin-top:8px}
+.variant dt{color:var(--faint)} .variant dd{color:var(--muted)}
+.phone{width:320px;max-width:100%;height:600px;margin:0 auto;border-radius:40px;background:var(--bg);position:relative;overflow:hidden;
+  box-shadow:0 0 0 9px #1b1b1f,0 24px 60px rgb(0 0 0 / .55);touch-action:none;user-select:none}
+.phone::before{content:"";position:absolute;inset:-30%;background:radial-gradient(40% 30% at 30% 30%,color-mix(in oklch,var(--cat) 70%,white 10%),transparent 70%);opacity:.35;filter:blur(30px)}
+/* Tarjeta de ejemplo */
+.card{position:absolute;left:18px;right:18px;top:40px;height:400px;border-radius:26px;overflow:hidden;background:var(--surface);
+  box-shadow:0 20px 50px -24px var(--cat),0 0 0 1px var(--line);transition:transform .35s cubic-bezier(.34,1.56,.64,1),box-shadow .2s}
+.cover{height:260px;position:relative;background:linear-gradient(160deg,color-mix(in oklch,var(--cat) 65%,black),color-mix(in oklch,var(--cat) 25%,black 75%))}
+.cover b{position:absolute;left:-6px;bottom:-26px;font:800 120px/.8 var(--display);letter-spacing:-.06em;color:color-mix(in oklch,var(--cat) 40%,white 60%);opacity:.3}
+.chip{position:absolute;left:12px;top:12px;font:700 11px var(--body);letter-spacing:.06em;text-transform:uppercase;background:rgb(12 12 14 / .66);padding:6px 10px;border-radius:99px}
+.body{padding:14px 16px}
+.title{font:800 24px/1.05 var(--display);letter-spacing:-.02em}
+.ctx{color:var(--muted);font-size:13px;margin-top:4px}
+.why{color:var(--muted);font-size:12.5px;margin-top:8px}.why b{color:var(--v-like)}
+/* Resultado del voto (demostración) */
+.toast{position:absolute;left:50%;top:14px;transform:translate(-50%,-60px);padding:8px 14px;border-radius:99px;font:700 13px var(--body);
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1);z-index:5;white-space:nowrap}
+.toast.show{transform:translate(-50%,0)}
+.btn{border:0;cursor:pointer;display:grid;place-items:center;border-radius:50%;font:inherit;transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
+.btn:active{transform:scale(.9)}
+.lbl{font:600 11px var(--body);color:var(--muted);text-align:center;margin-top:5px}
+.no{background:var(--v-no);color:var(--on-no)} .like{background:var(--v-like);color:var(--on-like)} .love{background:var(--v-love);color:var(--on-love)}
+.skip{background:transparent;color:var(--v-skip);box-shadow:inset 0 0 0 1.5px var(--line),inset 0 0 0 1.5px var(--v-skip)}
+.reset{position:absolute;right:14px;top:12px;z-index:6;font:600 11px var(--body);color:var(--faint);background:none;border:0;cursor:pointer}
+
+/* A · Arco de intensidad */
+.arc{position:absolute;left:0;right:0;top:390px;height:190px}
+.arc .slot{position:absolute;display:flex;flex-direction:column;align-items:center}
+/* B · Cuatro direcciones */
+.edge{position:absolute;font:700 11px var(--body);letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:4px;opacity:.55;transition:opacity .15s}
+.edge.on{opacity:1}
+/* C · Deslizador */
+.track{position:absolute;left:28px;right:28px;top:505px;height:14px;border-radius:99px;background:linear-gradient(90deg,var(--v-no),#4a4d59 40%,var(--v-like) 70%,var(--v-love))}
+.thumb{position:absolute;top:-15px;width:44px;height:44px;border-radius:50%;background:var(--text);box-shadow:0 6px 16px rgb(0 0 0 / .5);display:grid;place-items:center;color:#0C0C0E;cursor:grab}
+.stops{position:absolute;left:20px;right:20px;top:540px;display:flex;justify-content:space-between;font:600 11px var(--body);color:var(--muted)}
+/* D · Un corazón, dos fuerzas */
+.ring{position:absolute;inset:-6px;border-radius:50%;background:conic-gradient(var(--v-love) calc(var(--p,0)*1%),transparent 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px))}
+/* E · Menú radial */
+.radial{position:absolute;inset:0;background:rgb(5 5 6 / .55);opacity:0;pointer-events:none;transition:opacity .2s;z-index:4}
+.radial.open{opacity:1;pointer-events:auto}
+.radial .r{position:absolute;display:flex;flex-direction:column;align-items:center;transform:scale(.4);transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+.radial.open .r{transform:scale(1)}
+.hint{position:absolute;left:0;right:0;text-align:center;font:600 12px var(--body);color:var(--faint)}
+/* F · Raíl vertical */
+.rail{position:absolute;right:26px;top:70px;display:flex;flex-direction:column;gap:12px;align-items:center;z-index:3}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="q" viewBox="0 0 24 24"><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/><circle cx="12" cy="12" r="10"/></symbol>
+  <symbol id="down" viewBox="0 0 24 24"><path d="M17 14V2M9 18.1 10 14H4.2a2 2 0 0 1-1.9-2.5l2.3-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.8a2 2 0 0 0-1.7 1L12 22a3.1 3.1 0 0 1-2.9-3.9Z"/></symbol>
+  <symbol id="up" viewBox="0 0 24 24"><path d="M7 10v12M15 5.9 14 10h5.8a2 2 0 0 1 1.9 2.5l-2.3 8a2 2 0 0 1-1.9 1.5H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.8a2 2 0 0 0 1.7-1L12 2a3.1 3.1 0 0 1 2.9 3.9Z"/></symbol>
+  <symbol id="heart" viewBox="0 0 24 24"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z"/></symbol>
+  <symbol id="x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+</svg>
+
+<header class="intro">
+  <h1>Votación de tarjetas · 6 propuestas</h1>
+  <p>Cuatro respuestas: <b>No lo conozco</b> (no cambia tus gustos), <b>No me gusta</b> (−0,5), <b>Me gusta</b> (+0,5) y <b>Me encanta</b> (+1). Escala de color por intensidad, de frío a caliente; siempre con icono y texto (nunca solo color) y cada gesto con su botón. Maquetas interactivas: pulsa, arrastra o mantén. Datos de ejemplo.</p>
+  <div class="scale">
+    <span class="pill skip"><svg class="i"><use href="#q"/></svg>No lo conozco</span>
+    <span class="pill no"><svg class="i"><use href="#down"/></svg>No me gusta</span>
+    <span class="pill like"><svg class="i"><use href="#up"/></svg>Me gusta</span>
+    <span class="pill love"><svg class="i"><use href="#heart"/></svg>Me encanta</span>
+  </div>
+</header>
+
+<main class="grid">
+  <!-- A -->
+  <section class="variant">
+    <div class="phone" id="A"></div>
+    <span class="tag">A · tu idea</span><h2>Arco de intensidad</h2>
+    <dl><dt>Cómo</dt><dd>Cuatro botones en arco bajo la tarjeta; crecen y se calientan de izquierda a derecha. También se puede arrastrar el pulgar por el arco.</dd>
+    <dt>Se inspira</dt><dd>Diales de intensidad (termostatos), selector de reacciones.</dd>
+    <dt>A favor</dt><dd>La intensidad se ve de un vistazo; zona del pulgar; muy propio de Aura.</dd>
+    <dt>En contra</dt><dd>Ocupa altura: la tarjeta pierde unos 60 px.</dd></dl>
+  </section>
+  <!-- B -->
+  <section class="variant">
+    <div class="phone" id="B"></div>
+    <span class="tag">B · copia mejorada</span><h2>Cuatro direcciones</h2>
+    <dl><dt>Cómo</dt><dd>Izquierda: no me gusta · derecha: me gusta · arriba: me encanta · abajo: no lo conozco. El borde hacia el que arrastras se ilumina con su color y nombre.</dd>
+    <dt>Se inspira</dt><dd>Tinder (Super Like hacia arriba), Hinge.</dd>
+    <dt>A favor</dt><dd>Rapidísimo y conocido; la tarjeta ocupa toda la pantalla.</dd>
+    <dt>En contra</dt><dd>Cuatro gestos se olvidan: necesita la ayuda de bordes y botones de respaldo.</dd></dl>
+  </section>
+  <!-- C -->
+  <section class="variant">
+    <div class="phone" id="C"></div>
+    <span class="tag">C · innovación</span><h2>Deslizador de intensidad</h2>
+    <dl><dt>Cómo</dt><dd>Un único control bajo la tarjeta: arrastras el pulgar por una barra fría → caliente y se ancla en tres puntos. «No lo conozco», aparte, como chip.</dd>
+    <dt>Se inspira</dt><dd>Escalas de ánimo (Daylio), sliders de reacción de Instagram.</dd>
+    <dt>A favor</dt><dd>Comunica que el gusto es un grado, no un sí/no; una sola zona de interacción.</dd>
+    <dt>En contra</dt><dd>Más lento que un toque; menos preciso con prisas.</dd></dl>
+  </section>
+  <!-- D -->
+  <section class="variant">
+    <div class="phone" id="D"></div>
+    <span class="tag">D · minimalista</span><h2>Un corazón, dos fuerzas</h2>
+    <dl><dt>Cómo</dt><dd>Tocar el corazón = me gusta; mantenerlo (0,6 s, se llena el anillo) = me encanta. A los lados, no me gusta y no lo conozco.</dd>
+    <dt>Se inspira</dt><dd>Doble toque de Instagram, mantener para reaccionar de LinkedIn/Facebook.</dd>
+    <dt>A favor</dt><dd>Tres botones, la tarjeta manda; «me encanta» exige un pequeño esfuerzo, así vale más.</dd>
+    <dt>En contra</dt><dd>Mantener pulsado hay que descubrirlo (ayuda la primera vez).</dd></dl>
+  </section>
+  <!-- E -->
+  <section class="variant">
+    <div class="phone" id="E"></div>
+    <span class="tag">E · innovación</span><h2>Menú radial</h2>
+    <dl><dt>Cómo</dt><dd>Mantén pulsada la tarjeta: aparecen las cuatro respuestas en abanico alrededor del dedo; deslizas hacia una y sueltas. (En la maqueta: toca la tarjeta.)</dd>
+    <dt>Se inspira</dt><dd>Pinterest (mantener para guardar), menús de juegos.</dd>
+    <dt>A favor</dt><dd>Pantalla limpia sin botones; muy rápido para quien lo aprende.</dd>
+    <dt>En contra</dt><dd>Invisible al principio; necesita respaldo accesible (botón «Votar»).</dd></dl>
+  </section>
+  <!-- F -->
+  <section class="variant">
+    <div class="phone" id="F"></div>
+    <span class="tag">F · copia</span><h2>Raíl vertical</h2>
+    <dl><dt>Cómo</dt><dd>Columna de botones sobre el borde derecho de la tarjeta, ordenados de abajo (no me gusta) a arriba (me encanta); el título queda abajo a la izquierda.</dd>
+    <dt>Se inspira</dt><dd>TikTok, Reels, YouTube Shorts.</dd>
+    <dt>A favor</dt><dd>Imagen casi a pantalla completa; patrón muy familiar; a mano del pulgar derecho.</dd>
+    <dt>En contra</dt><dd>Zurdos; los botones tapan algo de la imagen.</dd></dl>
+  </section>
+</main>
+
+<script>
+const OPT={skip:['No lo conozco','skip','q'],no:['No me gusta','no','down'],like:['Me gusta','like','up'],love:['Me encanta','love','heart']};
+const icon=(id,s=22)=>`<svg class="i" style="width:${s}px;height:${s}px"><use href="#${id}"/></svg>`;
+const cardHTML=()=>`<div class="card"><div class="cover"><span class="chip">Música</span><b>Radio</b></div><div class="body"><div class="title">Radiohead</div><div class="ctx">Rock alternativo · Oxford</div><div class="why"><b>3/4</b> almas gemelas lo recomiendan · <b>71 %</b> afinidad media</div></div></div>`;
+function frame(id,extra){const el=document.getElementById(id);el.innerHTML=`<div class="toast"></div><button class="reset">reiniciar</button>${cardHTML()}${extra}`;
+  el.querySelector('.reset').onclick=()=>{el.querySelector('.card').style.transform='';el.querySelector('.card').style.opacity='';};return el;}
+function vote(el,k){const [txt,cls]=OPT[k];const t=el.querySelector('.toast');t.className='toast show '+cls;t.textContent=txt;
+  const c=el.querySelector('.card');const dx={no:-420,like:420,love:0,skip:0}[k],dy={love:-520,skip:520}[k]||0;
+  c.style.transform=`translate(${dx}px,${dy}px) rotate(${dx/30}deg)`;setTimeout(()=>{t.className='toast';c.style.transition='none';c.style.transform='';c.style.opacity='0';
+  requestAnimationFrame(()=>{c.style.transition='';c.style.opacity='1';});},700);}
+const btn=(k,size)=>`<button class="btn ${OPT[k][1]}" data-k="${k}" aria-label="${OPT[k][0]}" style="width:${size}px;height:${size}px">${icon(OPT[k][2],size*.42)}</button>`;
+function wire(el){el.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>vote(el,b.dataset.k));}
+
+/* A · arco: posiciones sobre un semicírculo; tamaño crece con la intensidad */
+(()=>{const items=[['skip',48],['no',56],['like',64],['love',74]];const cx=160,cy=440,r=128;
+ const slots=items.map(([k,s],i)=>{const a=Math.PI*(1-(i+.5)/4);const x=cx+r*Math.cos(a)-s/2,y=cy-r*Math.sin(a)*.55+40-s/2;
+  return `<div class="slot" style="left:${x}px;top:${y-390+40}px">${btn(k,s)}<div class="lbl">${OPT[k][0]}</div></div>`}).join('');
+ const el=frame('A',`<svg style="position:absolute;left:0;top:380px" width="320" height="200" aria-hidden="true"><path d="M30 150 Q160 20 290 150" fill="none" stroke="url(#gA)" stroke-width="6" stroke-linecap="round" opacity=".5"/><defs><linearGradient id="gA"><stop offset="0" stop-color="#B4B0AA"/><stop offset=".35" stop-color="#9AA6C2"/><stop offset=".7" stop-color="#D4F45A"/><stop offset="1" stop-color="#FF5E4D"/></linearGradient></defs></svg><div class="arc">${slots}</div>`);
+ el.querySelector('.card').style.height='350px';wire(el);})();
+
+/* B · cuatro direcciones */
+(()=>{const el=frame('B',`<div class="edge" data-d="left" style="left:6px;top:230px;color:var(--v-no);writing-mode:vertical-rl;transform:rotate(180deg)">${icon('down',14)}No me gusta</div>
+ <div class="edge" data-d="right" style="right:6px;top:230px;color:var(--v-like);writing-mode:vertical-rl">${icon('up',14)}Me gusta</div>
+ <div class="edge" data-d="up" style="top:16px;left:0;right:0;justify-content:center;color:var(--v-love)">${icon('heart',14)}Me encanta</div>
+ <div class="edge" data-d="down" style="top:450px;left:0;right:0;justify-content:center;color:var(--v-skip)">${icon('q',14)}No lo conozco</div>
+ <div style="position:absolute;bottom:26px;left:0;right:0;display:flex;justify-content:center;gap:14px">${btn('no',52)}${btn('skip',40)}${btn('love',52)}${btn('like',52)}</div>`);
+ const c=el.querySelector('.card');let s=null;const dir=(dx,dy)=>Math.abs(dx)>Math.abs(dy)?(dx<0?'left':'right'):(dy<0?'up':'down');
+ const map={left:'no',right:'like',up:'love',down:'skip'};
+ c.addEventListener('pointerdown',e=>{s=[e.clientX,e.clientY];c.setPointerCapture(e.pointerId);c.style.transition='none';});
+ c.addEventListener('pointermove',e=>{if(!s)return;const dx=e.clientX-s[0],dy=e.clientY-s[1];c.style.transform=`translate(${dx}px,${dy}px) rotate(${dx/20}deg)`;
+  const d=dir(dx,dy),far=Math.hypot(dx,dy)>60;el.querySelectorAll('.edge').forEach(x=>x.classList.toggle('on',far&&x.dataset.d===d));
+  c.style.boxShadow=far?`0 0 0 3px var(--v-${map[d]==='skip'?'skip':map[d]})`:'';});
+ c.addEventListener('pointerup',e=>{const dx=e.clientX-s[0],dy=e.clientY-s[1];s=null;c.style.transition='';c.style.boxShadow='';el.querySelectorAll('.edge').forEach(x=>x.classList.remove('on'));
+  if(Math.hypot(dx,dy)>90)vote(el,map[dir(dx,dy)]);else c.style.transform='';});
+ c.querySelector('.cover').style.height='280px';c.style.height='420px';wire(el);})();
+
+/* C · deslizador */
+(()=>{const el=frame('C',`<button class="btn skip" data-k="skip" style="position:absolute;left:50%;top:452px;transform:translateX(-50%);width:auto;height:36px;border-radius:99px;padding:0 14px;display:flex;gap:6px;font:600 12px var(--body)">${icon('q',16)}No lo conozco</button>
+ <div class="track"><div class="thumb" style="left:calc(40% - 22px)">${icon('heart',18)}</div></div>
+ <div class="stops"><span>No me gusta</span><span>Me gusta</span><span>Me encanta</span></div>
+ <div class="hint" style="top:565px">Arrastra y suelta</div>`);
+ const tr=el.querySelector('.track'),th=el.querySelector('.thumb');let drag=false;
+ const set=p=>{th.style.left=`calc(${p}% - 22px)`;const k=p<25?'no':p<85?'like':'love';th.style.background=`var(--v-${k})`;return k;};
+ th.addEventListener('pointerdown',e=>{drag=true;th.setPointerCapture(e.pointerId);});
+ th.addEventListener('pointermove',e=>{if(!drag)return;const r=tr.getBoundingClientRect();set(Math.max(0,Math.min(100,(e.clientX-r.left)/r.width*100)));});
+ th.addEventListener('pointerup',e=>{drag=false;const r=tr.getBoundingClientRect();const p=(e.clientX-r.left)/r.width*100;
+  if(p>30&&p<55){set(40);th.style.background='';return;}const k=set(p<30?5:p<85?70:97);vote(el,k);setTimeout(()=>{set(40);th.style.background='';},800);});
+ el.querySelector('.card').style.height='395px';wire(el);})();
+
+/* D · un corazón, dos fuerzas */
+(()=>{const el=frame('D',`<div style="position:absolute;bottom:40px;left:0;right:0;display:flex;justify-content:center;align-items:flex-end;gap:26px">
+ <div>${btn('no',56)}<div class="lbl">No me gusta</div></div>
+ <div style="text-align:center"><div style="position:relative;width:84px;height:84px"><div class="ring"></div><button class="btn like" id="Dheart" aria-label="Me gusta; mantén para Me encanta" style="width:84px;height:84px">${icon('heart',36)}</button></div><div class="lbl">Toca · mantén</div></div>
+ <div>${btn('skip',56)}<div class="lbl">No lo conozco</div></div></div>`);
+ el.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>vote(el,b.dataset.k));
+ const h=el.querySelector('#Dheart'),ring=el.querySelector('.ring');let t0=0,raf=0,done=false;
+ const tick=()=>{const p=Math.min(100,(performance.now()-t0)/6);ring.style.setProperty('--p',p);if(p>=100&&!done){done=true;h.className='btn love';vote(el,'love');}else if(!done)raf=requestAnimationFrame(tick);};
+ h.addEventListener('pointerdown',()=>{t0=performance.now();done=false;raf=requestAnimationFrame(tick);});
+ h.addEventListener('pointerup',()=>{cancelAnimationFrame(raf);if(!done)vote(el,'like');ring.style.setProperty('--p',0);setTimeout(()=>h.className='btn like',700);});})();
+
+/* E · menú radial */
+(()=>{const pos={love:[0,-110],like:[95,-30],no:[-95,-30],skip:[0,70]};
+ const items=Object.entries(pos).map(([k,[x,y]])=>`<div class="r" style="left:${160+x-30}px;top:${240+y-30}px">${btn(k,60)}<div class="lbl" style="color:var(--text)">${OPT[k][0]}</div></div>`).join('');
+ const el=frame('E',`<div class="radial">${items}</div><div class="hint" style="top:470px">Mantén pulsada la tarjeta (aquí: tócala)</div>
+ <button class="btn skip" style="position:absolute;bottom:40px;left:50%;transform:translateX(-50%);width:auto;height:48px;border-radius:99px;padding:0 20px;font:700 14px var(--body);color:var(--text)" id="Eopen">Votar</button>`);
+ const rad=el.querySelector('.radial');el.querySelector('.card').onclick=()=>rad.classList.add('open');el.querySelector('#Eopen').onclick=()=>rad.classList.add('open');
+ rad.querySelectorAll('[data-k]').forEach(b=>b.onclick=e=>{e.stopPropagation();rad.classList.remove('open');vote(el,b.dataset.k);});
+ rad.onclick=()=>rad.classList.remove('open');el.querySelector('.card').style.height='410px';})();
+
+/* F · raíl vertical */
+(()=>{const items=['love','like','no','skip'].map(k=>`<div style="text-align:center">${btn(k,k==='love'?56:48)}<div class="lbl" style="color:var(--text);text-shadow:0 1px 4px #000">${OPT[k][0].replace('No lo conozco','No lo sé')}</div></div>`).join('');
+ const el=frame('F',`<div class="rail">${items}</div>`);const c=el.querySelector('.card');c.style.top='20px';c.style.height='560px';c.querySelector('.cover').style.height='440px';wire(el);})();
+</script>
+</body>
+</html>

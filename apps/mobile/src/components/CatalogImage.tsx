@@ -4,56 +4,55 @@ import { Image } from 'expo-image';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View, type ImageStyle, type StyleProp, type ViewStyle } from 'react-native';
-import { fonts } from '../theme';
+import { fonts, onImage } from '../theme';
+import { Grain, mixHex } from './Aura';
 
-/** Fondo de cartel: oscuro siempre (como un póster), teñido con el color de la categoría y una forma translúcida. */
+/** Fondo de cartel «Aura»: oscuro siempre (como un póster), teñido con la categoría, un brillo, una banda y grano. */
 function PosterBackdrop({ category }: { category: Category }) {
   const color = CATEGORY_META[category].color;
   return (
     <>
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: POSTER_BASE }]} />
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: color, opacity: 0.32 }]} />
-      <View style={{ position: 'absolute', width: 360, height: 360, borderRadius: 180, top: -110, right: -130, backgroundColor: color, opacity: 0.45 }} />
-      <View style={{ position: 'absolute', width: 240, height: 240, borderRadius: 120, bottom: 60, left: -120, backgroundColor: color, opacity: 0.22 }} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: mixHex(color, '#000000', 0.62) }]} />
+      <View style={{ position: 'absolute', width: 420, height: 420, borderRadius: 210, top: -190, left: -120, backgroundColor: mixHex(color, '#FFFFFF', 0.12), opacity: 0.5 }} />
+      <View style={{ position: 'absolute', width: 300, height: 300, borderRadius: 150, top: -110, left: -50, backgroundColor: mixHex(color, '#FFFFFF', 0.2), opacity: 0.35 }} />
+      <View style={{ position: 'absolute', left: '-20%', width: '140%', height: 64, top: '40%', transform: [{ rotate: '-12deg' }], backgroundColor: mixHex(color, '#FFFFFF', 0.25), opacity: 0.16 }} />
+      <Grain opacity={0.55} />
     </>
   );
 }
 
-const POSTER_BASE = '#141210';
-
 /**
- * Imagen de sustitución de la categoría: diseño propio, nunca una foto inventada del contenido. En grande es un cartel
- * (fondo teñido y el icono de la categoría); el título ya lo pinta la tarjeta encima. En miniatura, solo el icono.
+ * Portada generada cuando no hay imagen libre: diseño propio, nunca una foto inventada del contenido. En grande es un
+ * cartel (fondo teñido, la primera palabra del título enorme, el icono de la categoría y el rótulo «Portada generada»).
+ * En miniatura, solo el icono.
  */
-export function CategoryFallback({ category, style, compact }: { category: Category; style?: StyleProp<ViewStyle>; compact?: boolean }) {
+export function CategoryFallback({ category, title, style, compact }: { category: Category; title?: string; style?: StyleProp<ViewStyle>; compact?: boolean }) {
   const { t } = useTranslation();
   const meta = CATEGORY_META[category];
   const icon = meta.icon as keyof typeof MaterialCommunityIcons.glyphMap;
-  const label = t(`categories.${category}`);
+  const word = (title ?? t(`categories.${category}`)).split(/\s+/)[0]?.replace(/[:,.]$/, '') ?? '';
   if (compact) {
     return (
-      <View accessibilityRole="image" accessibilityLabel={t('item.imageFallback')} style={[{ backgroundColor: `${meta.color}33`, alignItems: 'center', justifyContent: 'center' }, style]}>
-        <MaterialCommunityIcons name={icon} size={22} color={meta.color} />
+      <View accessibilityRole="image" accessibilityLabel={t('item.imageFallback')} style={[{ backgroundColor: mixHex(meta.color, '#000000', 0.55), alignItems: 'center', justifyContent: 'center' }, style]}>
+        <MaterialCommunityIcons name={icon} size={22} color={mixHex(meta.color, '#FFFFFF', 0.55)} />
       </View>
     );
   }
   return (
     <View accessibilityRole="image" accessibilityLabel={t('item.imageFallback')} style={[{ overflow: 'hidden' }, style]}>
       <PosterBackdrop category={category} />
-      {/* Textura tipográfica: el nombre de la categoría, enorme y casi transparente, como en un cartel. */}
-      <View style={{ position: 'absolute', top: '18%', left: -8, right: -200 }} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-        {[0, 1, 2].map((i) => (
-          <Text
-            key={i}
-            numberOfLines={1}
-            ellipsizeMode="clip"
-            allowFontScaling={false}
-            style={{ color: '#FFFFFF', opacity: 0.09 - i * 0.025, fontFamily: fonts.display, fontSize: 84, lineHeight: 88, letterSpacing: -2, textTransform: 'uppercase' }}
-          >
-            {label}
-          </Text>
-        ))}
+      <View style={{ position: 'absolute', left: -6, right: -400, bottom: -28 }} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+        <Text
+          numberOfLines={1}
+          ellipsizeMode="clip"
+          allowFontScaling={false}
+          style={{ color: mixHex(meta.color, '#FFFFFF', 0.6), opacity: 0.32, fontFamily: fonts.displayHeavy, fontSize: 150, lineHeight: 150, letterSpacing: -7 }}
+        >
+          {word}
+        </Text>
       </View>
+      <MaterialCommunityIcons name={icon} size={84} color={mixHex(meta.color, '#FFFFFF', 0.7)} style={{ position: 'absolute', right: 20, top: 58, opacity: 0.85 }} />
+      <Text style={{ position: 'absolute', left: 14, bottom: 10, color: onImage.muted, fontSize: 11 }}>{t('item.generatedCover')}</Text>
     </View>
   );
 }
@@ -86,15 +85,18 @@ export function CatalogImage({
   style,
   compact,
   contentFit = 'cover',
+  title,
 }: {
   image: CatalogImageModel;
   category: Category;
   style?: StyleProp<ViewStyle>;
   compact?: boolean;
   contentFit?: 'cover' | 'contain';
+  /** Para la portada generada: su primera palabra hace de cartel. */
+  title?: string;
 }) {
   const [failed, setFailed] = useState(false);
-  if (image.isFallback || failed) return <CategoryFallback category={category} style={style} compact={compact} />;
+  if (image.isFallback || failed) return <CategoryFallback category={category} title={title} style={style} compact={compact} />;
   if (image.kind === 'logo') return <LogoPoster image={image} category={category} style={style} compact={compact} onError={() => setFailed(true)} />;
   return (
     <Image

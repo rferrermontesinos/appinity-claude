@@ -24,7 +24,7 @@ export const PRIVACY_ES = `
   que elijas, tu país y la confirmación de que eres mayor de edad.</li>
   <li><strong>Tus gustos</strong>: solo los que importamos de las fuentes que tú conectas, cada una con su propio
   permiso: Steam (juegos y horas), Google (valoraciones y lugares de Maps, YouTube y YouTube Music, Google Play, libros
-  de Google Books y planes de Google Calendar), Trakt (cine y series) y AniList (anime y manga). De cada fuente
+  de Google Books y planes de Google Calendar), Trakt (cine y series), AniList (anime y manga) y Facebook (las páginas que te gustan). De cada fuente
   guardamos las obras y lugares identificados y la evidencia necesaria (por ejemplo, una nota o que lo has visto). Del
   calendario solo guardamos el lugar u obra identificado, cuántas veces y la fecha más reciente; nunca títulos,
   descripciones ni asistentes.</li>
@@ -44,13 +44,17 @@ gustos: solo cuentan tus fuentes.</p>
 <ul>
   <li>Calcular tu afinidad con otras personas y recomendarte obras y lugares: ejecución del servicio que pides.</li>
   <li>Importar datos de cada fuente: tu consentimiento, que retiras al desconectarla.</li>
-  <li>Mostrarte a otras personas como alma gemela o a tus contactos: tu consentimiento, con interruptores en Perfil.</li>
+  <li>Mostrarte a otras personas como alma gemela o a tus contactos, y mostrar «Lo que os une»: tu consentimiento, con
+interruptores en Ajustes.</li>
   <li>Seguridad, prevención de abusos y copias de seguridad: interés legítimo.</li>
 </ul>
 
 <h2>4. Qué ven los demás</h2>
 <p>Tu nombre visible, tu país y vuestra afinidad (global y por categoría). Nunca tu historial, tus valoraciones, los
 lugares que has visitado ni lo que has visto. Una recomendación atribuida a otra persona solo revela la obra y el motivo.</p>
+<p><strong>Lo que os une</strong>: si los dos lo permitís (interruptor en Ajustes, activado por defecto y recíproco), la
+otra persona ve hasta 5 obras que os gustan a ambos, sin vuestras notas. Nunca obras que solo te gustan a ti ni las que
+no te gustan.</p>
 
 <h2>5. Datos de Google: uso limitado</h2>
 <p>El uso y la transferencia a cualquier otra aplicación de la información recibida de las API de Google se ajustan a la
@@ -60,7 +64,7 @@ APPINITY; no los vendemos, no los usamos para publicidad ni los compartimos con 
 modelos de inteligencia artificial.</p>
 
 <h2>6. Con quién se comparten</h2>
-<p>Con nadie para fines propios. Los proveedores que conectas (Google, Steam, Trakt, AniList) reciben las peticiones
+<p>Con nadie para fines propios. Los proveedores que conectas (Google, Steam, Trakt, AniList, Facebook) reciben las peticiones
 necesarias para leer tus datos. Usamos servicios técnicos para alojar la app y enviar notificaciones, que actúan por
 cuenta nuestra. Para identificar lugares y obras consultamos fuentes públicas (Wikidata y OpenStreetMap): les enviamos solo el
 nombre del lugar u obra, nunca datos que te identifiquen.</p>

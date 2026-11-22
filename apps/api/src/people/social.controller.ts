@@ -4,7 +4,10 @@ import { Throttle } from '@nestjs/throttler';
 import {
   blockUser,
   listBlocked,
+  followPerson,
+  listFollowing,
   listFriends,
+  unfollowPerson,
   matchContacts,
   removeFriendship,
   reportUser,
@@ -12,7 +15,7 @@ import {
   sendFriendRequest,
   unblockUser,
 } from '@appinity/ingestion';
-import { CONTACT_HASH_BATCH_MAX, type BlockedPersonDto, type ContactMatchDto, type FriendsDto, type FriendshipResultDto } from '@appinity/shared';
+import { CONTACT_HASH_BATCH_MAX, type BlockedPersonDto, type ContactMatchDto, type FollowResultDto, type FollowedPersonDto, type FriendsDto, type FriendshipResultDto } from '@appinity/shared';
 import { z } from 'zod';
 import type { AuthContext } from '../auth/auth.types.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
@@ -79,6 +82,24 @@ export class SocialController {
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
   matchContacts(@CurrentUser() auth: AuthContext, @Body(new ZodPipe(contactsSchema)) body: z.infer<typeof contactsSchema>): Promise<ContactMatchDto[]> {
     return matchContacts(this.database.db, auth.userId, body.hashes);
+  }
+
+  /** Personas que sigues (creadores y amigos). Seguir nunca cambia gustos ni afinidades. */
+  @Get('following')
+  following(@CurrentUser() auth: AuthContext): Promise<FollowedPersonDto[]> {
+    return listFollowing(this.database.db, auth.userId);
+  }
+
+  @Post('follows')
+  @HttpCode(200)
+  follow(@CurrentUser() auth: AuthContext, @Body(new ZodPipe(userSchema)) body: z.infer<typeof userSchema>): Promise<FollowResultDto> {
+    return followPerson(this.database.db, auth.userId, body.userId);
+  }
+
+  @Delete('follows/:userId')
+  @HttpCode(200)
+  unfollow(@CurrentUser() auth: AuthContext, @Param('userId', new ParseUUIDPipe()) userId: string): Promise<FollowResultDto> {
+    return unfollowPerson(this.database.db, auth.userId, userId);
   }
 
   @Get('blocks')

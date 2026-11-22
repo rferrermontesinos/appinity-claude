@@ -1,21 +1,42 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { categoryAffinities, userAffinities, userProfiles, type DatabaseHandle } from '@appinity/database';
-import { AFFINITY_VERSION, FREE_SOULMATES_LIMIT, NotFoundError, PREMIUM_SOULMATES_LIMIT, canSeePerson, chatState, friendshipState, isExceptionalMutual, topSoulmates } from '@appinity/ingestion';
-import { CATEGORIES, type AffinityDto, type PublicPersonDto, type SoulmatesDto } from '@appinity/shared';
+import { categoryAffinities, userAffinities, userProfiles, userSettings, type DatabaseHandle } from '@appinity/database';
+import { AFFINITY_VERSION, FREE_SOULMATES_LIMIT, NotFoundError, PREMIUM_SOULMATES_LIMIT, CATEGORY_RANKING_VERSION, canSeePerson, categoryRankingFor, chatState, definingTastes, followState, friendshipState, isExceptionalMutual, sharedTastes, topSoulmates, type TasteRef } from '@appinity/ingestion';
+import { CATEGORIES, type AffinityDto, type CategoryRankingDto, type DefiningTastesDto, type PublicPersonDto, type SharedTastesDto, type SoulmatesDto, type TasteItemDto } from '@appinity/shared';
 import { and, eq } from 'drizzle-orm';
+import { CatalogQueryService } from '../catalog/catalog-query.service.js';
 import { DATABASE } from '../infra/tokens.js';
 import { PremiumService } from '../premium/premium.service.js';
 
 /**
- * Personas: ranking de almas gemelas y perfil público mínimo (§4). Nunca expone historiales importados ni qué objetos
- * coinciden: solo nombre, país, foto y cifras de afinidad. Toda consulta parte del usuario de la sesión.
+ * Personas: ranking de almas gemelas y perfil público mínimo (§4). Nunca expone historiales importados: solo nombre,
+ * país, foto y cifras de afinidad y, desde el 2026-10-27, «Lo que os une» (hasta 5 obras que os gustan a los dos,
+ * recíproco y desactivable; ver shared-tastes.ts). Toda consulta parte del usuario de la sesión.
  */
 @Injectable()
 export class PeopleService {
   constructor(
     @Inject(DATABASE) private readonly database: DatabaseHandle,
     private readonly premium: PremiumService,
+    private readonly catalog: CatalogQueryService,
   ) {}
+
+  async shared(viewerId: string, targetId: string, baseUrl: string): Promise<SharedTastesDto> {
+    if (viewerId === targetId || !(await canSeePerson(this.database.db, viewerId, targetId))) throw new NotFoundError('Persona no encontrada');
+    const result = await sharedTastes(this.database.db, viewerId, targetId);
+    return { ...result, items: await this.withItems(result.items, baseUrl) };
+  }
+
+  async defining(userId: string, baseUrl: string): Promise<DefiningTastesDto> {
+    return { items: await this.withItems(await definingTastes(this.database.db, userId), baseUrl) };
+  }
+
+  private async withItems(refs: TasteRef[], baseUrl: string): Promise<TasteItemDto[]> {
+    const dtos = await this.catalog.dtos(refs.map((r) => r.itemId), baseUrl);
+    return refs.flatMap((r) => {
+      const item = dtos.get(r.itemId);
+      return item ? [{ item, rarity: r.rarity }] : [];
+    });
+  }
 
   async soulmates(userId: string): Promise<SoulmatesDto> {
     // Premium explora más personas; el consenso del recomendador sigue usando el Top 50.
@@ -82,6 +103,20 @@ export class PeopleService {
       affinity,
       friendship: await friendshipState(this.database.db, viewerId, targetId),
       chat: await chatState(this.database.db, viewerId, targetId),
+      follow: await followState(this.database.db, viewerId, targetId),
+      creator: await this.creatorOf(targetId),
     };
+  }
+
+  async categoryRanking(userId: string): Promise<CategoryRankingDto> {
+    return { version: CATEGORY_RANKING_VERSION, items: await categoryRankingFor(this.database.db, userId) };
+  }
+
+  private async creatorOf(userId: string): Promise<{ public: boolean; verified: boolean }> {
+    const [s] = await this.database.db
+      .select({ creator: userSettings.publicCreator, verifiedAt: userSettings.creatorVerifiedAt })
+      .from(userSettings)
+      .where(eq(userSettings.userId, userId));
+    return { public: s?.creator ?? false, verified: Boolean(s?.creator && s.verifiedAt) };
   }
 }

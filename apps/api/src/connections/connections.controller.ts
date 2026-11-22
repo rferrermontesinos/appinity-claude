@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Inject, Param, ParseUUIDPipe, Post, Query, Req } from '@nestjs/common';
-import type { ConnectStartDto, ConnectionDto, SyncRunDto } from '@appinity/shared';
+import type { ConnectStartDto, ConnectionDto, InitialImportDto, SyncRunDto } from '@appinity/shared';
 import type { Request } from 'express';
 import { z } from 'zod';
 import type { AuthContext } from '../auth/auth.types.js';
@@ -17,6 +17,10 @@ const connectSchema = z
     returnUrl: z.string().max(512).refine(isAllowedReturnUrl, 'URL de vuelta no permitida').optional(),
   })
   .strict();
+const initialImportSchema = z
+  .object({ returnUrl: z.string().max(512).refine(isAllowedReturnUrl, 'URL de vuelta no permitida').optional() })
+  .strict();
+
 const syncSchema = z.object({ mode: z.enum(['incremental', 'full']).default('incremental') }).strict();
 
 @Controller('v1/me/connections')
@@ -38,6 +42,16 @@ export class ConnectionsController {
     @Req() req: Request,
   ): Promise<ConnectStartDto> {
     return this.connections.connect(auth.userId, body.sourceKey, publicBaseUrl(req, this.env), body.returnUrl);
+  }
+
+  /** Alta única: tras aceptar las condiciones, empieza a importar todo y devuelve el consentimiento que falta. */
+  @Post('initial-import')
+  initialImport(
+    @CurrentUser() auth: AuthContext,
+    @Body(new ZodPipe(initialImportSchema)) body: z.infer<typeof initialImportSchema>,
+    @Req() req: Request,
+  ): Promise<InitialImportDto> {
+    return this.connections.initialImport(auth.userId, publicBaseUrl(req, this.env), body.returnUrl);
   }
 
   @Post(':id/sync')

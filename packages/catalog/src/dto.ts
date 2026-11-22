@@ -1,6 +1,7 @@
 import type { catalogExternalIds, catalogImages, catalogItems } from '@appinity/database';
 import type { CatalogImageDto, CatalogItemDto, DatePrecision } from '@appinity/shared';
 import { fallbackImage } from './fallback.js';
+import { publicLinks } from './links.js';
 
 type ItemRow = typeof catalogItems.$inferSelect;
 type ImageRow = typeof catalogImages.$inferSelect;
@@ -21,7 +22,8 @@ export function formatEventDate(value: Date | null, precision: 'day' | 'instant'
 
 /** Texto de atribución exigido por la licencia de la imagen. */
 export function imageAttribution(image: Pick<ImageRow, 'author' | 'license' | 'source'>): string | undefined {
-  const sourceLabel = image.source === 'wikimedia_commons' ? 'Wikimedia Commons' : image.source === 'steam_cdn' ? 'Steam' : image.source;
+  const labels: Record<string, string> = { wikimedia_commons: 'Wikimedia Commons', steam_cdn: 'Steam', tvmaze: 'TVmaze', tmdb: 'TMDb' };
+  const sourceLabel = labels[image.source] ?? image.source;
   const parts = [image.author, image.license, sourceLabel]
     .filter((p): p is string => Boolean(p));
   return parts.length ? parts.join(' · ') : undefined;
@@ -73,7 +75,14 @@ export function toCatalogItemDto(
     externalIds: externalIds
       .map((e) => ({ provider: e.provider, idType: e.idType, value: e.externalId }))
       .sort((a, b) => `${a.provider}:${a.idType}`.localeCompare(`${b.provider}:${b.idType}`)),
-    externalLinks: item.externalLinks,
+    externalLinks: publicLinks(
+      item.category,
+      externalIds.map((e) => ({ provider: e.provider, idType: e.idType, value: e.externalId })),
+      item.externalLinks,
+      item.latitude !== null && item.longitude !== null
+        ? { name: item.title, latitude: item.latitude, longitude: item.longitude, locality: item.locality }
+        : null,
+    ),
     releaseDate: formatPartialDate(item.releaseDate, item.releaseDatePrecision),
     releaseDatePrecision: item.releaseDatePrecision,
     eventStartsAt: formatEventDate(item.eventStartsAt, item.eventDatePrecision),

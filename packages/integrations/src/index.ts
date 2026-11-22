@@ -19,3 +19,4 @@ export { ANILIST_MANIFEST, createAniListAdapter, collectAniList, mapAniList, ani
 export { TRAKT_MANIFEST, createTraktAdapter, collectTrakt, mapTrakt, type TraktItem } from './profile/trakt/index.js';
 export { RESTRICTED_RESOURCE_GROUPS, portabilityGroups } from './profile/google-portability/constants.js';
 export { RELATION_WEIGHTS, relatedQueries, relationWeight, type RelatedWork, type RelationKind, type RelatedQuery } from "./catalog/wikidata-relations.js";
+export { FACEBOOK_MANIFEST, createFacebookAdapter, facebookPageKind, mapFacebook, type FacebookLike, type FacebookOptions } from './profile/facebook/index.js';

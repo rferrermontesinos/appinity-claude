@@ -16,7 +16,7 @@ function LocalAccountCard() {
   const [code, setCode] = useState('');
   return (
     <Card>
-      <Title style={{ fontSize: 16 }}>{t('devLogin.localTitle')}</Title>
+      <Title>{t('devLogin.localTitle')}</Title>
       <Small>{t('devLogin.localHelp')}</Small>
       <TextField label={t('devLogin.handle')} value={handle} onChangeText={setHandle} autoCapitalize="none" autoCorrect={false} />
       <TextField

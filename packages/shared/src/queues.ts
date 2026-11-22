@@ -19,6 +19,12 @@ export interface CatalogImageJob {
   imageId: string;
 }
 
+/** Ampliación del catálogo bajo demanda (cola `system`, trabajo `expand-catalog`). */
+export interface ExpandCatalogJob {
+  dataset: 'demo' | 'live';
+  category: string;
+}
+
 /** Recálculo de afinidades: de un usuario (tras un sync o una desconexión) o de todo (`userId` ausente). */
 export interface AffinityJob {
   userId?: string;

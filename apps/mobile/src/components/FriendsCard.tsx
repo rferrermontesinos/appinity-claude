@@ -6,7 +6,7 @@ import { useBlocked, useFriends, useSocialAction } from '../api/queries';
 import { spacing, usePalette } from '../theme';
 import { PersonAvatar, formatAffinity } from './PersonAvatar';
 import { ContactsFinder } from './ContactsFinder';
-import { Body, Button, Card, ErrorCard, Loading, Small, Title } from './ui';
+import { Body, Button, Card, EmptyState, ErrorCard, Skeleton, Small, Title } from './ui';
 
 function PersonLine({ person, children }: { person: FriendDto; children?: React.ReactNode }) {
   const { t } = useTranslation();
@@ -45,8 +45,8 @@ export function FriendsCard() {
   const data = friends.data;
   return (
     <Card>
-      <Title>{t('people.friends')}</Title>
-      {friends.isLoading ? <Loading /> : null}
+      <Title>{t('follow.requestsAndContacts')}</Title>
+      {friends.isLoading ? <Skeleton rows={2} height={64} /> : null}
       {friends.error ? <ErrorCard error={friends.error} onRetry={() => void friends.refetch()} /> : null}
       {action.error ? <ErrorCard error={action.error} /> : null}
       {data?.incoming.length ? (
@@ -60,8 +60,8 @@ export function FriendsCard() {
           ))}
         </View>
       ) : null}
-      {data && !data.friends.length && !data.incoming.length && !data.outgoing.length ? <Body muted>{t('people.friendsEmpty')}</Body> : null}
-      {data?.friends.map((p) => <PersonLine key={p.userId} person={p} />)}
+      {/* Los amigos se listan en «Siguiendo» (seguidos o no); aquí quedan solicitudes, contactos y bloqueos. */}
+      {data && !data.friends.length && !data.incoming.length && !data.outgoing.length ? <EmptyState icon="account-multiple-outline" title={t('people.friendsEmptyTitle')} body={t('people.friendsEmpty')} /> : null}
       {data?.outgoing.length ? (
         <View style={{ gap: spacing.xs }}>
           <Small style={{ fontWeight: '700' }}>{t('people.outgoing')}</Small>

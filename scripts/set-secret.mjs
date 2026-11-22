@@ -27,6 +27,9 @@ const ALLOWED = {
   TRAKT_CLIENT_SECRET: { pattern: /^[A-Za-z0-9_-]{20,128}$/, description: 'el Client Secret de tu app de Trakt (letras, números, - y _)' },
   ANILIST_CLIENT_ID: { pattern: /^\d{1,10}$/, description: 'el Client ID de tu app de AniList (solo números)' },
   ANILIST_CLIENT_SECRET: { pattern: /^[A-Za-z0-9_-]{20,128}$/, description: 'el Client Secret de tu app de AniList (letras y números)' },
+  TMDB_API_KEY: { pattern: /^[a-f0-9]{32}$/, description: 'la API Key (v3) de tu cuenta de TMDb (32 caracteres hexadecimales)' },
+  FACEBOOK_APP_ID: { pattern: /^d{10,20}$/, description: 'el identificador de tu app de Facebook (solo números)' },
+  FACEBOOK_APP_SECRET: { pattern: /^[a-f0-9]{32}$/, description: 'la clave secreta de tu app de Facebook (32 caracteres hexadecimales)' },
   REVENUECAT_WEBHOOK_AUTH: {
     pattern: /^[!-~][ -~]{22,}[!-~]$/,
     description: 'el valor exacto de la cabecera Authorization del webhook de RevenueCat (mín. 24 caracteres imprimibles)',

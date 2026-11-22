@@ -40,7 +40,7 @@ export function AccountCard({ me }: { me: MeDto }) {
 
   return (
     <Card>
-      <Title style={{ fontSize: 16 }}>{t('account.title')}</Title>
+      <Title>{t('account.title')}</Title>
       <Button label={t('account.logout')} variant="secondary" icon="logout" onPress={() => void logout()} disabled={busy} />
       <Button label={t('account.delete')} variant="danger" icon="delete-outline" onPress={() => setConfirming((v) => !v)} disabled={busy} />
       {confirming ? (
