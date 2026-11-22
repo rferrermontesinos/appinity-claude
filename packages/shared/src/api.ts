@@ -541,6 +541,7 @@ export interface TransparencyDto {
   discovery: { minAffinity: number };
   trending: { minVoters: number };
   /** Porcentajes objetivo de la mezcla de Inicio. */
+  /** Porcentajes de la mezcla 70/20/10. `discovery` ya incluye `followed` (la parte de personas que sigues). */
   mix: { consensus: number; discovery: number; followed: number; trending: number };
   unknownReturnDays: number;
   neverUsed: string[];

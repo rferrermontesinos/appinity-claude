@@ -96,7 +96,8 @@ describe('textos legales', () => {
     expect(facts.affinityVersion).toMatch(/^affinity-v\d+$/);
     expect(facts.votes).toEqual({ dislike: -0.5, like: 0.5, love: 1 });
     expect(facts.consensus.soulmates).toBe(50);
-    expect(Object.values(facts.mix).reduce((a, b) => a + b, 0)).toBe(100);
+    // Mezcla 70/20/10 (decisión 2026-11-22): el 20 % de descubrimiento incluye el 10 % de personas que sigues.
+    expect(facts.mix).toEqual({ consensus: 70, discovery: 20, followed: 10, trending: 10 });
     expect(facts.neverUsed).toEqual(expect.arrayContaining(['photos', 'gallery', 'demographics', 'popularity', 'dwellTime', 'messages']));
   });
 });

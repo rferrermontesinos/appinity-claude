@@ -391,7 +391,7 @@ export const en: TranslationResources = {
       discovery: 'Discoveries from soulmates with an affinity of {{min}} or more.',
       followed: 'What the people you follow recommend.',
       trending: 'Trends near you: at least {{min}} people around you, regardless of their affinity with you.',
-      mix: 'Target mix when there are candidates: {{consensus}}% consensus, {{discovery}}% discoveries, {{followed}}% people you follow and {{trending}}% trends.',
+      mix: 'Target mix when there are candidates: {{consensus}}% consensus, {{discovery}}% discoveries ({{followed}}% of it from people you follow) and {{trending}}% trends.',
       fallback: 'If you have no soulmates yet: “because you like…” and things to explore.',
       voted: 'What you vote never comes back. “Don’t know it” returns to Home after {{days}} days.',
     },

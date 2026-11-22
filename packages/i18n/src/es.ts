@@ -390,7 +390,7 @@ export const es = {
       discovery: 'Descubrimientos de almas gemelas con una afinidad de {{min}} o más.',
       followed: 'Lo que recomiendan las personas que sigues.',
       trending: 'Tendencias de tu zona: al menos {{min}} personas cerca de ti, sin mirar su afinidad contigo.',
-      mix: 'Mezcla objetivo cuando hay candidatos: {{consensus}} % consenso, {{discovery}} % descubrimientos, {{followed}} % personas que sigues y {{trending}} % tendencias.',
+      mix: 'Mezcla objetivo cuando hay candidatos: {{consensus}} % consenso, {{discovery}} % descubrimientos (de ellos, {{followed}} % de personas que sigues) y {{trending}} % tendencias.',
       fallback: 'Si aún no tienes almas gemelas: «porque te gusta…» y cosas para explorar.',
       voted: 'Lo que votas ya no vuelve. «No lo conozco» vuelve a Inicio a los {{days}} días.',
     },
