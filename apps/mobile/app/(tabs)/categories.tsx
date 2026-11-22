@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Pressable, View } from 'react-native';
 import { Body, Card, CategoryIcon, Screen, Small, Title } from '../../src/components/ui';
-import { radius, spacing, usePalette } from '../../src/theme';
+import { fonts, radius, spacing, usePalette } from '../../src/theme';
 
 /** Las ocho categorías del MVP con su icono, color y alcance (local o global). */
 export default function CategoriesScreen() {
@@ -25,8 +25,9 @@ export default function CategoriesScreen() {
           <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
             <CategoryIcon category={category} />
             <View style={{ flex: 1, gap: 2 }}>
-              <Title style={{ fontSize: 16, color: CATEGORY_META[category].color }}>{t(`categories.${category}`)}</Title>
-              <Body>{t(`categoryObject.${category}`)}</Body>
+              <Title style={{ fontSize: 17, fontFamily: fonts.display, color: CATEGORY_META[category].color }}>{t(`categories.${category}`)}</Title>
+              {/* El objeto solo se muestra si dice algo distinto del nombre («Música» → «Artistas»). */}
+              {t(`categoryObject.${category}`) !== t(`categories.${category}`) ? <Body>{t(`categoryObject.${category}`)}</Body> : null}
               <Small>{t(`scope.${CATEGORY_META[category].scope}`)}</Small>
             </View>
             <MaterialCommunityIcons name="chevron-right" size={22} color={c.textMuted} />

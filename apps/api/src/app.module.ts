@@ -16,6 +16,7 @@ import { ConnectCallbackController } from './connections/connect-callback.contro
 import { ConnectionsController } from './connections/connections.controller.js';
 import { ConnectionsService } from './connections/connections.service.js';
 import { HealthController } from './health/health.controller.js';
+import { LegalController } from './legal/legal.controller.js';
 import { InfraModule } from './infra/infra.module.js';
 import { PipelineModule } from './infra/pipeline.module.js';
 import { MeController } from './me/me.controller.js';
@@ -29,6 +30,7 @@ import { PeopleController } from './people/people.controller.js';
 import { HomeController } from './recommendations/home.controller.js';
 import { RecommendationsController } from './recommendations/recommendations.controller.js';
 import { PeopleService } from './people/people.service.js';
+import { InvitationsController } from './people/invitations.controller.js';
 import { SocialController } from './people/social.controller.js';
 import { ItemProfilesController } from './profiles/item-profiles.controller.js';
 import { SourcesController } from './sources/sources.controller.js';
@@ -50,6 +52,7 @@ export class AppModule {
       ],
       controllers: [
         HealthController,
+        LegalController,
         DevAuthController,
         AuthController,
         MeController,
@@ -62,6 +65,7 @@ export class AppModule {
         ItemProfilesController,
         PeopleController,
         SocialController,
+        InvitationsController,
         ChatController,
         PremiumController,
         RecommendationsController,

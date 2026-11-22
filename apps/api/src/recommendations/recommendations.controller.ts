@@ -100,6 +100,7 @@ export class RecommendationsController {
               ...(r.discovery ? { contributor: { userId: r.discovery.contributorId, displayName: r.discovery.contributorName } } : {}),
               ...(r.trending ? { positiveVoters: r.trending.positiveVoters, totalVoters: r.trending.totalVoters } : {}),
               ...(r.community ? { supporters: r.community.supporters } : {}),
+              ...(r.content ? { because: { itemId: r.content.becauseItemId, title: r.content.becauseTitle, relation: r.content.relation } } : {}),
             },
           },
         ];

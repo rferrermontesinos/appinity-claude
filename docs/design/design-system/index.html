@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APPINITY · Sistema de diseño</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="theme.js"></script>
+<style>
+body{font-family:var(--font-body);color:var(--on-surface);background:var(--bg);display:flex}
+nav.side{position:sticky;top:0;align-self:flex-start;height:100vh;width:220px;flex:0 0 220px;background:var(--surface);border-right:1px solid var(--border);padding:22px 16px;overflow:auto}
+nav.side .brand{font:700 20px var(--font-display);color:var(--primary-ink);margin-bottom:18px}
+nav.side a{display:block;padding:6px 10px;border-radius:8px;font-size:13px;color:var(--muted);text-decoration:none}
+nav.side a:hover{background:var(--action-hover);color:var(--on-surface)}
+nav.side a.concept-link{margin:0 0 6px;padding:10px;font-weight:700;color:var(--on-primary);background:var(--primary);border-radius:10px}
+nav.side .grp{font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--subtle);margin:16px 0 6px 10px}
+main{flex:1;padding:84px 44px 120px;max-width:1100px}
+section{margin-bottom:56px;scroll-margin-top:20px}
+h2.sec{font:700 24px var(--font-display);color:var(--on-surface);margin-bottom:6px}
+.sec-desc{color:var(--muted);font-size:14px;margin-bottom:20px;max-width:700px;line-height:1.6}
+.stage{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:26px;display:flex;flex-wrap:wrap;gap:28px;align-items:center}
+.cell{display:flex;flex-direction:column;align-items:center;gap:8px}
+.spec{font:11px var(--font-mono);color:var(--subtle)}
+.colors{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.sw{border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--surface)}
+.sw .c{height:56px}.sw .m{padding:8px 10px}.sw .n{font-size:12px;font-weight:600}.sw .v{font:11px var(--font-mono);color:var(--subtle)}
+.typerow{display:flex;align-items:baseline;gap:18px;padding:10px 0;border-bottom:1px solid var(--border)}
+.typerow .tk{width:130px;flex:0 0 130px;font:11px var(--font-mono);color:var(--subtle)}
+.sprow{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.sprow .bar{background:var(--primary);height:12px;border-radius:3px}.sprow .lbl{width:150px;font:12px var(--font-mono);color:var(--muted)}
+.tiles{display:flex;gap:16px;flex-wrap:wrap}
+.tile{width:110px;height:80px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:flex-end;padding:8px;font:11px var(--font-mono);color:var(--subtle)}
+.iconGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px}
+.iconGrid .it{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 6px 8px;display:flex;flex-direction:column;align-items:center;gap:7px;color:var(--on-surface)}
+.iconGrid .it .nm{font:10px var(--font-mono);color:var(--subtle)}
+#topctl{position:fixed;top:16px;right:20px;z-index:50;display:flex;gap:10px;align-items:center}
+#themeSel,#langSel{font:600 12px var(--font-body);border:1px solid var(--border);border-radius:8px;padding:8px 10px;background:var(--surface);color:var(--muted)}
+.ds-btn{font:600 12px var(--font-body);background:var(--surface);border:1px solid var(--primary);color:var(--primary-ink);border-radius:8px;padding:8px 12px;cursor:pointer}
+#devToggle{font:600 13px var(--font-body);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 14px;cursor:pointer;color:var(--muted)}
+#devToggle.on{background:var(--primary);border-color:var(--primary-strong);color:var(--on-primary)}
+.sec-prompt{font:600 11px var(--font-body);border:1px solid var(--primary);background:var(--surface);color:var(--primary-ink);border-radius:8px;padding:3px 9px;margin-left:12px;cursor:pointer;vertical-align:middle}
+body.dev [data-insp]:hover{outline:2px dashed var(--secondary);outline-offset:3px;cursor:pointer}
+.insp-sel{outline:2px solid var(--primary)!important;outline-offset:3px}
+#inspector{position:fixed;top:0;right:0;width:340px;height:100vh;background:var(--surface-raised);border-left:1px solid var(--border);box-shadow:var(--elev-3);transform:translateX(100%);transition:transform .28s var(--ease);z-index:49;overflow:auto;padding:58px 20px 40px}
+body.inspecting #inspector{transform:translateX(0)} body.inspecting main{margin-right:340px}
+#inspector .iclose{position:absolute;top:16px;right:16px;border:none;background:none;font-size:18px;color:var(--muted);cursor:pointer}
+#inspector .nm{font:700 20px var(--font-display);color:var(--primary-ink)}
+#inspector .file{font:12px var(--font-mono);color:var(--subtle);margin-top:2px}
+#inspector .desc{font-size:13px;color:var(--muted);line-height:1.6;margin-top:10px}
+#inspector h4{font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--subtle);margin:20px 0 8px}
+.prop{padding:8px 0;border-bottom:1px solid var(--border-faint)}.prop .pn{font:600 13px var(--font-mono)}.prop .pt{font:11px var(--font-mono);color:var(--secondary)}.prop .pdef{font:11px var(--font-mono);color:var(--subtle)}
+.tok{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:8px;cursor:pointer}.tok:hover{background:var(--action-hover)}
+.tok .tsw{width:22px;height:22px;border-radius:6px;border:1px solid var(--border);flex:0 0 22px}.tok .tn{font:600 12px var(--font-mono)}.tok .tr{font-size:11px;color:var(--muted)}.tok .tv{margin-left:auto;font:11px var(--font-mono);color:var(--subtle)}
+.metric{display:flex;justify-content:space-between;font:12px var(--font-mono);padding:5px 0;border-bottom:1px dashed var(--border-faint)}.metric .mk{color:var(--muted)}
+.copyprompt{width:100%;margin-top:16px;font:600 13px var(--font-body);background:var(--primary);color:var(--on-primary);border:none;border-radius:10px;padding:11px;cursor:pointer}
+.copied{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--on-surface);color:var(--surface);font-size:12px;padding:8px 16px;border-radius:8px;opacity:0;transition:.2s;z-index:60;pointer-events:none}.copied.show{opacity:.95}
+.imgph,.rec .img.imgph{background:repeating-linear-gradient(135deg,var(--muted-surface) 0 12px,var(--surface-sunken) 12px 24px)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7.5"/><path d="M21 21l-4.6-4.6"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10l9-7 9 7v10a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></symbol>
+  <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-user-plus" viewBox="0 0 24 24"><circle cx="10" cy="8" r="4"/><path d="M2.5 21a7.5 7.5 0 0 1 12.8-5.3M19 14v6M16 17h6"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.8 7L3 21l2-5.6A8 8 0 1 1 21 12z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></symbol>
+  <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 1 0-7.8 7.8L12 21.2l8.8-8.8a5.5 5.5 0 0 0 0-7.8z"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+  <symbol id="i-thumb-up" viewBox="0 0 24 24"><path d="M7 10v11H4V10zM7 10l4-8a3 3 0 0 1 3 3v4h5.5a2 2 0 0 1 2 2.3l-1.4 8A2 2 0 0 1 18.1 21H7"/></symbol>
+  <symbol id="i-thumb-down" viewBox="0 0 24 24"><path d="M17 14V3h3v11zM17 14l-4 8a3 3 0 0 1-3-3v-4H4.5a2 2 0 0 1-2-2.3l1.4-8A2 2 0 0 1 5.9 3H17"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.1.5l3-3a5 5 0 0 0-7.1-7.1L11.3 5"/><path d="M14 11a5 5 0 0 0-7.1-.5l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7"/></symbol>
+  <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M15.8 8.2l-2 5.6-5.6 2 2-5.6z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+  <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></symbol>
+  <symbol id="i-sync" viewBox="0 0 24 24"><path d="M21 4v6h-6"/><path d="M3 20v-6h6"/><path d="M20.1 14A8.5 8.5 0 0 1 5 17.6L3 14M3.9 10A8.5 8.5 0 0 1 19 6.4L21 10"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v6M12 7.5v.01"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4.5M12 17v.01"/></symbol>
+  <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.5l2.7 2.7L16 9.8"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 6l-4-4-4 4M12 2v13"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
+  <symbol id="i-more-v" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.4" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2.8l2.9 5.9 6.4.9-4.7 4.6 1.1 6.4L12 17.6l-5.7 3 1.1-6.4-4.7-4.6 6.4-.9z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3L10 14M21 3l-7 18-4-7-7-4z"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16.5" rx="2"/><path d="M16 2.5v4M8 2.5v4M3 10h18"/></symbol>
+  <!-- Categorías -->
+  <symbol id="i-cat-food" viewBox="0 0 24 24"><path d="M7 2v8a2 2 0 0 1-2 2v10M3 2v6a4 4 0 0 0 4 4M11 2v6a4 4 0 0 1-4 4M17 22V2c-2.5 1-4 4-4 8s1.5 5 4 5"/></symbol>
+  <symbol id="i-cat-movies" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 3v18M17 3v18M3 8h4M3 12h18M3 16h4M17 8h4M17 16h4"/></symbol>
+  <symbol id="i-cat-series" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="13.5" rx="2"/><path d="M8 2.5l4 3.5 4-3.5"/></symbol>
+  <symbol id="i-cat-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+  <symbol id="i-cat-games" viewBox="0 0 24 24"><path d="M6 11h4M8 9v4M15 12h.01M18 10h.01"/><path d="M17.3 5H6.7a4 4 0 0 0-4 3.6l-.8 7A3 3 0 0 0 4.9 19c1 0 1.9-.5 2.5-1.4L9 15h6l1.6 2.6c.6.9 1.5 1.4 2.5 1.4a3 3 0 0 0 3-3.4l-.8-7A4 4 0 0 0 17.3 5z"/></symbol>
+  <symbol id="i-cat-books" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></symbol>
+  <symbol id="i-cat-culture" viewBox="0 0 24 24"><path d="M3 21h18M5 21v-9M9.5 21v-9M14.5 21v-9M19 21v-9M2.5 9L12 3l9.5 6z"/></symbol>
+  <symbol id="i-cat-podcasts" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8"/></symbol>
+</svg>
+<div id="topctl">
+  <button class="ds-btn" onclick="copyFullSystem()">⤓ Instalar el sistema</button>
+  <select id="themeSel" title="Tema" aria-label="Tema"><option value="">Oscuro</option><option value="light">Claro</option></select>
+  <select id="langSel" title="Destino de «Copiar como prompt»" aria-label="Lenguaje"></select>
+  <button id="devToggle" onclick="toggleDev()">◧ Dev Mode</button>
+</div>
+<aside id="inspector"><button class="iclose" onclick="closeInspector()" aria-label="Cerrar">✕</button><div id="inspectorBody"></div></aside>
+<div class="copied" id="copied">Copiado</div>
+
+<nav class="side">
+  <div class="brand">APPINITY DS</div>
+  <a class="concept-link" href="concept.html">◳ &nbsp;Vista de concepto &nbsp;→</a>
+  <div class="grp">Fundamentos</div>
+  <a href="#colors">Color</a><a href="#categories">Categorías</a><a href="#type">Tipografía</a><a href="#spacing">Espaciado</a><a href="#shape">Forma</a><a href="#elevation">Elevación</a><a href="#motion">Movimiento</a><a href="#icons">Iconos</a>
+  <div class="grp">Inputs</div>
+  <a href="#button">Button · Group</a><a href="#iconbutton">Icon button</a><a href="#fab">FAB</a><a href="#checkbox">Checkbox</a><a href="#radio">Radio group</a><a href="#switch">Switch</a><a href="#select">Select</a><a href="#autocomplete">Autocomplete</a><a href="#slider">Slider</a><a href="#textfield">Text field</a><a href="#toggle">Toggle button</a><a href="#rating">Rating</a>
+  <div class="grp">Data display</div>
+  <a href="#avatar">Avatar</a><a href="#badge">Badge</a><a href="#chip">Chip</a><a href="#divider">Divider</a><a href="#list">List</a><a href="#table">Table</a><a href="#tooltip">Tooltip</a><a href="#typography">Typography</a><a href="#icon">Icon</a>
+  <div class="grp">Feedback</div>
+  <a href="#alert">Alert</a><a href="#dialog">Dialog</a><a href="#snackbar">Snackbar</a><a href="#progress">Progress</a><a href="#skeleton">Skeleton</a><a href="#backdrop">Backdrop</a>
+  <div class="grp">Surfaces</div>
+  <a href="#appbar">App bar</a><a href="#card">Card</a><a href="#paper">Paper</a><a href="#accordion">Accordion</a>
+  <div class="grp">Navigation</div>
+  <a href="#bottomnav">Bottom navigation</a><a href="#drawer">Drawer</a><a href="#tabs">Tabs</a><a href="#menu">Menu</a><a href="#link">Link</a><a href="#stepper">Stepper</a><a href="#speeddial">Speed dial</a>
+  <div class="grp">Extensiones APPINITY</div>
+  <a href="#reccard">Tarjeta de recomendación</a><a href="#affinity">Medidor de afinidad</a><a href="#personrow">Fila de persona</a><a href="#catchip">Chip de categoría</a><a href="#sourcecard">Tarjeta de fuente</a><a href="#emptystate">Estado vacío</a>
+</nav>
+
+<main>
+  <header style="margin-bottom:40px"><div class="t-h1">APPINITY · «Noche de cine»</div>
+    <p class="sec-desc" style="margin-top:10px">Tokens y componentes; la fuente de verdad es <code>styles.css</code>. Oscuro cálido por defecto con modo claro. El violeta es la única familia de interacción (afinidad y acción principal); el ámbar marca lo nuevo; cada categoría aporta su color como señal. Activa <b>Dev Mode</b> para inspeccionar un componente y usa <b>Copiar como prompt</b> para implementarlo (React Native primero).</p></header>
+
+  <section id="colors"><h2 class="sec">Color</h2><p class="sec-desc">Roles semánticos (Material) con nombres de paleta MUI. Cada relleno tiene su <code>--on-*</code>; todos los pares superan AA (4,5:1) con la fórmula WCAG, en ambos temas.</p><div class="colors" id="colorGrid"></div></section>
+  <section id="categories"><h2 class="sec">Categorías</h2><p class="sec-desc">Colores fijos del producto. Se usan como <b>señal</b> (punto, icono, tinte del 20 %), nunca como fondo de texto, y siempre con icono y nombre.</p><div class="stage" id="catGrid"></div></section>
+  <section id="type"><h2 class="sec">Tipografía</h2><p class="sec-desc">Lectura con la fuente del sistema (San Francisco / Roboto); <b>Space Grotesk</b> solo en titulares, títulos de obras y cifras de afinidad. Escala ~1,25 con interletrado ajustado por paso.</p><div id="typeList"></div></section>
+  <section id="spacing"><h2 class="sec">Espaciado</h2><p class="sec-desc">Escala de 4/8 px (<code>spacing(1)=8</code>). Roles: <code>--gap-related</code> 8 · <code>--gap-section</code> 24 · <code>--gap-major</code> 32 · margen lateral 16 · objetivo táctil 48.</p><div id="spacingList"></div></section>
+  <section id="shape"><h2 class="sec">Forma</h2><p class="sec-desc">Redondeo suave; botones en píldora; la tarjeta de recomendación y los diálogos usan <code>--r-xl</code>.</p><div class="tiles" id="shapeList"></div></section>
+  <section id="elevation"><h2 class="sec">Elevación</h2><p class="sec-desc">Decisión: <b>tonal</b> en oscuro (la superficie se aclara: bg → surface → surface-raised) más una sombra mínima de contacto. Subconjunto MUI documentado: 0, 1, 2, 3.</p><div class="tiles" id="elevList"></div></section>
+  <section id="motion"><h2 class="sec">Movimiento</h2><p class="sec-desc"><code>--dur-fast</code> 120 ms (estados) · <code>--dur-base</code> 220 ms (interruptores, pestañas) · <code>--dur-slow</code> 360 ms (tarjetas que salen) · <code>--ease</code> estándar · <code>--ease-spring</code> con un leve rebote para el carrusel. Con «reducir movimiento», sin animaciones decorativas. Capas: appbar 1100 · drawer 1200 · modal 1300 · snackbar 1400 · tooltip 1500. Puntos de corte: 600 / 900 px.</p></section>
+  <section id="icons"><h2 class="sec">Iconos</h2><p class="sec-desc">Sprite SVG propio en el estilo contorneado de Material Symbols / Lucide (licencias abiertas), trazo <code>--icon-stroke</code> 1,8, <code>currentColor</code>. Nunca emoji en la interfaz.</p><div class="iconGrid" id="iconGrid"></div></section>
+
+  <!-- ============================== INPUTS ============================== -->
+  <section id="button"><h2 class="sec">Button · Button group</h2><p class="sec-desc">variant <code>contained / outlined / text</code> · size <code>small / medium / large</code> · color <code>primary / error</code>. Una sola acción contained por pantalla.</p>
+    <div class="stage">
+      <div class="cell"><button class="btn btn-contained" data-insp="button">Conectar</button><div class="spec">contained</div></div>
+      <div class="cell"><button class="btn btn-outlined" data-insp="button">Ver perfil</button><div class="spec">outlined</div></div>
+      <div class="cell"><button class="btn btn-text" data-insp="button">Ahora no</button><div class="spec">text</div></div>
+      <div class="cell"><button class="btn btn-contained btn-sm" data-insp="button">Pequeño</button><div class="spec">small</div></div>
+      <div class="cell"><button class="btn btn-contained btn-lg" data-insp="button"><svg class="ico ico--sm"><use href="#i-chat"/></svg> Escribir</button><div class="spec">large + icono</div></div>
+      <div class="cell"><button class="btn btn-outlined btn-error" data-insp="button">Bloquear</button><div class="spec">error</div></div>
+      <div class="cell"><button class="btn btn-contained is-disabled" data-insp="button" disabled>Deshabilitado</button><div class="spec">disabled</div></div>
+      <div class="cell"><div class="btn-group" data-insp="button"><button class="btn is-selected">Todo</button><button class="btn">Cine</button><button class="btn">Música</button></div><div class="spec">button group</div></div>
+    </div></section>
+
+  <section id="iconbutton"><h2 class="sec">Icon button</h2><p class="sec-desc">Standard, tonal, filled y peligro; grande para las acciones del carrusel. Área táctil ≥ 48.</p>
+    <div class="stage">
+      <div class="cell"><button class="icon-btn" data-insp="iconbutton" aria-label="Buscar"><svg class="ico"><use href="#i-search"/></svg></button><div class="spec">standard</div></div>
+      <div class="cell"><button class="icon-btn icon-btn--tonal" data-insp="iconbutton" aria-label="Compartir"><svg class="ico"><use href="#i-share"/></svg></button><div class="spec">tonal</div></div>
+      <div class="cell"><button class="icon-btn icon-btn--filled" data-insp="iconbutton" aria-label="Enviar"><svg class="ico"><use href="#i-send"/></svg></button><div class="spec">filled</div></div>
+      <div class="cell"><button class="icon-btn icon-btn--lg icon-btn--danger" data-insp="iconbutton" aria-label="Descartar"><svg class="ico"><use href="#i-close"/></svg></button><div class="spec">large · descartar</div></div>
+      <div class="cell"><button class="icon-btn icon-btn--lg icon-btn--filled" data-insp="iconbutton" aria-label="Conservar"><svg class="ico"><use href="#i-heart"/></svg></button><div class="spec">large · conservar</div></div>
+      <div class="cell"><button class="icon-btn is-disabled" data-insp="iconbutton" aria-label="Deshacer" disabled><svg class="ico"><use href="#i-undo"/></svg></button><div class="spec">disabled</div></div>
+    </div></section>
+
+  <section id="fab"><h2 class="sec">Floating action button</h2><p class="sec-desc">Regular, pequeño y extendido. En APPINITY solo para «Invitar» en People (no compite con el carrusel).</p>
+    <div class="stage">
+      <div class="cell"><button class="fab" data-insp="fab" aria-label="Invitar"><svg class="ico"><use href="#i-user-plus"/></svg></button><div class="spec">regular</div></div>
+      <div class="cell"><button class="fab fab--sm" data-insp="fab" aria-label="Nuevo"><svg class="ico ico--sm"><use href="#i-plus"/></svg></button><div class="spec">small</div></div>
+      <div class="cell"><button class="fab fab--extended" data-insp="fab"><svg class="ico"><use href="#i-user-plus"/></svg> Invitar amigos</button><div class="spec">extended</div></div>
+    </div></section>
+
+  <section id="checkbox"><h2 class="sec">Checkbox</h2><p class="sec-desc">Marcado, sin marcar, indeterminado y deshabilitado.</p>
+    <div class="stage">
+      <label class="check is-on" data-insp="checkbox"><span class="box"><svg class="ico ico--sm" style="--icon-stroke:3"><use href="#i-check"/></svg></span>Tengo 18 años o más</label>
+      <label class="check" data-insp="checkbox"><span class="box"></span>Acepto las condiciones</label>
+      <label class="check is-mixed" data-insp="checkbox"><span class="box"><svg class="ico ico--sm" style="--icon-stroke:3"><use href="#i-minus"/></svg></span>Todas las fuentes</label>
+      <label class="check is-disabled" data-insp="checkbox"><span class="box"></span>No disponible</label>
+    </div></section>
+
+  <section id="radio"><h2 class="sec">Radio group</h2><p class="sec-desc">Frecuencia de los resúmenes.</p>
+    <div class="stage"><div class="stack" data-insp="radio">
+      <label class="radio is-on"><span class="dot"></span>Tres veces por semana</label>
+      <label class="radio"><span class="dot"></span>Cada día</label>
+      <label class="radio"><span class="dot"></span>Semanal (domingo)</label>
+      <label class="radio is-disabled"><span class="dot"></span>Desactivado (sin permiso)</label>
+    </div></div></section>
+
+  <section id="switch"><h2 class="sec">Switch</h2><p class="sec-desc">Encendido, apagado y deshabilitado.</p>
+    <div class="stage">
+      <label class="switch is-on" data-insp="switch"><span class="track"></span>Visible como alma gemela</label>
+      <label class="switch" data-insp="switch"><span class="track"></span>Encontrable por contactos</label>
+      <label class="switch is-disabled" data-insp="switch"><span class="track"></span>Push (requiere build)</label>
+    </div></section>
+
+  <section id="select"><h2 class="sec">Select</h2><p class="sec-desc">Cerrado (como el text field) y abierto (panel = Menu).</p>
+    <div class="stage">
+      <div class="field field--outlined select" data-insp="select"><label>Radio de búsqueda</label><div class="control"><span>10 km</span><svg class="ico"><use href="#i-chevron-down"/></svg></div></div>
+      <div class="stack" data-insp="select"><div class="field field--outlined select is-focused"><label>Idioma</label><div class="control"><span>Español</span><svg class="ico"><use href="#i-chevron-down"/></svg></div></div>
+        <div class="menu"><div class="mi" style="background:var(--action-selected)">Español</div><div class="mi">English</div></div></div>
+    </div></section>
+
+  <section id="autocomplete"><h2 class="sec">Autocomplete</h2><p class="sec-desc">Búsqueda de ciudad o de obras, con etiquetas seleccionadas y sugerencias.</p>
+    <div class="stage"><div class="stack autocomplete" data-insp="autocomplete">
+      <div class="field field--outlined is-focused"><label>Tu ciudad</label><div class="control"><svg class="ico ico--sm" style="color:var(--muted)"><use href="#i-pin"/></svg><span>Barc</span></div></div>
+      <div class="menu"><div class="mi"><svg class="ico ico--sm"><use href="#i-pin"/></svg>Barcelona, España</div><div class="mi"><svg class="ico ico--sm"><use href="#i-pin"/></svg>Barcelos, Portugal</div></div>
+    </div></div></section>
+
+  <section id="slider"><h2 class="sec">Slider</h2><p class="sec-desc">Continuo y discreto (radio en km); rango para filtros.</p>
+    <div class="stage">
+      <div class="slider" data-insp="slider"><div class="rail"><div class="fill" style="left:0;width:40%"></div><div class="thumb" style="left:40%"><span class="val" style="left:10px">10 km</span></div></div></div>
+      <div class="slider" data-insp="slider"><div class="rail"><div class="fill" style="left:20%;width:50%"></div><div class="thumb" style="left:20%"></div><div class="thumb" style="left:70%"></div></div><div class="spec" style="margin-top:14px">rango · 1990–2026</div></div>
+    </div></section>
+
+  <section id="textfield"><h2 class="sec">Text field</h2><p class="sec-desc">variant <code>filled / outlined / standard</code> · estados vacío, foco, relleno, error y deshabilitado, con etiqueta, ayuda e iconos.</p>
+    <div class="stage">
+      <div class="field field--filled" data-insp="textfield"><label>Nombre visible</label><div class="control"><span class="ph">Opcional</span></div><div class="help">Lo verán tus amigos</div></div>
+      <div class="field field--outlined is-focused" data-insp="textfield"><label>Mensaje</label><div class="control"><span>Hola, ¿has visto Dune?</span></div></div>
+      <div class="field field--outlined is-error" data-insp="textfield"><label>Tu ciudad</label><div class="control"><span>Calle Mayor 1</span><svg class="ico ico--sm" style="color:var(--error);margin-left:auto"><use href="#i-alert"/></svg></div><div class="help">No encontramos esa ciudad: prueba con otro nombre</div></div>
+      <div class="field field--standard" data-insp="textfield"><label>Buscar</label><div class="control"><svg class="ico ico--sm" style="color:var(--muted)"><use href="#i-search"/></svg><span class="ph">Personas, obras, lugares</span></div></div>
+      <div class="field field--outlined is-disabled" data-insp="textfield"><label>Correo</label><div class="control"><span>ricard@…</span><svg class="ico ico--sm" style="margin-left:auto"><use href="#i-lock"/></svg></div></div>
+    </div></section>
+
+  <section id="toggle"><h2 class="sec">Toggle button</h2><p class="sec-desc">Exclusivo (pulgar arriba / abajo) y de vista.</p>
+    <div class="stage">
+      <div class="toggle-group" data-insp="toggle"><button class="toggle is-selected" aria-label="Me gusta"><svg class="ico ico--sm"><use href="#i-thumb-up"/></svg></button><button class="toggle" aria-label="No me gusta"><svg class="ico ico--sm"><use href="#i-thumb-down"/></svg></button></div>
+      <div class="toggle-group" data-insp="toggle"><button class="toggle is-selected"><svg class="ico ico--sm"><use href="#i-grid"/></svg>Rejilla</button><button class="toggle"><svg class="ico ico--sm"><use href="#i-menu"/></svg>Lista</button></div>
+    </div></section>
+
+  <section id="rating"><h2 class="sec">Rating</h2><p class="sec-desc">Solo lectura (valoración importada) y editable. Las estrellas usan el ámbar; vacías, el borde.</p>
+    <div class="stage">
+      <div class="cell"><div class="rating" data-insp="rating" aria-label="4 de 5"><svg class="ico ico--sm ico--filled"><use href="#i-star"/></svg><svg class="ico ico--sm ico--filled"><use href="#i-star"/></svg><svg class="ico ico--sm ico--filled"><use href="#i-star"/></svg><svg class="ico ico--sm ico--filled"><use href="#i-star"/></svg><svg class="ico ico--sm ico--filled off"><use href="#i-star"/></svg></div><div class="spec">read-only 4/5</div></div>
+      <div class="cell"><div class="rating" data-insp="rating" aria-label="Valorar"><svg class="ico ico--lg ico--filled"><use href="#i-star"/></svg><svg class="ico ico--lg ico--filled"><use href="#i-star"/></svg><svg class="ico ico--lg ico--filled off"><use href="#i-star"/></svg><svg class="ico ico--lg ico--filled off"><use href="#i-star"/></svg><svg class="ico ico--lg ico--filled off"><use href="#i-star"/></svg></div><div class="spec">editable</div></div>
+    </div></section>
+
+  <!-- ============================== DATA DISPLAY ============================== -->
+  <section id="avatar"><h2 class="sec">Avatar</h2><p class="sec-desc">Iniciales sobre el contenedor violeta, foto, tamaños y grupo; anillo para almas gemelas destacadas.</p>
+    <div class="stage">
+      <div class="cell"><div class="avatar avatar--sm" data-insp="avatar">LM</div><div class="spec">28</div></div>
+      <div class="cell"><div class="avatar" data-insp="avatar">CR</div><div class="spec">40</div></div>
+      <div class="cell"><div class="avatar avatar--lg imgph" data-insp="avatar"></div><div class="spec">64 · foto</div></div>
+      <div class="cell"><div class="avatar avatar--lg avatar--ring" data-insp="avatar">JP</div><div class="spec">anillo</div></div>
+      <div class="cell"><div class="avatar-group" data-insp="avatar"><div class="avatar avatar--sm">LM</div><div class="avatar avatar--sm">CR</div><div class="avatar avatar--sm">TO</div><div class="avatar avatar--sm">+4</div></div><div class="spec">grupo</div></div>
+    </div></section>
+
+  <section id="badge"><h2 class="sec">Badge</h2><p class="sec-desc">Punto, número y la etiqueta NEW (ámbar).</p>
+    <div class="stage">
+      <div class="cell"><div class="badge-wrap" data-insp="badge"><button class="icon-btn" aria-label="Chats"><svg class="ico"><use href="#i-chat"/></svg></button><span class="badge badge--dot"></span></div><div class="spec">dot</div></div>
+      <div class="cell"><div class="badge-wrap" data-insp="badge"><button class="icon-btn" aria-label="Chats, 3 sin leer"><svg class="ico"><use href="#i-chat"/></svg></button><span class="badge">3</span></div><div class="spec">número</div></div>
+      <div class="cell"><span class="badge badge--new" data-insp="badge">NEW</span><div class="spec">new</div></div>
+    </div></section>
+
+  <section id="chip"><h2 class="sec">Chip</h2><p class="sec-desc">Filled y outlined; seleccionable (filtro), eliminable (input) y de sugerencia.</p>
+    <div class="stage">
+      <span class="chip" data-insp="chip">Todo</span>
+      <span class="chip is-selected" data-insp="chip"><svg class="ico ico--sm"><use href="#i-check"/></svg>Cerca de mí</span>
+      <span class="chip chip--outlined" data-insp="chip">Este año</span>
+      <span class="chip" data-insp="chip">Barcelona<svg class="ico ico--sm x"><use href="#i-close"/></svg></span>
+      <span class="chip chip--outlined" data-insp="chip"><svg class="ico ico--sm"><use href="#i-sparkle"/></svg>Sugerencia</span>
+    </div></section>
+
+  <section id="divider"><h2 class="sec">Divider</h2><p class="sec-desc">Completo e insertado (alineado con el texto de la lista).</p>
+    <div class="stage" style="flex-direction:column;align-items:stretch" data-insp="divider"><div class="spec">full</div><hr class="divider"><div class="spec">inset 72</div><hr class="divider divider--inset"></div></section>
+
+  <section id="list"><h2 class="sec">List</h2><p class="sec-desc">Elementos de una, dos y tres líneas con iconos o avatar delante y acción detrás.</p>
+    <div class="stage" style="padding:8px"><div class="list paper" style="width:380px" data-insp="list">
+      <div class="li"><svg class="ico" style="color:var(--muted)"><use href="#i-bell"/></svg><div class="txt"><div class="pri">Notificaciones</div></div><svg class="ico ico--sm" style="color:var(--subtle)"><use href="#i-chevron-right"/></svg></div>
+      <hr class="divider divider--inset">
+      <div class="li"><div class="avatar">LM</div><div class="txt"><div class="pri">Laura Martín</div><div class="sec">Ha aceptado tu invitación</div></div><span class="t-caption">2 min</span></div>
+      <hr class="divider divider--inset">
+      <div class="li li--three"><div class="avatar">CR</div><div class="txt"><div class="pri">Clara Ruiz</div><div class="sec">«¿Viste por fin El resplandor? La escena del pasillo me sigue dando escalofríos…»</div></div><span class="badge badge--new">NEW</span></div>
+    </div></div></section>
+
+  <section id="table"><h2 class="sec">Table</h2><p class="sec-desc">Afinidad por categoría (cifras tabulares, «—» sin datos).</p>
+    <div class="stage" style="padding:8px"><table class="table paper" style="width:420px" data-insp="table">
+      <thead><tr><th>Categoría</th><th class="num">Afinidad</th><th class="num">En común</th></tr></thead>
+      <tbody><tr><td><span class="cat" style="--c:var(--cat-movies)"><svg class="ico"><use href="#i-cat-movies"/></svg>Cine</span></td><td class="num">91 %</td><td class="num">14</td></tr>
+      <tr><td><span class="cat" style="--c:var(--cat-music)"><svg class="ico"><use href="#i-cat-music"/></svg>Música</span></td><td class="num">72 %</td><td class="num">9</td></tr>
+      <tr><td><span class="cat" style="--c:var(--cat-books)"><svg class="ico"><use href="#i-cat-books"/></svg>Libros</span></td><td class="num" style="color:var(--muted)">—</td><td class="num">0</td></tr></tbody></table></div></section>
+
+  <section id="tooltip"><h2 class="sec">Tooltip</h2><p class="sec-desc">Simple y enriquecido (explica cómo se calcula la afinidad).</p>
+    <div class="stage">
+      <span class="tooltip" data-insp="tooltip">Deshacer</span>
+      <div class="tooltip tooltip--rich" data-insp="tooltip"><b>Cómo se calcula</b><br>Solo cuentan las obras que conocéis los dos; si nunca habéis coincidido, verás «—», no 0 %.</div>
+    </div></section>
+
+  <section id="typography"><h2 class="sec">Typography</h2><p class="sec-desc">Componente de texto con las variantes MUI (escala en <a class="link" href="#type">Tipografía</a>).</p>
+    <div class="stage" style="flex-direction:column;align-items:flex-start;gap:8px" data-insp="typography">
+      <div class="t-overline">Para ti · hoy</div><div class="t-h3">2010: The Year We Make Contact</div><div class="t-body1">Del director de <b>2001: A Space Odyssey</b>, que te gusta.</div><div class="t-caption">Imagen: Wikimedia Commons · CC BY-SA</div></div></section>
+
+  <section id="icon"><h2 class="sec">Icon</h2><p class="sec-desc">Tamaños 18 / 24 / 28 y relleno (estrella, punto). El color sigue a <code>currentColor</code>.</p>
+    <div class="stage" data-insp="icon">
+      <svg class="ico ico--sm"><use href="#i-heart"/></svg><svg class="ico"><use href="#i-heart"/></svg><svg class="ico ico--lg"><use href="#i-heart"/></svg><svg class="ico ico--lg ico--filled" style="color:var(--primary)"><use href="#i-heart"/></svg><svg class="ico ico--lg" style="color:var(--cat-music)"><use href="#i-cat-music"/></svg></div></section>
+
+  <!-- ============================== FEEDBACK ============================== -->
+  <section id="alert"><h2 class="sec">Alert</h2><p class="sec-desc">Info, éxito, aviso y error; tinte del 14 % con texto en <code>--on-surface</code> e icono en el color del estado.</p>
+    <div class="stage">
+      <div class="alert alert--info" data-insp="alert"><svg class="ico"><use href="#i-info"/></svg><div><div class="ttl">Datos de demostración</div>Estas personas son simuladas.</div></div>
+      <div class="alert alert--success" data-insp="alert"><svg class="ico"><use href="#i-check-circle"/></svg><div><div class="ttl">Trakt conectado</div>3 títulos importados.</div></div>
+      <div class="alert alert--warning" data-insp="alert"><svg class="ico"><use href="#i-alert"/></svg><div><div class="ttl">El permiso caduca en 2 días</div>Vuelve a entrar con Google para renovarlo.</div></div>
+      <div class="alert alert--error" data-insp="alert"><svg class="ico"><use href="#i-alert"/></svg><div><div class="ttl">No se pudo sincronizar</div>Trakt no responde. Lo reintentaremos.</div></div>
+    </div></section>
+
+  <section id="dialog"><h2 class="sec">Dialog</h2><p class="sec-desc">Básico de confirmación (destructivo con texto explícito).</p>
+    <div class="stage"><div class="backdrop" style="width:360px;height:260px"><div class="dialog" data-insp="dialog"><div class="t-h4">¿Eliminar tu cuenta?</div><p class="t-body2" style="margin-top:8px">Se borrarán tus gustos, afinidades, amistades y chats. No se puede deshacer.</p><div class="actions"><button class="btn btn-text">Cancelar</button><button class="btn btn-contained btn-error">Eliminar</button></div></div></div></div></section>
+
+  <section id="snackbar"><h2 class="sec">Snackbar</h2><p class="sec-desc">Superficie invertida, con y sin acción (Deshacer tras descartar).</p>
+    <div class="stage" style="flex-direction:column;align-items:flex-start">
+      <div class="snackbar" data-insp="snackbar"><span class="grow">Descartado: El resplandor</span><button class="act">Deshacer</button></div>
+      <div class="snackbar" data-insp="snackbar"><span class="grow">Enlace copiado</span></div>
+    </div></section>
+
+  <section id="progress"><h2 class="sec">Progress</h2><p class="sec-desc">Lineal determinado e indeterminado; circular para cargas.</p>
+    <div class="stage">
+      <div class="cell"><div class="progress" data-insp="progress"><div class="bar" style="width:64%"></div></div><div class="spec">linear 64 %</div></div>
+      <div class="cell"><div class="progress progress--indet" data-insp="progress"><div class="bar"></div></div><div class="spec">indeterminate</div></div>
+      <div class="cell"><div class="spinner" data-insp="progress" role="progressbar" aria-label="Cargando"></div><div class="spec">circular</div></div>
+    </div></section>
+
+  <section id="skeleton"><h2 class="sec">Skeleton</h2><p class="sec-desc">Marcador de la tarjeta y de una fila de persona mientras carga.</p>
+    <div class="stage" data-insp="skeleton">
+      <div class="skeleton" style="width:180px;height:240px;border-radius:var(--r-xl)"></div>
+      <div class="row" style="width:260px"><div class="skeleton" style="width:40px;height:40px;border-radius:999px"></div><div class="stack" style="flex:1"><div class="skeleton" style="height:12px;width:70%"></div><div class="skeleton" style="height:10px;width:45%"></div></div></div>
+    </div></section>
+
+  <section id="backdrop"><h2 class="sec">Backdrop</h2><p class="sec-desc">Velo <code>--scrim</code> bajo diálogos y hojas.</p>
+    <div class="stage"><div class="backdrop" data-insp="backdrop" style="width:300px;height:140px"><div class="spinner"></div></div></div></section>
+
+  <!-- ============================== SURFACES ============================== -->
+  <section id="appbar"><h2 class="sec">App bar</h2><p class="sec-desc">Pequeña con título a la izquierda (raíz de pestaña), centrada (pantalla interior) y transparente sobre imagen.</p>
+    <div class="stage" style="flex-direction:column;align-items:stretch">
+      <div class="appbar paper--outlined" data-insp="appbar" style="border-radius:var(--r-md)"><div class="ttl">Para ti</div><button class="icon-btn" aria-label="Filtros"><svg class="ico"><use href="#i-settings"/></svg></button></div>
+      <div class="appbar appbar--center paper--outlined" data-insp="appbar" style="border-radius:var(--r-md)"><button class="icon-btn" aria-label="Atrás"><svg class="ico"><use href="#i-back"/></svg></button><div class="ttl">Clara Ruiz</div><button class="icon-btn" aria-label="Más"><svg class="ico"><use href="#i-more-v"/></svg></button></div>
+      <div class="appbar appbar--transparent imgph" data-insp="appbar" style="border-radius:var(--r-md)"><button class="icon-btn" style="color:inherit" aria-label="Atrás"><svg class="ico"><use href="#i-back"/></svg></button><div class="ttl"></div><button class="icon-btn" style="color:inherit" aria-label="Compartir"><svg class="ico"><use href="#i-share"/></svg></button></div>
+    </div></section>
+
+  <section id="card"><h2 class="sec">Card</h2><p class="sec-desc">Tonal (por defecto) y outlined; con medio, contenido y acciones.</p>
+    <div class="stage">
+      <div class="card" data-insp="card" style="width:220px"><div class="imgph" style="height:120px"></div><div class="card-body"><span class="cat" style="--c:var(--cat-culture)"><svg class="ico"><use href="#i-cat-culture"/></svg>Cultura</span><div class="t-h6" style="margin-top:8px">Teatro Borrás</div><div class="t-caption">En tu calendario · 2 planes</div></div></div>
+      <div class="card card--outlined" data-insp="card" style="width:220px"><div class="card-body"><div class="t-overline">Invitación</div><div class="t-h6" style="margin-top:6px">Invita a tus amigos</div><p class="t-body2" style="margin-top:6px">Con ellos dentro verás vuestra afinidad.</p><button class="btn btn-text" style="margin:8px 0 0 -12px">Compartir enlace</button></div></div>
+    </div></section>
+
+  <section id="paper"><h2 class="sec">Paper</h2><p class="sec-desc">Superficie base: outlined, elevación 1 y 2.</p>
+    <div class="stage"><div class="paper paper--outlined" data-insp="paper" style="width:140px;height:90px"></div><div class="paper paper--e1" data-insp="paper" style="width:140px;height:90px"></div><div class="paper paper--e2" data-insp="paper" style="width:140px;height:90px"></div></div></section>
+
+  <section id="accordion"><h2 class="sec">Accordion</h2><p class="sec-desc">Preguntas sobre privacidad en Perfil.</p>
+    <div class="stage"><div class="accordion" data-insp="accordion">
+      <div class="ac-item"><div class="ac-head">¿Qué ven las demás personas?<svg class="ico" style="transform:rotate(180deg)"><use href="#i-chevron-down"/></svg></div><div class="ac-body">Tu nombre, país, foto y las cifras de afinidad. Nunca tus historiales.</div></div>
+      <div class="ac-item"><div class="ac-head">¿Cómo borro mis datos?<svg class="ico"><use href="#i-chevron-down"/></svg></div></div>
+    </div></div></section>
+
+  <!-- ============================== NAVIGATION ============================== -->
+  <section id="bottomnav"><h2 class="sec">Bottom navigation</h2><p class="sec-desc">Las cuatro pestañas, con píldora en la seleccionada y badge en People.</p>
+    <div class="stage" style="padding:0;overflow:hidden"><div class="bottomnav" data-insp="bottomnav" style="width:420px">
+      <div class="ni is-selected"><span class="pill"><svg class="ico"><use href="#i-home"/></svg></span>Inicio</div>
+      <div class="ni"><span class="pill"><svg class="ico"><use href="#i-grid"/></svg></span>Categorías</div>
+      <div class="ni"><span class="pill"><svg class="ico"><use href="#i-people"/></svg></span>People<span class="badge">2</span></div>
+      <div class="ni"><span class="pill"><svg class="ico"><use href="#i-user"/></svg></span>Perfil</div>
+    </div></div></section>
+
+  <section id="drawer"><h2 class="sec">Drawer</h2><p class="sec-desc">Modal (tableta o ajustes); no se usa en la navegación principal del teléfono.</p>
+    <div class="stage" style="background:var(--scrim)"><div class="drawer" data-insp="drawer"><div class="t-overline" style="padding:8px 16px">Ajustes</div>
+      <div class="di is-selected"><svg class="ico"><use href="#i-link"/></svg>Fuentes</div><div class="di"><svg class="ico"><use href="#i-bell"/></svg>Notificaciones</div><div class="di"><svg class="ico"><use href="#i-lock"/></svg>Privacidad</div></div></div></section>
+
+  <section id="tabs"><h2 class="sec">Tabs</h2><p class="sec-desc">Fijas con indicador, desplazables (categorías) y segmentos en píldora (Chats / Personas).</p>
+    <div class="stage" style="flex-direction:column;align-items:flex-start">
+      <div class="tabs" data-insp="tabs"><div class="tab is-selected">Almas gemelas</div><div class="tab">Amigos</div></div>
+      <div class="tabs tabs--scroll" data-insp="tabs"><div class="tab is-selected">Todo</div><div class="tab">Comida</div><div class="tab">Cine</div><div class="tab">Series</div><div class="tab">Música</div><div class="tab">Juegos</div></div>
+      <div class="segments" data-insp="tabs" style="width:340px"><div class="seg is-selected"><svg class="ico ico--sm"><use href="#i-chat"/></svg>Chats</div><div class="seg"><svg class="ico ico--sm"><use href="#i-people"/></svg>Personas</div></div>
+    </div></section>
+
+  <section id="menu"><h2 class="sec">Menu</h2><p class="sec-desc">Desplegable del perfil de otra persona (acción destructiva en rojo).</p>
+    <div class="stage"><div class="menu" data-insp="menu"><div class="mi"><svg class="ico ico--sm"><use href="#i-chat"/></svg>Escribir</div><div class="mi"><svg class="ico ico--sm"><use href="#i-share"/></svg>Compartir perfil</div><hr class="divider" style="margin:4px 0"><div class="mi mi--danger"><svg class="ico ico--sm"><use href="#i-lock"/></svg>Bloquear</div></div></div></section>
+
+  <section id="link"><h2 class="sec">Link</h2><p class="sec-desc">Subrayado fino con <code>--link</code> (violeta apto para texto).</p>
+    <div class="stage"><p class="t-body1" data-insp="link">Lee <a class="link">cómo usamos tus datos</a> antes de conectar una fuente.</p></div></section>
+
+  <section id="stepper"><h2 class="sec">Stepper</h2><p class="sec-desc">El alta: cuenta → condiciones → fuentes.</p>
+    <div class="stage"><div class="stepper" data-insp="stepper"><div class="st is-done"><span class="n">✓</span>Cuenta</div><div class="line is-done"></div><div class="st is-active"><span class="n">2</span>Condiciones</div><div class="line"></div><div class="st"><span class="n">3</span>Fuentes</div></div></div></section>
+
+  <section id="speeddial"><h2 class="sec">Speed dial</h2><p class="sec-desc">FAB que despliega acciones rápidas (no se usa todavía en la app).</p>
+    <div class="stage"><div class="speed-dial" data-insp="speeddial">
+      <div class="act"><span class="tooltip">Invitar</span><button class="fab fab--sm" style="background:var(--surface-raised);color:var(--on-surface)" aria-label="Invitar"><svg class="ico ico--sm"><use href="#i-user-plus"/></svg></button></div>
+      <div class="act"><span class="tooltip">Conectar fuente</span><button class="fab fab--sm" style="background:var(--surface-raised);color:var(--on-surface)" aria-label="Conectar fuente"><svg class="ico ico--sm"><use href="#i-link"/></svg></button></div>
+      <button class="fab" aria-label="Cerrar"><svg class="ico"><use href="#i-close"/></svg></button></div></div></section>
+
+  <!-- ============================== EXTENSIONES ============================== -->
+  <section id="reccard"><h2 class="sec">Tarjeta de recomendación</h2><p class="sec-desc">Extensión. Imagen a sangre con velo, chip de categoría sobre la imagen, título en display y <b>motivo real</b> en una cápsula translúcida. Variantes: con imagen, fallback de categoría, NEW. Acciones: descartar, deshacer, conservar.</p>
+    <div class="stage">
+      <div class="cell"><div class="rec" data-insp="reccard"><div class="img imgph"></div><div class="veil"></div>
+        <div class="top"><span class="cat cat--on-image" style="--c:var(--cat-movies)"><svg class="ico"><use href="#i-cat-movies"/></svg>Cine</span><span class="badge badge--new">NEW</span></div>
+        <div class="bottom"><div class="title">2010: The Year We Make Contact</div><div class="year">1984</div><div class="why"><svg class="ico"><use href="#i-link"/></svg>Continúa a 2001: A Space Odyssey, que te gusta</div></div></div>
+        <div class="rec-actions"><button class="icon-btn icon-btn--lg icon-btn--danger" aria-label="Descartar"><svg class="ico"><use href="#i-close"/></svg></button><button class="icon-btn icon-btn--tonal" aria-label="Deshacer" style="align-self:center"><svg class="ico"><use href="#i-undo"/></svg></button><button class="icon-btn icon-btn--lg icon-btn--filled" aria-label="Conservar"><svg class="ico"><use href="#i-heart"/></svg></button></div></div>
+      <div class="cell"><div class="rec" data-insp="reccard" style="--c:var(--cat-food)"><div class="img is-fallback"><svg class="ico"><use href="#i-cat-food"/></svg></div><div class="veil"></div>
+        <div class="top"><span class="cat cat--on-image" style="--c:var(--cat-food)"><svg class="ico"><use href="#i-cat-food"/></svg>Comida</span></div>
+        <div class="bottom"><div class="title">Marisquería Santos</div><div class="year">A 1,2 km</div><div class="why"><svg class="ico"><use href="#i-people"/></svg>3 almas gemelas lo adoran</div></div></div><div class="spec">fallback de categoría</div></div>
+    </div></section>
+
+  <section id="affinity"><h2 class="sec">Medidor de afinidad</h2><p class="sec-desc">Extensión. Anillo con la cifra en display. Sin objetos en común → «—» y anillo vacío, <b>nunca 0 %</b>. Tamaños 56 y 96.</p>
+    <div class="stage">
+      <div class="affinity" data-insp="affinity"><div class="ring" style="--v:91"><span>91</span></div><div class="lbl">Afinidad<br>14 en común</div></div>
+      <div class="affinity" data-insp="affinity"><div class="ring" style="--v:48"><span>48</span></div><div class="lbl">Afinidad<br>3 en común</div></div>
+      <div class="affinity" data-insp="affinity"><div class="ring is-none"><span>—</span></div><div class="lbl">Aún sin<br>gustos en común</div></div>
+      <div class="affinity affinity--lg" data-insp="affinity"><div class="ring" style="--v:86"><span>86</span></div></div>
+    </div></section>
+
+  <section id="personrow"><h2 class="sec">Fila de persona</h2><p class="sec-desc">Extensión. Puesto, avatar, nombre y país, motivo breve («Cine y música») y afinidad a la derecha. Variantes: alma gemela (con puesto), amigo sin afinidad («—»).</p>
+    <div class="stage"><div class="stack" style="width:380px" data-insp="personrow">
+      <div class="person"><span class="rank">1</span><div class="avatar avatar--ring">CR</div><div class="txt"><div class="nm">Clara Ruiz <span class="t-caption">· ES</span></div><div class="why">Os une el cine y la música</div></div><span class="pct">86 %</span></div>
+      <div class="person"><span class="rank">2</span><div class="avatar">TO</div><div class="txt"><div class="nm">Teo Ortega <span class="t-caption">· ES</span></div><div class="why">Juegos y series</div></div><span class="pct">49 %</span></div>
+      <div class="person"><span class="rank"></span><div class="avatar">LM</div><div class="txt"><div class="nm">Laura Martín</div><div class="why">Amiga · aún sin gustos en común</div></div><span class="pct is-none">—</span></div>
+    </div></div></section>
+
+  <section id="catchip"><h2 class="sec">Chip de categoría</h2><p class="sec-desc">Extensión. Ocho variantes; tinte del 20 % sobre la superficie, icono en el color de la categoría y texto en <code>--on-surface</code> (contraste garantizado). Variante sobre imagen con cristal oscuro.</p>
+    <div class="stage" id="catChips" data-insp="catchip"></div></section>
+
+  <section id="sourcecard"><h2 class="sec">Tarjeta de fuente</h2><p class="sec-desc">Extensión. Estado con punto y texto (no solo color): conectada, sincronizando, error, pendiente.</p>
+    <div class="stage">
+      <div class="source" data-insp="sourcecard"><div class="logo">G</div><div class="txt"><div class="nm">Google</div><span class="st st--ok">Conectada</span><div class="meta">115 evidencias · YouTube, Maps, Play · hace 2 h</div></div><button class="icon-btn" aria-label="Sincronizar"><svg class="ico"><use href="#i-sync"/></svg></button></div>
+      <div class="source" data-insp="sourcecard"><div class="logo">T</div><div class="txt"><div class="nm">Trakt</div><span class="st st--sync">Sincronizando…</span><div class="meta">Valoraciones, vistos y pendientes</div></div></div>
+      <div class="source" data-insp="sourcecard"><div class="logo">S</div><div class="txt"><div class="nm">Steam</div><span class="st st--error">Error</span><div class="meta">El perfil es privado: hazlo público en Steam y reintenta.</div></div></div>
+      <div class="source" data-insp="sourcecard"><div class="logo">A</div><div class="txt"><div class="nm">AniList</div><span class="st st--pending">Sin conectar</span><div class="meta">Anime y manga</div></div><button class="btn btn-outlined btn-sm">Conectar</button></div>
+    </div></section>
+
+  <section id="emptystate"><h2 class="sec">Estado vacío</h2><p class="sec-desc">Extensión. Arranque en frío: explica por qué y ofrece UNA acción.</p>
+    <div class="stage">
+      <div class="empty" data-insp="emptystate"><div class="art"><svg class="ico"><use href="#i-people"/></svg></div><div class="ttl">Aún no hay almas gemelas</div><div class="txt">Aparecen cuando más gente con gustos parecidos se une. Invita a tus amigos para empezar.</div><button class="btn btn-contained"><svg class="ico ico--sm"><use href="#i-user-plus"/></svg>Invitar amigos</button></div>
+      <div class="empty" data-insp="emptystate"><div class="art"><svg class="ico"><use href="#i-compass"/></svg></div><div class="ttl">Has visto todo por hoy</div><div class="txt">Conecta otra fuente para que te conozcamos mejor.</div><button class="btn btn-outlined">Conectar una fuente</button></div>
+    </div></section>
+</main>
+
+<script>
+const COLORS=[['primary','--primary'],['on-primary','--on-primary'],['primary-ink','--primary-ink'],['primary-container','--primary-container'],['on-primary-container','--on-primary-container'],['secondary (nuevo)','--secondary'],['on-secondary','--on-secondary'],['bg','--bg'],['surface','--surface'],['surface-raised','--surface-raised'],['muted-surface','--muted-surface'],['on-surface','--on-surface'],['muted','--muted'],['subtle','--subtle'],['border','--border'],['success','--success'],['error','--error'],['warning','--warning'],['info','--info'],['inverse-primary','--inverse-primary']];
+const cs=()=>getComputedStyle(document.documentElement);
+function paintColors(){colorGrid.innerHTML=COLORS.map(([n,v])=>`<div class="sw"><div class="c" style="background:var(${v})"></div><div class="m"><div class="n">${n}</div><div class="v">${cs().getPropertyValue(v).trim()}</div></div></div>`).join('');}
+paintColors();document.getElementById('themeSel').addEventListener('change',()=>setTimeout(paintColors,0));
+const CATS=[['food','Comida'],['movies','Cine'],['series','Series'],['music','Música'],['games','Juegos'],['books','Libros'],['culture','Cultura'],['podcasts','Podcasts']];
+const catHtml=(on)=>CATS.map(([k,n])=>`<span class="cat${on?' cat--on-image':''}" style="--c:var(--cat-${k})"><svg class="ico"><use href="#i-cat-${k}"/></svg>${n}</span>`).join('');
+catGrid.innerHTML=CATS.map(([k,n])=>`<div class="cell"><div style="width:72px;height:72px;border-radius:var(--r-lg);background:var(--cat-${k});display:flex;align-items:center;justify-content:center;color:#fff"><svg class="ico ico--lg"><use href="#i-cat-${k}"/></svg></div><div class="spec">${k} · ${cs().getPropertyValue('--cat-'+k).trim()}</div></div>`).join('');
+catChips.innerHTML=catHtml(false)+'<div class="imgph" style="display:flex;flex-wrap:wrap;gap:8px;padding:12px;border-radius:var(--r-md)">'+catHtml(true)+'</div>';
+const TYPE=[['t-h1','Space Grotesk 700 / 40'],['t-h2','Space Grotesk 700 / 32'],['t-h3','Space Grotesk 700 / 26'],['t-h4','Space Grotesk 700 / 21'],['t-h5','Sistema 600 / 18'],['t-h6','Sistema 600 / 16'],['t-subtitle1','Sistema 500 / 16'],['t-subtitle2','Sistema 600 / 14'],['t-body1','Sistema 400 / 16'],['t-body2','Sistema 400 / 14'],['t-button','Sistema 600 / 15'],['t-caption','Sistema 400 / 12'],['t-overline','Sistema 600 / 11 · mayúsculas'],['t-figure','Space Grotesk 700 / 44 · cifras']];
+typeList.innerHTML=TYPE.map(([n,m])=>`<div class="typerow"><div class="tk">${n}<br>${m}</div><div class="${n}">${n==='t-figure'?'91 %':'Del director de 2001'}</div></div>`).join('');
+const SPACING=[['sp-4',4],['sp-8',8],['sp-12',12],['sp-16',16],['sp-20',20],['sp-24',24],['sp-32',32],['sp-48',48],['sp-64',64]];
+spacingList.innerHTML=SPACING.map(([n,v])=>`<div class="sprow"><div class="lbl">${n} · ${v}px</div><div class="bar" style="width:${v*4}px"></div></div>`).join('');
+shapeList.innerHTML=['none','xs','sm','md','lg','xl','full'].map(k=>`<div class="tile" style="border-radius:var(--r-${k})">r-${k}</div>`).join('');
+elevList.innerHTML=[['bg','--bg','elev-0'],['surface','--surface','elev-1'],['surface-raised','--surface-raised','elev-2'],['surface-raised','--surface-raised','elev-3']].map(([s,v,e])=>`<div class="tile" style="background:var(${v});box-shadow:var(--${e});border-radius:var(--r-md)">${e}<br>${s}</div>`).join('');
+const ICONS=['home','grid','people','user','user-plus','chat','search','menu','back','chevron-right','chevron-down','close','check','minus','plus','heart','undo','thumb-up','thumb-down','link','compass','pin','sparkle','sync','info','alert','check-circle','share','bell','settings','more-v','star','lock','send','calendar','cat-food','cat-movies','cat-series','cat-music','cat-games','cat-books','cat-culture','cat-podcasts'];
+iconGrid.innerHTML=ICONS.map(n=>`<div class="it"><svg class="ico ico--lg"><use href="#i-${n}"/></svg><div class="nm">i-${n}</div></div>`).join('');
+
+/* ===== SPECS (Dev Mode + Copiar como prompt) ===== */
+const T=(r,n)=>({r,n,v:'var(--'+n+')',c:'var(--'+n+')'});
+const S=(name,file,desc,props,tokens,metrics)=>({name,file,desc,props:props.map(([n,t,def])=>({n,t,def})),tokens,metrics});
+const SPECS={
+ button:S('Button','components/Button','Acción. variant contained|outlined|text; size small|medium|large; color primary|error; estados enabled/hover/focus/pressed/disabled. ButtonGroup: segmento con selección.',[['label','string'],['variant','contained|outlined|text','contained'],['size','small|medium|large','medium'],['color','primary|error','primary'],['startIcon','IconName?'],['disabled','boolean','false'],['onPress','() => void']],[T('relleno contained','primary'),T('texto contained','on-primary'),T('texto outlined/text','primary-ink'),T('borde outlined','border'),T('hover','action-hover'),T('disabled','action-disabled')],[['radius','--r-full'],['minHeight','48 (small 36, large 56)'],['padding','h 20'],['font','600 15']]),
+ iconbutton:S('IconButton','components/IconButton','Botón de icono: standard|tonal|filled|danger, tamaño 48 o 64 (carrusel).',[['icon','IconName'],['variant','standard|tonal|filled|danger','standard'],['size','medium|large','medium'],['accessibilityLabel','string'],['disabled','boolean','false']],[T('tonal','muted-surface'),T('filled','primary'),T('icono filled','on-primary'),T('danger','error')],[['size','48 / 64'],['radius','--r-full'],['icon','24 / 30']]),
+ fab:S('Fab','components/Fab','FAB regular, small y extended. Solo «Invitar» en People.',[['icon','IconName'],['label','string?'],['size','small|medium','medium']],[T('relleno','primary'),T('icono','on-primary'),{r:'sombra',n:'elev-2',v:'var(--elev-2)'}],[['size','56 / 40'],['radius','--r-lg']]),
+ checkbox:S('Checkbox','components/Checkbox','Casilla: checked, unchecked, indeterminate, disabled; objetivo táctil 48.',[['checked','boolean'],['indeterminate','boolean','false'],['label','string'],['disabled','boolean','false']],[T('marcado','primary'),T('marca','on-primary'),T('borde','subtle')],[['box','20'],['radius','--r-xs'],['target','48']]),
+ radio:S('RadioGroup','components/RadioGroup','Grupo de opciones exclusivas.',[['value','string'],['options','{value,label,disabled?}[]'],['onChange','(v) => void']],[T('seleccionado','primary'),T('borde','subtle')],[['dot','20'],['target','48']]),
+ switch:S('Switch','components/Switch','Interruptor on/off/disabled con muelle.',[['value','boolean'],['label','string'],['disabled','boolean','false']],[T('pista on','primary'),T('pulgar on','on-primary'),T('pista off','muted-surface')],[['track','46×28'],['thumb','16→18'],['motion','--dur-base --ease-spring']]),
+ select:S('Select','components/Select','Selector: cerrado como TextField outlined; abierto con Menu.',[['label','string'],['value','string'],['options','{value,label}[]']],[T('borde','border'),T('foco','primary'),T('panel','surface-raised')],[['height','52'],['radius','--r-md']]),
+ autocomplete:S('Autocomplete','components/Autocomplete','Campo con sugerencias (ciudad, obras).',[['label','string'],['query','string'],['suggestions','{label,icon?}[]'],['onSelect','(s) => void']],[T('borde foco','primary'),T('panel','surface-raised')],[['height','52'],['maxSuggestions','6']]),
+ slider:S('Slider','components/Slider','Continuo, discreto y de rango, con etiqueta de valor.',[['value','number | [number,number]'],['min','number'],['max','number'],['step','number?']],[T('relleno','primary'),T('raíl','muted-surface'),T('halo','action-selected')],[['rail','4'],['thumb','20'],['target','48']]),
+ textfield:S('TextField','components/TextField','Campo de texto filled|outlined|standard; estados vacío, foco, relleno, error, deshabilitado; etiqueta, ayuda e iconos.',[['label','string'],['value','string'],['variant','filled|outlined|standard','outlined'],['helperText','string?'],['error','string?'],['startIcon','IconName?'],['endIcon','IconName?'],['disabled','boolean','false']],[T('borde','border'),T('foco','primary'),T('error','error'),T('relleno filled','muted-surface'),T('placeholder','subtle')],[['height','52'],['radius','--r-md'],['padding','h 12']]),
+ toggle:S('ToggleButton','components/ToggleButtonGroup','Grupo exclusivo de alternancia (pulgares, vista).',[['value','string'],['options','{value,icon,label?}[]']],[T('grupo','muted-surface'),T('seleccionado','surface'),T('icono sel.','primary-ink')],[['height','40'],['radius','--r-full']]),
+ rating:S('Rating','components/Rating','Estrellas 0–5; solo lectura o editable.',[['value','number'],['readOnly','boolean','true'],['size','small|large','small']],[T('llena','secondary'),T('vacía','border')],[['star','18 / 28'],['gap','2']]),
+ avatar:S('Avatar','components/Avatar','Foto o iniciales; 28/40/64; anillo; grupo.',[['name','string'],['imageUrl','string?'],['size','sm|md|lg','md'],['ring','boolean','false']],[T('fondo','primary-container'),T('iniciales','on-primary-container'),T('anillo','primary')],[['size','28 / 40 / 64'],['radius','--r-full']]),
+ badge:S('Badge','components/Badge','Punto, número o NEW.',[['variant','dot|count|new','count'],['count','number?']],[T('count','error'),T('texto','on-error'),T('new','secondary'),T('texto new','on-secondary')],[['height','18'],['dot','10']]),
+ chip:S('Chip','components/Chip','filled|outlined; filtro seleccionable, eliminable, sugerencia.',[['label','string'],['variant','filled|outlined','filled'],['selected','boolean','false'],['icon','IconName?'],['onDelete','() => void?']],[T('filled','muted-surface'),T('texto','on-muted-surface'),T('seleccionado','primary-container'),T('texto sel.','on-primary-container')],[['height','32'],['radius','--r-full']]),
+ divider:S('Divider','components/Divider','Separador completo o con sangría de 72.',[['inset','boolean','false']],[T('línea','border')],[['height','1'],['inset','72']]),
+ list:S('List','components/ListItem','Elementos de 1/2/3 líneas con inicio (icono/avatar) y final (acción/meta).',[['primary','string'],['secondary','string?'],['leading','Icon|Avatar?'],['trailing','node?'],['lines','1|2|3','1'],['onPress','() => void?']],[T('texto','on-surface'),T('secundario','muted'),T('hover','action-hover')],[['minHeight','56 / 72 / 88'],['padding','h 16'],['gap','16']]),
+ table:S('Table','components/Table','Tabla simple con cifras tabulares alineadas a la derecha.',[['columns','{key,label,numeric?}[]'],['rows','object[]']],[T('cabecera','muted'),T('líneas','border-faint')],[['cellPadding','12 / 16']]),
+ tooltip:S('Tooltip','components/Tooltip','Simple (invertido) o enriquecido (superficie elevada).',[['title','string'],['variant','plain|rich','plain']],[T('plain fondo','on-surface'),T('plain texto','surface'),T('rich','surface-raised')],[['radius','--r-sm'],['maxWidth','220']]),
+ typography:S('Typography','components/Text','Texto con variantes h1–h6, subtitle1/2, body1/2, button, caption, overline y figure.',[['variant','h1…overline|figure','body1'],['color','onSurface|muted|primaryInk','onSurface'],['numberOfLines','number?']],[{r:'display',n:'font-display',v:'Space Grotesk'},{r:'lectura',n:'font-body',v:'sistema'}],[['escala','~1,25']]),
+ icon:S('Icon','components/Icon','Icono del sprite, 18/24/28, contorno o relleno; color = currentColor.',[['name','IconName'],['size','18|24|28','24'],['filled','boolean','false']],[{r:'trazo',n:'icon-stroke',v:'1.8'}],[['viewBox','24'],['cap/join','round']]),
+ alert:S('Alert','components/Alert','info|success|warning|error con título opcional.',[['severity','info|success|warning|error'],['title','string?'],['message','string'],['action','node?']],[T('info','info'),T('success','success'),T('warning','warning'),T('error','error'),T('texto','on-surface')],[['radius','--r-md'],['tinte','14 %']]),
+ dialog:S('Dialog','components/Dialog','Diálogo básico de confirmación; destructivo con verbo explícito.',[['title','string'],['body','string'],['confirmLabel','string'],['destructive','boolean','false'],['onConfirm','() => void'],['onCancel','() => void']],[T('superficie','surface-raised'),T('velo','scrim'),{r:'sombra',n:'elev-3',v:'var(--elev-3)'}],[['radius','--r-xl'],['padding','24'],['width','≤ 320']]),
+ snackbar:S('Snackbar','components/Snackbar','Mensaje breve en superficie invertida, con acción opcional (Deshacer).',[['message','string'],['actionLabel','string?'],['onAction','() => void?'],['duration','ms','4000']],[T('fondo','on-surface'),T('texto','surface'),T('acción','inverse-primary')],[['radius','--r-md'],['minHeight','48']]),
+ progress:S('Progress','components/Progress','Lineal (determinado/indeterminado) y circular.',[['variant','linear|circular','linear'],['value','number? (0–100)']],[T('indicador','primary'),T('pista','muted-surface')],[['linear','4'],['circular','36']]),
+ skeleton:S('Skeleton','components/Skeleton','Marcador de carga con brillo (sin animación si se reduce el movimiento).',[['width','number|string'],['height','number'],['shape','rect|circle','rect']],[T('base','muted-surface'),T('brillo','surface-raised')],[['radius','--r-sm']]),
+ backdrop:S('Backdrop','components/Backdrop','Velo bajo diálogos y hojas.',[['open','boolean']],[T('velo','scrim')],[['zIndex','--z-modal']]),
+ appbar:S('AppBar','components/AppBar','small (título a la izquierda), center (pantallas interiores) y transparent (sobre imagen).',[['title','string?'],['variant','small|center|transparent','small'],['leading','IconButton?'],['actions','IconButton[]']],[T('fondo','bg'),T('texto','on-surface')],[['height','56'],['title','Space Grotesk 700 / 20']]),
+ card:S('Card','components/Card','Contenedor tonal u outlined con medio, contenido y acciones.',[['variant','tonal|outlined','tonal'],['media','Image?'],['onPress','() => void?']],[T('superficie','surface'),T('borde','border')],[['radius','--r-lg'],['padding','16']]),
+ paper:S('Paper','components/Paper','Superficie base: outlined, elevación 1 y 2.',[['variant','outlined|elevation','elevation'],['elevation','0|1|2|3','1']],[T('e1','surface'),T('e2','surface-raised')],[['radius','--r-lg']]),
+ accordion:S('Accordion','components/Accordion','Secciones plegables.',[['items','{title,content}[]'],['expanded','number?']],[T('borde','border'),T('cuerpo','muted')],[['header','56']]),
+ bottomnav:S('BottomNavigation','components/BottomNavigation','Cuatro pestañas con píldora en la seleccionada y badge.',[['items','{icon,label,badge?}[]'],['selected','number']],[T('sel.','primary-container'),T('icono sel.','on-primary-container'),T('resto','subtle')],[['height','72'],['pill','56×30']]),
+ drawer:S('Drawer','components/Drawer','Panel lateral modal para ajustes o tableta.',[['items','{icon,label}[]'],['selected','number']],[T('superficie','surface-raised'),T('sel.','primary-container')],[['width','280'],['item','52']]),
+ tabs:S('Tabs','components/Tabs','Fijas, desplazables y segmentos en píldora.',[['tabs','{label,icon?}[]'],['selected','number'],['variant','fixed|scrollable|segments','fixed']],[T('indicador','primary'),T('sel.','on-surface'),T('resto','muted')],[['height','48'],['indicator','3']]),
+ menu:S('Menu','components/Menu','Lista flotante de acciones; destructiva en rojo.',[['items','{icon?,label,destructive?}[]'],['anchor','ref']],[T('panel','surface-raised'),T('destructiva','error')],[['item','44'],['width','220']]),
+ link:S('Link','components/Link','Enlace de texto subrayado.',[['href','string'],['children','string']],[T('color','link')],[['underline','1px · offset 3']]),
+ stepper:S('Stepper','components/Stepper','Pasos horizontales: hecho, activo, pendiente.',[['steps','string[]'],['active','number']],[T('hecho','primary'),T('pendiente','muted-surface')],[['step','26']]),
+ speeddial:S('SpeedDial','components/SpeedDial','FAB que despliega acciones con etiqueta.',[['actions','{icon,label}[]'],['open','boolean']],[T('principal','primary'),T('acciones','surface-raised')],[['main','56'],['action','40']]),
+ reccard:S('RecommendationCard','components/RecommendationCard','EXTENSIÓN. Imagen a sangre + velo, chip de categoría, NEW, título display, año y MOTIVO REAL; fallback de categoría sin imagen; gestos + botones descartar/deshacer/conservar.',[['item','{title,year?,category,image?}'],['reason','{code,text}'],['isNew','boolean'],['onDismiss','() => void'],['onKeep','() => void'],['onUndo','() => void']],[T('velo','image-veil'),T('fallback','muted-surface'),{r:'sombra',n:'elev-3',v:'var(--elev-3)'}],[['size','300×420 (≈ 0,71)'],['radius','--r-xl'],['title','Space Grotesk 700 / 26']]),
+ affinity:S('AffinityMeter','components/AffinityMeter','EXTENSIÓN. Anillo + cifra; null → «—» con anillo vacío (nunca 0 %).',[['value','number | null'],['size','md|lg','md'],['caption','string?']],[T('arco','primary'),T('pista','muted-surface'),T('cifra','on-surface')],[['size','56 / 96'],['grosor','5 / 7']]),
+ personrow:S('PersonRow','components/PersonRow','EXTENSIÓN. Puesto, avatar, nombre, país, motivo y afinidad.',[['person','{name,country?,avatar?}'],['rank','number?'],['reason','string'],['affinity','number | null']],[T('cifra','primary-ink'),T('motivo','muted')],[['minHeight','64'],['gap','12']]),
+ catchip:S('CategoryChip','components/CategoryChip','EXTENSIÓN. Ocho categorías: tinte del 20 %, icono en su color y texto on-surface; variante sobre imagen.',[['category','food|movies|series|music|games|books|culture|podcasts'],['onImage','boolean','false']],[T('comida','cat-food'),T('cine','cat-movies'),T('series','cat-series'),T('música','cat-music'),T('juegos','cat-games'),T('libros','cat-books'),T('cultura','cat-culture'),T('podcasts','cat-podcasts')],[['height','28'],['icon','16']]),
+ sourcecard:S('SourceCard','components/SourceCard','EXTENSIÓN. Fuente con estado (punto + texto): conectada, sincronizando, error, sin conectar.',[['source','{name,logo?}'],['status','ok|sync|error|pending'],['meta','string'],['action','node?']],[T('ok','success'),T('sync','info'),T('error','error'),T('pendiente','muted')],[['padding','16'],['radius','--r-lg']]),
+ emptystate:S('EmptyState','components/EmptyState','EXTENSIÓN. Arranque en frío: ilustración-icono, título, explicación y UNA acción.',[['icon','IconName'],['title','string'],['body','string'],['action','{label,onPress}']],[T('arte','primary-container'),T('borde','border')],[['padding','32 / 24'],['radius','--r-lg']]),
+};
+
+const LANGS=['React Native (TypeScript)','SwiftUI','Jetpack Compose (Kotlin)','Flutter (Dart)','React (TypeScript + CSS)','HTML + CSS'];
+let promptLang=LANGS[0];
+langSel.innerHTML=LANGS.map(l=>`<option>${l}</option>`).join('');langSel.onchange=()=>promptLang=langSel.value;
+const varGroups={'Color (cada relleno con su --on-*)':['--primary','--on-primary','--primary-strong','--primary-ink','--primary-container','--on-primary-container','--inverse-primary','--secondary','--on-secondary','--bg','--on-bg','--surface','--on-surface','--surface-raised','--surface-sunken','--muted-surface','--on-muted-surface','--muted','--subtle','--border','--border-faint','--hairline','--scrim','--success','--on-success','--error','--on-error','--warning','--on-warning','--info','--on-info','--link','--action-hover','--action-selected','--action-focus','--action-disabled'],
+ 'Categorías':['--cat-food','--cat-movies','--cat-series','--cat-music','--cat-games','--cat-books','--cat-culture','--cat-podcasts'],
+ 'Espaciado':['--gap-related','--gap-section','--gap-major','--layout-gutter','--target-min','--sp-4','--sp-8','--sp-12','--sp-16','--sp-20','--sp-24','--sp-32','--sp-48','--sp-64'],
+ 'Forma':['--r-none','--r-xs','--r-sm','--r-md','--r-lg','--r-xl','--r-full'],'Elevación':['--elev-0','--elev-1','--elev-2','--elev-3'],
+ 'Tipografía':['--font-display','--font-body','--font-mono'],'Movimiento':['--dur-fast','--dur-base','--dur-slow','--ease','--ease-spring'],
+ 'Capas y cortes':['--z-appbar','--z-drawer','--z-modal','--z-snackbar','--z-tooltip','--bp-sm','--bp-md'],'Iconos':['--icon-size','--icon-inline','--icon-large','--icon-stroke']};
+function tokenLines(){const c=cs();const out=[];for(const[g,ns]of Object.entries(varGroups)){const rows=ns.map(n=>{const v=c.getPropertyValue(n).trim();return v?`- ${n} = ${v}`:null}).filter(Boolean);if(rows.length)out.push(`### ${g}`,...rows,'');}return out;}
+const themeName=()=>document.documentElement.getAttribute('data-theme')==='light'?'claro':'oscuro (por defecto)';
+function foundationsBody(){return [`## Fundamentos — tokens (tema ${themeName()}; repite con el otro tema para obtener ambos)`,`Define cada token como constante con nombre en UN fichero de tema idiomático de ${promptLang}. Los componentes los referencian por nombre; nunca valores sueltos.`,'',...tokenLines(),'### Escala tipográfica',...TYPE.map(([n,m])=>`- ${n}: ${m}`),'','### Reglas','- Cada relleno con su --on-* (WCAG ≥ 4,5:1).','- El violeta es la única familia de interacción; el ámbar solo para NEW y momentos; las categorías son señal (icono/punto/tinte), nunca fondo de texto.','- Elevación tonal en oscuro; fondos planos.','- Afinidad sin datos = «—», nunca 0 %.'].join('\n');}
+function buildPrompt(k){const s=SPECS[k];const L=[`# Añadir o actualizar el componente \`${s.name}\` — ${promptLang}`,'',`Componente del sistema de diseño de APPINITY. Si ya existe uno con este papel, modifícalo EN SU SITIO para que cumpla esta especificación (sin duplicar; anota cambios incompatibles). Si no existe, créalo reutilizando los tokens y átomos existentes.`,'','## Qué es',s.desc,'','## Props',...s.props.map(p=>`- \`${p.n}\`: ${p.t}${p.def?` (por defecto ${p.def})`:''}`),'','## Tokens',...s.tokens.map(t=>`- ${t.n}   // ${t.r}`),'','## Medidas',...s.metrics.map(([a,b])=>`- ${a}: ${b}`),'','## Requisitos','- Todas las variantes y estados.','- Solo tokens con nombre; objetivo táctil ≥ 48; etiquetas de accesibilidad en español.',`- Código ${promptLang} completo y un ejemplo de uso.`];return L.join('\n');}
+function copyPrompt(k){copyText(buildPrompt(k));toast(`Copiado: ${SPECS[k].name} → ${promptLang}`);}
+function fullSystemPrompt(){const ks=Object.keys(SPECS);return [`# Instalar o actualizar TODO el sistema de diseño de APPINITY — ${promptLang}`,'',`Si no existe, créalo; si existe en parte, actualízalo en su sitio. Primero la capa de tokens (ambos temas), después los componentes contra esa capa compartida; se pueden repartir entre varios agentes, pero todos importan los mismos tokens.`,'','---','',foundationsBody(),'','---','',`## Componentes (${ks.length})`,...ks.flatMap(k=>{const s=SPECS[k];return ['',`### ${s.name} — \`${s.file}\``,s.desc,`- props: ${s.props.map(p=>p.n+':'+p.t).join(', ')}`,`- tokens: ${s.tokens.map(t=>t.n).join(', ')}`,`- medidas: ${s.metrics.map(m=>m[0]+' '+m[1]).join(', ')}`];})].join('\n');}
+function copyFullSystem(){copyText(fullSystemPrompt());toast(`Copiado: sistema completo (${Object.keys(SPECS).length} componentes) → ${promptLang}`);}
+function copyText(t){navigator.clipboard&&navigator.clipboard.writeText(t);}
+document.querySelectorAll('main section[id]').forEach(sec=>{const k=sec.id;if(!SPECS[k])return;const h=sec.querySelector('h2.sec');const b=document.createElement('button');b.className='sec-prompt';b.type='button';b.textContent='Copiar como prompt';b.addEventListener('click',()=>copyPrompt(k));h.appendChild(b);});
+function toggleDev(){const on=document.body.classList.toggle('dev');devToggle.classList.toggle('on',on);devToggle.textContent=on?'◧ Dev Mode · ON':'◧ Dev Mode';if(!on)closeInspector();}
+function closeInspector(){document.body.classList.remove('inspecting');document.querySelectorAll('.insp-sel').forEach(e=>e.classList.remove('insp-sel'));}
+document.addEventListener('click',e=>{if(e.target.closest('#inspector')||e.target.closest('#topctl'))return;if(!document.body.classList.contains('dev'))return;const el=e.target.closest('[data-insp]');if(el&&SPECS[el.dataset.insp]){e.preventDefault();selectComp(el,el.dataset.insp);}});
+function selectComp(el,key){document.querySelectorAll('.insp-sel').forEach(x=>x.classList.remove('insp-sel'));el.classList.add('insp-sel');document.body.classList.add('inspecting');const s=SPECS[key];const c=cs();
+ const props=s.props.map(p=>`<div class="prop"><span class="pn">${p.n}</span> <span class="pt">${p.t}</span>${p.def?` <span class="pdef">= ${p.def}</span>`:''}</div>`).join('');
+ const toks=s.tokens.map(t=>{const val=t.v.startsWith('var(')?c.getPropertyValue(t.v.slice(4,-1)).trim():t.v;return `<div class="tok" onclick="copyVal('${val.replace(/'/g,'')}')"><div class="tsw" style="background:${t.c||'var(--bg)'}"></div><div><div class="tn">${t.n}</div><div class="tr">${t.r}</div></div><div class="tv">${val.length>18?val.slice(0,18)+'…':val}</div></div>`}).join('');
+ const mets=s.metrics.map(([k,v])=>`<div class="metric"><span class="mk">${k}</span><span>${v}</span></div>`).join('');
+ inspectorBody.innerHTML=`<div class="nm">${s.name}</div><div class="file">${s.file}</div><div class="desc">${s.desc}</div><h4>Propiedades</h4>${props}<h4>Tokens · clic para copiar</h4>${toks}<h4>Medidas</h4>${mets}<button class="copyprompt" onclick="copyPrompt('${key}')">Copiar como prompt</button>`;}
+function copyVal(v){copyText(v);toast('Copiado '+v);}
+function toast(m){const c=document.getElementById('copied');c.textContent=m;c.classList.add('show');setTimeout(()=>c.classList.remove('show'),1300);}
+</script>
+</body>
+</html>

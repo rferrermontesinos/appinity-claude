@@ -34,7 +34,8 @@
     "mobile": "pnpm build && pnpm --filter @appinity/mobile start",
     "fixtures:catalog": "node scripts/fixtures/build-catalog-snapshot.mjs",
     "secret:set": "node scripts/set-secret.mjs",
-    "db:backup": "node scripts/backup-db.mjs"
+    "db:backup": "node scripts/backup-db.mjs",
+    "android:build": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/android-dev-build.ps1"
   },
   "devDependencies": {
     "@appinity/algorithms": "workspace:*",

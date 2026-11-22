@@ -41,3 +41,24 @@ La cuenta de Google es nueva y está vacía; los gustos del usuario siguen en su
    `http://localhost:3100/v1/auth/google/callback`.
 2. Reinicia la API: `AUTH_SECRET` ya está generado en tu `.env`.
 3. En `http://localhost:8092`, cierra la sesión de desarrollo («Cambiar de usuario») y pulsa «Continuar con Google».
+
+## Auditoría de seguridad de la API (2026-10-26)
+
+Revisión de todas las rutas de `apps/api` (sin herramientas externas):
+
+- **Sesión**: un guard global exige sesión en todo lo que no se marca `@Public()`. Las públicas son: salud, inicio de
+  sesión con Google, imágenes del catálogo (solo `catalog/`, sin datos personales), retorno de las fuentes (con `state`),
+  el webhook de RevenueCat (secreto comparado en tiempo constante) y el acceso de desarrollo, que la configuración
+  prohíbe con `NODE_ENV=production`.
+- **Autorización por recurso**: conexiones, perfiles propios, solicitudes de amistad y de chat, conversaciones,
+  afinidades y catálogo filtran por el usuario de la sesión y su dataset. Un recurso ajeno responde 404. Hay tests para
+  conexiones, evidencias, afinidades, bloqueos y, desde esta revisión, para responder solicitudes ajenas y leer, marcar
+  o borrar una conversación ajena.
+- **Secretos**: ningún `.env`, clave ni copia de seguridad en Git; los tests usan valores simulados; ningún log
+  escribe tokens.
+- **Arreglado**: detrás del proxy HTTPS todas las peticiones llegaban con la IP del proxy, así que el límite de
+  peticiones (300 por minuto y IP) se habría repartido entre todos los usuarios. Ahora `TRUST_PROXY` (en
+  `docker-compose.prod.yml`: `loopback, uniquelocal`) permite leer la IP real. Solo admite rangos o subredes, nunca
+  «confiar en todo».
+- **Pendiente con servidor real**: revisar las cabeceras del proxy (HSTS) y repetir la revisión con la evaluación CASA
+  de Google.

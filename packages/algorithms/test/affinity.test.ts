@@ -86,7 +86,9 @@ describe(`motor de afinidad ${AFFINITY_VERSION}`, () => {
     const b = idx(profile('movies', 30, 1), profile('games', 3, -1));
     const result = affinity(a, b);
     expect(result.categoriesCompared).toBe(2);
-    expect(result.categories.games.score).toBe(0);
+    // affinity-v4: con solo 3 juegos, el desacuerdo se encoge hacia la calidad global; sigue siendo la categoría más baja.
+    expect(result.categories.games.score!).toBeLessThan(result.score!);
+    expect(result.categories.games.score!).toBeLessThan(result.categories.movies.score! / 2);
     // Películas (30 objetos en común) pesa más que juegos (3): la global queda más cerca de películas que de 0.
     expect(result.score!).toBeGreaterThan(result.categories.movies.score! / 2);
     const single = affinity(idx(profile('movies', 30, 1)), idx(profile('movies', 30, 1)));
@@ -100,10 +102,24 @@ describe(`motor de afinidad ${AFFINITY_VERSION}`, () => {
     const narrow = affinity(onlyMovies, onlyMovies);
     expect(broad.categoriesCompared).toBe(4);
     expect(broad.score!).toBeGreaterThan(narrow.score!);
-    // Cada categoría por separado tiene poca evidencia: la global es mayor que cualquiera de ellas.
-    for (const c of ['movies', 'books', 'culture', 'food'] as const) expect(broad.score!).toBeGreaterThan(broad.categories[c].score!);
+    // affinity-v4: con el mismo acuerdo en todas, cada categoría coincide con la global (antes quedaban todas por debajo).
+    for (const c of ['movies', 'books', 'culture', 'food'] as const) expect(broad.categories[c].score!).toBeCloseTo(broad.score!, 1);
     // Pero con poca evidencia total sigue sin acercarse a 100.
     expect(broad.score!).toBeLessThan(95);
+  });
+
+  it('affinity-v4: la global queda entre la menor y la mayor categoría; con evidencia, el desacuerdo real llega a ~0', () => {
+    const a = idx(profile('movies', 6, 1), profile('music', 3, 1), profile('games', 20, 1), profile('books', 2, 1));
+    const b = idx(profile('movies', 6, 1), profile('music', 3, 0.6), profile('games', 20, -1), profile('books', 2, 1));
+    const result = affinity(a, b);
+    const scores = (['movies', 'music', 'games', 'books'] as const).map((c) => result.categories[c].score!);
+    expect(result.score!).toBeGreaterThanOrEqual(Math.min(...scores));
+    expect(result.score!).toBeLessThanOrEqual(Math.max(...scores));
+    // 20 juegos en desacuerdo total: casi no hay encogimiento y la cifra se queda cerca de 0.
+    expect(result.categories.games.score!).toBeLessThan(5);
+    // Una sola categoría comparable: idéntica a la fórmula por categoría (v3).
+    const single = affinity(idx(profile('movies', 6, 1)), idx(profile('movies', 6, 1)));
+    expect(single.categories.movies.score).toBe(single.score);
   });
 
   it('la confianza de los datos importa: la conducta (0,6) pesa menos que la valoración explícita (1)', () => {

@@ -23,6 +23,21 @@ const envSchema = z
     REDIS_URL: z.url(),
     API_HOST: z.string().default('0.0.0.0'),
     API_PORT: z.coerce.number().int().min(1).max(65535).default(3100),
+    /**
+     * Proxies de confianza (valor de `trust proxy` de Express) para leer la IP real de X-Forwarded-For. Sin él, detrás
+     * de un proxy todas las peticiones comparten su IP y el límite de peticiones se aplica a todos a la vez. Vacío =
+     * no se confía en ninguno. Solo rangos con nombre o subredes (p. ej. «loopback, uniquelocal»), nunca «true».
+     */
+    TRUST_PROXY: z
+      .string()
+      .optional()
+      .transform((v) => (v ? v.trim() : undefined))
+      .refine(
+        (v) =>
+          v === undefined ||
+          v.split(',').every((part) => /^(loopback|linklocal|uniquelocal|[0-9a-f]*[.:][0-9a-f.:]*(\/\d{1,3})?)$/i.test(part.trim())),
+        'TRUST_PROXY: rangos con nombre (loopback, linklocal, uniquelocal) o subredes, separados por comas',
+      ),
     PUBLIC_API_URL: z.union([z.literal(''), z.url()]).optional(),
     STORAGE_DIR: z.string().default('.data/media'),
     QUEUE_PREFIX: z.string().regex(/^[a-z0-9-]+$/).default('appinity-claude'),
@@ -72,6 +87,8 @@ const envSchema = z
     /** Vuelta de la conexión de Google Books (cuentas ya creadas). Debe estar autorizada en el cliente OAuth. */
     GOOGLE_BOOKS_REDIRECT_URI: z.url().default('http://localhost:3100/v1/connect/google_books/callback'),
     /** Scopes restringidos de Data Portability (YouTube y destacados de Maps): exigen CASA de pago en producción. */
+    /** Origen de la vista web (enlaces de invitación). En desarrollo, http://localhost:8092. */
+    APP_WEB_ORIGIN: z.url().optional(),
     GOOGLE_RESTRICTED_SCOPES: z.enum(['true', 'false']).optional(),
     /** Trakt (fase 11): client_id de la app creada en Trakt; el secreto es opcional (PKCE). */
     TRAKT_CLIENT_ID: z.string().optional().transform((v) => (v ? v.trim() : undefined)),

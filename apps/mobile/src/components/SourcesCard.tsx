@@ -211,9 +211,12 @@ function ConnectionRow({
                 {source.key === 'google_portability' ? <Small>{t('sources.googleHelp')}</Small> : null}
               </View>
             ) : null}
+            {/* Acciones de una fuente conectada: pequeñas y en fila (sistema de diseño). */}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, alignSelf: 'stretch', width: '100%' }}>
             {active && source.supportsRenewal && source.connectable ? (
               <Button
                 label={t('sources.renew')}
+                size="small"
                 icon="refresh"
                 variant={connection.status === 'error' || connection.missingScopes > 0 ? 'primary' : 'secondary'}
                 disabled={busy}
@@ -224,6 +227,7 @@ function ConnectionRow({
               <>
                 <Button
                   label={t('sources.sync')}
+                size="small"
                   icon="sync"
                   variant="secondary"
                   disabled={busy}
@@ -234,6 +238,7 @@ function ConnectionRow({
                 {source.capabilities.incrementalSync ? (
                   <Button
                     label={t('sources.fullSync')}
+                size="small"
                     icon="database-sync"
                     variant="secondary"
                     disabled={busy}
@@ -242,6 +247,7 @@ function ConnectionRow({
                 ) : null}
                 <Button
                   label={t('sources.disconnect')}
+                size="small"
                   icon="link-variant-off"
                   variant="secondary"
                   disabled={busy}
@@ -252,6 +258,7 @@ function ConnectionRow({
             {connection && connection.observationCount > 0 ? (
               <Button
                 label={t('sources.disconnectPurge')}
+                size="small"
                 icon="delete-outline"
                 variant="danger"
                 disabled={busy}
@@ -267,6 +274,7 @@ function ConnectionRow({
                 }
               />
             ) : null}
+            </View>
           </View>
         </>
       )}

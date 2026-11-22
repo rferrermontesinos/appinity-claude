@@ -127,3 +127,38 @@ describe('Wikidata · IMDb y TMDB', () => {
     expect(searches).toBe(1);
   });
 });
+
+describe('Wikidata · relacionados (arranque en frío)', () => {
+  it('una consulta por relación; en series no se usa el director (episodios); música por influencias y géneros', async () => {
+    const { relatedQueries, relationWeight } = await import('../src/catalog/wikidata-relations.js');
+    expect(relatedQueries('Q172241', 'movies').map((q) => q.relation)).toEqual(['same_series', 'sequel', 'same_director', 'same_writer']);
+    expect(relatedQueries('Q1079', 'series').map((q) => q.relation)).toEqual(['same_series', 'sequel', 'same_creator']);
+    expect(relatedQueries('Q45188', 'music').map((q) => q.relation)).toEqual(['influence', 'shared_genres']);
+    expect(relatedQueries('Q1', 'food')).toEqual([]);
+    expect(relatedQueries('no-es-un-qid', 'movies')).toEqual([]);
+    expect([relationWeight('same_series'), relationWeight('shared_genres', 2), relationWeight('shared_genres', 9)]).toEqual([1, 0.4, 0.6]);
+  });
+
+  it('relatedWorks: misma categoría, notables, mejor relación por objeto; una consulta que agota el tiempo se omite', async () => {
+    const claim = (v: unknown) => ({ mainsnak: { datavalue: { value: v } } });
+    const entities: Record<string, unknown> = {
+      Q2: { id: 'Q2', labels: { es: { value: 'La milla verde' } }, claims: { P31: [claim({ id: 'Q11424' })], P577: [claim({ time: '+1999-12-10T00:00:00Z' })] } },
+      Q3: { id: 'Q3', labels: { es: { value: 'Una serie' } }, claims: { P31: [claim({ id: 'Q5398426' })] } },
+    };
+    let call = 0;
+    const fetchImpl = (async (input: string | URL | Request) => {
+      const url = new URL(input.toString());
+      if (url.hostname === 'query.wikidata.org') {
+        call++;
+        if (call === 1) throw Object.assign(new Error('timeout'), { name: 'TimeoutError' });
+        const bindings = call === 3 ? [{ item: { value: 'http://www.wikidata.org/entity/Q2' }, links: { value: '60' } }, { item: { value: 'http://www.wikidata.org/entity/Q3' }, links: { value: '90' } }] : [];
+        return new Response(JSON.stringify({ results: { bindings } }));
+      }
+      const ids = url.searchParams.get('ids')!.split('|');
+      return new Response(JSON.stringify({ entities: Object.fromEntries(ids.map((id) => [id, entities[id]])) }));
+    }) as typeof fetch;
+    const wd = new WikidataWorkIdentifier({ userAgent: 'APPINITY-test', fetchImpl, sleep: async () => undefined });
+    const related = await wd.relatedWorks('Q1', 'movies');
+    expect(related).toEqual([expect.objectContaining({ relation: 'same_director', weight: 0.8, entity: expect.objectContaining({ title: 'La milla verde', category: 'movies', releaseYear: 1999 }) })]);
+  });
+});

@@ -4,9 +4,10 @@ import { Text, View } from 'react-native';
 import { usePerson } from '../../src/api/queries';
 import { ChatActions } from '../../src/components/ChatActions';
 import { PersonActions } from '../../src/components/PersonActions';
-import { PersonAvatar, formatAffinity } from '../../src/components/PersonAvatar';
-import { Badge, Body, Card, CategoryIcon, ErrorCard, Loading, Screen, Small, Title } from '../../src/components/ui';
-import { spacing, usePalette } from '../../src/theme';
+import { AffinityFigure, CategoryAffinityBar } from '../../src/components/Affinity';
+import { PersonAvatar } from '../../src/components/PersonAvatar';
+import { Badge, Body, Card, ErrorCard, Loading, Screen, Small, Title } from '../../src/components/ui';
+import { fonts, spacing, usePalette } from '../../src/theme';
 
 /**
  * Perfil público mínimo (§4): nombre, país, foto, afinidad global y las ocho afinidades por categoría. NULL se muestra
@@ -18,7 +19,6 @@ export default function PersonScreen() {
   const c = usePalette();
   const person = usePerson(id ?? '');
   const data = person.data;
-  const global = data ? formatAffinity(data.affinity.score) : null;
   return (
     <Screen refreshing={person.isRefetching} onRefresh={() => void person.refetch()}>
       <Stack.Screen options={{ title: data?.displayName ?? t('people.title') }} />
@@ -26,36 +26,25 @@ export default function PersonScreen() {
       {person.error ? <ErrorCard error={person.error} onRetry={() => void person.refetch()} /> : null}
       {data ? (
         <>
-          <Card style={{ alignItems: 'center' }}>
-            <PersonAvatar name={data.displayName} url={data.avatarUrl} size={72} />
-            <Title>{data.displayName}</Title>
-            {data.countryCode ? <Small>{data.countryCode}</Small> : null}
-            <Text style={{ color: c.accent, fontSize: 36, fontWeight: '800' }} accessibilityLabel={`${t('people.affinity')} ${global ?? '—'}`}>
-              {global === null ? '—' : t('people.affinityValue', { value: global })}
-            </Text>
-            <Small>{t('people.affinity')}</Small>
-            {data.affinity.exceptionalMutual ? <Badge label={t('people.exceptionalMutual')} color={c.ok} /> : null}
-            {/* alignSelf stretch: en la tarjeta centrada, el texto debe ajustarse al ancho en vez de ensancharla. */}
-            <Small style={{ textAlign: 'center', alignSelf: 'stretch' }}>{t('people.affinityHint')}</Small>
-          </Card>
+          {/* Cabecera del concepto: persona a la izquierda y cifra de afinidad grande a la derecha. */}
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: spacing.md }}>
+            <View style={{ flex: 1, gap: spacing.xs }}>
+              <PersonAvatar name={data.displayName} url={data.avatarUrl} size={72} ring />
+              <Text style={{ color: c.text, fontFamily: fonts.display, fontSize: 22, marginTop: spacing.sm }} numberOfLines={2}>
+                {data.displayName}
+              </Text>
+              {data.countryCode ? <Small>{data.countryCode}</Small> : null}
+            </View>
+            <AffinityFigure score={data.affinity.score} caption={t('people.affinity')} />
+          </View>
+          {data.affinity.exceptionalMutual ? <Badge label={t('people.exceptionalMutual')} color={c.ok} /> : null}
+          <Small>{t('people.affinityHint')}</Small>
           <ChatActions person={data} />
           <Card>
             <Title>{t('people.byCategory')}</Title>
-            {data.affinity.categories.map((cat) => {
-              const value = formatAffinity(cat.score);
-              return (
-                <View key={cat.category} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-                  <CategoryIcon category={cat.category} size={16} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: c.text, fontWeight: '600' }}>{t(`categories.${cat.category}`)}</Text>
-                    <Small>{value === null ? t('people.noData') : t('people.commonItems', { count: cat.commonItems })}</Small>
-                  </View>
-                  <Text style={{ color: value === null ? c.textMuted : c.text, fontWeight: '800', fontSize: 16 }}>
-                    {value === null ? '—' : t('people.affinityValue', { value })}
-                  </Text>
-                </View>
-              );
-            })}
+            {data.affinity.categories.map((cat) => (
+              <CategoryAffinityBar key={cat.category} category={cat.category} score={cat.score} />
+            ))}
             {data.affinity.algorithmVersion ? <Small>{t('people.algorithm', { version: data.affinity.algorithmVersion })}</Small> : null}
           </Card>
           <PersonActions person={data} />

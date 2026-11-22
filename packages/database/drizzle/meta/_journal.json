@@ -99,6 +99,27 @@
       "when": 1792080778074,
       "tag": "0013_session_reuse_receipts",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792690223282,
+      "tag": "0014_catalog_relations",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1792691889408,
+      "tag": "0015_invitations",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793027970808,
+      "tag": "0016_daily_abomination",
+      "breakpoints": true
     }
   ]
 }

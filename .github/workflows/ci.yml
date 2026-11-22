@@ -1,0 +1,52 @@
+# CI de APPINITY: lint, typecheck y tests (unitarios e integración) en cada push y pull request.
+# Gratis en repositorios públicos. Los servicios replican docker-compose.yml (PostGIS 17 y Redis 7.4) con puertos propios
+# del runner; no se usa ningún secreto real: las claves de test son fijas y de juguete (test/helpers.ts).
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgis/postgis:17-3.5
+        env:
+          POSTGRES_USER: appinity_ci
+          POSTGRES_PASSWORD: appinity_ci
+          POSTGRES_DB: appinity_claude_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U appinity_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:7.4.7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgres://appinity_ci:appinity_ci@localhost:5432/appinity_claude_test
+      REDIS_URL: redis://localhost:6379
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test

@@ -17,6 +17,11 @@ export default tseslint.config(
     ],
   },
   js.configs.recommended,
+  {
+    // Guía de diseño: JavaScript de navegador (docs/design/design-system).
+    files: ['docs/design/**/*.js'],
+    languageOptions: { globals: { ...globals.browser } },
+  },
   ...tseslint.configs.recommended,
   {
     languageOptions: { globals: { ...globals.node } },

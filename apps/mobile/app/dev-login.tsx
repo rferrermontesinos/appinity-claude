@@ -1,53 +1,31 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDevLogin, useDevUsers } from '../src/api/queries';
 import { GoogleSignIn } from '../src/components/GoogleSignIn';
 import { Diagnostics } from '../src/components/Diagnostics';
-import { Body, Button, Card, DemoBanner, ErrorCard, Loading, Screen, Small, Title } from '../src/components/ui';
+import { Body, Button, Card, DemoBanner, ErrorCard, Loading, Screen, Small, TextField, Title } from '../src/components/ui';
 import { radius, spacing, usePalette } from '../src/theme';
 
 /** Cuenta local real (dataset live) creada con `pnpm user:local`: handle + código de un solo uso. */
 function LocalAccountCard() {
   const { t } = useTranslation();
-  const c = usePalette();
   const login = useDevLogin();
   const [handle, setHandle] = useState('');
   const [code, setCode] = useState('');
-  const input = {
-    color: c.text,
-    borderColor: c.border,
-    borderWidth: 1,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    fontSize: 15,
-  } as const;
   return (
     <Card>
       <Title style={{ fontSize: 16 }}>{t('devLogin.localTitle')}</Title>
       <Small>{t('devLogin.localHelp')}</Small>
-      <TextInput
-        value={handle}
-        onChangeText={setHandle}
-        placeholder={t('devLogin.handle')}
-        placeholderTextColor={c.textMuted}
-        autoCapitalize="none"
-        autoCorrect={false}
-        accessibilityLabel={t('devLogin.handle')}
-        style={input}
-      />
-      <TextInput
+      <TextField label={t('devLogin.handle')} value={handle} onChangeText={setHandle} autoCapitalize="none" autoCorrect={false} />
+      <TextField
+        label={t('devLogin.code')}
         value={code}
         onChangeText={setCode}
-        placeholder={t('devLogin.code')}
-        placeholderTextColor={c.textMuted}
         autoCapitalize="characters"
         autoCorrect={false}
         secureTextEntry
-        accessibilityLabel={t('devLogin.code')}
-        style={input}
       />
       {login.isError ? <ErrorCard error={login.error} /> : null}
       <Button

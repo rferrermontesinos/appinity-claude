@@ -77,6 +77,19 @@ describe('health', () => {
   });
 });
 
+describe('textos legales', () => {
+  it('condiciones y privacidad son públicas, en HTML y marcadas como borrador', async () => {
+    for (const path of ['/legal/condiciones', '/legal/privacidad']) {
+      const res = await fetch(`${base}${path}`);
+      expect(res.status).toBe(200);
+      expect(res.headers.get('content-type')).toMatch(/text\/html/);
+      expect(await res.text()).toMatch(/Borrador pendiente de revisión legal/);
+    }
+    // La verificación de Google exige la declaración de uso limitado en la política de privacidad.
+    expect(await (await fetch(`${base}/legal/privacidad`)).text()).toMatch(/requisitos de uso limitado/);
+  });
+});
+
 describe('rutas privadas', () => {
   it('rechazan peticiones sin sesión', async () => {
     expect((await get('/v1/me')).status).toBe(401);
@@ -152,6 +165,32 @@ describe('configuración', () => {
   it('prohíbe DEMO_MODE y la identidad de desarrollo en producción', () => {
     expect(() => loadEnv(testEnv({ NODE_ENV: 'production' }))).toThrow(/prohibidos/);
     expect(() => loadEnv(testEnv({ NODE_ENV: 'production', DEMO_MODE: 'false' }))).toThrow(/prohibidos/);
+  });
+
+  it('TRUST_PROXY solo admite rangos o subredes, nunca confiar en todo', () => {
+    expect(() => loadEnv(testEnv({ TRUST_PROXY: 'true' }))).toThrow(/TRUST_PROXY/);
+    expect(() => loadEnv(testEnv({ TRUST_PROXY: '1' }))).toThrow(/TRUST_PROXY/);
+    expect(loadEnv(testEnv({ TRUST_PROXY: 'loopback, uniquelocal' })).TRUST_PROXY).toBe('loopback, uniquelocal');
+    expect(loadEnv(testEnv({ TRUST_PROXY: '172.18.0.1/16' })).TRUST_PROXY).toBe('172.18.0.1/16');
+    expect(loadEnv(testEnv({})).TRUST_PROXY).toBeUndefined();
+  });
+
+  it('con TRUST_PROXY, el límite de peticiones se cuenta por la IP real del cliente', async () => {
+    const proxied = await start(testEnv({ TRUST_PROXY: 'loopback' }));
+    try {
+      // 10 sesiones de desarrollo por minuto y por IP: con dos IP distintas detrás del proxy, ninguna se bloquea.
+      const hit = (ip: string) =>
+        fetch(`${proxied.base}/v1/dev/session`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'x-forwarded-for': ip },
+          body: JSON.stringify({ handle: 'nadie_xyz' }),
+        });
+      for (let i = 0; i < 10; i++) expect((await hit('203.0.113.1')).status).toBe(401);
+      expect((await hit('203.0.113.1')).status).toBe(429);
+      expect((await hit('203.0.113.2')).status).toBe(401);
+    } finally {
+      await proxied.app.close();
+    }
   });
 
   it('exige un secreto largo para la identidad de desarrollo', () => {

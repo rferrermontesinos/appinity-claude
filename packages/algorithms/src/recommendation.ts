@@ -199,6 +199,78 @@ export function currentYear(now: Date, timeZone: string): number {
 export const DATED_CATEGORIES: readonly Category[] = ['movies', 'series', 'books', 'games'];
 
 /**
+ * Por contenido (arranque en frío, 2026-10-22): obras relacionadas (misma saga, director, autor, estudio,
+ * influencias…) con lo que al usuario le GUSTA, aunque todavía no tenga almas gemelas. Respaldo que va antes de la
+ * comunidad; cada tarjeta dice «porque te gusta X». Solo cuentan gustos claros (puntuación ≥ `minLikeScore`): conocer o
+ * haber consumido algo no basta, y un disgusto nunca recomienda lo relacionado.
+ */
+export interface ContentLike {
+  itemId: string;
+  score: number;
+  confidence: number;
+}
+
+export interface ContentRelation {
+  sourceItemId: string;
+  targetItemId: string;
+  relation: string;
+  weight: number;
+}
+
+export interface ContentCandidate {
+  itemId: string;
+  score: number;
+  becauseItemId: string;
+  relation: string;
+  /** Cuántos gustos distintos llevan a este objeto. */
+  sources: number;
+}
+
+export interface ContentParams {
+  minLikeScore: number;
+  /** Como mucho N recomendaciones por cada gusto de origen, para no llenar el mazo con una sola saga. */
+  maxPerSource: number;
+}
+
+export const CONTENT_PARAMS_V1: ContentParams = { minLikeScore: 0.3, maxPerSource: 3 };
+
+export function contentCandidates(
+  likes: readonly ContentLike[],
+  relations: readonly ContentRelation[],
+  params: ContentParams = CONTENT_PARAMS_V1,
+): ContentCandidate[] {
+  const liked = new Map(likes.filter((l) => l.score >= params.minLikeScore && l.confidence > 0).map((l) => [l.itemId, l]));
+  const byTarget = new Map<string, { score: number; best: number; becauseItemId: string; relation: string; sources: Set<string> }>();
+  for (const r of relations) {
+    const like = liked.get(r.sourceItemId);
+    if (!like || liked.has(r.targetItemId) || r.weight <= 0) continue;
+    const contribution = like.score * like.confidence * Math.min(1, r.weight);
+    const current = byTarget.get(r.targetItemId);
+    if (!current) {
+      byTarget.set(r.targetItemId, { score: contribution, best: contribution, becauseItemId: r.sourceItemId, relation: r.relation, sources: new Set([r.sourceItemId]) });
+      continue;
+    }
+    // Varias relaciones desde el mismo gusto no se suman (misma saga y mismo director no cuentan doble).
+    if (!current.sources.has(r.sourceItemId)) current.score += contribution;
+    else if (contribution > current.best) current.score += contribution - current.best;
+    current.sources.add(r.sourceItemId);
+    if (contribution > current.best) Object.assign(current, { best: contribution, becauseItemId: r.sourceItemId, relation: r.relation });
+  }
+  const sorted = [...byTarget.entries()]
+    .map(([itemId, c]) => ({ itemId, score: round(c.score), becauseItemId: c.becauseItemId, relation: c.relation, sources: c.sources.size }))
+    .sort((a, b) => b.score - a.score || b.sources - a.sources || a.itemId.localeCompare(b.itemId));
+  const perSource = new Map<string, number>();
+  const out: ContentCandidate[] = [];
+  for (const c of sorted) {
+    const used = perSource.get(c.becauseItemId) ?? 0;
+    if (used >= params.maxPerSource) continue;
+    perSource.set(c.becauseItemId, used + 1);
+    out.push(c);
+  }
+  return out;
+}
+
+/**
  * Respaldos (fase 9) para que el mazo no se agote mientras haya algo honesto que enseñar (decisión del usuario,
  * 2026-10-14: «un número que tienda al infinito, al estilo de Tinder»). Van DESPUÉS de los bloques principales y cada
  * tarjeta dice de dónde sale; nunca se presentan como consenso, descubrimiento ni Trending.
@@ -207,7 +279,7 @@ export const DATED_CATEGORIES: readonly Category[] = ['movies', 'series', 'books
  * - Conservados: lo que el usuario conservó en otra sesión (puede volver, §2).
  * - Explorar: objetos del catálogo sin señales, en un orden estable por usuario y día.
  */
-export type FallbackBlock = 'community' | 'kept' | 'explore';
+export type FallbackBlock = 'content' | 'community' | 'kept' | 'explore';
 
 export interface CommunityCandidate {
   itemId: string;

@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, usePathname, useRouter, useSegments } from 'expo-router';
+import { rememberInvite, takePendingInvite } from '../src/invite';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
@@ -8,7 +9,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useMe } from '../src/api/queries';
 import { initI18n } from '../src/i18n';
 import { useSession } from '../src/state/session';
-import { usePalette } from '../src/theme';
+import { SpaceGrotesk_500Medium, SpaceGrotesk_700Bold, useFonts } from '@expo-google-fonts/space-grotesk';
+import { fonts, usePalette, useThemeMode } from '../src/theme';
 
 const i18n = initI18n();
 // Cierra la ventana de autenticación al volver del proveedor (necesario en web; inocuo en iOS/Android).
@@ -17,6 +19,7 @@ WebBrowser.maybeCompleteAuthSession();
 function SessionGate() {
   const { hydrated, session, hydrate } = useSession();
   const segments = useSegments();
+  const pathname = usePathname();
   const router = useRouter();
   const me = useMe();
   const { i18n: i18next } = useTranslation();
@@ -31,15 +34,22 @@ function SessionGate() {
     const onLogin = segments[0] === 'dev-login';
     // /auth recibe la vuelta de Google antes de que haya sesión.
     const onAuthReturn = segments[0] === 'auth';
+    // Un enlace de invitación sin sesión se recuerda y se retoma después de entrar (o del alta).
+    const inviteCode = /^\/invite\/([a-z0-9]{10})$/i.exec(pathname)?.[1];
+    if (!session && inviteCode) rememberInvite(inviteCode.toLowerCase());
     if (!session && !onLogin && !onAuthReturn) router.replace('/dev-login');
     if (session && onLogin) router.replace('/');
-  }, [hydrated, session, segments, router]);
+  }, [hydrated, session, segments, router, pathname]);
 
   // Alta pendiente (cuenta real nueva): primero mayoría de edad y condiciones.
   const needsOnboarding = me.data?.needsOnboarding ?? false;
   useEffect(() => {
     if (session && needsOnboarding && segments[0] !== 'onboarding') router.replace('/onboarding');
-  }, [session, needsOnboarding, segments, router]);
+    if (session && me.data && !needsOnboarding && segments[0] !== 'invite') {
+      const invite = takePendingInvite();
+      if (invite) router.replace(`/invite/${invite}`);
+    }
+  }, [session, needsOnboarding, segments, router, me.data]);
 
   // El idioma guardado en los ajustes del usuario prevalece sobre el del sistema.
   const locale = me.data?.settings.locale;
@@ -55,16 +65,21 @@ export default function RootLayout() {
     () => new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 30_000 } } }),
   );
   const c = usePalette();
+  const mode = useThemeMode((s) => s.mode);
+  // Space Grotesk se carga sin bloquear: hasta entonces, los titulares usan la fuente del sistema.
+  useFonts({ SpaceGrotesk_500Medium, SpaceGrotesk_700Bold });
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: c.background }}>
       <I18nextProvider i18n={i18n}>
         <QueryClientProvider client={queryClient}>
-          <StatusBar style="auto" />
+          <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
           <SessionGate />
           <Stack
             screenOptions={{
-              headerStyle: { backgroundColor: c.surface },
+              headerStyle: { backgroundColor: c.background },
+              headerShadowVisible: false,
               headerTintColor: c.text,
+              headerTitleStyle: { fontFamily: fonts.display },
               contentStyle: { backgroundColor: c.background },
             }}
           >

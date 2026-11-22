@@ -6,8 +6,9 @@ import { Pressable, Text, View } from 'react-native';
 import { useChatInbox, useSoulmates } from '../../src/api/queries';
 import { ChatInbox } from '../../src/components/ChatInbox';
 import { FriendsCard } from '../../src/components/FriendsCard';
+import { InviteCard } from '../../src/components/InviteCard';
 import { PersonAvatar, formatAffinity } from '../../src/components/PersonAvatar';
-import { Badge, Body, Card, ErrorCard, Loading, Screen, Small, Title } from '../../src/components/ui';
+import { Badge, Body, Card, ErrorCard, Loading, Screen, Small, Title, EmptyState } from '../../src/components/ui';
 import { spacing, usePalette } from '../../src/theme';
 
 function SoulmateRow({ person }: { person: SoulmateDto }) {
@@ -44,8 +45,8 @@ function Segments({ value, onChange, badge }: { value: Segment; onChange: (s: Se
   const { t } = useTranslation();
   const c = usePalette();
   const items: Array<{ key: Segment; label: string }> = [
-    { key: 'chats', label: t('chat.tabChats') },
     { key: 'people', label: t('chat.tabPeople') },
+    { key: 'chats', label: t('chat.tabChats') },
   ];
   return (
     <View accessibilityRole="tablist" style={{ flexDirection: 'row', backgroundColor: c.surfaceAlt, borderRadius: 999, padding: 4 }}>
@@ -80,7 +81,8 @@ function Segments({ value, onChange, badge }: { value: Segment; onChange: (s: Se
  * La app mantiene cuatro pestañas: el chat vive aquí, con aviso en la propia pestaña.
  */
 export default function PeopleScreen() {
-  const [segment, setSegment] = useState<Segment>('chats');
+  // Por defecto, las almas gemelas (el núcleo de People); los chats están a un toque.
+  const [segment, setSegment] = useState<Segment>('people');
   const soulmates = useSoulmates();
   const inbox = useChatInbox();
   const refreshing = segment === 'chats' ? inbox.isRefetching : soulmates.isRefetching;
@@ -96,14 +98,20 @@ export default function PeopleScreen() {
 function SoulmatesAndFriends() {
   const { t } = useTranslation();
   const soulmates = useSoulmates();
+  const router = useRouter();
+  // Sin almas gemelas, invitar es lo primero; con ellas, la lista manda y la invitación queda debajo.
+  const hasSoulmates = Boolean(soulmates.data?.items.length);
   return (
     <>
+      {!hasSoulmates ? <InviteCard /> : null}
       <Card>
         <Title>{t('people.soulmates')}</Title>
         <Body muted>{t('people.soulmatesIntro')}</Body>
         {soulmates.isLoading ? <Loading /> : null}
         {soulmates.error ? <ErrorCard error={soulmates.error} onRetry={() => void soulmates.refetch()} /> : null}
-        {soulmates.data && !soulmates.data.items.length ? <Body muted>{t('people.soulmatesEmpty')}</Body> : null}
+        {soulmates.data && !soulmates.data.items.length ? (
+          <EmptyState icon="account-heart-outline" title={t('people.soulmatesEmptyTitle')} body={t('people.soulmatesEmpty')} action={{ label: t('people.connectSources'), icon: 'link-variant', onPress: () => router.push('/profile') }} />
+        ) : null}
         {soulmates.data?.items.length ? (
           <>
             <Small>{t('people.soulmatesCount', { count: soulmates.data.items.length, limit: soulmates.data.limit })}</Small>
@@ -114,6 +122,7 @@ function SoulmatesAndFriends() {
           </>
         ) : null}
       </Card>
+      {hasSoulmates ? <InviteCard /> : null}
       <FriendsCard />
     </>
   );

@@ -8,6 +8,7 @@ import {
   type Identification,
 } from '@appinity/shared';
 import { z } from 'zod';
+import { RELATION_WEIGHTS, WIKIDATA_SPARQL, relatedQueries, relationWeight, type RelatedWork, type RelationKind } from './wikidata-relations.js';
 
 /**
  * Identificación de obras con Wikidata (CC0, uso comercial sin restricciones). Se usa cuando la fuente solo aporta un
@@ -176,6 +177,8 @@ function externalQuery(i: ExternalIdQuery): string | null {
 export interface WikidataWorkIdentifierOptions {
   userAgent: string;
   endpoint?: string;
+  /** Endpoint SPARQL (relaciones entre obras). */
+  sparqlEndpoint?: string;
   fetchImpl?: typeof fetch;
   sleep?: (ms: number) => Promise<void>;
   /** Avisos de espera (Wikidata saturado), para que el worker muestre que sigue trabajando. */
@@ -488,6 +491,68 @@ export class WikidataWorkIdentifier {
       if (!entity || !EXPECTED_CATEGORIES[item.kind].includes(entity.category)) return null;
       return entity;
     });
+  }
+
+  /**
+   * Obras y artistas relacionados con un objeto (arranque en frío por contenido; consultas en wikidata-relations.ts).
+   * Solo objetos notables y de la MISMA categoría, clasificados con los mismos tipos que la identificación. Máximo 12,
+   * de mayor peso y notoriedad.
+   */
+  async relatedWorks(qid: string, category: Category): Promise<RelatedWork[]> {
+    const queries = relatedQueries(qid, category);
+    if (!queries.length) return [];
+    const rows: Array<{ relation: RelationKind; b: Record<string, { value: string } | undefined> }> = [];
+    for (const { relation, query } of queries) {
+      const url = new URL(this.options.sparqlEndpoint ?? WIKIDATA_SPARQL);
+      url.searchParams.set('query', query);
+      url.searchParams.set('format', 'json');
+      for (let attempt = 0; ; attempt++) {
+        // Una consulta que no cabe en 30 s (p. ej., géneros de un solista: millones de personas) se omite sin tumbar el resto.
+        const response = await this.fetchImpl(url, { headers: { 'User-Agent': this.options.userAgent, Accept: 'application/sparql-results+json' }, signal: AbortSignal.timeout(30_000) }).catch(
+          (error: Error) => {
+            if (error.name === 'TimeoutError' || error.name === 'AbortError') return null;
+            throw error;
+          },
+        );
+        if (!response) break;
+        if ((response.status === 429 || response.status >= 500) && attempt < 2) {
+          await this.sleep(Number(response.headers.get('retry-after') ?? 0) * 1000 || 5_000 * 2 ** attempt);
+          continue;
+        }
+        if (!response.ok) throw new SourceError('unavailable', `Wikidata (SPARQL) respondió HTTP ${response.status}`, response.status === 429 || response.status >= 500);
+        const data = (await response.json()) as { results?: { bindings?: Array<Record<string, { value: string } | undefined>> } };
+        for (const b of data.results?.bindings ?? []) rows.push({ relation, b });
+        break;
+      }
+    }
+    const best = new Map<string, { relation: RelationKind; weight: number; links: number }>();
+    for (const { relation, b } of rows) {
+      const target = b.item?.value.split('/').pop();
+      if (!target || target === qid || !(relation in RELATION_WEIGHTS)) continue;
+      const weight = relationWeight(relation, Number(b.shared?.value ?? 0));
+      const links = Number(b.links?.value ?? 0);
+      const current = best.get(target);
+      if (!current || weight > current.weight) best.set(target, { relation, weight, links });
+    }
+    const ranked = [...best.entries()].sort((a, b) => b[1].weight - a[1].weight || b[1].links - a[1].links).slice(0, 12);
+    if (!ranked.length) return [];
+    const languages = ['es', 'en'];
+    const entities = await this.entities(ranked.map(([q]) => q), languages);
+    const out: RelatedWork[] = [];
+    for (const [target, r] of ranked) {
+      const entity = entities[target];
+      const kind = entity ? kindOf(entity) : null;
+      if (!entity || !kind || kind.musicWork || kind.kind.category !== category) continue;
+      const title = label(entity, languages);
+      if (!title) continue;
+      const releaseYear = year(entity, 'P577', 'P580');
+      out.push({
+        entity: { category, itemType: kind.kind.itemType, title, canonicalIds: { 'wikidata:entity': target }, ...(releaseYear ? { releaseYear } : {}), confidence: 0.95, method: 'wikidata_relacion' },
+        relation: r.relation,
+        weight: r.weight,
+      });
+    }
+    return out;
   }
 
   /** Artistas por nombre exacto (solo grupos y personas músicos). */

@@ -3,7 +3,7 @@ import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, Pressable, ScrollView, Text, View } from 'react-native';
-import { useItemProfiles, type ProfileView } from '../src/api/queries';
+import { useItemProfiles, useMe, type ProfileView } from '../src/api/queries';
 import { CatalogImage } from '../src/components/CatalogImage';
 import { Dimensions, Tag, scenarioKeys } from '../src/components/Dimensions';
 import { Badge, Body, Card, ErrorCard, Loading, Small, Title } from '../src/components/ui';
@@ -58,7 +58,7 @@ function ProfileRow({ profile, onPress }: { profile: ProfileView; onPress: () =>
               {t(`categories.${profile.item.category}`)}
             </Small>
             <Small>
-              {t('model.sourcesCount', { count: profile.sourceCount })} · {t('model.evidenceCount', { count: profile.evidenceCount })}
+              {profile.sources.map((k) => t(`sources.names.${k}`, { defaultValue: k })).join(', ')} · {t('model.evidenceCount', { count: profile.evidenceCount })}
             </Small>
             {profile.hasConflict ? <Badge label={t('model.conflict')} color={c.warn} /> : null}
           </View>
@@ -86,12 +86,18 @@ export default function ModelScreen() {
   const c = usePalette();
   const [category, setCategory] = useState<Category | undefined>(undefined);
   const profiles = useItemProfiles(category);
+  // En una cuenta real es «Tus gustos»; con datos simulados sigue siendo la demo del modelo.
+  const live = useMe().data?.user.dataset === 'live';
+  // Primero los gustos claros, luego lo que no tiene preferencia (NULL) y al final los disgustos.
+  const rows = [...(profiles.data ?? [])].sort(
+    (a, b) => (b.preferenceScore ?? -0.001) - (a.preferenceScore ?? -0.001),
+  );
 
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
-      <Stack.Screen options={{ title: t('model.title') }} />
+      <Stack.Screen options={{ title: live ? t('tastes.title') : t('model.title') }} />
       <FlatList
-        data={profiles.data ?? []}
+        data={rows}
         keyExtractor={(p) => p.item.id}
         contentContainerStyle={{ padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl }}
         refreshing={profiles.isRefetching}
@@ -99,7 +105,7 @@ export default function ModelScreen() {
         ListHeaderComponent={
           <View style={{ gap: spacing.md, marginBottom: spacing.xs }}>
             <DataBanner detailed />
-            <Body muted>{t('model.intro')}</Body>
+            <Body muted>{live ? t('tastes.intro') : t('model.intro')}</Body>
             <Card>
               <Title style={{ fontSize: 15 }}>{t('model.legendTitle')}</Title>
               <Small>{t('model.legendKnown')}</Small>

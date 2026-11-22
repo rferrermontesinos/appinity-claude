@@ -1,7 +1,8 @@
 import type { INestApplication } from '@nestjs/common';
+import { createHash } from 'node:crypto';
 import { authSessions, createDatabase, users, type DatabaseHandle } from '@appinity/database';
 import { createSession, findOrCreateUserForIdentity } from '@appinity/ingestion';
-import type { AuthProvidersDto, AuthSessionDto, MeDto } from '@appinity/shared';
+import type { AuthProvidersDto, AuthSessionDto, ContactMatchDto, MeDto } from '@appinity/shared';
 import { eq } from 'drizzle-orm';
 import { Redis } from 'ioredis';
 import { SignJWT, createLocalJWKSet, exportJWK, generateKeyPair } from 'jose';
@@ -140,5 +141,44 @@ describe('sesiones de producción (fase 13)', () => {
     expect(await db.db.select().from(users).where(eq(users.id, userId))).toEqual([]);
     expect(await db.db.select().from(authSessions).where(eq(authSessions.userId, userId))).toEqual([]);
     expect((await call('GET', '/v1/me', session.accessToken)).status).toBe(401);
+  });
+});
+
+describe('amigos desde los contactos (SHA-256 de emails verificados)', () => {
+  const sha = (s: string) => createHash('sha256').update(s).digest('hex');
+  async function signedUp(subject: string, name: string): Promise<{ token: string; userId: string }> {
+    const { code, userId } = await handoff(subject);
+    const session = (await (await call('POST', '/v1/auth/exchange', undefined, { code })).json()) as AuthSessionDto;
+    expect((await call('POST', '/v1/me/onboarding', session.accessToken, { adult: true, termsAccepted: true, displayName: name })).status).toBe(204);
+    return { token: session.accessToken, userId };
+  }
+
+  it('encuentra a quien lo permite, sin guardar nada, y respeta el ajuste y los bloqueos', async () => {
+    const marta = await signedUp('contacto-marta', 'Marta');
+    const pau = await signedUp('contacto-pau', 'Pau');
+    const oculta = await signedUp('contacto-oculta', 'Oculta');
+    expect((await call('PATCH', '/v1/me/settings', oculta.token, { discoverableByContacts: false })).status).toBe(200);
+    const agenda = ['Contacto-Pau@Example.com', 'contacto-oculta@example.com', 'nadie@example.com', 'contacto-marta@example.com'].map((e) =>
+      sha(e.trim().toLowerCase()),
+    );
+    const res = await call('POST', '/v1/me/contacts/match', marta.token, { hashes: agenda });
+    expect(res.status).toBe(200);
+    // Solo Pau: Oculta lo desactivó, «nadie» no existe y la propia Marta no se encuentra a sí misma.
+    expect(((await res.json()) as ContactMatchDto[]).map((m) => [m.displayName, m.friendship])).toEqual([['Pau', 'none']]);
+    // Tras enviar la solicitud, el estado se refleja; un bloqueo la oculta.
+    expect((await call('POST', '/v1/me/friends/requests', marta.token, { userId: pau.userId })).status).toBe(200);
+    const again = (await (await call('POST', '/v1/me/contacts/match', marta.token, { hashes: agenda })).json()) as ContactMatchDto[];
+    expect(again.map((m) => m.friendship)).toEqual(['pending_out']);
+    expect((await call('POST', '/v1/me/blocks', pau.token, { userId: marta.userId })).status).toBe(204);
+    expect(await (await call('POST', '/v1/me/contacts/match', marta.token, { hashes: agenda })).json()).toEqual([]);
+  });
+
+  it('valida el formato y el tamaño, y limita las peticiones', async () => {
+    const leo = await signedUp('contacto-leo', 'Leo');
+    expect((await call('POST', '/v1/me/contacts/match', leo.token, { hashes: ['leo@example.com'] })).status).toBe(400);
+    expect((await call('POST', '/v1/me/contacts/match', leo.token, { hashes: Array.from({ length: 501 }, (_, i) => sha(`x${i}`)) })).status).toBe(400);
+    const statuses: number[] = [];
+    for (let i = 0; i < 6; i++) statuses.push((await call('POST', '/v1/me/contacts/match', leo.token, { hashes: [] })).status);
+    expect(statuses.at(-1)).toBe(429);
   });
 });

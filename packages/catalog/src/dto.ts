@@ -37,6 +37,7 @@ export function toImageDto(image: ImageRow, baseUrl: string): CatalogImageDto {
     ...(image.width ? { width: image.width } : {}),
     ...(image.height ? { height: image.height } : {}),
     alt: image.alt,
+    ...(image.kind ? { kind: image.kind } : {}),
     ...(imageAttribution(image) ? { attribution: imageAttribution(image)! } : {}),
     ...(image.licenseUrl || image.descriptionUrl ? { rightsOrPolicyReference: (image.licenseUrl ?? image.descriptionUrl)! } : {}),
     ...(image.fetchedAt ? { fetchedAt: image.fetchedAt.toISOString() } : {}),

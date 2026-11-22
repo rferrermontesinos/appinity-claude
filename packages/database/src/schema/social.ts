@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { check, index, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { check, index, integer, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { users } from './identity.js';
 
 /**
@@ -76,5 +76,30 @@ export const userReports = pgTable(
     check('user_reports_not_self', sql`${t.reporterId} <> ${t.reportedId}`),
     check('user_reports_reason_valid', sql`${t.reason} IN ('spam', 'harassment', 'inappropriate', 'impersonation', 'other')`),
     check('user_reports_note_length', sql`${t.note} IS NULL OR char_length(${t.note}) <= 500`),
+  ],
+);
+
+/**
+ * Invitaciones (crecimiento por grupos de amigos, 2026-10-22): un enlace con código. Compartirlo es el consentimiento de
+ * quien invita; aceptarlo, el de quien recibe. Aceptar crea la amistad y abre el chat, como una solicitud aceptada.
+ */
+export const invitations = pgTable(
+  'invitations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    code: text('code').notNull(),
+    inviterId: uuid('inviter_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    maxUses: integer('max_uses').notNull().default(20),
+    uses: integer('uses').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex('invitations_code_unique').on(t.code),
+    index('invitations_inviter_idx').on(t.inviterId),
+    check('invitations_uses_range', sql`${t.uses} >= 0 AND ${t.uses} <= ${t.maxUses}`),
   ],
 );

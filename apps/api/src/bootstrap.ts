@@ -13,7 +13,7 @@ export async function createApp(env: AppEnv, options: { logger?: boolean } = {})
     bodyParser: true,
   });
   app.disable('x-powered-by');
-  app.set('trust proxy', false);
+  app.set('trust proxy', env.TRUST_PROXY ? env.TRUST_PROXY.split(',').map((s) => s.trim()) : false);
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.useBodyParser('json', { limit: '100kb' });
   // CORS solo para la verificación web en desarrollo (localhost). La app móvil no lo necesita.

@@ -1,11 +1,11 @@
 import type { MeDto } from '@appinity/shared';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TextInput, View } from 'react-native';
+import { View } from 'react-native';
 import { apiRequest } from '../api/client';
 import { useSession } from '../state/session';
-import { radius, spacing, usePalette } from '../theme';
-import { Body, Button, Card, ErrorCard, Small, Title } from './ui';
+import { spacing } from '../theme';
+import { Body, Button, Card, ErrorCard, Small, TextField, Title } from './ui';
 
 /**
  * Cuenta de producción (fase 13): cerrar sesión y eliminar la cuenta. Eliminar revoca los permisos concedidos a los
@@ -13,7 +13,6 @@ import { Body, Button, Card, ErrorCard, Small, Title } from './ui';
  */
 export function AccountCard({ me }: { me: MeDto }) {
   const { t } = useTranslation();
-  const c = usePalette();
   const clear = useSession((s) => s.clear);
   const [confirming, setConfirming] = useState(false);
   const [typed, setTyped] = useState('');
@@ -47,15 +46,7 @@ export function AccountCard({ me }: { me: MeDto }) {
       {confirming ? (
         <View style={{ gap: spacing.sm }}>
           <Body>{t('account.deleteConfirm')}</Body>
-          <TextInput
-            value={typed}
-            onChangeText={setTyped}
-            autoCapitalize="characters"
-            accessibilityLabel={t('account.deleteType')}
-            placeholder="ELIMINAR"
-            placeholderTextColor={c.textMuted}
-            style={{ color: c.text, borderWidth: 1, borderColor: c.danger, borderRadius: radius.sm, padding: spacing.md }}
-          />
+          <TextField label={t('account.deleteType')} value={typed} onChangeText={setTyped} autoCapitalize="characters" placeholder="ELIMINAR" />
           <Button label={t('account.deleteFinal')} variant="danger" onPress={() => void remove()} disabled={typed.trim() !== 'ELIMINAR'} loading={busy} />
           <Small>{t('account.deleteNote')}</Small>
         </View>

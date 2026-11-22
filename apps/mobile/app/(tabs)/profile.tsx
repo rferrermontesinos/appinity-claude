@@ -10,6 +10,7 @@ import { CreditsCard } from '../../src/components/CreditsCard';
 import { DataBanner } from '../../src/components/DataBanner';
 import { Diagnostics } from '../../src/components/Diagnostics';
 import { AccountCard } from '../../src/components/AccountCard';
+import { TastesCard } from '../../src/components/TastesCard';
 import { PremiumCard } from '../../src/components/PremiumCard';
 import { SourcesCard } from '../../src/components/SourcesCard';
 import {
@@ -19,7 +20,6 @@ import {
   Card,
   ErrorCard,
   Loading,
-  PendingNotice,
   Row,
   Screen,
   Small,
@@ -218,14 +218,11 @@ export default function ProfileScreen() {
               </>
             ) : null}
           </Card>
+          <TastesCard />
           <AccountCard me={me.data} />
           <SourcesCard />
           <PremiumCard />
           <SettingsCard settings={me.data.settings} />
-          <Card>
-            <Title style={{ fontSize: 16 }}>{t('profile.subscription')}</Title>
-            <PendingNotice phase="12" text={t('profile.subscriptionPending')} />
-          </Card>
         </>
       ) : null}
       <CreditsCard />
