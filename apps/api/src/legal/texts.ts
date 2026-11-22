@@ -175,8 +175,8 @@ o las cláusulas contractuales tipo de la Comisión Europea.</p>
 <p>Mientras tengas la cuenta. Al desconectar una fuente puedes borrar lo importado de ella (Perfil → Fuentes →
 «Desconectar y borrar lo importado»). Al eliminar la cuenta pedimos a los proveedores conectados que anulen los permisos
 que les diste y lo borramos todo al momento: perfil, gustos, votos, afinidades, amistades, conversaciones (también para la
-otra persona), comentarios y sesiones. Las copias de seguridad tienen acceso restringido y rotan: lo borrado desaparece también de
-ellas en un máximo de 14 días.</p>
+otra persona), comentarios y sesiones. Las copias de seguridad están cifradas, tienen acceso restringido y rotan: lo borrado
+desaparece también de ellas en un máximo de 14 días.</p>
 
 <h2>8. Tus derechos</h2>
 <p>Puedes acceder a tus datos, rectificarlos, borrarlos, limitar u oponerte a su tratamiento, pedir una copia en un
@@ -261,8 +261,8 @@ sesiones y tokens de notificaciones. Antes pedimos a cada proveedor conectado qu
 diste a APPINITY.</p>
 
 <h2>Qué se conserva y cuánto tiempo</h2>
-<p>Nada en la base de datos. Las copias de seguridad, de acceso restringido, rotan: lo borrado desaparece también de ellas
-en un máximo de 14 días.</p>
+<p>Nada en la base de datos. Las copias de seguridad, cifradas y de acceso restringido, rotan: lo borrado desaparece también
+de ellas en un máximo de 14 días.</p>
 
 <h2>Borrar solo una parte</h2>
 <p>Sin eliminar la cuenta, puedes borrar lo importado de una fuente en <strong>Perfil → Fuentes → «Desconectar y borrar lo

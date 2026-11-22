@@ -30,6 +30,9 @@ function main() {
   // Sesiones de producción (fase 13): necesario para «Continuar con Google». Se genera una vez y no se muestra.
   if (!current.get('AUTH_SECRET')) env = setValue(env, 'AUTH_SECRET', randomBytes(32).toString('base64url'));
   if (!current.get('CREDENTIALS_ENCRYPTION_KEY')) env = setValue(env, 'CREDENTIALS_ENCRYPTION_KEY', randomBytes(32).toString('base64'));
+  // Copias de seguridad cifradas (fase B9). Hay que guardarla también fuera del equipo: sin ella no se restauran.
+  const newBackupKey = !current.get('BACKUP_ENCRYPTION_KEY');
+  if (newBackupKey) env = setValue(env, 'BACKUP_ENCRYPTION_KEY', randomBytes(32).toString('base64'));
   writeFileSync(envPath, env, 'utf8');
 
   const candidates = lanCandidates();
@@ -44,6 +47,10 @@ function main() {
   }
 
   console.log(created ? '✔ .env creado con secretos aleatorios' : '✔ .env existente conservado (solo se completan vacíos)');
+  if (newBackupKey) {
+    console.log('⚠ Nueva clave de las copias de seguridad (BACKUP_ENCRYPTION_KEY en .env): guárdala también en tu gestor de contraseñas.');
+    console.log('  Si se pierde este equipo y no la tienes, las copias no se pueden restaurar.');
+  }
   console.log('Interfaces IPv4 privadas detectadas:');
   for (const c of candidates) console.log(`  ${c.address.padEnd(16)} ${c.name}${c.virtual ? '  (virtual, el teléfono no suele alcanzarla)' : ''}`);
   const finalUrl = parseEnv(existsSync(mobileEnvPath) ? readFileSync(mobileEnvPath, 'utf8') : '').get('EXPO_PUBLIC_API_URL');
