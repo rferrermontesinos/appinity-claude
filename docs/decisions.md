@@ -92,3 +92,116 @@ dentro de People; los ajustes, dentro de Profile, como propone la especificació
   funciona sin configuración si el teléfono carga la app desde la IP del PC.
 - Expo Go basta: no se usan módulos nativos fuera de Expo Go. Si en el futuro hace falta un development build,
   habrá que permitir tráfico HTTP en claro hacia la LAN (Android) y explicarlo.
+
+## Fase 1 · 2026-10-08
+
+### Ampliaciones compatibles de los contratos de la especificación
+
+| Contrato | Ampliación | Motivo |
+|---|---|---|
+| `NormalizedObservation.externalItem` | `attributes?: { releaseYear, creators, location }` | Resolver por atributos exactos sin fusionar títulos parecidos |
+| `SourceAuthentication` | `'fixture'` | Las fuentes simuladas no simulan OAuth ni otro mecanismo real |
+| `ProfileSourceManifest` | `availability` (`fixture`/`planned`/`available`), `simulated`, `description` | Distinguir en UI y API lo simulado, lo previsto y lo disponible |
+| `ProfileSourceAdapter` | `snapshotObservationKinds?` | Saber qué evidencias forman una instantánea completa (biblioteca, escuchas) |
+| `SyncBatch` | `hasMore`, `stats?` | Paginación explícita y calibración por usuario (p95) calculada sobre la instantánea |
+| `CatalogProvider` | Devuelve `ProviderCatalogItem` (imagen opcional, IDs con espacio de nombres, `parentId`) | §6 permite resolver sin imagen; el fallback se aplica al publicar el DTO |
+| Validación runtime adicional | `consumedConfidence ≤ knownConfidence`; `preferenceConfidence > 0` (sin confianza, NULL); `occurredAt` y `timestampPrecision` juntos | Coherencia del modelo; se valida con Zod y con constraints SQL |
+
+### Separación demo / real
+
+- Columna `dataset` (`demo` | `live`) en `users`, `catalog_items` y `catalog_external_ids`. La unicidad de IDs
+  externos es por dataset: una importación real nunca se resuelve contra un objeto de la demo aunque comparta IMDb o
+  Steam ID (probado).
+- Las fuentes fixture solo se registran con `DEMO_MODE` y solo pueden conectarlas usuarios `demo`. Las reales solo
+  podrán conectarlas usuarios `live`.
+
+### Catálogo de la demo: títulos reales con imágenes libres
+
+- Decisión del usuario (2026-10-08): títulos reales con imágenes de licencia libre, en lugar de títulos ficticios.
+- Instantánea **congelada** (`packages/catalog/data/wikidata-snapshot.json`, recuperada el 2026-10-08) generada por
+  `scripts/fixtures/build-catalog-snapshot.mjs`. El seed no necesita red. Regenerarla es una tarea manual
+  (`pnpm fixtures:catalog`) y cambia la demo.
+- Imagen: la propiedad de Wikidata más representativa (cartel P3383 en películas, logotipo P154 en series y podcasts,
+  P18 en el resto), solo de Commons y con licencia libre reconocida (dominio público, CC0, CC BY/BY-SA, GFDL, GPL).
+  Se descartan a mano las imágenes que no representan el objeto (foto de un acto, stand de feria, retrato del
+  narrador, logotipo de otra edición): esos objetos usan el fallback.
+- Las fechas conservan la precisión real de Wikidata (día, mes o año); no se inventan días.
+- Las imágenes se cachean una vez en el almacenamiento propio, identificando el User-Agent y limitando a 4/s. Algunas
+  miniaturas PNG de 960 px pesan más de 1 MB. **Pendiente**: generar derivados más ligeros para las tarjetas.
+
+### Resolución de entidades (propuesta)
+
+| Método | Confianza documentada |
+|---|---|
+| ID canónico exacto (Wikidata, IMDb, MusicBrainz, Open Library obra, ISBN-13, Freebase) | 1.00 |
+| ID de proveedor (TMDb con tipo, Steam app, Apple Podcasts, ID propio de la fuente) | 0.98 |
+| Atributos exactos: título normalizado + categoría + tipo + año (o ubicación a ≤150 m) + autor compatible, candidato único | 0.90 |
+| Creación desde el candidato | — (objeto nuevo) |
+
+Un título parecido nunca basta (probado con «Casablanca (remastered)»). El ISBN identifica una edición: la evidencia
+se atribuye a la obra (`parent_item_id`).
+
+### Consolidación v1 (`consolidation-v1`, propuesta)
+
+- Known y Consumed: **máximo** de las evidencias, nunca suma. Tres fuentes no inflan la confianza.
+- Preference: gana el nivel de mayor prioridad presente (valoración explícita > like explícito > conducta fuerte >
+  asistencia > conducta débil). Dentro del nivel se toma la evidencia más reciente de cada fuente (por fecha de
+  actividad; sin fecha cuenta como la más antigua) y se combinan las fuentes por media ponderada por confianza. La
+  confianza resultante es la máxima. Sin preferencia, NULL.
+- Conflicto: dentro del nivel ganador, fuentes con signo opuesto (|valor| ≥ 0,2) o con diferencia ≥ 1.
+- Se anotan las evidencias de menor prioridad descartadas y las valoraciones sustituidas dentro de una misma fuente.
+- `first_seen_at` y `last_seen_at` son fechas de **actividad** (NULL si no hay ninguna), no de sincronización.
+- **Nota de calibración (fase 4):** una canción favorita (like explícito +0,6 agregado al artista) prevalece sobre
+  muchas escuchas (conducta fuerte); por eso Rosalía queda en +0,6 aunque las escuchas den +1. Es coherente con la
+  prioridad de la especificación, pero hay que revisarlo con datos reales de Last.fm.
+
+### Normalización y parámetros de los mappers fixture (propuestas sin calibrar)
+
+| Señal | Regla |
+|---|---|
+| Valoración 1–10 | `(r − 5,5) / 4,5`, que coincide con la normalización lineal sobre la escala real |
+| Estrellas 1–5 | Lineal: 1 → −1, 3 → 0, 5 → +1 |
+| Estrellas 0,5–5 | Lineal sobre la escala real: 0,5 → −1, 5 → +1 (no se aplica la de 1–10) |
+| Valoración explícita | Confianza 1,0 |
+| Pulgar arriba/abajo | ±0,8, confianza 0,9; conocido 1 y consumido 0 (un like no prueba consumo) |
+| Visita inferida con evidencia suficiente | +1 por regla de producto, base «attendance», confianza 0,6 |
+| Asistencia confirmada | +1, base «attendance», confianza 0,7 |
+| Evento en calendario | Conocido 0,8, consumido 0, preferencia NULL |
+| Juego con 0 min | Conocido 1, consumido 0, preferencia NULL |
+| Juego con menos de 2 h | Consumido 1, preferencia NULL |
+| Juego con 2 h o más | `min(1, log1p(h) / log1p(p95 del usuario))`, protegido si p95 = 0; confianza 0,6 |
+| Menos de 3 escuchas de un artista | Consumido, preferencia NULL |
+| 3 escuchas o más | `min(1, log1p(n) / log1p(p95 del usuario))`, confianza 0,6 |
+| Canción favorita | Agregada al artista: +0,6 like explícito, confianza 0,7, con la canción y el alcance en metadatos |
+| Episodios de podcast | Agregados por programa; con 3 episodios o más, preferencia logarítmica con confianza 0,5 |
+| Suscripción a un programa | Conocido 1, consumido 0 (seguir no prueba escuchar) |
+
+Con bibliotecas pequeñas, el p95 del usuario coincide casi con su máximo, así que el juego o artista principal llega a
++1. Es el comportamiento esperado de la calibración dentro de cada usuario, pendiente de validar con datos reales.
+
+### Sync e idempotencia
+
+- Clave idempotente `(conexión, sourceRecordId, observationKind)`. La huella de contenido (que excluye el método de
+  resolución) distingue «sin cambios» de «actualizado».
+- Las fuentes de eventos paginan con un cursor (desplazamiento) que solo avanza tras un sync correcto. Con errores
+  parciales el cursor avanza; los registros inválidos se reintentan con «Resincronizar todo».
+- Instantáneas (biblioteca de juegos, escuchas): en un sync completo **sin errores** se borra la evidencia de esos
+  tipos que ya no aparece. Con errores parciales no se borra nada, por prudencia.
+- Bloqueo por conexión con `pg_try_advisory_lock`. Si otro sync está en curso, la ejecución se cancela.
+- Trabajos BullMQ: 3 intentos con backoff exponencial (5 s). El ID del trabajo de sync es el de la ejecución. Las
+  imágenes se deduplican mientras están pendientes.
+
+### Verificación web de desarrollo
+
+Se añadieron `react-native-web` y `react-dom` (versiones del SDK 57) y la plataforma `web` solo para verificar
+pantallas en el navegador durante el desarrollo, con CORS limitado a `localhost` fuera de producción. **No sustituye
+la prueba en el teléfono** ni es un objetivo del producto. Esa verificación destapó un fallo que también afectaba al
+móvil y que quedó corregido: la app cerraba sesión al arrancar porque una consulta sin token recibía 401.
+
+### Expo Go
+
+- SDK 57 es el estable (SDK 58 está en beta desde el 15-09-2026). Expo Go 57.0.9 en Android e iOS.
+- En iPhone, Expo Go exige iniciar sesión con la misma cuenta de Expo en el teléfono y en la CLI (desde el
+  03-09-2026); en Android no.
+- El emulador Android de este PC tiene Expo Go 55.0.7 (probablemente lo usa otra implementación). No se actualizó
+  para no alterarla, así que la app no se probó en el emulador.

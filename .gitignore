@@ -32,3 +32,6 @@ Thumbs.db
 *.log
 .vscode/
 .idea/
+
+# Configuración local de herramientas
+.claude/

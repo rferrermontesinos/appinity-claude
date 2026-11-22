@@ -1,0 +1,42 @@
+{
+  "source": "fixture_screen",
+  "note": "Actividad SIMULADA. Los títulos e IDs de TMDb/IMDb son reales (instantánea de Wikidata); las valoraciones y fechas son inventadas para la demo.",
+  "users": [
+    {
+      "userId": "00000000-0000-4000-a000-000000000001",
+      "handle": "demo_laura",
+      "records": [
+        { "id": "scr-l-01", "type": "rating", "media": { "kind": "movie", "tmdbId": 289, "imdbId": "tt0034583", "title": "Casablanca", "year": 1942 }, "rating": 9, "at": "2026-03-14T21:40:00Z" },
+        { "id": "scr-l-02", "type": "rating", "media": { "kind": "movie", "tmdbId": 539, "imdbId": "tt0054215", "title": "Psycho", "year": 1960 }, "rating": 8, "at": "2026-01-10T22:05:00Z" },
+        { "id": "scr-l-03", "type": "watchlist", "media": { "kind": "movie", "tmdbId": 935, "imdbId": "tt0057012", "title": "Dr. Strangelove", "year": 1964 }, "at": null },
+        { "id": "scr-l-04", "type": "watched", "media": { "kind": "movie", "tmdbId": 239, "imdbId": "tt0053291", "title": "Some Like It Hot", "year": 1959 }, "at": "2025-12-01T20:00:00Z" },
+        { "id": "scr-l-05", "type": "rating", "media": { "kind": "movie", "tmdbId": 10331, "imdbId": "tt0063350", "title": "Night of the Living Dead", "year": 1968 }, "rating": 3, "at": "2026-02-02T23:10:00Z" },
+        { "id": "scr-l-06", "type": "rating", "media": { "kind": "movie", "tmdbId": 838240, "imdbId": "tt13429870", "title": "Robot Dreams", "year": 2023 }, "rating": 9, "at": "2026-04-20T19:30:00Z" },
+        { "id": "scr-l-07", "type": "rating", "media": { "kind": "tv", "tmdbId": 1396, "imdbId": "tt0903747", "title": "Breaking Bad", "year": 2008 }, "rating": 10, "at": "2025-06-30T22:00:00Z" },
+        { "id": "scr-l-08", "type": "watchlist", "media": { "kind": "tv", "tmdbId": 93405, "imdbId": "tt10919420", "title": "Squid Game", "year": 2021 }, "at": "2026-05-02T10:00:00Z" },
+        { "id": "scr-l-09", "type": "watched", "media": { "kind": "tv", "tmdbId": 2316, "imdbId": "tt0386676", "title": "The Office", "year": 2005 }, "at": null },
+        { "id": "scr-l-10", "_nota": "Registro inválido a propósito: valoración 11 fuera de la escala 1–10. Debe quedar como error parcial del sync sin detener el resto.", "type": "rating", "media": { "kind": "movie", "tmdbId": 804, "imdbId": "tt0046250", "title": "Roman Holiday", "year": 1953 }, "rating": 11, "at": "2026-07-01T20:00:00Z" }
+      ]
+    },
+    {
+      "userId": "00000000-0000-4000-a000-000000000004",
+      "handle": "demo_jordi",
+      "records": [
+        { "id": "scr-j-01", "type": "rating", "media": { "kind": "movie", "tmdbId": 289, "imdbId": "tt0034583", "title": "Casablanca", "year": 1942 }, "rating": 7, "at": "2026-02-11T21:00:00Z" },
+        { "id": "scr-j-02", "type": "rating", "media": { "kind": "movie", "tmdbId": 539, "imdbId": "tt0054215", "title": "Psycho", "year": 1960 }, "rating": 9, "at": "2026-02-18T22:30:00Z" },
+        { "id": "scr-j-03", "type": "rating", "media": { "kind": "movie", "tmdbId": 133701, "imdbId": "tt2285752", "title": "Tears of Steel", "year": 2012 }, "rating": 6, "at": "2025-09-03T18:00:00Z" }
+      ]
+    },
+    {
+      "userId": "00000000-0000-4000-a000-000000000005",
+      "handle": "demo_nuria",
+      "records": [
+        { "id": "scr-n-01", "type": "rating", "media": { "kind": "tv", "tmdbId": 1396, "imdbId": "tt0903747", "title": "Breaking Bad", "year": 2008 }, "rating": 9, "at": "2025-11-12T22:00:00Z" },
+        { "id": "scr-n-02", "type": "rating", "media": { "kind": "tv", "tmdbId": 1399, "imdbId": "tt0944947", "title": "Game of Thrones", "year": 2011 }, "rating": 6, "at": "2025-08-01T21:00:00Z" },
+        { "id": "scr-n-03", "type": "rating", "media": { "kind": "tv", "tmdbId": 62914, "imdbId": "tt4580372", "title": "Merlí", "year": 2015 }, "rating": 10, "at": "2026-01-25T20:00:00Z" },
+        { "id": "scr-n-04", "type": "rating", "media": { "kind": "tv", "tmdbId": 71446, "imdbId": "tt6468322", "title": "La casa de papel", "year": 2017 }, "rating": 7, "at": "2025-04-09T21:30:00Z" },
+        { "id": "scr-n-05", "type": "watched", "media": { "kind": "tv", "tmdbId": 66732, "imdbId": "tt4574334", "title": "Stranger Things", "year": 2016 }, "at": "2026-03-30T22:00:00Z" }
+      ]
+    }
+  ]
+}

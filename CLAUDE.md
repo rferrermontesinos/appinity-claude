@@ -38,3 +38,7 @@ y detener procesos solo si su línea de comandos contiene `APPINITY CLAUDE`.
 - `pnpm lint` · `pnpm typecheck` · `pnpm test` (requiere servicios; usa la BD `appinity_claude_test`)
 - Tras cambiar `packages/database/src/schema`: `pnpm db:generate` y revisar el SQL generado.
 - Los tests de la API importan `apps/api/dist` (ejecutar `pnpm build` antes; `pnpm test` ya lo hace).
+- `pnpm --filter @appinity/mobile web` (puerto 8092): vista web solo para verificar pantallas; no sustituye al teléfono.
+- `pnpm fixtures:catalog`: regenera la instantánea de Wikidata/Commons (red; cambia la demo, revisar el diff).
+- Expo Go del SDK 57. En iPhone exige iniciar sesión en Expo Go y en la CLI. El emulador Android local tiene Expo Go 55 de
+  otra implementación: no actualizarlo sin permiso.

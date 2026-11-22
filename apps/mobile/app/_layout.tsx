@@ -59,6 +59,9 @@ export default function RootLayout() {
           >
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="dev-login" options={{ headerShown: false, gestureEnabled: false }} />
+            <Stack.Screen name="model" />
+            <Stack.Screen name="category/[code]" />
+            <Stack.Screen name="item/[id]" />
           </Stack>
         </QueryClientProvider>
       </I18nextProvider>

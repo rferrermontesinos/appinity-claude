@@ -1,0 +1,46 @@
+{
+  "source": "fixture_activity",
+  "note": "Actividad SIMULADA. Lugares, eventos y películas reales (instantánea de Wikidata); guardados, reseñas, visitas y asistencias son inventados para la demo.",
+  "users": [
+    {
+      "userId": "00000000-0000-4000-a000-000000000001",
+      "handle": "demo_laura",
+      "records": [
+        { "activityId": "a-l-01", "category": "movies", "entity": { "kgId": "/m/0ft18", "name": "Casablanca" }, "action": "thumbs_up", "at": "2026-03-16T09:12:00Z" },
+        { "activityId": "a-l-02", "category": "food", "entity": { "wikidataId": "Q5876800", "name": "Hofmann", "lat": 41.3972, "lng": 2.153 }, "action": "review", "stars": 5, "at": "2026-02-20T22:15:00Z" },
+        { "activityId": "a-l-03", "category": "food", "entity": { "wikidataId": "Q123764706", "name": "Cal Boter", "lat": 41.402233, "lng": 2.162411 }, "action": "saved", "at": "2026-01-05T12:00:00Z" },
+        { "activityId": "a-l-04", "category": "food", "entity": { "wikidataId": "Q19367995", "name": "Flash Flash", "lat": 41.3966, "lng": 2.15219 }, "action": "visit", "at": "2026-04-11T14:30:00Z" },
+        { "activityId": "a-l-05", "category": "culture", "entity": { "wikidataId": "Q1050032", "name": "Museu Picasso", "lat": 41.385216, "lng": 2.180893 }, "action": "visit", "at": "2025-11-08T11:00:00Z" },
+        { "activityId": "a-l-06", "category": "culture", "entity": { "wikidataId": "Q327940", "name": "Palau de la Música Catalana" }, "action": "calendar_event", "at": "2026-11-20T19:00:00Z" },
+        { "activityId": "a-l-07", "category": "culture", "entity": { "wikidataId": "Q1067140", "name": "MACBA" }, "action": "attended", "at": "2026-05-10T11:00:00Z" },
+        { "activityId": "a-l-08", "_nota": "Valoración negativa posterior a la asistencia: debe prevalecer la valoración explícita.", "category": "culture", "entity": { "wikidataId": "Q1067140", "name": "MACBA" }, "action": "review", "stars": 2, "at": "2026-05-11T09:00:00Z" }
+      ]
+    },
+    {
+      "userId": "00000000-0000-4000-a000-000000000003",
+      "handle": "demo_marta",
+      "records": [
+        { "activityId": "a-m-01", "category": "food", "entity": { "wikidataId": "Q14955166", "name": "Lasarte" }, "action": "review", "stars": 5, "at": "2026-03-02T23:00:00Z" },
+        { "activityId": "a-m-02", "category": "food", "entity": { "wikidataId": "Q5120180", "name": "Cinc Sentits" }, "action": "review", "stars": 4, "at": "2025-12-12T22:40:00Z" },
+        { "activityId": "a-m-03", "category": "food", "entity": { "wikidataId": "Q16249980", "name": "ABaC" }, "action": "review", "stars": 3, "at": "2026-01-20T22:10:00Z" },
+        { "activityId": "a-m-04", "category": "food", "entity": { "wikidataId": "Q7924401", "name": "Via Veneto" }, "action": "review", "stars": 2, "at": "2025-10-04T21:50:00Z" },
+        { "activityId": "a-m-05", "category": "food", "entity": { "wikidataId": "Q4727705", "name": "Alkimia" }, "action": "visit", "at": "2026-02-14T21:00:00Z" },
+        { "activityId": "a-m-06", "category": "food", "entity": { "wikidataId": "Q422192", "name": "El Celler de Can Roca" }, "action": "saved", "at": "2026-01-01T10:00:00Z" },
+        { "activityId": "a-m-07", "category": "culture", "entity": { "wikidataId": "Q861252", "name": "MNAC" }, "action": "attended", "at": "2026-03-08T10:30:00Z" },
+        { "activityId": "a-m-08", "category": "culture", "entity": { "wikidataId": "Q861252", "name": "MNAC" }, "action": "review", "stars": 1, "at": "2026-03-09T08:00:00Z" },
+        { "activityId": "a-m-09", "category": "culture", "entity": { "wikidataId": "Q867072", "name": "Fundació Joan Miró" }, "action": "visit", "at": "2026-04-04T12:00:00Z" },
+        { "activityId": "a-m-10", "category": "culture", "entity": { "wikidataId": "Q136385038", "name": "Setmana del Llibre en Català 2025" }, "action": "attended", "at": "2025-09-20T17:00:00Z" },
+        { "activityId": "a-m-11", "category": "culture", "entity": { "wikidataId": "Q137361952", "name": "31 Manga Barcelona" }, "action": "calendar_event", "at": "2025-12-06T10:00:00Z" },
+        { "activityId": "a-m-12", "category": "culture", "entity": { "wikidataId": "Q1143722", "name": "Teatre-Museu Dalí" }, "action": "saved", "at": null },
+        { "activityId": "a-m-13", "category": "culture", "entity": { "wikidataId": "Q141556536", "name": "Viquimarató: Matter Matters" }, "action": "calendar_event", "at": "2026-10-24T10:00:00Z" }
+      ]
+    },
+    {
+      "userId": "00000000-0000-4000-a000-000000000004",
+      "handle": "demo_jordi",
+      "records": [
+        { "activityId": "a-j-01", "category": "food", "entity": { "wikidataId": "Q422192", "name": "El Celler de Can Roca" }, "action": "review", "stars": 5, "at": "2026-05-01T23:00:00Z" }
+      ]
+    }
+  ]
+}

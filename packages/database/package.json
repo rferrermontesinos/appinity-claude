@@ -23,6 +23,6 @@
     "drizzle-kit": "0.31.11"
   },
   "scripts": {
-    "generate": "drizzle-kit generate && node scripts/fix-migrations.mjs"
+    "generate": "node scripts/generate.mjs"
   }
 }

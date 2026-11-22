@@ -21,6 +21,9 @@
     },
     {
       "path": "../../packages/integrations"
+    },
+    {
+      "path": "../../packages/ingestion"
     }
   ]
 }

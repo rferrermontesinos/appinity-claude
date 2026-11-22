@@ -26,10 +26,8 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const { method = 'GET', body, auth = true, timeoutMs = 10_000 } = options;
   const headers: Record<string, string> = { Accept: 'application/json' };
   if (body !== undefined) headers['Content-Type'] = 'application/json';
-  if (auth) {
-    const token = useSession.getState().session?.token;
-    if (token) headers.Authorization = `Bearer ${token}`;
-  }
+  const token = auth ? useSession.getState().session?.token : undefined;
+  if (token) headers.Authorization = `Bearer ${token}`;
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -50,7 +48,8 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const text = await response.text();
   const json = text ? (JSON.parse(text) as unknown) : undefined;
   if (!response.ok) {
-    if (response.status === 401 && auth) void useSession.getState().clear();
+    // Solo se cierra la sesión si se envió un token y la API lo rechaza (caducado o revocado).
+    if (response.status === 401 && token) void useSession.getState().clear();
     const err = json as Partial<ApiErrorDto> | undefined;
     const message = Array.isArray(err?.message) ? err.message.join(', ') : (err?.message ?? response.statusText);
     throw new ApiError(response.status, message, err?.details);

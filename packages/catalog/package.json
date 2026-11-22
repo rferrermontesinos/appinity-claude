@@ -12,6 +12,10 @@
       "default": "./dist/index.js"
     }
   },
-  "dependencies": { "@appinity/database": "workspace:*", "@appinity/shared": "workspace:*" },
+  "dependencies": {
+    "@appinity/database": "workspace:*",
+    "@appinity/shared": "workspace:*",
+    "drizzle-orm": "0.45.3"
+  },
   "devDependencies": {}
 }

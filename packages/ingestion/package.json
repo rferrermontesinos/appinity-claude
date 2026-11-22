@@ -12,6 +12,15 @@
       "default": "./dist/index.js"
     }
   },
-  "dependencies": { "@appinity/algorithms": "workspace:*", "@appinity/catalog": "workspace:*", "@appinity/database": "workspace:*", "@appinity/integrations": "workspace:*", "@appinity/shared": "workspace:*" },
+  "dependencies": {
+    "@appinity/algorithms": "workspace:*",
+    "@appinity/catalog": "workspace:*",
+    "@appinity/database": "workspace:*",
+    "@appinity/integrations": "workspace:*",
+    "@appinity/shared": "workspace:*",
+    "bullmq": "6.3.11",
+    "drizzle-orm": "0.45.3",
+    "ioredis": "6.0.0"
+  },
   "devDependencies": {}
 }
