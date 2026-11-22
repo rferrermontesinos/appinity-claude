@@ -168,8 +168,38 @@ contesta: si un comentario necesita respuesta, escribir al email de la cuenta de
 - `preview`: APK para testers;
 - `production`: AAB para Google Play.
 
-Las URL `CAMBIAR-…` se sustituyen por el dominio real. Hace falta:
-- `eas init` (crea el `projectId`, gratuito);
-- `expo-dev-client` y `expo-notifications` instalados con Metro parado (en Windows la instalación falló con los
-  procesos abiertos);
-- credenciales FCM para el push en Android.
+Las URL `CAMBIAR-…` se sustituyen por el dominio real. Hace falta `eas init` (crea el `projectId`, gratuito) y, para
+el push, lo de la sección siguiente.
+
+## Notificaciones push (fase B6)
+
+El servidor envía el resumen (fase 12C) con el servicio de Expo. Desde B6, la app:
+- crea el canal de Android «Resumen de APPINITY»;
+- pide el permiso una sola vez, tras el alta, si la persona no ha desactivado las notificaciones;
+- registra el teléfono en cada arranque y abre Inicio al tocar la notificación;
+- da de baja el teléfono al cerrar sesión.
+
+En Perfil → Ajustes → Notificaciones, la línea «En este teléfono» dice si llegan y, si no, por qué. Para que lleguen
+de verdad faltan tres cosas del titular, todas gratuitas:
+
+1. **Proyecto de EAS**: cuenta de Expo y `eas init` en `apps/mobile`, o `EAS_PROJECT_ID=<id>` en `apps/mobile/.env`
+   (y en las variables del proyecto en EAS). Sin él, Ajustes dice «Pendiente: … proyecto de EAS».
+2. **Firebase (FCM)**: un proyecto de Firebase con una app Android de paquete `dev.appinity.claude`. Su
+   `google-services.json` va en `apps/mobile/google-services.json`, que Git ignora; en EAS, va en una variable de tipo
+   fichero llamada `GOOGLE_SERVICES_JSON`.
+3. **Clave de FCM V1 en EAS**: en Firebase, Configuración del proyecto → Cuentas de servicio → «Generar nueva clave
+   privada». Se sube con `eas credentials` (Android → Push Notifications: FCM V1). El servicio de Expo la usa para
+   entregar en Android; no va ni en Git ni en el servidor.
+
+Después hace falta un APK nuevo: `pnpm android:build` en el PC (lee `apps/mobile/.env` y el `google-services.json`
+local) o `eas build --profile preview`. **Expo Go no sirve**: en Android no admite push desde el SDK 53.
+
+Para comprobarlo sin esperar al resumen de las 19:00:
+
+```bash
+pnpm push:test --handle <handle>   # una notificación de prueba a los teléfonos activos de esa persona
+```
+
+Tiene que llegar «Prueba de APPINITY», y al tocarla se abre Inicio. En el servidor:
+`docker compose -f docker-compose.prod.yml --env-file .env.production exec worker node workers/sync-worker/dist/cli/push-test.js --handle <handle>`.
+`EXPO_ACCESS_TOKEN` solo hace falta si se activa la seguridad reforzada de push en EAS.

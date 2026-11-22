@@ -22,7 +22,52 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 11 | **Paso 1 implementado** (Google: Play, pedidos y guardados), comprobado automáticamente y en parte con servicios reales; falta un export real | Entrega 2026-10-14 · fase 11 (rama `fase-11-fuentes`). Análisis en [source-candidates.md](source-candidates.md) |
 | 12 | **12C (push, servidor) implementada y comprobada automáticamente**; envío real pendiente de build de desarrollo y FCM · **12B (Premium, servidor) implementada y comprobada automáticamente**; compra en la app pendiente de cuentas y build de desarrollo · **12A (chat) implementada, comprobada automáticamente y verificada en la vista web**; 12B (Premium/RevenueCat) y 12C (push) pendientes | Entrega 2026-10-14 · fase 12A (rama `fase-12a-chat`, basada en `fase-10-people`) |
 | 13 | **Preparada**: auth de producción, alta, eliminación de cuenta y despliegue probados en local; beta real pendiente de dominio, servidor y cuentas ([beta.md](beta.md)) · auditoría de seguridad de la API hecha (2026-10-26) · textos legales en borrador (2026-10-26) | Entrega 2026-10-15 · fase 13 (rama `fase-13-beta`) |
-| Beta (B1–B10) | **En curso** (2026-11-22): B1, B2, B3, B4 y B5 con PR abierta | Plan y estado en [fases-beta.md](fases-beta.md); cada fase en su PR encadenada sobre la PR #26 |
+| Beta (B1–B10) | **En curso** (2026-11-22): B1 a B6 con PR abierta | Plan y estado en [fases-beta.md](fases-beta.md); cada fase en su PR encadenada sobre la PR #26 |
+
+---
+
+## Entrega 2026-11-22 · B6: notificaciones push en la app
+
+Rama `claude/beta-b6-push`, PR contra `claude/beta-b5-feedback` (B5). Detalle en [decisions.md](decisions.md) y puesta
+en marcha en [operations.md](operations.md#notificaciones-push-fase-b6).
+
+### Qué se ha hecho
+
+- App con `expo-notifications` 57.0.22 (la versión del SDK, sin duplicar `expo-constants`):
+  - canal de Android «Resumen de APPINITY» (el `default` que pone el servidor);
+  - permiso una vez tras el alta, si las notificaciones no están desactivadas;
+  - registro del teléfono en cada arranque;
+  - Inicio al tocar la notificación, también con la app cerrada;
+  - baja del teléfono al cerrar sesión o cambiar de usuario de demo.
+- Ajustes → Notificaciones, «En este teléfono»: si llegan, o por qué no (vista web, Expo Go, falta el proyecto de EAS,
+  permiso denegado o error). Ofrece «Activar notificaciones» o «Abrir ajustes del teléfono».
+- En la web, en Expo Go y sin proyecto de EAS, `expo-notifications` no se carga: la app funciona igual que antes.
+- `app.config.ts` toma `EAS_PROJECT_ID` y `GOOGLE_SERVICES_JSON` (o `apps/mobile/google-services.json`, ignorado por
+  Git). Icono de notificación blanco (provisional, sacado del icono adaptativo) y color de acento.
+- Contrato compartido en `@appinity/shared`: canal, pantallas permitidas y esquemas del registro. El servidor y la app
+  usan los mismos.
+- `pnpm push:test --handle h`: notificación de prueba a los teléfonos de esa persona.
+
+### Comprobaciones
+
+- Tests nuevos:
+  - contrato (3): pantallas permitidas, canal y tokens;
+  - API (5): 401, validación, token que no es de Expo (409), registro idempotente, el token pasa a la cuenta que
+    entra y solo su dueña lo da de baja;
+  - notificación de prueba (1).
+- `expo export --platform android`: el bundle de Android compila (Hermes).
+- `expo prebuild` con un `google-services.json` falso: icono y color de notificación en el manifiesto y el plugin de
+  Google Services aplicado. La carpeta generada se borró.
+- Vista web: Ajustes muestra «La vista web no recibe notificaciones».
+- `pnpm push:test` probado sin enviar nada: sin teléfonos, handle que no existe y sin argumentos.
+- `pnpm format:check`, `pnpm lint` y `pnpm typecheck` limpios; `pnpm test`: 54 ficheros y 480 tests OK.
+- **Sin probar en un teléfono**: falta el proyecto de EAS, Firebase y la clave de FCM V1 del titular.
+
+### Pendiente
+
+- Del titular: cuenta de Expo y `eas init`, proyecto de Firebase con `google-services.json` y la clave de FCM V1 en EAS.
+  Después, un APK nuevo y `pnpm push:test`.
+- Siguiente fase: B7 (rareza al día).
 
 ---
 

@@ -1,4 +1,4 @@
-import { SourceError } from '@appinity/shared';
+import { PUSH_CHANNEL_ID, SourceError } from '@appinity/shared';
 import { z } from 'zod';
 
 /**
@@ -55,7 +55,8 @@ export class ExpoPushSender {
   async send(messages: ExpoPushMessage[]): Promise<ExpoTicket[]> {
     const tickets: ExpoTicket[] = [];
     for (let start = 0; start < messages.length; start += BATCH) {
-      const batch = messages.slice(start, start + BATCH).map((m) => ({ ...m, sound: 'default', channelId: 'default' }));
+      // El canal lo crea la app al arrancar (fase B6); si aún no existe, Android usa uno genérico.
+      const batch = messages.slice(start, start + BATCH).map((m) => ({ ...m, sound: 'default', channelId: PUSH_CHANNEL_ID }));
       tickets.push(...(await this.post(batch)));
     }
     return tickets;

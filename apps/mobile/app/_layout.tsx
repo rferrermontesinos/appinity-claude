@@ -11,6 +11,7 @@ import { useMe } from '../src/api/queries';
 import { ErrorCard } from '../src/components/ui';
 import { installGlobalErrorReporting, reportAppError, setCurrentScreen } from '../src/error-reporting';
 import { initI18n } from '../src/i18n';
+import { setupNotifications, syncPush } from '../src/push';
 import { useSession } from '../src/state/session';
 import { BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold, BricolageGrotesque_800ExtraBold, useFonts } from '@expo-google-fonts/bricolage-grotesque';
 import { fonts, usePalette, useThemeMode } from '../src/theme';
@@ -40,7 +41,7 @@ function SessionGate() {
   const pathname = usePathname();
   const router = useRouter();
   const me = useMe();
-  const { i18n: i18next } = useTranslation();
+  const { t, i18n: i18next } = useTranslation();
 
   useEffect(() => {
     void hydrate();
@@ -71,6 +72,34 @@ function SessionGate() {
       if (invite) router.replace(`/invite/${invite}`);
     }
   }, [session, needsOnboarding, segments, router, me.data]);
+
+  // Notificaciones (fase B6): canal de Android y, al tocar una, su pantalla (también con la app cerrada).
+  useEffect(() => {
+    let remove: (() => void) | undefined;
+    let cancelled = false;
+    void setupNotifications({
+      channelName: t('push.channelName'),
+      open: (screen) => {
+        if (screen === 'home') router.navigate('/');
+      },
+    }).then((cleanup) => {
+      if (cancelled) cleanup();
+      else remove = cleanup;
+    });
+    return () => {
+      cancelled = true;
+      remove?.();
+    };
+  }, [router, t]);
+
+  // Con sesión y el alta hecha: registra este teléfono. El permiso se pide una sola vez (el sistema no deja repetirlo)
+  // y solo si la persona no ha apagado las notificaciones; si lo deniega, Ajustes explica cómo activarlas.
+  const userId = me.data?.user.id;
+  const frequency = me.data?.settings.notificationFrequency;
+  useEffect(() => {
+    if (!session || !userId || needsOnboarding || !frequency) return;
+    void syncPush({ ask: frequency !== 'off' });
+  }, [session, userId, needsOnboarding, frequency]);
 
   // El idioma guardado en los ajustes del usuario prevalece sobre el del sistema.
   const locale = me.data?.settings.locale;

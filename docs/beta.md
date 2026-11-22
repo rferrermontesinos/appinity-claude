@@ -24,7 +24,8 @@
      para salir del modo Testing. En Testing el permiso dura 7 días y solo para usuarios de prueba.
 3. **EAS** (`eas init`) y una **build de desarrollo o preview** instalada en Android. Es imprescindible para el push y
    las compras.
-4. **Firebase (FCM V1)** para el push en Android.
+4. **Firebase (FCM V1)** para el push en Android: `google-services.json` y la clave de FCM V1 en EAS
+   ([operations.md](operations.md#notificaciones-push-fase-b6)).
 5. **Opcional**: RevenueCat y las tiendas para Premium; Apple Developer Program para iOS («Iniciar sesión con Apple»
    es obligatorio en iOS si se ofrece Google).
 6. **Textos legales**: condiciones y política de privacidad (el alta ya pide aceptarlas).
@@ -75,7 +76,7 @@ Revisión de todas las rutas de `apps/api` (sin herramientas externas):
 - **Hecho para la beta**: icono, icono adaptativo y pantalla de inicio de Android (provisionales). Las opciones de
   privacidad del alta están apagadas por defecto.
 - **Sigue pendiente**:
-  - cliente de push en la app (`expo-notifications` y el registro del token);
+  - cliente de push en la app (hecho en B6: falta la configuración del titular, ver más abajo);
   - Sentry (preparado en B4: falta el DSN del titular);
   - un canal de feedback dentro de la app (hecho en B5: Perfil → Enviar comentario);
   - los datos del titular en los textos legales (desde B3, variables `LEGAL_*`);
@@ -108,6 +109,15 @@ Revisión de todas las rutas de `apps/api` (sin herramientas externas):
   plataforma. Nada más: ni capturas ni la pantalla que estaban viendo.
 - Cupo de 10 por persona al día. Se leen con `pnpm feedback:list` ([operations.md](operations.md#comentarios-de-la-beta-fase-b5)).
 - Salen en la copia de datos de la persona y se borran con su cuenta; la política de privacidad los nombra.
+
+### Notificaciones push en la app (2026-11-22, fase B6)
+
+- La app crea el canal de Android y pide el permiso una vez tras el alta (si las notificaciones no están desactivadas).
+  También registra el teléfono, abre Inicio al tocar y lo da de baja al cerrar sesión.
+- Ajustes dice si llegan a este teléfono y, si no, por qué: vista web, Expo Go, falta el proyecto de EAS, permiso
+  denegado o error.
+- Falta lo del titular: proyecto de EAS, Firebase y la clave de FCM V1. Después, un APK nuevo y `pnpm push:test`
+  ([operations.md](operations.md#notificaciones-push-fase-b6)).
 
 ## Prueba con amigos y familiares: alta única (2026-10-26)
 

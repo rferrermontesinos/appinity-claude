@@ -6,6 +6,7 @@ import { AccountCard } from '../src/components/AccountCard';
 import { CreditsCard } from '../src/components/CreditsCard';
 import { Diagnostics } from '../src/components/Diagnostics';
 import { PremiumCard } from '../src/components/PremiumCard';
+import { forgetPushToken } from '../src/push';
 import { SettingsCard } from '../src/components/SettingsCard';
 import { Badge, Button, Card, ErrorCard, Loading, Screen, Small, Title } from '../src/components/ui';
 import { useSession } from '../src/state/session';
@@ -38,7 +39,12 @@ export default function SettingsScreen() {
                 <Badge label={`dataset: ${me.data.user.dataset}`} color={c.textMuted} />
               </View>
               <Small>{t('profile.devIdentityHelp')}</Small>
-              <Button label={t('profile.switchUser')} variant="secondary" icon="account-switch" onPress={() => void clear()} />
+              <Button
+                label={t('profile.switchUser')}
+                variant="secondary"
+                icon="account-switch"
+                onPress={() => void forgetPushToken().finally(() => void clear())}
+              />
             </Card>
           ) : null}
         </>

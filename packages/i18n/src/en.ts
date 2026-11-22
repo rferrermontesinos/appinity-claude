@@ -734,8 +734,6 @@ export const en: TranslationResources = {
     notificationsDevices_other: 'Registered devices: {{count}}',
     notificationsLast: 'Last summary: {{date}} ({{status}})',
     notificationsStatus: { sent: 'sent', empty: 'nothing new', no_tokens: 'no device', failed: 'failed' },
-    notificationsExpoGo:
-      'On Android, Expo Go does not support push notifications (since SDK 53): they will arrive with the development build of the app, which will ask for permission when you sign up.',
     privacy: 'Privacy',
     subscription: 'Subscription',
     diagnostics: 'Diagnostics',
@@ -765,6 +763,19 @@ export const en: TranslationResources = {
     sentBody: 'We got it and will read it carefully. If anything else comes up, you can send another one.',
     sendAnother: 'Send another',
     rateLimited: 'You have sent a lot of feedback in a short time. Thank you: please try again later.',
+  },
+  push: {
+    channelName: 'APPINITY digest',
+    thisDevice: 'On this phone',
+    on: 'On: you will get the digest at the frequency you choose.',
+    off: 'Off: you will not get the digest.',
+    blocked: 'Blocked in the phone settings: you will not get the digest.',
+    enable: 'Turn on notifications',
+    openSettings: 'Open phone settings',
+    web: 'The web view does not receive notifications: they go to the phone app.',
+    expoGo: 'Expo Go does not support push notifications on Android (since SDK 53): they arrive with the installed app (APK).',
+    noProject: 'Pending: this version of the app has no EAS project yet, so it cannot receive notifications.',
+    error: 'Could not turn them on: {{message}}',
   },
   diagnostics: {
     title: 'API connection',

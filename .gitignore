@@ -25,6 +25,9 @@ apps/mobile/ios/
 *.p12
 *.key
 *.mobileprovision
+# Firebase (push en Android y iOS): se pasan a la build por variable de entorno o como fichero local, nunca en Git.
+google-services.json
+GoogleService-Info.plist
 
 # Sistema / editores
 .DS_Store

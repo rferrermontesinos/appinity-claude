@@ -12,6 +12,7 @@ import {
   registerPushToken,
   seedDemo,
   sendDueDigests,
+  sendTestPush,
   type PushMessage,
   type PushSender,
   type PushTicket,
@@ -69,6 +70,20 @@ describe('tokens', () => {
     await registerPushToken(database.db, laura.id, TOKEN_LAURA, 'android');
     const rows = await database.db.select().from(pushTokens).where(eq(pushTokens.token, TOKEN_LAURA));
     expect(rows.map((r) => r.userId)).toEqual([laura.id]);
+  });
+
+  it('notificación de prueba (pnpm push:test): a sus teléfonos activos, en su idioma, sin contar como resumen', async () => {
+    const { sender, sent } = fakeSender();
+    const result = await sendTestPush(database.db, sender, laura.id, 'en');
+    expect(result).toMatchObject({ devices: 1, tickets: [expect.objectContaining({ status: 'ok' })] });
+    expect(sent).toEqual([
+      { to: TOKEN_LAURA, title: 'APPINITY test', body: 'If you can see this, notifications work on this phone.', data: { screen: 'home' } },
+    ]);
+    expect(await database.db.select().from(notificationDeliveries).where(eq(notificationDeliveries.userId, laura.id))).toEqual([]);
+    // Sin teléfonos registrados no se envía nada.
+    const empty = fakeSender();
+    expect(await sendTestPush(database.db, empty.sender, alex.id)).toEqual({ devices: 0, tickets: [] });
+    expect(empty.sent).toEqual([]);
   });
 });
 

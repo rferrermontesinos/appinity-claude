@@ -3,13 +3,14 @@
  * de Perfil; ahora están en su propia pantalla, agrupados (2026-10-26).
  */
 import type { NotificationFrequency, NotificationsStatusDto, SettingsDto } from '@appinity/shared';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '../api/client';
 import * as Location from 'expo-location';
-import { useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, Switch, Text, View } from 'react-native';
+import { AppState, Pressable, Switch, Text, View } from 'react-native';
 import { useUpdateSettings, type SettingsPatch } from '../api/queries';
+import { openSystemSettings, syncPush, type PushState } from '../push';
 import { useSession } from '../state/session';
 import { Body, Button, Card, ErrorCard, Small, Title } from './ui';
 import { radius, spacing, usePalette } from '../theme';
@@ -174,8 +175,78 @@ export function SettingsCard({ settings }: { settings: SettingsDto }) {
         ))}
       </ChipRow>
       <Small>{t('profile.notificationsPending')}</Small>
+      <DevicePush />
       <NotificationsStatus />
     </Card>
+  );
+}
+
+function devicePushText(state: PushState, t: (key: string, options?: Record<string, unknown>) => string): string {
+  switch (state.kind) {
+    case 'unsupported':
+      return t(state.reason === 'web' ? 'push.web' : state.reason === 'expo-go' ? 'push.expoGo' : 'push.noProject');
+    case 'off':
+      return t(state.canAsk ? 'push.off' : 'push.blocked');
+    case 'on':
+      return t('push.on');
+    case 'error':
+      return t('push.error', { message: state.message });
+  }
+}
+
+/**
+ * Notificaciones en este teléfono (fase B6): si llegan, por qué no o qué hacer. Con permiso, registra el dispositivo
+ * (idempotente); el permiso solo se pide al pulsar «Activar». Al volver de los ajustes del sistema se vuelve a mirar.
+ */
+function DevicePush() {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [state, setState] = useState<PushState | null>(null);
+  const [asking, setAsking] = useState(false);
+  const apply = useCallback(
+    (next: PushState) => {
+      setState(next);
+      if (next.kind === 'on') void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+    [queryClient],
+  );
+  useEffect(() => {
+    let active = true;
+    const check = () =>
+      void syncPush({ ask: false }).then((next) => {
+        if (active) apply(next);
+      });
+    check();
+    const subscription = AppState.addEventListener('change', (status) => {
+      if (status === 'active') check();
+    });
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, [apply]);
+  const enable = () => {
+    setAsking(true);
+    void syncPush({ ask: true }).then((next) => {
+      apply(next);
+      setAsking(false);
+    });
+  };
+  if (!state) return null;
+  return (
+    <View style={{ gap: spacing.xs }}>
+      <Small style={{ fontWeight: '700' }}>{t('push.thisDevice')}</Small>
+      <Small>{devicePushText(state, t)}</Small>
+      {state.kind === 'off' && state.canAsk ? (
+        <Button label={t('push.enable')} icon="bell-ring-outline" size="small" variant="secondary" loading={asking} onPress={enable} />
+      ) : null}
+      {state.kind === 'off' && !state.canAsk ? (
+        <Button label={t('push.openSettings')} icon="cog-outline" size="small" variant="secondary" onPress={openSystemSettings} />
+      ) : null}
+      {state.kind === 'error' ? (
+        <Button label={t('common.retry')} size="small" variant="secondary" onPress={() => void syncPush({ ask: false }).then(apply)} />
+      ) : null}
+    </View>
   );
 }
 
@@ -197,7 +268,6 @@ function NotificationsStatus() {
           })}
         </Small>
       ) : null}
-      {!status.data.devices ? <Small>{t('profile.notificationsExpoGo')}</Small> : null}
     </>
   );
 }
