@@ -55,6 +55,9 @@ export const en: TranslationResources = {
     banner: 'DEMO · simulated user activity',
     bannerDetail:
       'Users and their activity are simulated (DEMO_MODE). Catalog items and their images are real (Wikidata and Wikimedia Commons).',
+    liveBanner: 'REAL DATA · local development account',
+    liveBannerDetail:
+      'What you see comes from your connected real sources (e.g. Steam). It is stored only in the local database on this PC. The session is a development one, not production.',
   },
   home: {
     title: 'Home',
@@ -155,6 +158,15 @@ export const en: TranslationResources = {
     confirmPurgeTitle: 'Delete imported data?',
     confirmPurge: 'Evidence imported from this source will be deleted and your profile recomputed from the other sources.',
     reconnect: 'Connect again',
+    connectSteam: 'Sign in through Steam',
+    steamHelp:
+      'Steam will open so you can sign in there (APPINITY never sees your password). Only your SteamID is linked; your library is read with the Steam Web API.',
+    unconfigured: 'Not available on this server: {{reason}}',
+    demoOnlyReal: 'Real accounts only. Sign in with a local real account to connect it.',
+    connectedResult: 'Account connected. The first sync is running.',
+    errorResult: 'Could not connect: {{message}}',
+    cancelledResult: 'Connection cancelled.',
+    needsAction: 'Needs your action',
     status: {
       active: 'Connected',
       error: 'With errors',
@@ -243,6 +255,12 @@ export const en: TranslationResources = {
     title: 'Choose a demo user',
     help: 'These users are simulated. The API issues a signed development session; there are no passwords or real accounts.',
     unavailable: 'Development identity is not available on this API.',
+    localTitle: 'Local real account',
+    localHelp:
+      'To test integrations with your own data (e.g. Steam). Create it on the PC with "pnpm user:local", which prints a one-time code. It is still a development identity, not production authentication.',
+    handle: 'User (handle)',
+    code: 'Access code',
+    signIn: 'Sign in with the local account',
   },
   diagnostics: {
     title: 'API connection',

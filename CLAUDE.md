@@ -40,5 +40,8 @@ y detener procesos solo si su línea de comandos contiene `APPINITY CLAUDE`.
 - Los tests de la API importan `apps/api/dist` (ejecutar `pnpm build` antes; `pnpm test` ya lo hace).
 - `pnpm --filter @appinity/mobile web` (puerto 8092): vista web solo para verificar pantallas; no sustituye al teléfono.
 - `pnpm fixtures:catalog`: regenera la instantánea de Wikidata/Commons (red; cambia la demo, revisar el diff).
+- `pnpm user:local --handle h --name "N"`: cuenta local real (dataset live) con código de un solo uso.
+- `pnpm secret:set STEAM_WEB_API_KEY`: guarda la clave de Steam en .env sin mostrarla (el usuario, en su terminal).
+- Si el usuario tiene `pnpm api`/`pnpm worker` en marcha, no detenerlos: pedirle que los reinicie tras un build.
 - Expo Go del SDK 57. En iPhone exige iniciar sesión en Expo Go y en la CLI. El emulador Android local tiene Expo Go 55 de
   otra implementación: no actualizarlo sin permiso.

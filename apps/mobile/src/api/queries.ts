@@ -1,5 +1,6 @@
 import type {
   CatalogItemDto,
+  ConnectStartDto,
   Category,
   ConnectionDto,
   DevSessionDto,
@@ -52,8 +53,8 @@ export function useDevLogin() {
   const setSession = useSession((s) => s.setSession);
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (handle: string) =>
-      apiRequest<DevSessionDto>('/v1/dev/session', { method: 'POST', body: { handle }, auth: false }),
+    mutationFn: ({ handle, code }: { handle: string; code?: string }) =>
+      apiRequest<DevSessionDto>('/v1/dev/session', { method: 'POST', body: code ? { handle, code } : { handle }, auth: false }),
     onSuccess: async (data) => {
       await setSession({ token: data.token, expiresAt: data.expiresAt, handle: data.me.user.handle });
       queryClient.clear();
@@ -73,7 +74,7 @@ export function useUpdateSettings() {
 
 // ---- Fase 1: fuentes, conexiones, catálogo y perfiles propios ----
 
-export type SourceView = SourceDto & { plannedPhase?: string };
+export type SourceView = SourceDto;
 export type ProfileView = ItemProfileDto & { notes: ConsolidationNotes };
 export type ProfileDetailView = ItemProfileDetailDto & { notes: ConsolidationNotes | null };
 
@@ -133,8 +134,8 @@ function useInvalidateUserData() {
 export function useConnect() {
   const invalidate = useInvalidateUserData();
   return useMutation({
-    mutationFn: (sourceKey: string) =>
-      apiRequest<{ connection: ConnectionDto; run: SyncRunDto }>('/v1/me/connections', { method: 'POST', body: { sourceKey } }),
+    mutationFn: ({ sourceKey, returnUrl }: { sourceKey: string; returnUrl?: string }) =>
+      apiRequest<ConnectStartDto>('/v1/me/connections', { method: 'POST', body: returnUrl ? { sourceKey, returnUrl } : { sourceKey } }),
     onSuccess: invalidate,
   });
 }

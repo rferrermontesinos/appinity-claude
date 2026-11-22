@@ -1,12 +1,18 @@
 import type { ConnectionDto, SyncRunDto } from '@appinity/shared';
 import { useQueryClient } from '@tanstack/react-query';
+import { Image } from 'expo-image';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import type { TFunction } from 'i18next';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, View } from 'react-native';
-import { useConnect, useConnections, useDisconnect, useRuns, useSources, useSync, type SourceView } from '../api/queries';
+import { Alert, Pressable, View } from 'react-native';
+import { useConnect, useConnections, useDisconnect, useMe, useRuns, useSources, useSync, type SourceView } from '../api/queries';
 import { radius, spacing, usePalette } from '../theme';
 import { Badge, Body, Button, Card, ErrorCard, Loading, Small, Title } from './ui';
+
+/** Botón oficial «Sign in through Steam» (Steam pide usar sus botones para enlazar a su inicio de sesión). */
+const STEAM_SIGN_IN_BUTTON = 'https://community.fastly.steamstatic.com/public/images/signinthroughsteam/sits_01.png';
 
 function sourceName(t: TFunction, key: string, fallback: string): string {
   const translated = t(`sources.names.${key}`, { defaultValue: '' });
@@ -38,58 +44,135 @@ function RunSummary({ run }: { run: SyncRunDto }) {
   );
 }
 
-function ConnectionRow({ source, connection }: { source: SourceView; connection: ConnectionDto | undefined }) {
+function ConnectionRow({
+  source,
+  connection,
+  isDemoUser,
+}: {
+  source: SourceView;
+  connection: ConnectionDto | undefined;
+  isDemoUser: boolean;
+}) {
   const { t, i18n } = useTranslation();
   const c = usePalette();
   const queryClient = useQueryClient();
   const connect = useConnect();
   const sync = useSync();
   const disconnect = useDisconnect();
+  const [notice, setNotice] = useState<{ text: string; tone: 'ok' | 'error' } | null>(null);
   const active = connection && connection.status !== 'revoked';
   const runs = useRuns(connection?.id);
   const latest = connection ? runs.data?.[0] : undefined;
 
-  // Cuando el worker termina un sync, refresca conexiones y perfiles.
+  // Cuando el worker termina un sync, refresca conexiones, perfiles y catálogo.
   const previous = useRef<string | undefined>(undefined);
   useEffect(() => {
     const status = latest?.status;
     const wasPending = previous.current === 'queued' || previous.current === 'running';
     if (wasPending && status && status !== 'queued' && status !== 'running') {
-      void queryClient.invalidateQueries({ queryKey: ['connections'] });
-      void queryClient.invalidateQueries({ queryKey: ['profiles'] });
-      void queryClient.invalidateQueries({ queryKey: ['profile'] });
+      for (const key of ['connections', 'profiles', 'profile', 'catalog']) void queryClient.invalidateQueries({ queryKey: [key] });
     }
     previous.current = status;
   }, [latest?.status, queryClient]);
 
-  const busy = connect.isPending || sync.isPending || disconnect.isPending || latest?.status === 'queued' || latest?.status === 'running';
+  /**
+   * Conectar: las fuentes simuladas responden al momento; las reales (Steam) abren el inicio de sesión del
+   * proveedor en un navegador de autenticación y vuelven a la app con el resultado.
+   */
+  async function startConnect() {
+    setNotice(null);
+    const returnUrl = Linking.createURL('profile');
+    const result = await connect.mutateAsync({ sourceKey: source.key, returnUrl }).catch(() => null);
+    if (result?.kind === 'redirect') {
+      const auth = await WebBrowser.openAuthSessionAsync(result.authorizationUrl, returnUrl);
+      if (auth.type === 'success') {
+        const params = Linking.parse(auth.url).queryParams ?? {};
+        if (params.result === 'connected') setNotice({ text: t('sources.connectedResult'), tone: 'ok' });
+        else setNotice({ text: t('sources.errorResult', { message: String(params.message ?? '') }), tone: 'error' });
+      } else {
+        setNotice({ text: t('sources.cancelledResult'), tone: 'error' });
+      }
+    }
+    for (const key of ['connections', 'profiles', 'profile', 'catalog']) await queryClient.invalidateQueries({ queryKey: [key] });
+  }
+
+  const busy =
+    connect.isPending || sync.isPending || disconnect.isPending || latest?.status === 'queued' || latest?.status === 'running';
   const lastSync = connection?.lastSyncAt ? new Date(connection.lastSyncAt).toLocaleString(i18n.language) : t('sources.never');
+  const realForDemo = !source.simulated && isDemoUser;
 
   return (
-    <View style={{ borderWidth: 1, borderColor: c.border, borderRadius: radius.sm, padding: spacing.md, gap: spacing.sm }}>
+    <View
+      style={{
+        borderWidth: 1,
+        borderColor: connection?.status === 'error' ? c.danger : c.border,
+        borderRadius: radius.sm,
+        padding: spacing.md,
+        gap: spacing.sm,
+      }}
+    >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm }}>
         <Body style={{ fontWeight: '700', flex: 1 }}>{sourceName(t, source.key, source.name)}</Body>
-        {source.simulated ? <Badge label={t('common.simulated')} color={c.demo} /> : null}
+        {source.simulated ? <Badge label={t('common.simulated')} color={c.demo} /> : <Badge label={t('common.realData')} color={c.ok} />}
       </View>
       {source.availability === 'planned' ? (
-        <Small>{t('sources.plannedPhase', { phase: source.plannedPhase ?? '—' })} · {source.description}</Small>
+        <Small>
+          {t('sources.plannedPhase', { phase: source.plannedPhase ?? '—' })} · {source.description}
+        </Small>
       ) : (
         <>
           <Small>{source.description}</Small>
+          {source.availability === 'unconfigured' ? (
+            <Small style={{ color: c.warn }}>{t('sources.unconfigured', { reason: source.unavailableReason ?? '' })}</Small>
+          ) : null}
+          {realForDemo && source.availability !== 'unconfigured' ? (
+            <Small style={{ color: c.warn }}>{t('sources.demoOnlyReal')}</Small>
+          ) : null}
           {connection ? (
             <Small>
-              {t(`sources.status.${connection.status}`)} · {t('sources.lastSync', { value: lastSync })} ·{' '}
-              {t('sources.observations', { count: connection.observationCount })}
+              {t(`sources.status.${connection.status}`)}
+              {connection.externalAccountHint ? ` · ${connection.externalAccountHint}` : ''} ·{' '}
+              {t('sources.lastSync', { value: lastSync })} · {t('sources.observations', { count: connection.observationCount })}
             </Small>
           ) : null}
+          {connection?.status === 'error' ? (
+            <View style={{ gap: 2 }}>
+              <Badge label={t('sources.needsAction')} color={c.danger} />
+              {connection.lastError ? <Small style={{ color: c.danger }}>{connection.lastError}</Small> : null}
+            </View>
+          ) : null}
           {latest ? <RunSummary run={latest} /> : null}
-          {connect.error || sync.error || disconnect.error ? <ErrorCard error={connect.error ?? sync.error ?? disconnect.error} /> : null}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-            {!active && source.connectable ? (
+          {notice ? (
+            <Small style={{ color: notice.tone === 'ok' ? c.ok : c.danger, fontWeight: '700' }}>{notice.text}</Small>
+          ) : null}
+          {connect.error || sync.error || disconnect.error ? (
+            <ErrorCard error={connect.error ?? sync.error ?? disconnect.error} />
+          ) : null}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, alignItems: 'center' }}>
+            {!active && source.connectable && source.key === 'steam' ? (
+              <View style={{ gap: spacing.xs }}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('sources.connectSteam')}
+                  disabled={busy}
+                  onPress={() => void startConnect()}
+                  style={({ pressed }) => ({ opacity: busy ? 0.5 : pressed ? 0.75 : 1 })}
+                >
+                  <Image
+                    source={{ uri: STEAM_SIGN_IN_BUTTON }}
+                    style={{ width: 180, height: 35 }}
+                    contentFit="contain"
+                    accessibilityLabel={t('sources.connectSteam')}
+                  />
+                </Pressable>
+                <Small>{t('sources.steamHelp')}</Small>
+              </View>
+            ) : null}
+            {!active && source.connectable && source.key !== 'steam' ? (
               <Button
                 label={connection ? t('sources.reconnect') : t('sources.connect')}
                 icon="link-variant"
-                onPress={() => connect.mutate(source.key)}
+                onPress={() => void startConnect()}
                 loading={connect.isPending}
               />
             ) : null}
@@ -100,15 +183,19 @@ function ConnectionRow({ source, connection }: { source: SourceView; connection:
                   icon="sync"
                   variant="secondary"
                   disabled={busy}
-                  onPress={() => sync.mutate({ connectionId: connection.id, mode: 'incremental' })}
+                  onPress={() =>
+                    sync.mutate({ connectionId: connection.id, mode: source.capabilities.incrementalSync ? 'incremental' : 'full' })
+                  }
                 />
-                <Button
-                  label={t('sources.fullSync')}
-                  icon="database-sync"
-                  variant="secondary"
-                  disabled={busy}
-                  onPress={() => sync.mutate({ connectionId: connection.id, mode: 'full' })}
-                />
+                {source.capabilities.incrementalSync ? (
+                  <Button
+                    label={t('sources.fullSync')}
+                    icon="database-sync"
+                    variant="secondary"
+                    disabled={busy}
+                    onPress={() => sync.mutate({ connectionId: connection.id, mode: 'full' })}
+                  />
+                ) : null}
                 <Button
                   label={t('sources.disconnect')}
                   icon="link-variant-off"
@@ -143,20 +230,32 @@ function ConnectionRow({ source, connection }: { source: SourceView; connection:
   );
 }
 
-/** Gestión de fuentes: simuladas (conectables en la demo) y reales previstas (no disponibles todavía). */
+/**
+ * Gestión de fuentes: simuladas (solo usuarios de demo), reales disponibles (Steam, solo cuentas reales) y reales
+ * previstas o sin configurar (no conectables, con el motivo).
+ */
 export function SourcesCard() {
   const { t } = useTranslation();
   const sources = useSources();
   const connections = useConnections();
+  const me = useMe();
+  const isDemoUser = me.data?.user.dataset !== 'live';
   return (
     <Card>
       <Title style={{ fontSize: 16 }}>{t('sources.title')}</Title>
       <Small>{t('sources.help')}</Small>
       {sources.isLoading || connections.isLoading ? <Loading /> : null}
       {sources.isError ? <ErrorCard error={sources.error} onRetry={() => void sources.refetch()} /> : null}
-      {sources.data?.map((source) => (
-        <ConnectionRow key={source.key} source={source} connection={connections.data?.find((c) => c.sourceKey === source.key)} />
-      ))}
+      {sources.data
+        ?.filter((source) => !(source.simulated && !isDemoUser))
+        .map((source) => (
+          <ConnectionRow
+            key={source.key}
+            source={source}
+            connection={connections.data?.find((c) => c.sourceKey === source.key)}
+            isDemoUser={isDemoUser}
+          />
+        ))}
     </Card>
   );
 }

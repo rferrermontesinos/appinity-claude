@@ -10,6 +10,7 @@ import { CatalogController } from './catalog/catalog.controller.js';
 import { MediaController } from './catalog/media.controller.js';
 import { DomainErrorsFilter } from './common/domain-errors.filter.js';
 import { APP_ENV, type AppEnv } from './config/env.js';
+import { ConnectCallbackController } from './connections/connect-callback.controller.js';
 import { ConnectionsController } from './connections/connections.controller.js';
 import { ConnectionsService } from './connections/connections.service.js';
 import { HealthController } from './health/health.controller.js';
@@ -41,6 +42,7 @@ export class AppModule {
         MeController,
         SourcesController,
         ConnectionsController,
+        ConnectCallbackController,
         CatalogController,
         MediaController,
         ItemProfilesController,

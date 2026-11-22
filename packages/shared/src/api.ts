@@ -69,7 +69,15 @@ export interface DevSessionDto {
 
 export interface SourceDto extends ProfileSourceManifest {
   connectable: boolean;
+  /** Motivo por el que una fuente real no se puede conectar todavía (p. ej. falta configuración). */
+  unavailableReason?: string;
+  plannedPhase?: string;
 }
+
+/** Resultado de iniciar una conexión: inmediata (fuentes simuladas) o con redirección al proveedor. */
+export type ConnectStartDto =
+  | { kind: 'connected'; connection: ConnectionDto; run: SyncRunDto }
+  | { kind: 'redirect'; authorizationUrl: string; expiresAt: string };
 
 export type SyncRunStatus = 'queued' | 'running' | 'succeeded' | 'partial' | 'failed' | 'cancelled';
 
@@ -84,6 +92,8 @@ export interface ConnectionDto {
   lastSyncStatus: SyncRunStatus | null;
   lastError: string | null;
   observationCount: number;
+  /** Cuenta externa vinculada, abreviada (p. ej. SteamID terminado en …1234). */
+  externalAccountHint: string | null;
 }
 
 export interface SyncRunDto {

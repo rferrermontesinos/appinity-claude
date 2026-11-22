@@ -9,18 +9,19 @@ export class UsersRepository {
 
   async findActiveById(id: string) {
     const [row] = await this.database.db
-      .select({ id: users.id, dataset: users.dataset })
+      .select({ id: users.id, dataset: users.dataset, localLoginCodeHash: users.localLoginCodeHash })
       .from(users)
       .where(and(eq(users.id, id), eq(users.status, 'active')))
       .limit(1);
     return row ?? null;
   }
 
-  async findActiveDemoByHandle(handle: string) {
+  /** Usuario activo por handle, con lo necesario para decidir si admite identidad de desarrollo. */
+  async findActiveByHandle(handle: string) {
     const [row] = await this.database.db
-      .select({ id: users.id })
+      .select({ id: users.id, dataset: users.dataset, localLoginCodeHash: users.localLoginCodeHash })
       .from(users)
-      .where(and(eq(users.handle, handle), eq(users.dataset, 'demo'), eq(users.status, 'active')))
+      .where(and(eq(users.handle, handle), eq(users.status, 'active')))
       .limit(1);
     return row ?? null;
   }

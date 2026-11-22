@@ -128,17 +128,30 @@ export function Badge({ label, color, background }: { label: string; color: stri
   );
 }
 
-/** Aviso permanente de datos simulados (DEMO_MODE). */
-export function DemoBanner({ detailed }: { detailed?: boolean }) {
+/**
+ * Aviso permanente del tipo de datos: simulados (usuarios de demo, DEMO_MODE) o reales (cuenta local con fuentes
+ * reales). `live` lo decide quien conoce el usuario de la sesión.
+ */
+export function DemoBanner({ detailed, live }: { detailed?: boolean; live?: boolean }) {
   const c = usePalette();
   const { t } = useTranslation();
+  const color = live ? c.ok : c.demo;
   return (
     <View
       accessibilityRole="text"
-      style={{ backgroundColor: c.demoBg, borderRadius: radius.sm, padding: spacing.md, gap: 4, borderWidth: 1, borderColor: `${c.demo}55` }}
+      style={{
+        backgroundColor: live ? `${c.ok}18` : c.demoBg,
+        borderRadius: radius.sm,
+        padding: spacing.md,
+        gap: 4,
+        borderWidth: 1,
+        borderColor: `${color}55`,
+      }}
     >
-      <Text style={{ color: c.demo, fontWeight: '800', fontSize: 12, letterSpacing: 0.5 }}>{t('demo.banner')}</Text>
-      {detailed ? <Text style={{ color: c.text, fontSize: 12, lineHeight: 17 }}>{t('demo.bannerDetail')}</Text> : null}
+      <Text style={{ color, fontWeight: '800', fontSize: 12, letterSpacing: 0.5 }}>{t(live ? 'demo.liveBanner' : 'demo.banner')}</Text>
+      {detailed ? (
+        <Text style={{ color: c.text, fontSize: 12, lineHeight: 17 }}>{t(live ? 'demo.liveBannerDetail' : 'demo.bannerDetail')}</Text>
+      ) : null}
     </View>
   );
 }

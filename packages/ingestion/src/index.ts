@@ -7,3 +7,5 @@ export * from './profiles.js';
 export * from './sync-runner.js';
 export * from './connections.js';
 export * from './queues.js';
+export * from './scheduler.js';
+export * from './local-users.js';

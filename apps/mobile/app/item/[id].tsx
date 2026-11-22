@@ -7,7 +7,8 @@ import { Pressable, Text, View } from 'react-native';
 import { useItemProfileDetail } from '../../src/api/queries';
 import { CatalogImage } from '../../src/components/CatalogImage';
 import { Dimensions, formatPreference } from '../../src/components/Dimensions';
-import { Badge, Body, Card, DemoBanner, ErrorCard, Loading, Row, Screen, Small, Title } from '../../src/components/ui';
+import { Badge, Body, Card, ErrorCard, Loading, Row, Screen, Small, Title } from '../../src/components/ui';
+import { DataBanner } from '../../src/components/DataBanner';
 import { radius, spacing, usePalette } from '../../src/theme';
 
 /** Abre enlaces externos solo si son https (validación de enlaces). */
@@ -136,7 +137,7 @@ export default function ItemScreen() {
 
           <Card>
             <Title style={{ fontSize: 15 }}>{t('item.profile')}</Title>
-            <DemoBanner />
+            <DataBanner />
             {detail.data?.profile ? (
               <>
                 <Dimensions {...detail.data.profile} />

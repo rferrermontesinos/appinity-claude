@@ -117,6 +117,7 @@ export class EntityResolver {
     }
 
     await this.attachRefs(this.db, itemId, refs, dataset, candidate.sourceKey, notes);
+    if (method !== 'created_from_source') await this.ensureImageReference(itemId, candidate);
 
     const [row] = await this.db
       .select({ itemType: catalogItems.itemType, parentItemId: catalogItems.parentItemId })
@@ -207,6 +208,29 @@ export class EntityResolver {
     }
   }
 
+  /**
+   * Si el objeto no tiene imagen y la fuente aporta una, se guarda como REFERENCIA (no se copia). Nunca sustituye
+   * una imagen existente.
+   */
+  private async ensureImageReference(itemId: string, candidate: ExternalItemCandidate): Promise<void> {
+    const image = candidate.imageCandidate;
+    if (!image || image.isFallback || !image.url.startsWith('https://')) return;
+    await this.db
+      .insert(catalogImages)
+      .values({
+        catalogItemId: itemId,
+        source: image.source,
+        sourceImageId: image.sourceImageId ?? null,
+        url: image.url,
+        alt: image.alt,
+        width: image.width ?? null,
+        height: image.height ?? null,
+        ...(image.rightsOrPolicyReference ? { licenseUrl: image.rightsOrPolicyReference } : {}),
+        restrictions: 'reference-only',
+      })
+      .onConflictDoNothing();
+  }
+
   private async createFromCandidate(candidate: ExternalItemCandidate, dataset: Dataset): Promise<string> {
     const location = candidate.attributes?.location;
     return this.db.transaction(async (tx) => {
@@ -248,6 +272,9 @@ export class EntityResolver {
           width: image.width ?? null,
           height: image.height ?? null,
           ...(image.attribution ? { author: image.attribution } : {}),
+          ...(image.rightsOrPolicyReference ? { licenseUrl: image.rightsOrPolicyReference } : {}),
+          // Imágenes aportadas por una fuente de perfil: solo referencia, nunca se copian.
+          restrictions: 'reference-only',
         });
       }
       return id;

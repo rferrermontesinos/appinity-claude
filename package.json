@@ -27,11 +27,13 @@
     "db:migrate": "pnpm build && node --env-file-if-exists=.env packages/database/dist/cli/migrate.js",
     "db:seed": "pnpm build && node --env-file-if-exists=.env packages/ingestion/dist/cli/seed-demo.js",
     "db:reset": "pnpm build && node --env-file-if-exists=.env packages/database/dist/cli/reset.js && pnpm db:migrate && pnpm db:seed",
+    "user:local": "pnpm build && node --env-file-if-exists=.env packages/ingestion/dist/cli/create-local-user.js",
     "api": "pnpm build && node --env-file-if-exists=.env apps/api/dist/main.js",
     "worker": "pnpm build && node --env-file-if-exists=.env workers/sync-worker/dist/main.js",
     "dev": "pnpm build && concurrently -k -n build,api,worker -c gray,cyan,magenta \"pnpm build:watch\" \"node --env-file-if-exists=.env --watch apps/api/dist/main.js\" \"node --env-file-if-exists=.env --watch workers/sync-worker/dist/main.js\"",
     "mobile": "pnpm build && pnpm --filter @appinity/mobile start",
-    "fixtures:catalog": "node scripts/fixtures/build-catalog-snapshot.mjs"
+    "fixtures:catalog": "node scripts/fixtures/build-catalog-snapshot.mjs",
+    "secret:set": "node scripts/set-secret.mjs"
   },
   "devDependencies": {
     "@appinity/algorithms": "workspace:*",

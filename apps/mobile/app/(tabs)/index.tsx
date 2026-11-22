@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useItemProfiles, useMe } from '../../src/api/queries';
-import { Body, Button, Card, DemoBanner, PendingNotice, Screen, Small, Title } from '../../src/components/ui';
+import { Body, Button, Card, PendingNotice, Screen, Small, Title } from '../../src/components/ui';
+import { DataBanner } from '../../src/components/DataBanner';
 import { spacing } from '../../src/theme';
 
 /**
@@ -23,7 +24,7 @@ export default function HomeScreen() {
         void profiles.refetch();
       }}
     >
-      <DemoBanner detailed />
+      <DataBanner detailed />
       <Animated.View entering={FadeInDown.duration(350)}>
         <Card>
           <Title>{t('home.learning')}</Title>

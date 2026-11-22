@@ -16,7 +16,8 @@ import { ADAPTER_REGISTRY, DATABASE, ENTITY_RESOLVER, QUEUES, STORAGE } from './
     {
       provide: ADAPTER_REGISTRY,
       inject: [APP_ENV],
-      useFactory: (env: AppEnv) => createAdapterRegistry({ demoMode: env.DEMO_MODE }),
+      useFactory: (env: AppEnv) =>
+        createAdapterRegistry({ demoMode: env.DEMO_MODE, ...(env.STEAM_WEB_API_KEY ? { steam: { apiKey: env.STEAM_WEB_API_KEY } } : {}) }),
     },
     {
       provide: ENTITY_RESOLVER,

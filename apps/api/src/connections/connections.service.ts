@@ -1,8 +1,9 @@
 import { Inject, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { sourceSyncRuns, userConnections, userItemObservations, type DatabaseHandle } from '@appinity/database';
 import {
-  connectSource,
+  completeConnect,
   createSyncRun,
+  startConnect,
   disconnectSource,
   enqueueSync,
   NotFoundError,
@@ -12,9 +13,27 @@ import {
   type SyncTrigger,
 } from '@appinity/ingestion';
 import type { AdapterRegistry } from '@appinity/integrations';
-import type { ConnectionDto, SyncRunDto } from '@appinity/shared';
+import type { ConnectStartDto, ConnectionDto, SyncRunDto } from '@appinity/shared';
+import { randomBytes } from 'node:crypto';
+import type { Redis } from 'ioredis';
+import { APP_ENV, type AppEnv } from '../config/env.js';
 import { and, count, desc, eq, inArray } from 'drizzle-orm';
-import { ADAPTER_REGISTRY, DATABASE, QUEUES } from '../infra/tokens.js';
+import { ADAPTER_REGISTRY, DATABASE, QUEUES, REDIS } from '../infra/tokens.js';
+
+const CONNECT_STATE_TTL_SECONDS = 600;
+
+interface PendingConnect {
+  userId: string;
+  sourceKey: string;
+  redirectUri: string;
+  returnUrl?: string;
+}
+
+/** Pista de la cuenta externa sin exponerla entera (p. ej. «SteamID …4821»). */
+function accountHint(sourceKey: string, ref: string | null): string | null {
+  if (!ref || sourceKey.startsWith('fixture_')) return null;
+  return sourceKey === 'steam' ? `SteamID …${ref.slice(-4)}` : `…${ref.slice(-4)}`;
+}
 
 type RunRow = typeof sourceSyncRuns.$inferSelect;
 
@@ -46,6 +65,8 @@ export class ConnectionsService {
     @Inject(DATABASE) private readonly database: DatabaseHandle,
     @Inject(ADAPTER_REGISTRY) private readonly registry: AdapterRegistry,
     @Inject(QUEUES) private readonly queues: ProducerQueues,
+    @Inject(REDIS) private readonly redis: Redis,
+    @Inject(APP_ENV) private readonly env: AppEnv,
   ) {}
 
   async list(userId: string): Promise<ConnectionDto[]> {
@@ -80,14 +101,64 @@ export class ConnectionsService {
       lastSyncStatus: (r.lastSyncStatus as ConnectionDto['lastSyncStatus']) ?? null,
       lastError: r.lastError,
       observationCount: countBy.get(r.id) ?? 0,
+      externalAccountHint: accountHint(r.sourceKey, r.externalAccountRef),
     }));
   }
 
-  async connect(userId: string, sourceKey: string): Promise<{ connection: ConnectionDto; run: SyncRunDto }> {
-    const connection = await connectSource(this.database.db, this.registry, userId, sourceKey);
-    const run = await this.startSync(userId, connection.id, 'connect', 'full');
-    const dto = (await this.list(userId)).find((c) => c.id === connection.id)!;
-    return { connection: dto, run };
+  /**
+   * Inicia la conexión. Fuentes simuladas: se conectan y encolan su primer sync. Fuentes con OpenID/OAuth: se guarda
+   * un `state` de un solo uso (10 min) y se devuelve la URL del proveedor; la conexión se crea en el callback.
+   */
+  async connect(userId: string, sourceKey: string, baseUrl: string, returnUrl: string | undefined): Promise<ConnectStartDto> {
+    const state = randomBytes(24).toString('base64url');
+    const redirectUri = `${baseUrl}/v1/connect/${sourceKey}/callback?state=${state}`;
+    const result = await startConnect(this.database.db, this.registry, userId, sourceKey, { redirectUri, realm: `${baseUrl}/` });
+    if (result.kind === 'redirect') {
+      const pending: PendingConnect = { userId, sourceKey, redirectUri, ...(returnUrl ? { returnUrl } : {}) };
+      await this.redis.set(this.stateKey(state), JSON.stringify(pending), 'EX', CONNECT_STATE_TTL_SECONDS);
+      return {
+        kind: 'redirect',
+        authorizationUrl: result.url,
+        expiresAt: new Date(Date.now() + CONNECT_STATE_TTL_SECONDS * 1000).toISOString(),
+      };
+    }
+    return this.afterConnected(userId, result.connection.id);
+  }
+
+  private stateKey(state: string): string {
+    return `${this.env.QUEUE_PREFIX}:connect-state:${state}`;
+  }
+
+  private async afterConnected(userId: string, connectionId: string): Promise<ConnectStartDto & { kind: 'connected' }> {
+    const run = await this.startSync(userId, connectionId, 'connect', 'full');
+    const dto = (await this.list(userId)).find((c) => c.id === connectionId)!;
+    return { kind: 'connected', connection: dto, run };
+  }
+
+  /**
+   * Callback del proveedor. El `state` es de un solo uso (GETDEL) y liga la respuesta al usuario que inició el
+   * flujo; el adapter verifica la respuesta (OpenID check_authentication) antes de crear la conexión.
+   */
+  async completeCallback(
+    sourceKey: string,
+    state: string,
+    callbackParams: Record<string, string>,
+  ): Promise<{ returnUrl?: string; result: ConnectStartDto & { kind: 'connected' } }> {
+    const raw = await this.redis.getdel(this.stateKey(state));
+    if (!raw) throw new UnavailableError('La solicitud de conexión ha caducado o ya se usó: vuelve a intentarlo desde la app');
+    const pending = JSON.parse(raw) as PendingConnect;
+    if (pending.sourceKey !== sourceKey) throw new UnavailableError('La respuesta no corresponde a esta fuente');
+    const connection = await completeConnect(this.database.db, this.registry, pending.userId, sourceKey, {
+      redirectUri: pending.redirectUri,
+      callbackParams,
+    });
+    return { ...(pending.returnUrl ? { returnUrl: pending.returnUrl } : {}), result: await this.afterConnected(pending.userId, connection.id) };
+  }
+
+  /** Recupera la URL de vuelta a la app aunque la verificación falle (para mostrar el error en la app). */
+  async peekReturnUrl(state: string): Promise<string | undefined> {
+    const raw = await this.redis.get(this.stateKey(state));
+    return raw ? (JSON.parse(raw) as PendingConnect).returnUrl : undefined;
   }
 
   private async ownConnection(userId: string, connectionId: string) {

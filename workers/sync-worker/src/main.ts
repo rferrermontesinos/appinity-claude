@@ -1,9 +1,16 @@
 import { EntityResolver, LocalDiskStorage, WikidataSnapshotProvider, cacheCatalogImage } from '@appinity/catalog';
 import { createDatabase } from '@appinity/database';
-import { runConnectionSync } from '@appinity/ingestion';
+import { createProducerQueues, enqueueSync, runConnectionSync, scheduleDueSyncs } from '@appinity/ingestion';
 import { createAdapterRegistry } from '@appinity/integrations';
-import { QUEUES, workerHeartbeatKey, type CatalogImageJob, type PingJob, type ProfileSyncJob } from '@appinity/shared';
-import { Worker } from 'bullmq';
+import {
+  QUEUES,
+  isSourceError,
+  workerHeartbeatKey,
+  type CatalogImageJob,
+  type PingJob,
+  type ProfileSyncJob,
+} from '@appinity/shared';
+import { Queue, UnrecoverableError, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { loadWorkerEnv } from './env.js';
 
@@ -12,21 +19,41 @@ const env = loadWorkerEnv();
 const connection = new Redis(env.redisUrl, { maxRetriesPerRequest: null });
 const heartbeatClient = new Redis(env.redisUrl, { maxRetriesPerRequest: 1 });
 const database = createDatabase(env.databaseUrl, { max: 6, applicationName: 'appinity-claude-worker' });
-const registry = createAdapterRegistry({ demoMode: env.demoMode });
+const registry = createAdapterRegistry({
+  demoMode: env.demoMode,
+  ...(env.steamApiKey ? { steam: { apiKey: env.steamApiKey } } : {}),
+});
+const producer = createProducerQueues(env.redisUrl, env.queuePrefix);
 const resolver = new EntityResolver(database.db, env.demoMode ? [new WikidataSnapshotProvider()] : []);
 const storage = new LocalDiskStorage(env.storageDir);
 
 const workers: Worker[] = [
-  new Worker<PingJob, { pong: string }>(
+  new Worker<PingJob, unknown>(
     QUEUES.system,
-    async (job) => ({ pong: `${job.data.requestedAt} → ${new Date().toISOString()}` }),
+    async (job) => {
+      // Programador: encola syncs periódicos de fuentes reales (sin depender de un botón «Importar»).
+      if (job.name === 'schedule-syncs') {
+        const due = await scheduleDueSyncs(database, registry, { intervalHours: env.syncIntervalHours });
+        for (const item of due) await enqueueSync(producer, item);
+        if (due.length) console.log(`[scheduler] ${due.length} sync(s) programado(s)`);
+        return { scheduled: due.length };
+      }
+      return { pong: `${job.data.requestedAt} → ${new Date().toISOString()}` };
+    },
     { connection, prefix: env.queuePrefix, concurrency: 1 },
   ),
   // Syncs de fuentes de perfil. El bloqueo por conexión vive en PostgreSQL (runConnectionSync).
   new Worker<ProfileSyncJob>(
     QUEUES.profileSync,
     async (job) => {
-      const outcome = await runConnectionSync({ database, registry, resolver }, job.data.runId);
+      let outcome;
+      try {
+        outcome = await runConnectionSync({ database, registry, resolver }, job.data.runId);
+      } catch (error) {
+        // Perfil privado, clave no válida…: reintentar no sirve; el usuario debe actuar (mensaje en la app).
+        if (isSourceError(error) && !error.retryable) throw new UnrecoverableError(error.message);
+        throw error;
+      }
       console.log(
         `[sync] ${job.data.connectionId} run ${job.data.runId}: ${outcome.status} ` +
           `(+${outcome.observationsInserted} ~${outcome.observationsUpdated} =${outcome.observationsUnchanged} -${outcome.observationsDeleted}, ` +
@@ -58,9 +85,14 @@ async function beat(): Promise<void> {
 await beat();
 const heartbeat = setInterval(beat, 10_000);
 
+// Revisión horaria de syncs pendientes (idempotente: el programador se registra con un id fijo).
+const systemQueue = new Queue(QUEUES.system, { connection, prefix: env.queuePrefix });
+await systemQueue.upsertJobScheduler('schedule-syncs', { every: 60 * 60 * 1000 }, { name: 'schedule-syncs', data: { requestedAt: 'scheduler' } });
+
 console.log(
   `Worker escuchando colas [${workers.map((w) => w.name).join(', ')}] con prefijo ${env.queuePrefix}` +
-    (env.demoMode ? ' · DEMO_MODE: fuentes fixture activas' : ''),
+    (env.demoMode ? ' · DEMO_MODE: fuentes fixture activas' : '') +
+    (env.steamApiKey ? ` · Steam activo (syncs cada ${env.syncIntervalHours} h)` : ' · Steam sin configurar (falta STEAM_WEB_API_KEY)'),
 );
 
 let stopping = false;
@@ -70,6 +102,7 @@ async function shutdown(signal: string): Promise<void> {
   console.log(`${signal}: cerrando worker…`);
   clearInterval(heartbeat);
   await Promise.allSettled(workers.map((w) => w.close()));
+  await Promise.allSettled([systemQueue.close(), producer.close()]);
   await Promise.allSettled([connection.quit(), heartbeatClient.quit(), database.close()]);
   process.exit(0);
 }

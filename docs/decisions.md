@@ -205,3 +205,87 @@ móvil y que quedó corregido: la app cerraba sesión al arrancar porque una con
   03-09-2026); en Android no.
 - El emulador Android de este PC tiene Expo Go 55.0.7 (probablemente lo usa otra implementación). No se actualizó
   para no alterarla, así que la app no se probó en el emulador.
+
+## Fase 2 · 2026-10-08 (Steam)
+
+La demo de las fases 0 y 1 fue aceptada en el teléfono por el usuario el 2026-10-08.
+
+### Autenticación y acceso (verificado en la documentación oficial)
+
+- **Identidad con OpenID 2.0** (`https://steamcommunity.com/openid/login`), no OAuth: el usuario inicia sesión en
+  Steam y APPINITY recibe solo el SteamID. Antes de crear la conexión se verifica la respuesta: modo `id_res`,
+  endpoint de Steam, `return_to` exacto (incluye un `state` de un solo uso guardado 10 min en Redis y ligado al
+  usuario), Claimed ID con SteamID64, campos firmados obligatorios, nonce de 5 min como máximo y
+  `check_authentication` contra Steam.
+- **Datos con la Steam Web API** y una clave de usuario del propietario del servidor (`STEAM_WEB_API_KEY`, solo en
+  `.env`). No hay tokens por usuario: `source_credentials` sigue vacía. La clave viaja como parámetro `key` (forma
+  documentada en la Web API); nunca aparece en mensajes, logs ni respuestas.
+- El SteamID64 se trata siempre como **texto** (supera 2^53).
+- Un SteamID no puede estar vinculado a la vez a dos usuarios (índice único parcial). Al revocar se olvida.
+- La URL de vuelta a la app está en lista blanca (`appinity-claude://`, `exp://` en IP privada, `localhost` en web)
+  para evitar redirecciones abiertas.
+
+### Cuenta local real (identidad de desarrollo para datos reales)
+
+- La regla de la fase 0 («la identidad de desarrollo nunca actúa como un usuario real») se amplía de forma
+  controlada: probar Steam con la cuenta real del usuario exige un usuario `dataset = live`, y la autenticación de
+  producción no llega hasta la fase 13.
+- `pnpm user:local` crea o regenera una cuenta `live` con un código aleatorio (12 caracteres, mostrado una sola vez,
+  guardado con scrypt). La sesión exige handle y código. El token lleva una huella del código vigente, así que
+  regenerarlo invalida las sesiones abiertas. Solo con `DEMO_MODE` y fuera de producción. Las cuentas locales no
+  aparecen en la lista de usuarios de demo. Sigue sin ser autenticación de producción.
+- Los usuarios reales solo pueden conectar fuentes reales y los de demo solo simuladas (se mantiene la separación de
+  datasets). La app muestra «DATOS REALES · cuenta local de desarrollo» en lugar del aviso de demo.
+
+### Sync y normalización de Steam (`steam-v1`, propuesta sin calibrar)
+
+- Instantánea completa (GetPlayerSummaries + GetOwnedGames; sin paginación ni historial): una observación por juego
+  (`library`, `app:<appid>`) actualizada en cada sync; lo que sale de la biblioteca deja de ser evidencia si el sync
+  fue completo y sin errores.
+- Reglas iguales a la fuente simulada de juegos: 0 min = conocido sin consumo ni preferencia; menos de 2 h =
+  consumido sin preferencia; desde 2 h, `min(1, log1p(h) / log1p(p95 del usuario))` con confianza 0,6.
+  `occurredAt` = última partida (instantánea), nunca la fecha de sync.
+- Si falta el nombre se usa «Steam app <appid>» con `nameUnavailable` en metadatos (no se inventa un título).
+- Biblioteca no visible (`{"response":{}}`): error `profile_inaccessible` no reintentable, conexión en «error» con la
+  instrucción (Privacidad → Detalles de juegos: Público) y **sin borrar** evidencia. Con la propia clave de la cuenta,
+  Steam devuelve la biblioteca aunque sea privada.
+- Límites: el cliente reintenta 429/5xx/red hasta 3 veces (backoff exponencial desde 1 s, respeta `Retry-After` hasta
+  30 s) y después reintenta el trabajo BullMQ. Los errores no reintentables usan `UnrecoverableError` para no gastar
+  llamadas. Cada sync hace 2 llamadas; el límite diario es de 100.000.
+- **Syncs programados**: el worker revisa cada hora (`upsertJobScheduler`) y encola las conexiones de fuentes reales
+  `scheduled`/`full-refresh` activas cuyo último sync supera `SYNC_INTERVAL_HOURS` (24 h) y sin otro sync pendiente.
+  Las fuentes simuladas no se programan.
+
+### Imágenes de Steam
+
+- La cápsula 600×900 del CDN de Steam no está documentada en la Web API y los Terms no autorizan expresamente a
+  redistribuir el arte: se guarda **solo como referencia** (`restrictions = reference-only`, `licenseUrl` = Terms) y
+  nunca se cachea (`CACHEABLE_IMAGE_SOURCES` = solo Wikimedia Commons). Si no carga, la app muestra el fallback.
+- Si el objeto ya tiene imagen libre (instantánea de Wikidata), se mantiene; la de Steam solo se añade como referencia
+  cuando no hay ninguna.
+
+### Catálogo para datos reales
+
+- En desarrollo (`DEMO_MODE`), la instantánea de Wikidata también actúa como proveedor de catálogo para objetos
+  reales. Sus datos son reales (Wikidata CC0, Commons con licencia), pero los objetos se crean en el dataset `live`:
+  nunca se reutilizan los de la demo. Sin `DEMO_MODE` no se carga, y los juegos se crean desde la propia fuente.
+- Las fechas de lanzamiento de Steam no las da la Web API; quedan pendientes para Trending (fase 7).
+
+### Credenciales sin pasar por el chat
+
+`pnpm secret:set STEAM_WEB_API_KEY` pide el valor en la terminal sin mostrarlo, valida el formato (32 caracteres
+hexadecimales) y lo escribe en `.env`. Alternativa: editar `.env` a mano.
+
+### Onboarding y sincronización automática (observación del usuario)
+
+Tras validar Steam con su cuenta (2026-10-08), el usuario pidió que la sincronización sea automática y que el usuario
+final solo tenga que dar permisos una vez, al registrarse. Estado y plan:
+
+- **Ya es automático:** el primer sync se lanza solo al conectar y después el worker sincroniza cada 24 h
+  (`SYNC_INTERVAL_HOURS`). El botón «Sincronizar» es opcional.
+- **Los pasos extra de la prueba eran de desarrollo y no existirán para el usuario final:** la clave de la Web API la
+  configura una sola vez quien opera el servidor (no el usuario); la cuenta local y su código se sustituyen por la
+  autenticación de producción (fase 13); arrancar servidores no es un paso de producto.
+- **Pendiente de diseño (onboarding, §14 y fase 13):** la pantalla «Conecta tu mundo» del registro ofrecerá las fuentes
+  disponibles; el usuario autoriza cada una una vez (consentimiento por proveedor) y no vuelve a ver pasos de sync. Se
+  podrá revisar más adelante, como indicó el usuario.
