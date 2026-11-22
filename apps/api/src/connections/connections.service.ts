@@ -143,6 +143,8 @@ export class ConnectionsService {
       ...this.credentialsOption(),
     });
     if (result.kind === 'redirect') {
+      // Sin URL de vuelta, la app no podría confirmar la conexión (ver holdCallback).
+      if (!returnUrl) throw new UnavailableError('Falta la URL de vuelta a la app para conectar esta fuente');
       const pending: PendingConnect = {
         userId,
         sourceKey,

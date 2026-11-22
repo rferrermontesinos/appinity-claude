@@ -14,10 +14,10 @@ const connectSchema = z
   .object({
     sourceKey: z.string().regex(/^[a-z][a-z0-9_]{1,63}$/),
     /**
-     * URL de vuelta a la app tras autorizar en el proveedor (lista blanca, sin redirecciones abiertas). Obligatoria:
-     * la app recibe ahí el código con el que confirma la conexión.
+     * URL de vuelta a la app tras autorizar en el proveedor (lista blanca, sin redirecciones abiertas). Obligatoria en
+     * las fuentes con proveedor: la app recibe ahí el código con el que confirma la conexión.
      */
-    returnUrl: z.string().max(512).refine(isAllowedReturnUrl, 'URL de vuelta no permitida'),
+    returnUrl: z.string().max(512).refine(isAllowedReturnUrl, 'URL de vuelta no permitida').optional(),
   })
   .strict();
 const initialImportSchema = z
