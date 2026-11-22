@@ -1,3 +1,4 @@
+import { isSentryDsn } from '@appinity/observability';
 import { z } from 'zod';
 
 const bool = z
@@ -66,6 +67,21 @@ const envSchema = z
       .union([z.literal(''), z.email('LEGAL_CONTACT_EMAIL debe ser un email')])
       .optional()
       .transform((v) => v || undefined),
+    /**
+     * Avisos de errores (fase B4): DSN del proyecto de Sentry, en la región de la UE (`….ingest.de.sentry.io`). Vacío:
+     * apagados, sin red ni manejadores. Ver docs/operations.md.
+     */
+    SENTRY_DSN: z
+      .string()
+      .optional()
+      .transform((v) => (v ? v.trim() : undefined))
+      .refine((v) => v === undefined || isSentryDsn(v), 'SENTRY_DSN debe tener la forma https://<clave>@<host>/<id del proyecto>'),
+    /** Entorno que ve Sentry (p. ej. «beta»). Por defecto, NODE_ENV. */
+    SENTRY_ENVIRONMENT: z
+      .string()
+      .optional()
+      .transform((v) => (v ? v.trim() : undefined))
+      .refine((v) => v === undefined || /^[\w.-]{1,64}$/.test(v), 'SENTRY_ENVIRONMENT: letras, números, «.», «_» o «-» (64 como mucho)'),
     STORAGE_DIR: z.string().default('.data/media'),
     QUEUE_PREFIX: z
       .string()
@@ -172,6 +188,9 @@ const envSchema = z
     // Sin URL pública fija, las vueltas de OAuth y Steam se construirían con la cabecera Host de la petición.
     if (env.NODE_ENV === 'production' && !env.PUBLIC_API_URL) {
       ctx.addIssue({ code: 'custom', path: ['PUBLIC_API_URL'], message: 'PUBLIC_API_URL es obligatorio con NODE_ENV=production' });
+    }
+    if (env.NODE_ENV === 'production' && env.SENTRY_DSN && !env.SENTRY_DSN.startsWith('https://')) {
+      ctx.addIssue({ code: 'custom', path: ['SENTRY_DSN'], message: 'SENTRY_DSN debe usar https con NODE_ENV=production' });
     }
     if (env.DEV_AUTH_ENABLED && !env.DEMO_MODE) {
       ctx.addIssue({ code: 'custom', path: ['DEV_AUTH_ENABLED'], message: 'La identidad de desarrollo requiere DEMO_MODE=true' });

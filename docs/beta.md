@@ -76,7 +76,7 @@ Revisión de todas las rutas de `apps/api` (sin herramientas externas):
   privacidad del alta están apagadas por defecto.
 - **Sigue pendiente**:
   - cliente de push en la app (`expo-notifications` y el registro del token);
-  - Sentry;
+  - Sentry (preparado en B4: falta el DSN del titular);
   - un canal de feedback dentro de la app;
   - los datos del titular en los textos legales (desde B3, variables `LEGAL_*`);
   - 1 aviso alto en `pnpm audit` (zod 3 dentro de `@expo/cli`, solo al compilar).
@@ -95,6 +95,12 @@ Revisión de todas las rutas de `apps/api` (sin herramientas externas):
   falten).
 - Página pública `https://api.<tu-dominio>/legal/eliminar-cuenta` para la ficha de Google Play.
 - Peticiones por email: `pnpm account:export` y `pnpm account:delete` ([operations.md](operations.md)).
+
+### Avisos de errores (2026-11-22, fase B4)
+
+- API, worker y app avisan de sus errores a Sentry cuando hay `SENTRY_DSN`; sin él, no sale nada.
+- Ningún dato personal ni secreto en los avisos (filtro propio antes de enviar); la app no lleva el SDK ni el DSN.
+- Para activarlo: cuenta de Sentry en la región UE y los pasos de [operations.md](operations.md#avisos-de-errores-sentry-fase-b4).
 
 ## Prueba con amigos y familiares: alta única (2026-10-26)
 

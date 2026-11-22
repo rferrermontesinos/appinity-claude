@@ -1,12 +1,15 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Stack, usePathname, useRouter, useSegments } from 'expo-router';
+import { type ErrorBoundaryProps, Stack, usePathname, useRouter, useSegments } from 'expo-router';
 import { rememberInvite, takePendingInvite } from '../src/invite';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import { I18nextProvider, useTranslation } from 'react-i18next';
+import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useMe } from '../src/api/queries';
+import { ErrorCard } from '../src/components/ui';
+import { installGlobalErrorReporting, reportAppError, setCurrentScreen } from '../src/error-reporting';
 import { initI18n } from '../src/i18n';
 import { useSession } from '../src/state/session';
 import { BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold, BricolageGrotesque_800ExtraBold, useFonts } from '@expo-google-fonts/bricolage-grotesque';
@@ -15,6 +18,21 @@ import { fonts, usePalette, useThemeMode } from '../src/theme';
 const i18n = initI18n();
 // Cierra la ventana de autenticación al volver del proveedor (necesario en web; inocuo en iOS/Android).
 WebBrowser.maybeCompleteAuthSession();
+// Avisos de errores (fase B4): los errores que nadie captura llegan a la API (sin datos de la persona).
+installGlobalErrorReporting();
+
+/** Error al pintar una pantalla: se avisa (sin cerrar la app) y se ofrece reintentar. */
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  const c = usePalette();
+  useEffect(() => {
+    void reportAppError(error, false);
+  }, [error]);
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', padding: 24, backgroundColor: c.background }}>
+      <ErrorCard error={error} onRetry={() => void retry()} />
+    </View>
+  );
+}
 
 function SessionGate() {
   const { hydrated, session, hydrate } = useSession();
@@ -27,6 +45,9 @@ function SessionGate() {
   useEffect(() => {
     void hydrate();
   }, [hydrate]);
+
+  // Pantalla actual (patrón de ruta) para los avisos de errores.
+  useEffect(() => setCurrentScreen(segments), [segments]);
 
   // Sin sesión de desarrollo, la única pantalla accesible es la elección de usuario de demo.
   useEffect(() => {

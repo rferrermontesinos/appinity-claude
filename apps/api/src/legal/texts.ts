@@ -63,7 +63,13 @@ function contactHtml(info: LegalInfo, subject?: string): string {
   return `<a href="mailto:${email}${query}">${email}</a>`;
 }
 
-export function privacyHtml(info: LegalInfo): string {
+/** Lo que cambia la política según la configuración del servidor. */
+export interface PrivacyOptions {
+  /** Avisos de errores activos (SENTRY_DSN): Sentry pasa a ser un proveedor técnico más. */
+  errorReports?: boolean;
+}
+
+export function privacyHtml(info: LegalInfo, options: PrivacyOptions = {}): string {
   return `
 <h1>Política de privacidad de APPINITY</h1>
 <p class="meta">Última actualización: ${LEGAL_UPDATED}</p>
@@ -146,7 +152,14 @@ ley.</p>
   <li>Los proveedores que conectas (Google, Steam, Trakt, AniList, Facebook) reciben las peticiones necesarias para leer
   tus datos y, al desconectar, la anulación del permiso cuando la admiten.</li>
   <li>Proveedores técnicos que actúan por cuenta nuestra: el alojamiento del servidor, Cloudflare (conexión segura entre la
-  app y el servidor) y Expo con Firebase Cloud Messaging de Google (envío de notificaciones).</li>
+  app y el servidor) y Expo con Firebase Cloud Messaging de Google (envío de notificaciones).</li>${
+    options.errorReports
+      ? `
+  <li>Sentry (avisos de errores): cuando la app o el servidor fallan, le enviamos un aviso técnico con el tipo de error, el
+  mensaje, la versión y la pantalla. Antes de enviarlo quitamos emails, códigos de acceso, identificadores y direcciones
+  IP, y nunca incluye tu nombre, tu cuenta ni tus gustos.</li>`
+      : ''
+  }
   <li>Para identificar obras y lugares consultamos fuentes públicas (Wikidata y OpenStreetMap): les enviamos solo el nombre
   de la obra, del lugar o de la ciudad, nunca datos que te identifiquen. Algunos carteles de películas y series se cargan
   directamente desde TMDb y TVmaze, que, como cualquier web, ven la dirección IP de tu dispositivo.</li>

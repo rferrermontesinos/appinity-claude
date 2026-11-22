@@ -1,8 +1,10 @@
 import { Global, Inject, Logger, Module, type OnApplicationShutdown, type OnModuleInit } from '@nestjs/common';
 import { createDatabase, type DatabaseHandle } from '@appinity/database';
+import { createErrorReporter, type ErrorReporter } from '@appinity/observability';
 import { Redis } from 'ioredis';
 import { APP_ENV, type AppEnv } from '../config/env.js';
-import { DATABASE, REDIS } from './tokens.js';
+import { API_VERSION } from '../version.js';
+import { DATABASE, ERROR_REPORTER, REDIS } from './tokens.js';
 
 @Global()
 @Module({
@@ -18,8 +20,19 @@ import { DATABASE, REDIS } from './tokens.js';
       // Productor: falla rápido si Redis no responde en lugar de bloquear peticiones HTTP.
       useFactory: (env: AppEnv): Redis => new Redis(env.REDIS_URL, { maxRetriesPerRequest: 1, enableOfflineQueue: false, lazyConnect: false }),
     },
+    {
+      provide: ERROR_REPORTER,
+      inject: [APP_ENV],
+      useFactory: (env: AppEnv): ErrorReporter =>
+        createErrorReporter({
+          dsn: env.SENTRY_DSN,
+          service: 'api',
+          environment: env.SENTRY_ENVIRONMENT ?? env.NODE_ENV,
+          release: `appinity-api@${API_VERSION}`,
+        }),
+    },
   ],
-  exports: [DATABASE, REDIS],
+  exports: [DATABASE, REDIS, ERROR_REPORTER],
 })
 export class InfraModule implements OnModuleInit, OnApplicationShutdown {
   private readonly logger = new Logger('Infra');
@@ -27,6 +40,7 @@ export class InfraModule implements OnModuleInit, OnApplicationShutdown {
   constructor(
     @Inject(DATABASE) private readonly database: DatabaseHandle,
     @Inject(REDIS) private readonly redis: Redis,
+    @Inject(ERROR_REPORTER) private readonly reporter: ErrorReporter,
   ) {}
 
   /** Espera a Redis al arrancar (máx. 5 s). Si no llega, la API arranca y /health lo indica. */
@@ -40,6 +54,7 @@ export class InfraModule implements OnModuleInit, OnApplicationShutdown {
   }
 
   async onApplicationShutdown(): Promise<void> {
-    await Promise.allSettled([this.database.close(), this.redis.quit()]);
+    // Los avisos pendientes salen antes de cerrar (2 s como mucho).
+    await Promise.allSettled([this.reporter.flush(2_000), this.database.close(), this.redis.quit()]);
   }
 }

@@ -22,9 +22,44 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 11 | **Paso 1 implementado** (Google: Play, pedidos y guardados), comprobado automáticamente y en parte con servicios reales; falta un export real | Entrega 2026-10-14 · fase 11 (rama `fase-11-fuentes`). Análisis en [source-candidates.md](source-candidates.md) |
 | 12 | **12C (push, servidor) implementada y comprobada automáticamente**; envío real pendiente de build de desarrollo y FCM · **12B (Premium, servidor) implementada y comprobada automáticamente**; compra en la app pendiente de cuentas y build de desarrollo · **12A (chat) implementada, comprobada automáticamente y verificada en la vista web**; 12B (Premium/RevenueCat) y 12C (push) pendientes | Entrega 2026-10-14 · fase 12A (rama `fase-12a-chat`, basada en `fase-10-people`) |
 | 13 | **Preparada**: auth de producción, alta, eliminación de cuenta y despliegue probados en local; beta real pendiente de dominio, servidor y cuentas ([beta.md](beta.md)) · auditoría de seguridad de la API hecha (2026-10-26) · textos legales en borrador (2026-10-26) | Entrega 2026-10-15 · fase 13 (rama `fase-13-beta`) |
-| Beta (B1–B10) | **En curso** (2026-11-22): B1, B2 y B3 con PR abierta | Plan y estado en [fases-beta.md](fases-beta.md); cada fase en su PR encadenada sobre la PR #26 |
+| Beta (B1–B10) | **En curso** (2026-11-22): B1, B2, B3 y B4 con PR abierta | Plan y estado en [fases-beta.md](fases-beta.md); cada fase en su PR encadenada sobre la PR #26 |
 
 ---
+
+## Entrega 2026-11-22 · B4: avisos de errores (Sentry), apagados sin DSN
+
+Rama `claude/beta-b4-sentry`, PR contra `claude/beta-b3-legal` (B3). Detalle en [decisions.md](decisions.md) y puesta
+en marcha en [operations.md](operations.md#avisos-de-errores-sentry-fase-b4).
+
+### Qué se ha hecho
+
+- Paquete `@appinity/observability`: cliente de Sentry (`@sentry/core`) apagado sin `SENTRY_DSN` y filtro de privacidad
+  que se aplica a todo evento antes de salir.
+- API: filtro único de excepciones (traduce los errores de dominio como antes y avisa de los 5xx salvo 503 con la ruta
+  como patrón), avisos de excepciones sin capturar y `POST /v1/diagnostics/app-errors` para la app.
+- Worker: avisos del último intento fallido de cada trabajo (no de los reintentos ni de los fallos que resuelve la
+  persona) y de las excepciones sin capturar.
+- App: manejador global de errores de JavaScript y pantalla de error con «Reintentar» si una pantalla no se puede pintar;
+  ambos envían el aviso a la API (10 por sesión como mucho, nada en desarrollo).
+- `SENTRY_DSN` y `SENTRY_ENVIRONMENT` en `.env.example`, `pnpm doctor`, el Dockerfile y la política de privacidad (Sentry
+  aparece solo si está activo).
+
+### Comprobaciones
+
+- Tests nuevos:
+  - filtro de privacidad (8, también los valores de las consultas fallidas) y cliente (4: apagado sin DSN, DSN mal
+    escrito sin imprimirlo, evento de la API y de la app contra un `fetch` simulado);
+  - avisos del worker (5: reintentos, `UnrecoverableError`, proveedor caído, trabajo atascado);
+  - API (10) contra un Sentry simulado en local: sin DSN no sale nada, el aviso de la app llega filtrado y sin la IP,
+    cuerpos rechazados, un 404 no se avisa, la política nombra a Sentry solo con DSN, el cupo por hora, la validación del
+    DSN (https en producción) y el filtro (500 avisado con la ruta como patrón; dominio, 503 y 4xx no).
+- `pnpm format:check`, `pnpm lint` y `pnpm typecheck` limpios; `pnpm test`: 50 ficheros y 460 tests OK.
+
+### Pendiente
+
+- Del titular: cuenta de Sentry en la región UE, «Prevent storing of IP addresses», límite por clave y el DSN en
+  `.env.production`.
+- Siguiente fase: B5 (canal de comentarios).
 
 ## Entrega 2026-11-22 · B3: textos legales y derechos
 

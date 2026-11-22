@@ -50,10 +50,40 @@ qué está ya preparado y probado.
 | `LEGAL_CONTROLLER_NAME` | Responsable en la política, las condiciones y la página de baja. Sin ella, las páginas muestran «[pendiente: …]» y la API lo avisa al arrancar | Nombre y apellidos o razón social del titular |
 | `LEGAL_CONTACT_EMAIL` | Email de privacidad, derechos y bajas (enlace `mailto:` en las tres páginas) | Un buzón que el titular lea |
 | `LEGAL_CONTROLLER_ID` / `LEGAL_CONTROLLER_ADDRESS` | NIF y dirección postal del responsable. Opcionales; la LSSI los exige si hay actividad económica | Que lo confirme la revisión legal |
+| `SENTRY_DSN` | Avisos de errores de la API, el worker y la app (fase B4). Vacía: apagados, no sale nada. Con ella, la política de privacidad nombra a Sentry | Proyecto de Sentry en la región de la UE (ver «Avisos de errores») |
+| `SENTRY_ENVIRONMENT` | Entorno que ve Sentry (p. ej. `beta`). Vacía: `NODE_ENV` | — |
 
 **Rotación**:
 - `AUTH_SECRET`: cambiarlo invalida todos los access tokens (las sesiones se renuevan con su refresh token).
 - `CREDENTIALS_ENCRYPTION_KEY`: si cambia, obliga a reconectar las fuentes.
+
+## Avisos de errores (Sentry, fase B4)
+
+Apagados mientras `SENTRY_DSN` esté vacía: ni red ni manejadores, la beta funciona igual. Para activarlos:
+
+1. Crear una cuenta en sentry.io con **región de datos UE** (Fráncfort; los DSN terminan en `.ingest.de.sentry.io`) y un
+   proyecto de tipo Node.js. El plan gratuito basta para la beta.
+2. En el proyecto, **Settings → Security & Privacy**: activar «Prevent storing of IP addresses» y dejar activados los
+   filtros de datos sensibles del servidor (segunda red por si algo se escapara del filtro propio).
+3. En **Settings → Client Keys (DSN)**, copiar el DSN y ponerle un **límite de eventos** (p. ej. 100 por hora): protege la
+   cuota si alguien abusa del endpoint público de la app.
+4. `SENTRY_DSN=<DSN>` y `SENTRY_ENVIRONMENT=beta` en `.env.production` y reiniciar API y worker. Al arrancar, la API
+   escribe «Avisos de errores activos» y el worker lo añade a su línea de arranque (en local, `pnpm doctor` también lo
+   muestra).
+
+Qué se envía y qué no:
+
+| Origen | Se avisa | No se avisa |
+|---|---|---|
+| API | Errores 5xx (salvo 503) con la ruta como patrón (`GET /v1/people/:id`) y el código; excepciones sin capturar | 4xx, 503 («no configurado», Redis o un proveedor caídos), la URL, la petición, la persona |
+| Worker | Último intento fallido de un trabajo, con la cola y el tipo; un proveedor caído tras todos los reintentos va como `warning` | Reintentos intermedios, `UnrecoverableError` (perfil privado, clave no válida…), los datos del trabajo |
+| App | Errores de JavaScript sin capturar y pantallas que no se pudieron pintar, vía `POST /v1/diagnostics/app-errors` (como mucho 10 por sesión, sin repetir; la API reenvía 100 por hora como mucho) | Sesión, persona, IP, la URL con identificadores (solo el patrón de la pantalla). En desarrollo no se envía nada |
+
+Antes de salir, todo evento pasa por `packages/observability` (`scrubEvent`): quita emails, tokens y JWT, tokens de push,
+parámetros secretos de URL, UUID, SteamID, IPs y secretos largos de cualquier texto; las claves que suenan a dato
+personal o secreto se sustituyen enteras; y las rutas de la pila quedan relativas al repositorio (sin `C:\Users\<nombre>`).
+La app no lleva el SDK de Sentry ni su DSN: los cierres nativos (fuera de JavaScript) se ven en Android vitals de Google
+Play Console.
 
 ## Copias de seguridad
 

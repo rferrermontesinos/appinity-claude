@@ -1432,3 +1432,40 @@ Cierra los hallazgos bajos y medios que quedaban de la auditoría del 2026-11-22
 - **Para la revisión legal** (no se cambia el producto sin el titular): el consentimiento único que cubre fuentes futuras
   (RGPD art. 7 pide un consentimiento específico; hoy cada proveedor muestra además su pantalla de permiso), el mecanismo
   de transferencia de cada proveedor y si hacen falta NIF y dirección (LSSI).
+
+## 2026-11-22 · B4: avisos de errores con Sentry, apagados sin DSN
+
+- **Apagados por defecto**: sin `SENTRY_DSN` no se crea cliente, no sale nada a la red y no se instalan manejadores de
+  proceso. La beta funciona igual sin cuenta de Sentry; activarlos es poner el DSN y reiniciar
+  ([operations.md](operations.md#avisos-de-errores-sentry-fase-b4)).
+- **`@sentry/core` (11.11.0, fijada), no `@sentry/node`**: solo hacen falta errores. `@sentry/node` trae OpenTelemetry e
+  instrumentación automática (migas de peticiones HTTP y de base de datos, trazas) que habría que desactivar una a una;
+  con el núcleo, el cliente envía únicamente lo que se le pasa. Paquete propio `@appinity/observability` para la API y el
+  worker.
+- **Filtro de privacidad propio en `beforeSend`**, deliberadamente agresivo: fuera la persona, la petición, las migas,
+  los módulos y las variables y el código fuente de la pila; en cualquier texto se quitan emails, tokens y JWT, tokens de
+  push, parámetros secretos de URL, UUID, SteamID, IPs y secretos largos; las claves que suenan a dato personal o secreto
+  se sustituyen enteras; y las rutas de la pila quedan relativas al repositorio (las absolutas llevan el nombre de quien
+  usa el PC). `sendDefaultPii: false` y el nombre del equipo sustituido por `appinity-api` o `appinity-worker`. En Sentry,
+  además, «Prevent storing of IP addresses».
+- **Qué se avisa**: en la API, los 5xx salvo 503 (un 503 es «no configurado», Redis o un proveedor caídos, que ya cuenta
+  `/health`), con la ruta como patrón y nunca la URL. En el worker, solo el último intento fallido; nunca un
+  `UnrecoverableError` (perfil privado o clave no válida: lo resuelve la persona y la app ya se lo dice); un proveedor
+  caído tras todos los reintentos va como `warning`. En ambos, las excepciones sin capturar se avisan y el proceso termina
+  con código 1, como sin manejadores.
+- **Un único filtro de excepciones en la API** (`ApiExceptionsFilter`), que sustituye a `DomainErrorsFilter` con la misma
+  traducción de errores de dominio: Nest prueba los filtros globales en orden inverso, así que un segundo filtro que lo
+  capturase todo habría tapado al de dominio.
+- **La app no lleva el SDK de Sentry**: envía sus errores de JavaScript a `POST /v1/diagnostics/app-errors` y la API los
+  reenvía con el mismo filtro. Así el DSN no va dentro del APK, no se añade código nativo (que obligaría a otra build de
+  desarrollo) y el filtro de privacidad es uno solo. Se pierden los cierres nativos, que se ven en Android vitals de Play
+  Console, y la simbolización de la pila de Hermes (se guarda como texto). El endpoint es público porque los fallos más
+  graves llegan antes de tener sesión (arranque, entrada, alta), y así el aviso tampoco se asocia a nadie. Contra el
+  abuso: 20 por minuto y IP, 100 por hora y proceso, y el límite por clave en Sentry. La app envía 10 por sesión como
+  mucho, sin repetir el mismo error, y nada en desarrollo. Las promesas rechazadas sin capturar no se avisan: React Native
+  las ignora en producción (no cierran la app) y las peticiones de la app pasan por React Query, que guarda el error.
+- **Los valores de las consultas nunca salen**: Drizzle pone los parámetros de una consulta fallida en el mensaje del
+  error («params: …», que pueden ser nombres, notas o mensajes de chat), y PostgreSQL y `JSON.parse` citan el valor que no
+  entienden. El filtro los sustituye enteros por `[redacted]`.
+- **Política de privacidad**: con `SENTRY_DSN`, Sentry aparece entre los proveedores técnicos (qué se envía y qué se
+  quita); sin él, no se nombra.

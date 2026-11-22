@@ -10,6 +10,7 @@
     "@appinity/database": "workspace:*",
     "@appinity/ingestion": "workspace:*",
     "@appinity/integrations": "workspace:*",
+    "@appinity/observability": "workspace:*",
     "@appinity/shared": "workspace:*",
     "@nestjs/common": "12.6.0",
     "@nestjs/core": "12.6.0",

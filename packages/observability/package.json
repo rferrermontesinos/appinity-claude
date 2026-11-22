@@ -1,0 +1,18 @@
+{
+  "name": "@appinity/observability",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Avisos de errores a Sentry para la API y el worker: apagados sin SENTRY_DSN y sin datos personales ni secretos.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@sentry/core": "11.11.0"
+  }
+}

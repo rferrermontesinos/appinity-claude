@@ -8,6 +8,7 @@
     { "path": "packages/catalog" },
     { "path": "packages/integrations" },
     { "path": "packages/ingestion" },
+    { "path": "packages/observability" },
     { "path": "apps/api" },
     { "path": "workers/sync-worker" }
   ]

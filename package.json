@@ -51,6 +51,7 @@
     "@appinity/i18n": "workspace:*",
     "@appinity/ingestion": "workspace:*",
     "@appinity/integrations": "workspace:*",
+    "@appinity/observability": "workspace:*",
     "@appinity/shared": "workspace:*",
     "@eslint/js": "10.0.1",
     "@types/node": "24.19.1",

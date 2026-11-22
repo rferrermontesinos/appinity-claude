@@ -14,7 +14,7 @@ export class LegalController {
   constructor(@Inject(APP_ENV) env: AppEnv) {
     const info = legalInfoFromEnv(env);
     this.pages = {
-      privacy: legalPage('Política de privacidad', privacyHtml(info)),
+      privacy: legalPage('Política de privacidad', privacyHtml(info, { errorReports: Boolean(env.SENTRY_DSN) })),
       terms: legalPage('Condiciones de uso', termsHtml(info)),
       deletion: legalPage('Eliminar tu cuenta', accountDeletionHtml(info)),
     };
