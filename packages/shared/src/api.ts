@@ -232,6 +232,21 @@ export interface RecommendationDto {
   /** Ocupa el hueco de otro bloque sin candidatos (la cuota 70/20/10 es un objetivo, no se rellena inventando). */
   fillsFor: RecommendationBlockDto | null;
   reason: RecommendationReasonDto;
+  /** NEW: APPINITY nunca había mostrado este objeto a este usuario (no significa estreno). */
+  isNew: boolean;
+}
+
+export interface HomeImpressionResultDto {
+  isNew: boolean;
+}
+
+export interface HomeActionResultDto {
+  actionId: string;
+}
+
+export interface HomeUndoResultDto {
+  itemId: string;
+  action: 'dismiss' | 'keep';
 }
 
 export interface RecommendationsDto {

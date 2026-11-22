@@ -144,3 +144,30 @@ describe('recomendaciones (fase 7)', () => {
     expect((await get('/v1/me/recommendations?limit=500')).status).toBe(400);
   });
 });
+
+describe('Home (fase 8)', () => {
+  const post = (path: string, body?: unknown) =>
+    fetch(`${base}${path}`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
+
+  it('impresión, descartar, deshacer y conservar por HTTP; NEW cambia tras la primera impresión', async () => {
+    const first = (await (await get('/v1/me/recommendations?limit=5')).json()) as RecommendationsDto;
+    expect(first.items.length).toBeGreaterThan(0);
+    const card = first.items[0]!;
+    expect(card.isNew).toBe(true);
+    expect(await (await post('/v1/me/home/impressions', { itemId: card.item.id })).json()).toEqual({ isNew: true });
+    expect(await (await post('/v1/me/home/impressions', { itemId: card.item.id })).json()).toEqual({ isNew: false });
+    expect((await post('/v1/me/home/actions', { itemId: card.item.id, action: 'dismiss' })).status).toBe(200);
+    const afterDismiss = (await (await get('/v1/me/recommendations?limit=20')).json()) as RecommendationsDto;
+    expect(afterDismiss.items.map((r) => r.item.id)).not.toContain(card.item.id);
+    expect(await (await post('/v1/me/home/undo')).json()).toEqual({ itemId: card.item.id, action: 'dismiss' });
+    const afterUndo = (await (await get('/v1/me/recommendations?limit=20')).json()) as RecommendationsDto;
+    expect(afterUndo.items.find((r) => r.item.id === card.item.id)?.isNew).toBe(false);
+    expect((await post('/v1/me/home/undo')).status).toBe(404);
+  });
+
+  it('valida el cuerpo y no admite objetos de otro dataset', async () => {
+    expect((await post('/v1/me/home/actions', { itemId: 'no-uuid', action: 'dismiss' })).status).toBe(400);
+    expect((await post('/v1/me/home/actions', { itemId: '10000000-0000-4000-a000-00000000dead', action: 'like' })).status).toBe(400);
+    expect((await post('/v1/me/home/actions', { itemId: '10000000-0000-4000-a000-00000000dead', action: 'dismiss' })).status).toBe(404);
+  });
+});
