@@ -160,6 +160,11 @@ function ConnectionRow({
               {connection.lastError ? <Small style={{ color: c.danger }}>{connection.lastError}</Small> : null}
             </View>
           ) : null}
+          {active && connection.missingScopes > 0 && source.supportsRenewal ? (
+            <Small style={{ color: c.accent, fontWeight: '700' }}>
+              {t(source.key === 'google_portability' ? 'sources.newPermissionsGoogle' : 'sources.newPermissions', { count: connection.missingScopes })}
+            </Small>
+          ) : null}
           {latest ? <RunSummary run={latest} /> : null}
           {notice ? (
             <Small style={{ color: notice.tone === 'ok' ? c.ok : c.danger, fontWeight: '700' }}>{notice.text}</Small>
@@ -202,7 +207,7 @@ function ConnectionRow({
               <Button
                 label={t('sources.renew')}
                 icon="refresh"
-                variant={connection.status === 'error' ? 'primary' : 'secondary'}
+                variant={connection.status === 'error' || connection.missingScopes > 0 ? 'primary' : 'secondary'}
                 disabled={busy}
                 onPress={() => void startConnect()}
               />

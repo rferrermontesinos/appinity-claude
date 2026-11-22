@@ -1,4 +1,4 @@
-import { normalizeRating } from '@appinity/algorithms';
+import { frequencyPreference, normalizeRating } from '@appinity/algorithms';
 import type { NormalizeContext, NormalizedObservation } from '@appinity/shared';
 import {
   GOOGLE_MAPPER_VERSION,
@@ -7,6 +7,8 @@ import {
   THUMB_CONFIDENCE,
   THUMB_CONSUMED,
   THUMB_SCORE,
+  YT_MIN_PLAYS_FOR_PREFERENCE,
+  YT_PREFERENCE_CONFIDENCE,
 } from './constants.js';
 import { googlePlaceIds } from './archive.js';
 import type { GoogleRecord } from './schemas.js';
@@ -20,6 +22,9 @@ const round4 = (v: number) => Math.round(v * 10_000) / 10_000;
  * - Sitio guardado en Maps: conocido, no consumido, preferencia NULL.
  * - Estrellas en la Búsqueda: valoración explícita; pulgar: like/dislike explícito ±0,8 (consumo 0,7: se puede valorar
  *   sin haber visto); «visto»: consumido sin preferencia.
+ * - YouTube (fase 4): escuchas agregadas por artista o programa → consumido; desde 3 escuchas, preferencia inferida
+ *   `min(1, log1p(n) / log1p(p95 del usuario en esa categoría))` con confianza 0,6 (conducta, no voto). Suscripción y
+ *   biblioteca de YouTube Music → conocido, no consumido, preferencia NULL (§5: seguir o guardar no prueba escucha).
  * La confianza de la identificación multiplica las confianzas: una identificación dudosa pesa menos y no oculta el
  * objeto en Home (umbral 0,8). Nunca se guarda el texto de las reseñas.
  */
@@ -90,5 +95,35 @@ export function mapGoogleRecord(raw: unknown, context: NormalizeContext): Normal
       ];
     case 'search_ugc.media.watched':
       return [{ ...base, knownConfidence: known, consumedConfidence: known, preferenceScore: null, preferenceConfidence: null, preferenceBasis: null, engagement: { type: 'completed' } }];
+    case 'myactivity.youtube': {
+      const p95 = context.stats?.[`yt_plays_p95_${identified.category}`] ?? null;
+      const score = frequencyPreference(record.plays, p95, YT_MIN_PLAYS_FOR_PREFERENCE);
+      return [
+        {
+          ...base,
+          knownConfidence: known,
+          consumedConfidence: known,
+          preferenceScore: score,
+          preferenceConfidence: score === null ? null : round4(YT_PREFERENCE_CONFIDENCE * id),
+          preferenceBasis: score === null ? null : 'strong_behavior',
+          engagement: { type: 'listened', value: record.plays, unit: 'plays' },
+          metadata: { ...base.metadata, plays: record.plays, musicPlays: record.musicPlays, channels: record.channels },
+        },
+      ];
+    }
+    case 'youtube.subscriptions':
+      return [{ ...base, knownConfidence: known, consumedConfidence: 0, preferenceScore: null, preferenceConfidence: null, preferenceBasis: null, engagement: { type: 'saved', unit: 'subscription' } }];
+    case 'youtube.music':
+      return [
+        {
+          ...base,
+          knownConfidence: known,
+          consumedConfidence: 0,
+          preferenceScore: null,
+          preferenceConfidence: null,
+          preferenceBasis: null,
+          engagement: { type: 'saved', value: record.songs, unit: 'library_songs' },
+        },
+      ];
   }
 }

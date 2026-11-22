@@ -97,6 +97,35 @@ considera validada hasta entonces.
 | Estructura del export | El worker registra, por grupo, archivos, número de registros, claves y patrones de URL, **sin datos personales**, para contrastar el formato real con el documentado |
 | Tests | `packages/integrations/test/google-portability.test.ts` (OAuth, archivo, máquina de estados, mapper, OSM y Wikidata simulados, casos reales de OSM), `packages/ingestion/test/google.int.test.ts` (pipeline, aplazamiento, instantánea por grupo, renovación, revocación) y `apps/api/test/google-local.int.test.ts` (flujo HTTP) |
 
+## Google Data Portability · fase 4 (YouTube y YouTube Music)
+
+**Estado:** implementado y probado con un Google simulado (formatos de la documentación oficial). La identificación
+de canales y artistas se probó **en vivo** contra Wikidata. **Pendiente de validar con una cuenta real**: hay que
+añadir los 3 permisos al proyecto de Google Cloud y renovar el permiso (README). No se considera validada hasta ver un
+export real.
+
+### Ficha (verificada el 2026-10-13)
+
+| Aspecto | Comprobado en la documentación oficial |
+|---|---|
+| Grupos | `myactivity.youtube` (Mi actividad de YouTube, que incluye YouTube Music), `youtube.music` (biblioteca de YouTube Music) y `youtube.subscriptions`. Mismo consentimiento y mismos límites que la fase 3 ([YouTube](https://developers.google.com/data-portability/schema-reference/youtube), [Mi actividad](https://developers.google.com/data-portability/schema-reference/my_activity)) |
+| `myactivity.youtube` | Registros en HTML y JSON: `header`, `title`, `titleUrl`, `subtitles` (canal), `description`, `time`, `products`, `details`, `activityControls`… Incluye búsquedas, visitas y anuncios. Puede llevar adjuntos de imagen y audio. La documentación no menciona expresamente las escuchas de YouTube Music: se comprobará con un export real |
+| `youtube.subscriptions` | CSV con «Channel ID», «Channel URL» y «Channel Title» |
+| `youtube.music` | CSV «music library songs» («Video ID», «Song Title», «Album Title», «Artist Name») y la música subida por el usuario (archivos originales, que no se leen ni se descomprimen) |
+| Política | La de Data Portability no menciona YouTube ni las condiciones de YouTube API Services; su único caso aprobado sigue siendo «trasladar datos». Es el mismo bloqueo de producción que la fase 3 ([política](https://developers.google.com/data-portability/policy)) |
+
+### Implementación
+
+| Pieza | Detalle |
+|---|---|
+| Código | `packages/integrations/src/profile/google-portability/youtube.ts` (lectura, agregación e identificación) dentro del mismo adapter; el consentimiento pide ya los 8 grupos |
+| Escuchas | Solo cuentan las reproducciones (URL `/watch?v=`) con canal y sin `details` (anuncios); los títulos están traducidos al idioma de la cuenta y no se usan. Se agregan por canal y se identifican como máximo los 400 más escuchados |
+| Identificación | Canal → Wikidata por la propiedad P2397 (ID de canal de YouTube), en lotes de 40: coincidencia exacta, 0,95. Solo artistas musicales y podcasts; personas no músicas y otros canales quedan fuera de categoría. Si el canal no figura y es un «Artista - Topic» o se escuchó en YouTube Music, se busca el artista por nombre exacto (0,8 o 0,65) sin atribuirle el ID del canal. Biblioteca: artistas por nombre exacto, solo músicos |
+| Agregación | Los canales de un mismo artista (el oficial y el «Topic») se fusionan por su entidad de Wikidata. Una observación por artista o programa y tipo |
+| Normalización (`google-portability-v1`) | Escuchas: consumido; desde 3 escuchas, preferencia `min(1, log1p(n) / log1p(p95 del usuario en esa categoría))` con confianza 0,6 × identificación (`strong_behavior`). Suscripción y biblioteca: conocido, no consumido, preferencia NULL |
+| Permisos nuevos | La API compara los scopes que pide el adapter con los concedidos (`missingScopes`) y la app pide renovar el permiso para importar YouTube |
+| Tests | `packages/integrations/test/youtube.test.ts` (CSV, extracción, límites, fusión, Wikidata y mapper), `packages/ingestion/test/google.int.test.ts` (pipeline con YouTube) y `apps/api/test/google-local.int.test.ts` (permisos que faltan) |
+
 ## Fuentes reales previstas
 
 Revisión del 2026-10-08: análisis de más de 60 plataformas en [fuentes-de-datos.md](fuentes-de-datos.md). Se muestran
@@ -105,7 +134,6 @@ hasta verificarlas con una conexión real.
 
 | Fuente | Categorías | Autenticación | Estado | Evidencia |
 |---|---|---|---|---|
-| Google Data Portability · YouTube y YouTube Music | music, podcasts | OAuth de Google (mismo consentimiento) | Pendiente · fase 4 | Documentación oficial revisada |
 | Google Books API | books | OAuth (scope `books`) | Pendiente · fase 11 | Documentación oficial revisada |
 | Apple Music (MusicKit) | music | Autorización en el dispositivo | Pendiente · fase 11 | Documentación revisada; condiciones de MusicKit por confirmar |
 | Calendario del dispositivo | food, culture | Permiso nativo | Pendiente · fase 11 | — |
@@ -127,5 +155,5 @@ paginación, límites, permisos de almacenamiento y política de revocación.
 |---|---|---|
 | `wikidata_snapshot` | Instantánea congelada de Wikidata (CC0) + imágenes de Wikimedia Commons con licencia libre | Implementado para la demo (`dataset = demo`). No llama a la red en tiempo de ejecución |
 | `OsmPlaceIdentifier` | OpenStreetMap vía Overpass (ODbL, uso comercial con atribución «© OpenStreetMap contributors») | Implementado (fase 3): identifica y clasifica lugares de Maps en lotes de 25 por consulta (la instancia pública bloquea cada hueco ~60 s por consulta). Trae todos los lugares con nombre cercanos para explicar lo no importado (fuera de categoría, sin coincidencia o ambiguo). Instancia pública para desarrollo; en producción, instancia propia o proveedor |
-| `WikidataWorkIdentifier` | API de Wikidata (CC0) | Implementado (fase 3): identifica obras valoradas en la Búsqueda |
+| `WikidataWorkIdentifier` | API de Wikidata (CC0) | Implementado (fase 3): identifica obras valoradas en la Búsqueda. Fase 4: canales de YouTube por P2397 y artistas por nombre exacto |
 | MusicBrainz (núcleo CC0), TVmaze (CC BY-SA) | Licencias compatibles con uso comercial | Pendiente; ver fuentes-de-datos.md. TMDb, IMDb e IGDB requieren licencia |

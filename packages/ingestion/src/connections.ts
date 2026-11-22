@@ -169,6 +169,9 @@ export async function startConnect(
   options: ConnectOptions = {},
 ): Promise<ConnectStart> {
   const { adapter, existing } = await assertCanConnect(db, registry, userId, sourceKey);
+  if (existing && adapter.releaseGrantBeforeRenewal && adapter.requestedScopes) {
+    await releaseIfScopesMissing(db, adapter, existing, options.credentialsKey);
+  }
   const auth = await adapter.connect({
     userId,
     ...(options.redirectUri ? { redirectUri: options.redirectUri } : {}),
@@ -187,6 +190,39 @@ export async function startConnect(
   }
   if (existing) return { kind: 'connected', connection: await renewConnection(db, existing, auth, options.credentialsKey) };
   return { kind: 'connected', connection: await createConnection(db, userId, sourceKey, auth, options.credentialsKey) };
+}
+
+/**
+ * Si la conexión no tiene todos los permisos que pide ahora el adapter y el proveedor no admite autorización
+ * incremental, se libera la concesión vigente (con sus credenciales) para pedirlos todos de nuevo. La conexión pasa a
+ * «requiere acción» hasta que el usuario complete la autorización; lo importado se conserva.
+ */
+async function releaseIfScopesMissing(db: Database, adapter: ProfileSourceAdapter, existing: ConnectionRow, credentialsKey: string | undefined) {
+  const [consent] = existing.consentId
+    ? await db.select({ scopes: providerConsents.scopes }).from(providerConsents).where(eq(providerConsents.id, existing.consentId))
+    : [];
+  const granted = new Set(consent?.scopes ?? []);
+  if ((adapter.requestedScopes ?? []).every((s) => granted.has(s))) return;
+  const [stored] = await db.select().from(sourceCredentials).where(eq(sourceCredentials.connectionId, existing.id));
+  let credentials: SourceCredentials | undefined;
+  if (stored && credentialsKey) {
+    try {
+      credentials = decryptCredentials(stored.ciphertext, credentialsKey, existing.id);
+    } catch {
+      credentials = undefined;
+    }
+  }
+  await adapter.releaseGrantBeforeRenewal!(
+    { id: existing.id, userId: existing.userId, sourceKey: existing.sourceKey as ProfileSourceKey, status: existing.status, cursor: null },
+    credentials,
+  );
+  await db.transaction(async (tx) => {
+    await tx.delete(sourceCredentials).where(eq(sourceCredentials.connectionId, existing.id));
+    await tx
+      .update(userConnections)
+      .set({ status: 'error', lastError: 'Hay datos nuevos que autorizar: completa el permiso en el proveedor', updatedAt: new Date() })
+      .where(eq(userConnections.id, existing.id));
+  });
 }
 
 /** Completa un flujo con redirección: el adapter verifica la respuesta del proveedor antes de crear la conexión. */

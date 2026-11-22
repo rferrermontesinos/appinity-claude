@@ -166,6 +166,9 @@ export const en: TranslationResources = {
     localOnlyNotice:
       'In development, Google can only return to this PC: connect Google from the web view on the PC (port 8092) with your local account. You will then see it here.',
     renew: 'Renew permission',
+    newPermissions: 'There are {{count}} new kinds of data you can share: renew the permission to import them.',
+    newPermissionsGoogle:
+      'New: APPINITY can now import YouTube and YouTube Music. Renew the Google permission (from the web view on the PC in development) and tick the new data.',
     revokedAtProvider: 'Disconnected. The provider confirmed that APPINITY access is revoked.',
     revokeFailed:
       'Disconnected in APPINITY and credentials deleted, but the provider did not confirm the revocation. You can check it in your provider account settings.',

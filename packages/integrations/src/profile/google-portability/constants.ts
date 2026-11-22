@@ -27,10 +27,24 @@ export const PHASE3_RESOURCE_GROUPS = [
   'search_ugc.media.thumbs',
   'search_ugc.media.watched',
 ] as const;
-export type ResourceGroup = (typeof PHASE3_RESOURCE_GROUPS)[number];
+
+/**
+ * Grupos de la fase 4: actividad de YouTube (incluye YouTube Music), biblioteca de YouTube Music y suscripciones.
+ * Esquemas verificados el 2026-10-13 (docs/integration-capabilities.md).
+ */
+export const PHASE4_RESOURCE_GROUPS = ['myactivity.youtube', 'youtube.music', 'youtube.subscriptions'] as const;
+
+/** Todos los grupos que importa APPINITY (los que pide el consentimiento por defecto). */
+export const ALL_RESOURCE_GROUPS = [...PHASE3_RESOURCE_GROUPS, ...PHASE4_RESOURCE_GROUPS] as const;
+export type ResourceGroup = (typeof ALL_RESOURCE_GROUPS)[number];
+export type YouTubeGroup = (typeof PHASE4_RESOURCE_GROUPS)[number];
 
 export function isResourceGroup(value: string): value is ResourceGroup {
-  return (PHASE3_RESOURCE_GROUPS as readonly string[]).includes(value);
+  return (ALL_RESOURCE_GROUPS as readonly string[]).includes(value);
+}
+
+export function isYouTubeGroup(value: string): value is YouTubeGroup {
+  return (PHASE4_RESOURCE_GROUPS as readonly string[]).includes(value);
 }
 
 /** Tipo de observación por grupo (también son los tipos de la instantánea). */
@@ -40,6 +54,9 @@ export const OBSERVATION_KIND: Record<ResourceGroup, string> = {
   'search_ugc.media.reviews_and_stars': 'search_rating',
   'search_ugc.media.thumbs': 'search_thumb',
   'search_ugc.media.watched': 'search_watched',
+  'myactivity.youtube': 'yt_plays',
+  'youtube.music': 'ytm_library',
+  'youtube.subscriptions': 'yt_subscription',
 };
 
 /** Re-export mínimo entre exports de un mismo grupo con acceso temporal (lo impone Google). */
@@ -68,6 +85,19 @@ export const STAR_SCALE = { min: 1, max: 5, step: 1 } as const;
 export const THUMB_SCORE = 0.8;
 export const THUMB_CONFIDENCE = 0.9;
 export const THUMB_CONSUMED = 0.7;
+
+/**
+ * YouTube y YouTube Music (fase 4, propuestas sin calibrar):
+ * - Escuchas agregadas por artista o programa: preferencia `min(1, log1p(n) / log1p(p95 del usuario))` desde 3
+ *   escuchas (una escucha aislada confirma consumo, no gusto), confianza 0,6 × identificación.
+ * - Se identifican como máximo los 400 canales más escuchados, 400 suscripciones y 300 artistas de la biblioteca:
+ *   acota las consultas a Wikidata en historiales muy largos. Lo que queda fuera se informa.
+ */
+export const YT_MIN_PLAYS_FOR_PREFERENCE = 3;
+export const YT_PREFERENCE_CONFIDENCE = 0.6;
+export const YT_MAX_CHANNELS = 400;
+export const YT_MAX_SUBSCRIPTIONS = 400;
+export const YT_MAX_LIBRARY_ARTISTS = 300;
 
 /** Las estrellas de la Búsqueda llegan como texto («Five stars»). Escala por confirmar con un export real. */
 export const STAR_WORDS: Record<string, number> = {

@@ -165,6 +165,9 @@ export const es = {
     localOnlyNotice:
       'En desarrollo, Google solo puede volver a este PC: conecta Google desde la vista web del PC (puerto 8092) con tu cuenta local. Después lo verás aquí.',
     renew: 'Renovar permiso',
+    newPermissions: 'Hay {{count}} datos nuevos que puedes compartir: renueva el permiso para importarlos.',
+    newPermissionsGoogle:
+      'Novedad: APPINITY ya puede importar YouTube y YouTube Music. Renueva el permiso de Google (desde la vista web del PC en desarrollo) y marca los datos nuevos.',
     revokedAtProvider: 'Desconectada. El proveedor confirmó que el acceso de APPINITY queda revocado.',
     revokeFailed:
       'Desconectada en APPINITY y credenciales borradas, pero el proveedor no confirmó la revocación. Puedes revisarlo en los ajustes de tu cuenta del proveedor.',

@@ -1,6 +1,7 @@
 import { unzipSync } from 'fflate';
-import { STAR_WORDS, type ResourceGroup } from './constants.js';
+import { STAR_WORDS, isYouTubeGroup, type ResourceGroup } from './constants.js';
 import type { ExportRecord, ExportedPlace } from './schemas.js';
+import { extractYouTube, parseCsv, type YouTubeExtract } from './youtube.js';
 
 /**
  * Resumen de la estructura de un export SIN datos personales: nombres de archivo, número de registros, claves vistas
@@ -228,7 +229,7 @@ export function extractRecords(
           const raw = pick(obj, 'Review Star Rating');
           noteEnum('Review Star Rating', raw);
           records.push({ group, query, stars: parseStars(raw), ...(date ? { date } : {}) });
-        } else {
+        } else if (group === 'search_ugc.media.watched') {
           records.push({ group, query, ...(date ? { date } : {}) });
         }
       }
@@ -237,23 +238,71 @@ export function extractRecords(
   return { records, skipped, skippedReasons, skippedShapes, enums, keys, urls };
 }
 
-/** Descomprime un archivo ZIP del export y devuelve sus JSON (los demás archivos solo cuentan en el resumen). */
-export function readArchive(group: ResourceGroup, zips: Uint8Array[]): { records: ExportRecord[]; summary: ArchiveSummary } {
+/**
+ * Descomprime un archivo ZIP del export y lee sus JSON y CSV. El resto (HTML, audio, música subida…) solo cuenta en el
+ * resumen y ni siquiera se descomprime. Los grupos de YouTube devuelven sus datos en `youtube` (se agregan después).
+ */
+export function readArchive(
+  group: ResourceGroup,
+  zips: Uint8Array[],
+): { records: ExportRecord[]; summary: ArchiveSummary; youtube?: YouTubeExtract } {
   const files: ArchiveSummary['files'] = [];
   const json: unknown[] = [];
+  const csv: Array<Array<Record<string, string>>> = [];
+  const readable = (name: string) => /\.(json|geojson|csv)$/i.test(name);
   for (const zip of zips) {
-    const entries = unzipSync(zip);
+    const entries = unzipSync(zip, {
+      filter: (file) => {
+        if (!file.name.endsWith('/')) files.push({ path: file.name, bytes: file.originalSize });
+        return readable(file.name);
+      },
+    });
     for (const [path, data] of Object.entries(entries)) {
-      if (path.endsWith('/')) continue;
-      files.push({ path, bytes: data.byteLength });
-      if (path.toLowerCase().endsWith('.json') || path.toLowerCase().endsWith('.geojson')) {
-        try {
-          json.push(JSON.parse(new TextDecoder().decode(data)));
-        } catch {
-          // Un archivo ilegible se refleja en el resumen (0 registros), no rompe el resto.
-        }
+      try {
+        const text = new TextDecoder().decode(data);
+        if (/\.csv$/i.test(path)) csv.push(parseCsv(text));
+        else json.push(JSON.parse(text));
+      } catch {
+        // Un archivo ilegible se refleja en el resumen (0 registros), no rompe el resto.
       }
     }
+  }
+  if (isYouTubeGroup(group)) {
+    const enums: Record<string, Set<string>> = {};
+    const keys = new Set<string>();
+    const urls = new Set<string>();
+    const skippedReasons: Record<string, number> = {};
+    let skipped = 0;
+    const notes = {
+      records: 0,
+      skip: (reason: string) => {
+        skipped++;
+        skippedReasons[reason] = (skippedReasons[reason] ?? 0) + 1;
+      },
+      key: (key: string) => void keys.add(key),
+      enumValue: (field: string, value: unknown) => {
+        if (typeof value === 'string' && value.length <= 40) (enums[field] ??= new Set()).add(value);
+      },
+      url: (url: string) => {
+        if (urls.size < 200) urls.add(url);
+      },
+    };
+    const youtube = extractYouTube(group, json, csv, notes);
+    return {
+      records: [],
+      youtube,
+      summary: {
+        group,
+        files,
+        records: notes.records,
+        skipped,
+        skippedReasons,
+        skippedShapes: {},
+        keys: [...keys].sort(),
+        enumValues: Object.fromEntries(Object.entries(enums).map(([k, v]) => [k, [...v].sort()])),
+        urlPatterns: [...new Set([...urls].map(urlPattern))].sort().slice(0, 10),
+      },
+    };
   }
   const { records, skipped, skippedReasons, skippedShapes, enums, keys, urls } = extractRecords(group, json);
   return {

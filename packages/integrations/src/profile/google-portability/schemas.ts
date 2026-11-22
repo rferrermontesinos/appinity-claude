@@ -60,7 +60,12 @@ export type ExportRecord =
   | { group: 'maps.starred_places'; place: ExportedPlace; date?: string }
   | { group: 'search_ugc.media.reviews_and_stars'; query: string; stars: number | null; date?: string }
   | { group: 'search_ugc.media.thumbs'; query: string; thumb: 'up' | 'down' | null; date?: string }
-  | { group: 'search_ugc.media.watched'; query: string; date?: string };
+  | { group: 'search_ugc.media.watched'; query: string; date?: string }
+  /** Escuchas agregadas de un artista o programa (puede reunir varios canales: el oficial y el «Topic»). */
+  | { group: 'myactivity.youtube'; plays: number; musicPlays: number; channels: number; date?: string }
+  | { group: 'youtube.subscriptions'; channels: number; date?: string }
+  /** Canciones de un artista en la biblioteca de YouTube Music. */
+  | { group: 'youtube.music'; songs: number; date?: string };
 
 /** Registro que el sync entrega al mapper: el dato exportado y su identificación en el catálogo. */
 export interface GoogleRecord {
