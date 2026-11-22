@@ -1,8 +1,10 @@
 import type { SoulmateDto } from '@appinity/shared';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
-import { useSoulmates } from '../../src/api/queries';
+import { useChatInbox, useSoulmates } from '../../src/api/queries';
+import { ChatInbox } from '../../src/components/ChatInbox';
 import { FriendsCard } from '../../src/components/FriendsCard';
 import { PersonAvatar, formatAffinity } from '../../src/components/PersonAvatar';
 import { Badge, Body, Card, ErrorCard, Loading, Screen, Small, Title } from '../../src/components/ui';
@@ -35,12 +37,67 @@ function SoulmateRow({ person }: { person: SoulmateDto }) {
   );
 }
 
-/** People: Top 50 almas gemelas (afinidad real calculada en segundo plano) y amigos (fase 10). */
+type Segment = 'chats' | 'people';
+
+/** Selector superior: Chats (con aviso de pendientes) y Almas gemelas y amigos. */
+function Segments({ value, onChange, badge }: { value: Segment; onChange: (s: Segment) => void; badge: number }) {
+  const { t } = useTranslation();
+  const c = usePalette();
+  const items: Array<{ key: Segment; label: string }> = [
+    { key: 'chats', label: t('chat.tabChats') },
+    { key: 'people', label: t('chat.tabPeople') },
+  ];
+  return (
+    <View accessibilityRole="tablist" style={{ flexDirection: 'row', backgroundColor: c.surfaceAlt, borderRadius: 999, padding: 4 }}>
+      {items.map((item) => {
+        const selected = item.key === value;
+        return (
+          <Pressable
+            key={item.key}
+            accessibilityRole="tab"
+            accessibilityState={{ selected }}
+            accessibilityLabel={item.key === 'chats' && badge ? `${item.label} (${badge})` : item.label}
+            onPress={() => onChange(item.key)}
+            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingVertical: spacing.sm, borderRadius: 999, backgroundColor: selected ? c.surface : 'transparent' }}
+          >
+            <Text style={{ color: selected ? c.text : c.textMuted, fontWeight: selected ? '800' : '600' }} numberOfLines={1}>
+              {item.label}
+            </Text>
+            {item.key === 'chats' && badge ? (
+              <View style={{ minWidth: 18, height: 18, borderRadius: 9, backgroundColor: c.accent, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 }}>
+                <Text style={{ color: c.accentText, fontSize: 11, fontWeight: '800' }}>{badge}</Text>
+              </View>
+            ) : null}
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+/**
+ * People: Chats (fase 12A, el núcleo social: interés → match → conversación), Top 50 almas gemelas y amigos (fase 10).
+ * La app mantiene cuatro pestañas: el chat vive aquí, con aviso en la propia pestaña.
+ */
 export default function PeopleScreen() {
+  const [segment, setSegment] = useState<Segment>('chats');
+  const soulmates = useSoulmates();
+  const inbox = useChatInbox();
+  const refreshing = segment === 'chats' ? inbox.isRefetching : soulmates.isRefetching;
+  const refresh = () => void (segment === 'chats' ? inbox.refetch() : soulmates.refetch());
+  return (
+    <Screen refreshing={refreshing} onRefresh={refresh}>
+      <Segments value={segment} onChange={setSegment} badge={inbox.data?.badge ?? 0} />
+      {segment === 'chats' ? <ChatInbox onExplore={() => setSegment('people')} /> : <SoulmatesAndFriends />}
+    </Screen>
+  );
+}
+
+function SoulmatesAndFriends() {
   const { t } = useTranslation();
   const soulmates = useSoulmates();
   return (
-    <Screen refreshing={soulmates.isRefetching} onRefresh={() => void soulmates.refetch()}>
+    <>
       <Card>
         <Title>{t('people.soulmates')}</Title>
         <Body muted>{t('people.soulmatesIntro')}</Body>
@@ -58,6 +115,6 @@ export default function PeopleScreen() {
         ) : null}
       </Card>
       <FriendsCard />
-    </Screen>
+    </>
   );
 }

@@ -66,6 +66,8 @@ export default function RootLayout() {
             <Stack.Screen name="category/[code]" />
             <Stack.Screen name="item/[id]" />
             <Stack.Screen name="person/[id]" />
+            <Stack.Screen name="chat/[id]" />
+            <Stack.Screen name="match/[id]" options={{ presentation: 'modal', headerShown: false }} />
           </Stack>
         </QueryClientProvider>
       </I18nextProvider>

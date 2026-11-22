@@ -18,6 +18,11 @@ import type {
   SettingsDto,
   SourceDto,
   SyncRunDto,
+  ChatConfigDto,
+  ChatConversationDto,
+  ChatInboxDto,
+  ChatMatchResultDto,
+  ChatMessageDto,
 } from '@appinity/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '../state/session';
@@ -148,7 +153,7 @@ export function useSocialAction() {
     },
     onSuccess: async () => {
       await Promise.all(
-        [dataKeys.friends, dataKeys.blocks, dataKeys.soulmates, ['person']].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+        [dataKeys.friends, dataKeys.blocks, dataKeys.soulmates, ['person'], ['chat']].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
       );
     },
   });
@@ -257,4 +262,91 @@ export function useItemProfileDetail(itemId: string) {
     queryFn: () => apiRequest<ProfileDetailView>(`/v1/me/item-profiles/${itemId}`),
     enabled: useHasSession() && Boolean(itemId),
   });
+}
+
+// ---- Fase 12A: chat (interés → match → conversación) ----
+
+export const chatKeys = {
+  config: ['chat', 'config'] as const,
+  inbox: ['chat', 'inbox'] as const,
+  conversation: (id: string) => ['chat', 'conversation', id] as const,
+};
+
+export function useChatConfig() {
+  return useQuery({ queryKey: chatKeys.config, queryFn: () => apiRequest<ChatConfigDto>('/v1/me/chats/config'), enabled: useHasSession(), staleTime: 5 * 60_000 });
+}
+
+/** Bandeja: solicitudes, nuevos matches y conversaciones. Sin push todavía (fase 12C): se consulta periódicamente. */
+export function useChatInbox() {
+  return useQuery({
+    queryKey: chatKeys.inbox,
+    queryFn: () => apiRequest<ChatInboxDto>('/v1/me/chats'),
+    enabled: useHasSession(),
+    refetchInterval: 15_000,
+    staleTime: 5_000,
+  });
+}
+
+/** Última página de la conversación, refrescada cada pocos segundos mientras está abierta. */
+export function useConversation(id: string) {
+  return useQuery({
+    queryKey: chatKeys.conversation(id),
+    queryFn: () => apiRequest<ChatConversationDto>(`/v1/me/chats/${id}/messages`),
+    enabled: useHasSession() && Boolean(id),
+    refetchInterval: 4_000,
+    staleTime: 2_000,
+  });
+}
+
+export async function fetchOlderMessages(id: string, before: string): Promise<ChatConversationDto> {
+  return apiRequest<ChatConversationDto>(`/v1/me/chats/${id}/messages?before=${encodeURIComponent(before)}&limit=50`);
+}
+
+export type ChatAction =
+  | { kind: 'interest'; userId: string }
+  | { kind: 'accept'; requestId: string }
+  | { kind: 'ignore'; requestId: string }
+  | { kind: 'unmatch'; conversationId: string };
+
+/** Acciones de chat. Al terminar se refrescan la bandeja y los perfiles (su estado de chat cambia). */
+export function useChatAction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (action: ChatAction): Promise<ChatMatchResultDto | null> => {
+      switch (action.kind) {
+        case 'interest':
+          return apiRequest<ChatMatchResultDto>('/v1/me/chats/requests', { method: 'POST', body: { userId: action.userId } });
+        case 'accept':
+          return apiRequest<ChatMatchResultDto>(`/v1/me/chats/requests/${action.requestId}/accept`, { method: 'POST' });
+        case 'ignore':
+          await apiRequest(`/v1/me/chats/requests/${action.requestId}/ignore`, { method: 'POST' });
+          return null;
+        case 'unmatch':
+          await apiRequest(`/v1/me/chats/${action.conversationId}`, { method: 'DELETE' });
+          return null;
+      }
+    },
+    onSuccess: async () => {
+      await Promise.all([chatKeys.inbox, ['person']].map((queryKey) => queryClient.invalidateQueries({ queryKey })));
+    },
+  });
+}
+
+/** Envía un mensaje. `clientId` hace que un reintento no lo duplique. */
+export function useSendMessage(conversationId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { body: string; clientId: string }) =>
+      apiRequest<ChatMessageDto>(`/v1/me/chats/${conversationId}/messages`, { method: 'POST', body: input }),
+    onSuccess: (message) => {
+      queryClient.setQueryData<ChatConversationDto>(chatKeys.conversation(conversationId), (old) =>
+        old && !old.messages.some((m) => m.id === message.id) ? { ...old, messages: [...old.messages, message] } : old,
+      );
+      void queryClient.invalidateQueries({ queryKey: chatKeys.inbox });
+    },
+  });
+}
+
+export async function markChatRead(conversationId: string): Promise<void> {
+  await apiRequest(`/v1/me/chats/${conversationId}/read`, { method: 'POST' });
 }

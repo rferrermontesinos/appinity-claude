@@ -5,6 +5,13 @@ const bool = z
   .optional()
   .transform((v) => v === 'true' || v === '1');
 
+/** Booleano con valor por defecto explícito (para flags que nacen activados). */
+const flag = (fallback: boolean) =>
+  z
+    .enum(['true', 'false', '1', '0'])
+    .optional()
+    .transform((v) => (v === undefined ? fallback : v === 'true' || v === '1'));
+
 const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -36,6 +43,10 @@ const envSchema = z
       .optional()
       .transform((v) => (v ? v.trim() : undefined)),
     /** Debe coincidir EXACTAMENTE con la URI autorizada del cliente. Google solo admite http con localhost. */
+    /** Flags de mensajería (§16). EARLY_ACCESS: chat gratuito con solicitud y aceptación (activado por defecto). */
+    CHAT_EARLY_ACCESS: flag(true),
+    /** PREMIUM_DIRECT_MESSAGE: Premium escribe sin match. Sin RevenueCat nadie es Premium, así que no tiene efecto. */
+    CHAT_PREMIUM_DIRECT_MESSAGE: flag(false),
     GOOGLE_OAUTH_REDIRECT_URI: z.url().default('http://localhost:3100/v1/connect/google_portability/callback'),
   })
   .superRefine((env, ctx) => {

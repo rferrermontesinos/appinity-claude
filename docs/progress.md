@@ -20,8 +20,72 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 9 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-14 · fase 9 (rama `fase-9-categories`, basada en `fase-8-home`). Incluye el feed continuo pedido por el usuario |
 | 10 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-14 · fase 10 (rama `fase-10-people`, basada en `fase-9-categories`). Contactos: pendiente (fase 13) |
 | 11 | Pendiente | Fuentes adicionales viables, una por tarea |
-| 12 | Pendiente | Chat, Premium y notificaciones, por subentregas |
+| 12 | **12A (chat) implementada, comprobada automáticamente y verificada en la vista web**; 12B (Premium/RevenueCat) y 12C (push) pendientes | Entrega 2026-10-14 · fase 12A (rama `fase-12a-chat`, basada en `fase-10-people`) |
 | 13 | Pendiente | Preparación y prueba de beta |
+
+---
+
+## Entrega 2026-10-14 · fase 12A (Chat con match)
+
+Adelantada a la fase 11 a petición del usuario (el chat es un núcleo de la app).
+
+### Qué se ha hecho
+
+- **Dominio** (`packages/ingestion/src/chat.ts`):
+  - interés, match mutuo, aceptar o ignorar;
+  - primer mensaje Premium (sin entitlement real: siempre 403 en la API);
+  - mensajes con paginación, leído y «Visto»;
+  - deshacer match; el bloqueo cierra el chat; la amistad aceptada lo abre;
+  - límites de envío.
+- **API** (`/v1/me/chats`):
+  - `GET config`, `GET /` (bandeja);
+  - `POST requests`, `POST direct`, `POST requests/:id/accept|ignore`;
+  - `GET|POST :id/messages`, `POST :id/read`, `DELETE :id`;
+  - el perfil público incluye `chat`;
+  - 429 por límite.
+- **App**:
+  - **Personas → Chats** con aviso en la pestaña: solicitudes, fila de nuevos matches y conversaciones;
+  - en el perfil: «Quiero hablar», «Aceptar y chatear» o «Enviar mensaje»;
+  - pantalla «¡Es un match!»;
+  - conversación: burbujas, enviando, reintento, «Visto», mensajes anteriores, sugerencia para romper el hielo;
+    opciones para ver perfil, deshacer match y bloquear.
+- **Migración 0009**: `message_requests`, `conversations`, `conversation_members`, `messages`. Incluye las
+  conversaciones de las amistades ya aceptadas.
+- Flags `CHAT_EARLY_ACCESS` (activado) y `CHAT_PREMIUM_DIRECT_MESSAGE` (desactivado) en `.env.example`.
+
+### Comandos ejecutados y resultados (Windows 11, 2026-10-14)
+
+| Comando | Resultado |
+|---|---|
+| `pnpm lint` / `pnpm typecheck` | 0 errores / OK |
+| `pnpm test` | **24 ficheros, 281 tests OK**. Nuevos: 15 de integración de chat (match, mutuo, ignorar sin revelar, otro dataset, amistad, flags, miembros, leído, idempotencia, paginación, límite por minuto, bloqueo, deshacer match, Premium inyectado solo en test, límite diario, gustos intactos) y 2 HTTP (config y 403 Premium; recorrido con 404 a quien no es miembro y bloqueo) |
+| `pnpm db:migrate` (BD de desarrollo) | 0009 aplicada |
+| Vista web propia (375×812, API 3101) | Marta muestra interés (API) → Laura ve la solicitud con aviso «1» en la pestaña → «Aceptar y chatear» → «¡Es un match!» → «Enviar mensaje» → mensaje enviado. Marta lo lee y responde (API): aparece solo en unos segundos con «Visto». Perfil de Àlex → «Quiero hablar» → «Interés enviado»; Àlex acepta (API) → nuevo match con anillo. «Deshacer match» con confirmación: desaparece para las dos (404 para Marta) |
+
+### Pasos para probarlo en el teléfono
+
+1. Reiniciar `pnpm api` y `pnpm mobile` (la migración 0009 ya está aplicada en la BD de desarrollo).
+2. Como Laura (demo): Personas → Almas gemelas → abre a Teo → «Quiero hablar» → «Interés enviado».
+3. Salir y entrar como Teo: Personas muestra el aviso. Chats → «Aceptar y chatear» → «¡Es un match!» → «Enviar mensaje».
+4. Escribe un mensaje. Vuelve a Laura: la conversación aparece con el no leído; al abrirla, Teo verá «Visto».
+5. En el chat, ⋮ → «Deshacer match» o «Bloquear» (con confirmación): la conversación desaparece para las dos.
+6. Laura ya tiene un match nuevo con Àlex (de la verificación web) para probar el primer mensaje.
+
+### Limitaciones
+
+- Sin push (fase 12C): la bandeja se actualiza cada 15 s y la conversación abierta cada 4 s.
+- Premium sin RevenueCat (fase 12B): el envío directo existe pero devuelve 403. No hay entitlement simulado.
+- Sin moderación de mensajes ni adjuntos (solo texto). Los mensajes de conversaciones cerradas se conservan hasta un
+  nuevo match o el borrado de la cuenta. Su política de retención queda para la fase 13.
+- El teclado en Android/iOS (KeyboardAvoidingView) solo se ha visto en la web: pendiente de aceptación en dispositivo.
+
+### Siguiente paso
+
+Aceptación del chat en el teléfono. Después:
+
+- 12B: Premium con RevenueCat. Necesita una cuenta y productos en las tiendas: no se contrata nada sin una tarea específica.
+- 12C: push. Necesita un proyecto de Expo/FCM/APNs. El permiso se pedirá en el alta.
+- Fase 11: fuentes, una por tarea. Por la regla de un único consentimiento, su conexión debe ofrecerse en el alta.
 
 ---
 
