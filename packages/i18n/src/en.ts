@@ -132,7 +132,7 @@ export const en: TranslationResources = {
       last: '{{title}}: {{label}}',
     },
     reload: 'Search again',
-    gestureHint: 'Tap for details · → like · ← dislike · ↑ love it · ↓ don’t know it',
+    gestureHint: 'Tap for details. To vote, drag the card towards the edge with your answer.',
     emptyTitle: 'No more recommendations for now',
     emptyNoSoulmates:
       'Recommendations come from your soulmates and from ratings in your area. Connect more sources to share more tastes with other people; recommendations are never invented.',

@@ -9,7 +9,8 @@ import { AuraBackdrop } from '../../src/components/Aura';
 import { DataBanner } from '../../src/components/DataBanner';
 import { RecommendationCard, type RecommendationCardHandle } from '../../src/components/RecommendationCard';
 import { Button, Card, EmptyState, ErrorCard, Loading, Screen, Skeleton, Small, Title } from '../../src/components/ui';
-import { LastActionBar, VoteBar } from '../../src/components/Vote';
+import { DirectionEdges, LastActionBar, VoteBar } from '../../src/components/Vote';
+import type { DeckAction } from '../../src/state/homeDeck';
 import { useHomeDeck } from '../../src/state/homeDeck';
 import { secureStorage } from '../../src/state/secure-storage';
 import { fonts, radius, spacing, usePalette } from '../../src/theme';
@@ -86,6 +87,8 @@ function HomeDeckSection({ onAura }: { onAura: (color: string | null) => void })
   const router = useRouter();
   const deck = useHomeDeck(true);
   const card = useRef<RecommendationCardHandle>(null);
+  // «Cuatro direcciones»: hacia dónde va el gesto de la tarjeta, para iluminar ese borde.
+  const [intent, setIntent] = useState<DeckAction | null>(null);
   const auraColor = deck.current ? CATEGORY_META[deck.current.item.category].color : null;
   useEffect(() => onAura(auraColor), [auraColor, onAura]);
   const emptyReason =
@@ -97,7 +100,7 @@ function HomeDeckSection({ onAura }: { onAura: (color: string | null) => void })
       {deck.error ? <ErrorCard error={deck.error} onRetry={deck.reload} /> : null}
       {deck.current ? (
         <View style={{ gap: spacing.md }}>
-          <View>
+          <DirectionEdges intent={intent}>
             {deck.next ? (
               // La siguiente tarjeta, debajo y quieta: se descubre al deslizar la actual. Sin gestos y oculta al lector
               // de pantalla; la impresión solo se registra cuando pasa a ser la actual.
@@ -118,11 +121,13 @@ function HomeDeckSection({ onAura }: { onAura: (color: string | null) => void })
               recommendation={deck.current}
               onAction={(action) => {
                 hint.used();
+                setIntent(null);
                 void deck.apply(action);
               }}
+              onIntent={setIntent}
               interactive={!deck.busy}
             />
-          </View>
+          </DirectionEdges>
           {hint.visible ? <Small style={{ textAlign: 'center' }}>{t('home.gestureHint')}</Small> : null}
           {/* Los botones lanzan la tarjeta con la misma animación y el mismo sello que el gesto. */}
           <VoteBar onAction={(action) => card.current?.fling(action)} disabled={deck.busy} />

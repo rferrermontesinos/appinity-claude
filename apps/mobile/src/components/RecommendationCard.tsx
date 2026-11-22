@@ -9,12 +9,13 @@ import { useOpenItem } from '../catalog/openItem';
 import { fonts, motion, onImage, radius, spacing, usePalette } from '../theme';
 import { CatalogImage } from './CatalogImage';
 import type { DeckAction } from '../state/homeDeck';
-import { VOTE_LEVELS, VoteStamp } from './Vote';
+import { actionLook, VOTE_LEVELS, VoteStamp } from './Vote';
 
 /**
- * Gestos de la tarjeta (motor v3, 2026-10-27): derecha «Me gusta», izquierda «No me gusta», arriba «Me encanta», abajo
- * «No lo conozco»; un toque abre la ficha. Cada dirección es una sola decisión: no hay que medir distancias. Pasado el
- * umbral se ve el sello; volver al centro y soltar cancela.
+ * Gestos de la tarjeta, «Cuatro direcciones» (motor v3, 2026-10-27; estilo elegido el 2026-11-22): derecha «Me gusta»,
+ * izquierda «No me gusta», arriba «Me encanta», abajo «No lo conozco»; un toque abre la ficha. Cada dirección es una
+ * sola decisión: no hay que medir distancias. Mientras arrastras se ilumina el borde de esa dirección (DirectionEdges);
+ * pasado el umbral se ve el sello y la tarjeta brilla con el color del voto; volver al centro y soltar cancela.
  */
 const THRESHOLD = 100;
 /** A partir de aquí ya se sabe hacia dónde va el gesto: el sello empieza a verse (aún no cuenta). */
@@ -135,9 +136,12 @@ export function RecommendationCard({
   recommendation,
   onAction,
   interactive,
+  onIntent,
   ref,
 }: {
   recommendation: RecommendationDto;
+  /** Hacia dónde va el gesto (o null): ilumina el borde de esa dirección fuera de la tarjeta. */
+  onIntent?: (action: DeckAction | null) => void;
   /** Votar, guardar o pasar (después de la animación de salida). */
   onAction: (action: DeckAction) => void;
   /** Solo la tarjeta de arriba responde a gestos. */
@@ -161,6 +165,7 @@ export function RecommendationCard({
     if (prev === next || (prev && next && prev.armed === next.armed && sameZone(prev.action, next.action))) return;
     stampRef.current = next;
     setStamp(next);
+    if (!prev || !next || !sameZone(prev.action, next.action)) onIntent?.(next?.action ?? null);
   };
   const leaving = useRef(false);
   // ¿Se ha movido el dedo en algún momento de este toque? Arrastrar y volver al centro no es un toque.
@@ -262,6 +267,10 @@ export function RecommendationCard({
   const stampOpacity = progress.interpolate({ inputRange: [0, INTENT / THRESHOLD, 1], outputRange: [0, 0.6, 1], extrapolate: 'clamp' });
   const stampScale = progress.interpolate({ inputRange: [0, 1], outputRange: [0.86, 1], extrapolate: 'clamp' });
   const context = contextLine(item);
+  const armedColor = (action: DeckAction) => {
+    const look = actionLook(c, action);
+    return look.key === 'unknown' ? c.textMuted : look.color;
+  };
 
   // Lector de pantalla: la tarjeta es un solo elemento con acciones (votar, no lo conozco; activar abre la ficha).
   const actions = [
@@ -295,8 +304,9 @@ export function RecommendationCard({
         borderRadius: radius.xl,
         overflow: 'hidden',
         backgroundColor: c.surface,
-        borderWidth: 1,
-        borderColor: c.hairline,
+        // Pasado el umbral, la tarjeta se enmarca con el color del voto que contará al soltar.
+        borderWidth: stamp?.armed ? 3 : 1,
+        borderColor: stamp?.armed ? armedColor(stamp.action) : c.hairline,
         boxShadow: `0px 24px 60px -24px ${meta.color}B3`,
       }}
     >

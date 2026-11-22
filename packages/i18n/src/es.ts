@@ -130,7 +130,7 @@ export const es = {
       last: '{{title}}: {{label}}',
     },
     reload: 'Volver a buscar',
-    gestureHint: 'Toca para ver la ficha · → me gusta · ← no me gusta · ↑ me encanta · ↓ no lo conozco',
+    gestureHint: 'Toca para ver la ficha. Para votar, arrastra la tarjeta hacia el borde con tu respuesta.',
     emptyTitle: 'No hay más recomendaciones por ahora',
     emptyNoSoulmates:
       'Las recomendaciones salen de tus almas gemelas y de las valoraciones de tu zona. Conecta más fuentes para tener más gustos en común con otras personas; no se inventan recomendaciones.',

@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { VoteValueDto } from '@appinity/shared';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 import type { DeckAction, DeckEntry } from '../state/homeDeck';
@@ -125,8 +126,9 @@ export function RoundAction({
 }
 
 /**
- * Alternativa a los gestos (siempre visible), ordenada como una escala: No me gusta · No lo conozco · Me gusta ·
- * Me encanta. «No lo conozco», más pequeño: no es un voto.
+ * Botones de respaldo de «Cuatro direcciones» (decisión del titular 2026-11-22; propuesta B de
+ * docs/design/votacion/propuestas.html), en el orden de los gestos: a la izquierda «No me gusta» (←), en el centro los
+ * dos verticales, «No lo conozco» (↓, más pequeño: no es un voto) y «Me encanta» (↑), y a la derecha «Me gusta» (→).
  */
 export function VoteBar({ onAction, disabled }: { onAction: (action: DeckAction) => void; disabled: boolean }) {
   const { t } = useTranslation();
@@ -135,8 +137,79 @@ export function VoteBar({ onAction, disabled }: { onAction: (action: DeckAction)
     <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center' }}>
       <RoundAction icon="thumb-down" label={t('home.vote.dislike')} hint={t('home.vote.counts')} color={c.negative} size={56} onPress={() => onAction({ kind: 'vote', value: -1 })} disabled={disabled} />
       <RoundAction icon="help-circle-outline" label={t('home.vote.unknown')} hint={t('home.vote.unknownHint')} color={c.textMuted} size={46} onPress={() => onAction({ kind: 'unknown' })} disabled={disabled} />
-      <RoundAction icon="thumb-up" label={t('home.vote.like')} hint={t('home.vote.counts')} color={c.affinity} size={56} onPress={() => onAction({ kind: 'vote', value: 1 })} disabled={disabled} />
       <RoundAction icon="heart" label={t('home.vote.love')} hint={t('home.vote.counts')} color={c.love} onColor={c.onLove} size={62} emphasis onPress={() => onAction({ kind: 'vote', value: 2 })} disabled={disabled} />
+      <RoundAction icon="thumb-up" label={t('home.vote.like')} hint={t('home.vote.counts')} color={c.affinity} size={56} onPress={() => onAction({ kind: 'vote', value: 1 })} disabled={disabled} />
+    </View>
+  );
+}
+
+type Direction = 'left' | 'right' | 'up' | 'down';
+/** Dirección del gesto de cada acción: ← No me gusta · → Me gusta · ↑ Me encanta · ↓ No lo conozco. */
+export function directionOf(action: DeckAction): Direction {
+  if (action.kind === 'unknown') return 'down';
+  if (action.value === 2) return 'up';
+  return action.value > 0 ? 'right' : 'left';
+}
+const EDGE_ACTION: Record<Direction, DeckAction> = {
+  left: { kind: 'vote', value: -1 },
+  right: { kind: 'vote', value: 1 },
+  up: { kind: 'vote', value: 2 },
+  down: { kind: 'unknown' },
+};
+// Las etiquetas laterales van giradas 90°: su flecha «arriba» queda apuntando hacia fuera (izquierda o derecha).
+const EDGE_ARROW: Record<Direction, IconName> = { left: 'arrow-up', right: 'arrow-up', up: 'arrow-up', down: 'arrow-down' };
+/** Ancho del margen lateral donde van las etiquetas verticales. */
+export const EDGE_GUTTER = 22;
+
+function Edge({ direction, active }: { direction: Direction; active: boolean }) {
+  const { t } = useTranslation();
+  const c = usePalette();
+  const look = actionLook(c, EDGE_ACTION[direction]);
+  const color = look.key === 'unknown' ? c.textMuted : look.color;
+  const content = (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+      <MaterialCommunityIcons name={EDGE_ARROW[direction]} size={13} color={color} />
+      <MaterialCommunityIcons name={look.icon} size={13} color={color} />
+      <Text numberOfLines={1} style={{ color, fontSize: 11, fontWeight: '700', letterSpacing: 0.7, textTransform: 'uppercase' }}>
+        {t(`home.vote.${look.key}`)}
+      </Text>
+    </View>
+  );
+  const opacity = active ? 1 : 0.55;
+  if (direction === 'up' || direction === 'down') return <View style={{ alignItems: 'center', opacity }}>{content}</View>;
+  // Etiquetas laterales en vertical, leídas de abajo arriba a la izquierda y de arriba abajo a la derecha.
+  return (
+    <View
+      style={{ position: 'absolute', top: 0, bottom: 0, [direction]: 0, width: EDGE_GUTTER, alignItems: 'center', justifyContent: 'center', opacity }}
+    >
+      <View style={{ width: 220, alignItems: 'center', transform: [{ rotate: direction === 'left' ? '-90deg' : '90deg' }] }}>{content}</View>
+    </View>
+  );
+}
+
+/**
+ * «Cuatro direcciones»: el nombre de cada voto en el borde hacia el que se arrastra. Siempre a la vista (atenuados) y,
+ * mientras arrastras, el borde de esa dirección se ilumina con su color, su icono y su nombre (nunca solo el color).
+ * Decorativo para el lector de pantalla: la tarjeta ya ofrece las acciones.
+ */
+export function DirectionEdges({ intent, children }: { intent: DeckAction | null; children: ReactNode }) {
+  const active = intent ? directionOf(intent) : null;
+  return (
+    <View style={{ gap: 6 }}>
+      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <Edge direction="up" active={active === 'up'} />
+      </View>
+      <View style={{ paddingHorizontal: EDGE_GUTTER }}>
+        {/* Contenedor propio: lo que la tarjeta posiciona en absoluto (la siguiente, debajo) no invade los márgenes. */}
+        <View>{children}</View>
+        <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}>
+          <Edge direction="left" active={active === 'left'} />
+          <Edge direction="right" active={active === 'right'} />
+        </View>
+      </View>
+      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <Edge direction="down" active={active === 'down'} />
+      </View>
     </View>
   );
 }
