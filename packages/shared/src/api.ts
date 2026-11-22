@@ -158,6 +158,30 @@ export interface CatalogItemDto {
   metadata: Record<string, unknown>;
 }
 
+/** Afinidad de una categoría hacia otra persona. `score` NULL = sin evidencia comparable suficiente. */
+export interface AffinityCategoryDto {
+  category: Category;
+  score: number | null;
+  confidence: number | null;
+  /** Objetos con preferencia en ambos (solo el recuento, nunca cuáles). */
+  commonItems: number;
+}
+
+/** Afinidad direccional «yo → otra persona» (§4 y §11). */
+export interface AffinityDto {
+  targetUserId: string;
+  /** 0–100 o NULL (la app muestra «—»). No es una probabilidad. */
+  score: number | null;
+  confidence: number | null;
+  categoriesCompared: number;
+  /** Las ocho categorías, en el orden canónico. */
+  categories: AffinityCategoryDto[];
+  /** Ambas direcciones ≥ 90 («Afinidad mutua excepcional»). */
+  exceptionalMutual: boolean;
+  algorithmVersion: string | null;
+  computedAt: string | null;
+}
+
 export interface ItemProfileDto {
   item: CatalogItemDto;
   knownConfidence: number;

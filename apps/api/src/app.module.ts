@@ -1,6 +1,7 @@
 import { type DynamicModule, Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { AffinityController } from './affinity/affinity.controller.js';
 import { AuthGuard } from './auth/auth.guard.js';
 import { DevAuthController } from './auth/dev-auth.controller.js';
 import { DevAuthService } from './auth/dev-auth.service.js';
@@ -46,6 +47,7 @@ export class AppModule {
         CatalogController,
         MediaController,
         ItemProfilesController,
+        AffinityController,
       ],
       providers: [
         DevAuthService,

@@ -3,6 +3,7 @@ export const QUEUES = {
   system: 'system',
   profileSync: 'profile-sync',
   catalogImages: 'catalog-images',
+  affinity: 'affinity',
 } as const;
 
 export interface PingJob {
@@ -16,6 +17,11 @@ export interface ProfileSyncJob {
 
 export interface CatalogImageJob {
   imageId: string;
+}
+
+/** Recálculo de afinidades: de un usuario (tras un sync o una desconexión) o de todo (`userId` ausente). */
+export interface AffinityJob {
+  userId?: string;
 }
 
 /** Clave Redis del latido del worker (con prefijo de instalación). */

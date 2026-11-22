@@ -29,6 +29,13 @@
       "when": 1791465697963,
       "tag": "0003_local_accounts_external_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791847160078,
+      "tag": "0004_affinities",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,6 @@
 # Arquitectura · APPINITY Claude
 
-Documento vivo. Describe lo implementado (fases 0 a 4) y marca lo pendiente. Requisitos:
+Documento vivo. Describe lo implementado (fases 0 a 5) y marca lo pendiente. Requisitos:
 [APPINITY_Especificacion.md](APPINITY_Especificacion.md). Decisiones y parámetros: [decisions.md](decisions.md).
 
 ## Vista general
@@ -72,6 +72,8 @@ Tablas de la fase 1:
 | `source_sync_runs` | Disparador, modo (incremental/full), estado, contadores (insertadas, actualizadas, sin cambios, borradas, objetos creados), errores parciales y cursores antes/después |
 | `user_item_observations` | Evidencia normalizada. **Clave idempotente `(connection_id, source_record_id, observation_kind)`**. Rangos 0–1 y −1..+1, `consumed ≤ known`, preferencia/confianza/base NULL a la vez, `occurred_at` y precisión juntos, huella de contenido, `synced_at` separado de `occurred_at` |
 | `user_item_profiles` | Una fila por usuario y objeto (PK compuesta): tres dimensiones, base ganadora, número de evidencias y fuentes, conflicto, notas de consolidación, primera y última actividad, versión |
+| `user_affinities` (fase 5) | Una fila por pareja ordenada con afinidad: puntuación 0–100, confianza, categorías comparadas, objetos comunes, versión y fecha. Sin autorreferencia; índice de ranking por origen |
+| `category_affinities` (fase 5) | Una fila por pareja ordenada y categoría con resultado (sin fila = NULL): puntuación, confianza, evidencia efectiva, acuerdo, cobertura y versión |
 
 ## Pipeline de ingesta (§14)
 
@@ -149,6 +151,19 @@ Mismo adapter y consentimiento de Google (8 grupos). Por cada export completado 
 API: missingScopes = scopes que pide el adapter − concedidos → la app ofrece «Renovar permiso»
 ```
 
+## Afinidad (fase 5)
+
+```text
+sync con cambios / borrado de una fuente → cola «affinity» (job por usuario, agrupado 10 s) ─┐
+programador diario (completo) · pnpm db:seed ──────────────────────────────────────────────┤
+                                                                                           ▼
+recomputeAffinities: preferencias consolidadas de usuarios elegibles del mismo dataset
+  → índice objeto → usuarios (prefiltro exacto: solo parejas con algo en común)
+  → affinity-v1 (A → B y B → A) por categoría y global
+  → transacción con bloqueo por dataset: sustituye las filas del foco en user_affinities y category_affinities
+API: GET /v1/me/affinities/:userId → «yo → otra persona» (8 categorías, NULL = «—»), sin objetos
+```
+
 ## Resolución de entidades (§6)
 
 `EntityResolver.resolve(candidato, dataset)`:
@@ -215,6 +230,6 @@ producción (vista web de desarrollo).
 
 ## Pendiente por fase
 
-Ver [progress.md](progress.md). Validación con una cuenta real de la identificación de Google (3) y de YouTube y YouTube Music (4), afinidad (5), Top 50 (6), recomendador y Trending
+Ver [progress.md](progress.md). Validación con una cuenta real de la identificación de Google (3) y de YouTube y YouTube Music (4), Top 50 (6), recomendador y Trending
 (7), Home con carrusel (8), Categories con recomendaciones (9), People/Friends (10), adapters restantes (11), chat,
 Premium y push (12), autenticación de producción y beta (13).
