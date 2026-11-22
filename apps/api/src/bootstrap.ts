@@ -1,14 +1,20 @@
 import 'reflect-metadata';
 import { type INestApplication, Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import type { NestExpressApplication } from '@nestjs/platform-express';
+import { ExpressAdapter, type NestExpressApplication } from '@nestjs/platform-express';
+import express from 'express';
 import helmet from 'helmet';
 import { AppModule } from './app.module.js';
 import type { AppEnv } from './config/env.js';
 
 /** Crea la aplicación sin escuchar (la usan main.ts y los tests de integración). */
 export async function createApp(env: AppEnv, options: { logger?: boolean } = {}): Promise<INestApplication> {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule.register(env), {
+  // Rutas sensibles a mayúsculas (auditoría B10): el túnel de la beta bloquea /v1/dev con una expresión que sí lo es, y
+  // Express por defecto no, así que /V1/DEV/session llegaba a la identidad de desarrollo. Express fija esta opción al
+  // crear su router, y el adaptador de Nest lo crea en su constructor: hay que ponerla antes, en la instancia de Express.
+  const server = express();
+  server.set('case sensitive routing', true);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule.register(env), new ExpressAdapter(server), {
     logger: options.logger === false ? false : ['error', 'warn', 'log'],
     bodyParser: true,
   });

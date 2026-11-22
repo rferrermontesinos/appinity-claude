@@ -203,6 +203,19 @@ describe('rutas privadas', () => {
     expect((await get('/v1/me', await sign({ kind: 'prod' }, { sub: userId }))).status).toBe(401);
   });
 
+  it('las rutas distinguen mayúsculas y no se normalizan: /V1/DEV, /v1//dev o /v1/%64ev no llegan a la identidad de desarrollo (el túnel solo bloquea /v1/dev)', async () => {
+    expect((await get('/v1/dev/users')).status).toBe(200);
+    for (const path of ['/v1/Dev/users', '/V1/DEV/USERS', '/v1/DEV/session', '/v1//dev/users', '/v1/%64ev/users']) {
+      expect((await get(path)).status).toBe(404);
+    }
+    const res = await fetch(`${base}/V1/dev/session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handle: DEMO_USERS[0]!.handle }),
+    });
+    expect(res.status).toBe(404);
+  });
+
   it('la identidad de desarrollo nunca actúa como un usuario real', async () => {
     const forged = await sign({ kind: 'dev' }, { sub: LIVE_USER_ID });
     expect((await get('/v1/me', forged)).status).toBe(401);

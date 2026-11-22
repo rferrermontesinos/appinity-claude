@@ -43,13 +43,14 @@ $id = @($existing)[0].id
 $credentials = Join-Path $dir "$id.json"
 if (-not (Test-Path $credentials)) { throw "No están las credenciales del túnel ($credentials). Bórralo con «cloudflared tunnel delete $name» y repite." }
 
-# Reglas: el acceso de desarrollo (/v1/dev, modo demo) NUNCA se publica; el resto va a la API local.
+# Reglas: el acceso de desarrollo (/v1/dev, modo demo) NUNCA se publica; el resto va a la API local. (?i): sin distinguir
+# mayúsculas, como respaldo de la API, que desde B10 tampoco las confunde (/V1/DEV no llega a /v1/dev).
 $yaml = @"
 tunnel: $id
 credentials-file: $credentials
 ingress:
   - hostname: $hostname
-    path: ^/v1/dev(/.*)?$
+    path: (?i)^/v1/dev(/.*)?$
     service: http_status:404
   - hostname: $hostname
     service: http://localhost:3100
