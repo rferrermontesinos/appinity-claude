@@ -6,6 +6,7 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
     "platforms": [
       "ios",
       "android",
@@ -20,12 +21,25 @@
     },
     "android": {
       "package": "dev.appinity.claude",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0C0C0E"
+      },
       "permissions": [
         "ACCESS_COARSE_LOCATION"
       ]
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#0C0C0E"
+        }
+      ],
       "expo-localization",
       "expo-secure-store",
       [
@@ -42,7 +56,8 @@
       ]
     ],
     "web": {
-      "output": "single"
+      "output": "single",
+      "favicon": "./assets/favicon.png"
     }
   }
 }
