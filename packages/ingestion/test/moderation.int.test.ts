@@ -122,6 +122,9 @@ describe('suspender una cuenta (pnpm account:suspend y account:unsuspend)', () =
     // Fuera de la afinidad (y de la rareza) en el siguiente recálculo.
     expect((await recomputeAffinities(database.db)).find((r) => r.dataset === 'live')).toMatchObject({ eligibleUsers: 2 });
     await expect(suspendUser(database.db, id.bea!)).rejects.toBeInstanceOf(ConflictError);
+    // Un código nuevo de cuenta local tampoco la levanta.
+    await expect(createOrResetLocalUser(database.db, { handle: 'test_mod_bea', displayName: 'Otra' })).rejects.toBeInstanceOf(ConflictError);
+    expect(await findModerationTarget(database.db, 'test_mod_bea')).toMatchObject({ status: 'suspended', displayName: 'Sintética bea' });
 
     await unsuspendUser(database.db, id.bea!);
     await expect(unsuspendUser(database.db, id.bea!)).rejects.toBeInstanceOf(ConflictError);

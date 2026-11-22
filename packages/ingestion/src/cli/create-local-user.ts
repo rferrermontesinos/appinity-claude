@@ -1,5 +1,6 @@
 import { parseArgs } from 'node:util';
 import { createDatabase, requireEnv } from '@appinity/database';
+import { ConflictError } from '../errors.js';
 import { createOrResetLocalUser } from '../local-users.js';
 
 // pnpm user:local --handle ricard --name "Ricard" [--country ES]
@@ -30,6 +31,10 @@ try {
   console.log('');
   console.log('  Introdúcelo en la app (pantalla inicial → «Cuenta local real»). Se muestra solo ahora; no lo pegues en');
   console.log('  chats ni lo subas a Git. Si lo pierdes, vuelve a ejecutar este comando para generar otro.');
+} catch (error) {
+  if (!(error instanceof ConflictError)) throw error;
+  console.error(`✖ ${error.message}`);
+  process.exitCode = 1;
 } finally {
   await handle.close();
 }

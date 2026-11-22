@@ -143,7 +143,7 @@ describe('Top 50 con menos de 50 candidatas', () => {
     const [a, b, c] = before.map((r) => r.userId);
     await database.db.insert(userBlocks).values({ blockerUserId: viewer, blockedUserId: a! });
     await database.db.insert(userBlocks).values({ blockerUserId: b!, blockedUserId: viewer });
-    await database.db.update(users).set({ status: 'suspended' }).where(eq(users.id, c!));
+    await database.db.update(users).set({ status: 'suspended', suspendedAt: new Date() }).where(eq(users.id, c!));
     const after = (await topSoulmates(database.db, viewer)).map((r) => r.userId);
     expect(after).not.toContain(a);
     expect(after).not.toContain(b);
@@ -156,7 +156,7 @@ describe('Top 50 con menos de 50 candidatas', () => {
     expect(await canSeePerson(database.db, viewer, viewer)).toBe(false);
     // Deshacer para el siguiente bloque.
     await database.db.delete(userBlocks);
-    await database.db.update(users).set({ status: 'active' }).where(eq(users.id, c!));
+    await database.db.update(users).set({ status: 'active', suspendedAt: null }).where(eq(users.id, c!));
   });
 });
 
