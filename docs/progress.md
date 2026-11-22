@@ -25,6 +25,13 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## 2026-11-22 · Herramientas: Claude Code Game Studios
+
+- Kit instalado en `.claude/` (78 skills, 49 agentes, reglas y scripts), hooks automáticos desactivados.
+  Ver [claude-code-game-studios.md](claude-code-game-studios.md). No toca código de la app; no hay tests que ejecutar.
+- Comprobado: `settings.json` es JSON válido y las 78 skills tienen `SKILL.md`. Siguiente paso: probar `/help` o
+  `/onboard` en una sesión nueva.
+
 ## Entrega 2026-11-13 · Transparencia, «Lo que os une» y rareza en la afinidad (`affinity-v5`)
 
 ### Qué se ha hecho

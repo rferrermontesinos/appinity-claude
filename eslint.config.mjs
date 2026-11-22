@@ -14,6 +14,7 @@ export default tseslint.config(
       'packages/database/drizzle/**',
       '.data/**',
       'coverage/**',
+      '.claude/**',
     ],
   },
   js.configs.recommended,

@@ -1310,3 +1310,12 @@ APPINITY toma el camino contrario y lo hace visible.
   discrepan igual en obras raras y comunes), así que la media ponderada coincide. Los tests unitarios demuestran el
   efecto (coincidir en lo raro sube, discrepar en lo raro baja). **Calibración pendiente con los datos de la beta**: si
   la diferencia entre obras comunes y raras resulta excesiva, se suaviza (por ejemplo, con la raíz del logaritmo).
+
+## 2026-11-22 · Kit Claude Code Game Studios en `.claude/`
+
+- Se instala el kit (MIT, v1.3.0) en `.claude/` para que las sesiones de Claude Code tengan sus skills y agentes.
+  Detalle y encaje en [claude-code-game-studios.md](claude-code-game-studios.md).
+- **Hooks sin registrar**: hacían consultas de red al iniciar sesión, notificaciones con PowerShell, escribían
+  registros en el repo y podían bloquear commits con criterios de videojuego. Solo se conservan los permisos.
+- `.claude/` deja de estar en `.gitignore`; se ignora solo lo local (`settings.local.json`, `agent-memory/`).
+- Las reglas de producto de `CLAUDE.md` mandan sobre cualquier plantilla del kit.
