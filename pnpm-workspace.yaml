@@ -12,3 +12,13 @@ allowBuilds:
   '@swc/core': set this to true or false
   esbuild: true
   msgpackr-extract: true
+
+# Versiones mínimas de dependencias transitivas con avisos de seguridad graves (pnpm audit, 2026-11-22).
+# body-parser, multer y qs llegan por NestJS/Express (API); node-forge y decode-uri-component, por las herramientas
+# de compilación de Expo (no van dentro de la app).
+overrides:
+  body-parser: '>=2.4.0'
+  multer: '>=2.5.0'
+  qs: '>=6.16.1'
+  node-forge: '>=1.4.1'
+  decode-uri-component@<0.5.1: '>=0.5.1'

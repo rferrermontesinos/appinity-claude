@@ -95,12 +95,19 @@ describe('conexión con Steam desde la API', () => {
     expect(state).toMatch(/^[A-Za-z0-9_-]{30,}$/);
     expect(returnTo.search).toBe('');
 
-    // Una respuesta sin datos OpenID se rechaza y vuelve a la app con el error.
+    // La vuelta solo retiene la respuesta: la app la confirma con su sesión, y una respuesta sin datos OpenID se
+    // rechaza entonces sin crear nada.
     const callback = await fetch(`${base}/v1/connect/steam/callback/${state}`, { redirect: 'manual' });
     expect(callback.status).toBe(302);
     const back = new URL(callback.headers.get('location')!);
     expect(back.protocol).toBe('exp:');
-    expect(back.searchParams.get('result')).toBe('error');
+    expect(back.searchParams.get('result')).toBe('confirm');
+    const confirmed = await fetch(`${base}/v1/me/connections/confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ code: back.searchParams.get('confirm') }),
+    });
+    expect(confirmed.status).toBeGreaterThanOrEqual(400);
     // El state ya se consumió: reutilizarlo no sirve (tampoco con la forma antigua ?state=).
     const replay = await fetch(`${base}/v1/connect/steam/callback?state=${state}`, { redirect: 'manual' });
     expect(replay.status).toBe(400);

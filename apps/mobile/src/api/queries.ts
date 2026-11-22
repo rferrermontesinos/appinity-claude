@@ -256,6 +256,23 @@ export function useConnect() {
   });
 }
 
+/**
+ * Vuelta de un proveedor: la API devuelve un código de confirmación y la conexión solo se crea cuando la app con la
+ * sesión de quien la empezó lo confirma. Devuelve el resultado listo para mostrar.
+ */
+export async function finishConnect(params: Record<string, unknown>): Promise<{ ok: boolean; message: string }> {
+  if (params.result === 'confirm' && typeof params.confirm === 'string' && params.confirm) {
+    try {
+      await apiRequest<ConnectStartDto>('/v1/me/connections/confirm', { method: 'POST', body: { code: params.confirm }, timeoutMs: 30_000 });
+      return { ok: true, message: '' };
+    } catch (error) {
+      return { ok: false, message: (error as Error).message };
+    }
+  }
+  if (params.result === 'connected') return { ok: true, message: '' };
+  return { ok: false, message: typeof params.message === 'string' ? params.message : '' };
+}
+
 export function useSync() {
   const queryClient = useQueryClient();
   return useMutation({

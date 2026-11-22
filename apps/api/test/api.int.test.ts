@@ -178,6 +178,17 @@ describe('configuración', () => {
     expect(() => loadEnv(testEnv({ NODE_ENV: 'production', DEMO_MODE: 'false' }))).toThrow(/prohibidos/);
   });
 
+  it('en producción exige una URL pública fija (las vueltas OAuth no dependen de la cabecera Host)', () => {
+    const prod = { NODE_ENV: 'production', DEMO_MODE: 'false', DEV_AUTH_ENABLED: 'false', AUTH_SECRET: 'a'.repeat(48) };
+    expect(() => loadEnv(testEnv(prod))).toThrow(/PUBLIC_API_URL/);
+    expect(loadEnv(testEnv({ ...prod, PUBLIC_API_URL: 'https://api.example.org' })).PUBLIC_API_URL).toBe('https://api.example.org');
+  });
+
+  it('valida la versión de la Graph API de Facebook', () => {
+    expect(loadEnv(testEnv({ FACEBOOK_GRAPH_VERSION: 'v24.0' })).FACEBOOK_GRAPH_VERSION).toBe('v24.0');
+    expect(() => loadEnv(testEnv({ FACEBOOK_GRAPH_VERSION: 'vX' }))).toThrow(/FACEBOOK_GRAPH_VERSION/);
+  });
+
   it('TRUST_PROXY solo admite rangos o subredes, nunca confiar en todo', () => {
     expect(() => loadEnv(testEnv({ TRUST_PROXY: 'true' }))).toThrow(/TRUST_PROXY/);
     expect(() => loadEnv(testEnv({ TRUST_PROXY: '1' }))).toThrow(/TRUST_PROXY/);

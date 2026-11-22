@@ -101,7 +101,7 @@ const envSchema = z
     FACEBOOK_APP_ID: z.string().optional().transform((v) => (v ? v.trim() : undefined)),
     FACEBOOK_APP_SECRET: z.string().optional().transform((v) => (v ? v.trim() : undefined)),
     FACEBOOK_REDIRECT_URI: z.url().default('http://localhost:3100/v1/connect/facebook/callback'),
-    FACEBOOK_GRAPH_VERSION: z.string().regex(/^vd+.d+$/).default('v23.0'),
+    FACEBOOK_GRAPH_VERSION: z.string().regex(/^v\d+\.\d+$/).default('v23.0'),
     GOOGLE_OAUTH_REDIRECT_URI: z.url().default('http://localhost:3100/v1/connect/google_portability/callback'),
   })
   .superRefine((env, ctx) => {
@@ -114,6 +114,10 @@ const envSchema = z
     }
     if (env.NODE_ENV === 'production' && !env.AUTH_SECRET) {
       ctx.addIssue({ code: 'custom', path: ['AUTH_SECRET'], message: 'AUTH_SECRET es obligatorio con NODE_ENV=production' });
+    }
+    // Sin URL pública fija, las vueltas de OAuth y Steam se construirían con la cabecera Host de la petición.
+    if (env.NODE_ENV === 'production' && !env.PUBLIC_API_URL) {
+      ctx.addIssue({ code: 'custom', path: ['PUBLIC_API_URL'], message: 'PUBLIC_API_URL es obligatorio con NODE_ENV=production' });
     }
     if (env.DEV_AUTH_ENABLED && !env.DEMO_MODE) {
       ctx.addIssue({ code: 'custom', path: ['DEV_AUTH_ENABLED'], message: 'La identidad de desarrollo requiere DEMO_MODE=true' });

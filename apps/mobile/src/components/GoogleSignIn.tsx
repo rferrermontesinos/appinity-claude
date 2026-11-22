@@ -6,6 +6,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useTranslation } from 'react-i18next';
 import { Platform } from 'react-native';
 import { apiRequest } from '../api/client';
+import { createPkceChallenge } from '../api/pkce';
 import { API } from '../config';
 import { Body, Button, Card, Small, Title } from './ui';
 
@@ -19,11 +20,13 @@ export function GoogleSignIn() {
   const providers = useQuery({ queryKey: ['auth', 'providers'], queryFn: () => apiRequest<AuthProvidersDto>('/v1/auth/providers', { auth: false }) });
   if (!providers.data?.google) return null;
   const returnUrl = Linking.createURL('auth');
-  const startUrl = `${API.url}/v1/auth/google/start?returnUrl=${encodeURIComponent(returnUrl)}`;
   // En desarrollo Google solo vuelve a localhost: en el teléfono no llegaría a la API del PC.
   const devPhone = Platform.OS !== 'web' && !API.url.startsWith('https://');
 
   async function start() {
+    // PKCE: el desafío va en la URL; el secreto se queda en el dispositivo hasta canjear el código (pantalla /auth).
+    const codeChallenge = await createPkceChallenge();
+    const startUrl = `${API.url}/v1/auth/google/start?returnUrl=${encodeURIComponent(returnUrl)}&codeChallenge=${codeChallenge}`;
     if (Platform.OS === 'web') {
       window.location.assign(startUrl);
       return;

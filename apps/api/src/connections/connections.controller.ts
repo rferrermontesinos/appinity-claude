@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Inject, Param, ParseUUIDPipe, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Inject, Param, ParseUUIDPipe, Post, Query, Req } from '@nestjs/common';
 import type { ConnectStartDto, ConnectionDto, InitialImportDto, SyncRunDto } from '@appinity/shared';
 import type { Request } from 'express';
 import { z } from 'zod';
@@ -13,13 +13,17 @@ import { isAllowedReturnUrl } from './return-url.js';
 const connectSchema = z
   .object({
     sourceKey: z.string().regex(/^[a-z][a-z0-9_]{1,63}$/),
-    /** URL de vuelta a la app tras autorizar en el proveedor (lista blanca, sin redirecciones abiertas). */
-    returnUrl: z.string().max(512).refine(isAllowedReturnUrl, 'URL de vuelta no permitida').optional(),
+    /**
+     * URL de vuelta a la app tras autorizar en el proveedor (lista blanca, sin redirecciones abiertas). Obligatoria:
+     * la app recibe ahí el código con el que confirma la conexión.
+     */
+    returnUrl: z.string().max(512).refine(isAllowedReturnUrl, 'URL de vuelta no permitida'),
   })
   .strict();
 const initialImportSchema = z
-  .object({ returnUrl: z.string().max(512).refine(isAllowedReturnUrl, 'URL de vuelta no permitida').optional() })
+  .object({ returnUrl: z.string().max(512).refine(isAllowedReturnUrl, 'URL de vuelta no permitida') })
   .strict();
+const confirmSchema = z.object({ code: z.string().regex(/^[A-Za-z0-9_-]{20,64}$/) }).strict();
 
 const syncSchema = z.object({ mode: z.enum(['incremental', 'full']).default('incremental') }).strict();
 
@@ -52,6 +56,13 @@ export class ConnectionsController {
     @Req() req: Request,
   ): Promise<InitialImportDto> {
     return this.connections.initialImport(auth.userId, publicBaseUrl(req, this.env), body.returnUrl);
+  }
+
+  /** Completa una conexión tras volver del proveedor. Solo la cuenta que la empezó puede confirmarla. */
+  @Post('confirm')
+  @HttpCode(200)
+  confirm(@CurrentUser() auth: AuthContext, @Body(new ZodPipe(confirmSchema)) body: z.infer<typeof confirmSchema>): Promise<ConnectStartDto> {
+    return this.connections.confirm(auth.userId, body.code);
   }
 
   @Post(':id/sync')

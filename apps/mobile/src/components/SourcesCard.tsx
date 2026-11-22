@@ -8,7 +8,7 @@ import type { TFunction } from 'i18next';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Platform, Pressable, View } from 'react-native';
-import { useConnect, useConnections, useDisconnect, useMe, useRuns, useSources, useSync, type SourceView } from '../api/queries';
+import { finishConnect, useConnect, useConnections, useDisconnect, useMe, useRuns, useSources, useSync, type SourceView } from '../api/queries';
 import { radius, spacing, usePalette } from '../theme';
 import { Badge, Body, Button, Card, ErrorCard, Loading, Small, Title } from './ui';
 
@@ -100,9 +100,10 @@ function ConnectionRow({
       }
       const auth = await WebBrowser.openAuthSessionAsync(result.authorizationUrl, returnUrl);
       if (auth.type === 'success') {
-        const params = Linking.parse(auth.url).queryParams ?? {};
-        if (params.result === 'connected') setNotice({ text: t('sources.connectedResult'), tone: 'ok' });
-        else setNotice({ text: t('sources.errorResult', { message: String(params.message ?? '') }), tone: 'error' });
+        // La conexión se crea al confirmarla con la sesión de esta app (protección frente a enlaces ajenos).
+        const outcome = await finishConnect(Linking.parse(auth.url).queryParams ?? {});
+        if (outcome.ok) setNotice({ text: t('sources.connectedResult'), tone: 'ok' });
+        else setNotice({ text: t('sources.errorResult', { message: outcome.message }), tone: 'error' });
       } else {
         setNotice({ text: t('sources.cancelledResult'), tone: 'error' });
       }
@@ -295,9 +296,22 @@ export function SourcesCard() {
   const isDemoUser = me.data?.user.dataset !== 'live';
   const c = usePalette();
   const router = useRouter();
-  // Vuelta de una conexión web (página completa): la API añade el resultado a la URL.
-  const params = useLocalSearchParams<{ source?: string; result?: string; message?: string }>();
-  const returned = params.source && params.result ? { ok: params.result === 'connected', message: params.message ?? '' } : null;
+  // Vuelta de una conexión web (página completa): la API añade el resultado a la URL; si trae un código de
+  // confirmación, la conexión se confirma aquí con la sesión de esta pestaña.
+  const params = useLocalSearchParams<{ source?: string; result?: string; message?: string; confirm?: string }>();
+  const queryClient = useQueryClient();
+  const [returned, setReturned] = useState<{ ok: boolean; message: string } | null>(null);
+  const handled = useRef<string | null>(null);
+  useEffect(() => {
+    if (!params.source || !params.result) return;
+    const key = `${params.source}:${params.result}:${params.confirm ?? ''}`;
+    if (handled.current === key) return;
+    handled.current = key;
+    void finishConnect(params).then(async (outcome) => {
+      setReturned(outcome);
+      for (const k of ['connections', 'profiles', 'profile', 'catalog']) await queryClient.invalidateQueries({ queryKey: [k] });
+    });
+  }, [params, queryClient]);
   return (
     <Card>
       <Title>{t('sources.title')}</Title>
@@ -306,7 +320,14 @@ export function SourcesCard() {
           <Small style={{ color: returned.ok ? c.ok : c.danger, fontWeight: '700' }}>
             {returned.ok ? t('sources.connectedResult') : t('sources.errorResult', { message: returned.message })}
           </Small>
-          <Button label={t('common.close')} variant="secondary" onPress={() => router.setParams({ source: undefined, result: undefined, message: undefined })} />
+          <Button
+            label={t('common.close')}
+            variant="secondary"
+            onPress={() => {
+              setReturned(null);
+              router.setParams({ source: undefined, result: undefined, message: undefined, confirm: undefined });
+            }}
+          />
         </View>
       ) : null}
       <Small>{t('sources.help')}</Small>

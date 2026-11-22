@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Platform, Switch, Text, View } from 'react-native';
 import { apiRequest } from '../src/api/client';
+import { finishConnect } from '../src/api/queries';
 import { API } from '../src/config';
 import { Body, Button, Card, ErrorCard, Screen, Small, TextField } from '../src/components/ui';
 import { AuraCard, onPoster } from '../src/components/Aura';
@@ -45,7 +46,8 @@ export default function OnboardingScreen() {
       await apiRequest('/v1/me/onboarding', { method: 'POST', body: { adult: true, termsAccepted: true, ...(name.trim() ? { displayName: name.trim() } : {}), ...(city.trim() ? { city: city.trim() } : {}) } });
       await queryClient.invalidateQueries({ queryKey: ['me'] });
       // Con las condiciones aceptadas, la importación arranca y Google pide su última confirmación (Data Portability).
-      const returnUrl = Linking.createURL('profile');
+      // Vuelve a Fuentes: allí se confirma la conexión en la web (en el móvil se confirma aquí mismo).
+      const returnUrl = Linking.createURL('sources');
       const imported = await apiRequest<InitialImportDto>('/v1/me/connections/initial-import', { method: 'POST', body: { returnUrl } });
       const next = imported.next;
       if (next?.kind === 'redirect' && !(next.localOnly && Platform.OS !== 'web')) {
@@ -53,7 +55,8 @@ export default function OnboardingScreen() {
           window.location.assign(next.authorizationUrl);
           return;
         }
-        await WebBrowser.openAuthSessionAsync(next.authorizationUrl, returnUrl);
+        const auth = await WebBrowser.openAuthSessionAsync(next.authorizationUrl, returnUrl);
+        if (auth.type === 'success') await finishConnect(Linking.parse(auth.url).queryParams ?? {});
       }
       for (const key of ['connections', 'profiles', 'profile']) await queryClient.invalidateQueries({ queryKey: [key] });
       router.replace('/sources');

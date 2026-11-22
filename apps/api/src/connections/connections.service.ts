@@ -8,6 +8,7 @@ import {
   disconnectSource,
   enqueueAffinity,
   enqueueSync,
+  ForbiddenError,
   NotFoundError,
   UnavailableError,
   type ProducerQueues,
@@ -23,6 +24,8 @@ import { and, count, desc, eq, inArray } from 'drizzle-orm';
 import { ADAPTER_REGISTRY, DATABASE, QUEUES, REDIS } from '../infra/tokens.js';
 
 const CONNECT_STATE_TTL_SECONDS = 600;
+/** Margen para que la app confirme la conexión tras volver del proveedor. */
+const CONNECT_CONFIRM_TTL_SECONDS = 180;
 
 interface PendingConnect {
   userId: string;
@@ -31,6 +34,12 @@ interface PendingConnect {
   returnUrl?: string;
   /** Datos del flujo del proveedor (p. ej. un verificador PKCE). Solo en Redis, nunca van al cliente. */
   provider?: Record<string, string>;
+}
+
+/** Respuesta del proveedor a la espera de que la app de quien empezó la conexión la confirme. */
+interface HeldCallback {
+  pending: PendingConnect;
+  callbackParams: Record<string, string>;
 }
 
 /** Pista de la cuenta externa sin exponerla entera (p. ej. «SteamID …4821»). */
@@ -224,6 +233,10 @@ export class ConnectionsService {
     return `${this.env.QUEUE_PREFIX}:connect-state:${state}`;
   }
 
+  private confirmKey(code: string): string {
+    return `${this.env.QUEUE_PREFIX}:connect-confirm:${code}`;
+  }
+
   private async afterConnected(userId: string, connectionId: string): Promise<ConnectStartDto & { kind: 'connected' }> {
     const run = await this.startSync(userId, connectionId, 'connect', 'full');
     const dto = (await this.list(userId)).find((c) => c.id === connectionId)!;
@@ -231,25 +244,47 @@ export class ConnectionsService {
   }
 
   /**
-   * Callback del proveedor. El `state` es de un solo uso (GETDEL) y liga la respuesta al usuario que inició el
-   * flujo; el adapter verifica la respuesta (OpenID check_authentication) antes de crear la conexión.
+   * Callback del proveedor (navegador, sin la sesión de la app). El `state` es de un solo uso (GETDEL). La conexión NO
+   * se crea aquí: la respuesta queda retenida bajo un código de confirmación que vuelve a la app, y solo la app con la
+   * sesión de quien empezó el flujo puede confirmarla (`confirm`). Así, si alguien manda a otra persona su enlace de
+   * autorización, la cuenta de la víctima no acaba vinculada a la del atacante (CSRF de vinculación, 2026-11-22).
    */
-  async completeCallback(
-    sourceKey: string,
-    state: string,
-    callbackParams: Record<string, string>,
-  ): Promise<{ returnUrl?: string; result: ConnectStartDto & { kind: 'connected' } }> {
+  async holdCallback(sourceKey: string, state: string, callbackParams: Record<string, string>): Promise<{ returnUrl: string; confirm: string }> {
     const raw = await this.redis.getdel(this.stateKey(state));
     if (!raw) throw new UnavailableError('La solicitud de conexión ha caducado o ya se usó: vuelve a intentarlo desde la app');
     const pending = JSON.parse(raw) as PendingConnect;
     if (pending.sourceKey !== sourceKey) throw new UnavailableError('La respuesta no corresponde a esta fuente');
-    const connection = await completeConnect(this.database.db, this.registry, pending.userId, sourceKey, {
+    if (!pending.returnUrl) throw new UnavailableError('Vuelve a intentarlo desde la app');
+    // Cancelado o denegado en el proveedor: no hay nada que confirmar.
+    if (callbackParams.error || callbackParams['openid.mode'] === 'cancel') {
+      throw new UnavailableError(
+        callbackParams.error && callbackParams.error !== 'access_denied' ? 'El proveedor no concedió el acceso' : 'Se canceló la autorización en el proveedor',
+      );
+    }
+    const confirm = randomBytes(24).toString('base64url');
+    await this.redis.set(this.confirmKey(confirm), JSON.stringify({ pending, callbackParams } satisfies HeldCallback), 'EX', CONNECT_CONFIRM_TTL_SECONDS);
+    return { returnUrl: pending.returnUrl, confirm };
+  }
+
+  /**
+   * Confirmación desde la app: solo la sesión del usuario que empezó la conexión la completa. El adapter verifica la
+   * respuesta del proveedor (OpenID check_authentication, canje OAuth) antes de crear la conexión.
+   */
+  async confirm(userId: string, code: string): Promise<ConnectStartDto & { kind: 'connected' }> {
+    const expired = () => new UnavailableError('La conexión ha caducado o ya se confirmó: vuelve a intentarlo');
+    const raw = await this.redis.get(this.confirmKey(code));
+    if (!raw) throw expired();
+    const { pending, callbackParams } = JSON.parse(raw) as HeldCallback;
+    // Otra cuenta no puede confirmarla (ni gastar el código de quien la empezó).
+    if (pending.userId !== userId) throw new ForbiddenError('Esta conexión la empezó otra cuenta: vuelve a conectarla desde tu app');
+    if (!(await this.redis.getdel(this.confirmKey(code)))) throw expired();
+    const connection = await completeConnect(this.database.db, this.registry, pending.userId, pending.sourceKey, {
       redirectUri: pending.redirectUri,
       callbackParams,
       ...(pending.provider ? { pending: pending.provider } : {}),
       ...this.credentialsOption(),
     });
-    return { ...(pending.returnUrl ? { returnUrl: pending.returnUrl } : {}), result: await this.afterConnected(pending.userId, connection.id) };
+    return this.afterConnected(pending.userId, connection.id);
   }
 
   /** Recupera la URL de vuelta a la app aunque la verificación falle (para mostrar el error en la app). */
