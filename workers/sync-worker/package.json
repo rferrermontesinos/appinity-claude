@@ -1,0 +1,17 @@
+{
+  "name": "@appinity/sync-worker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Worker BullMQ: syncs de fuentes de perfil y caché de imágenes de catálogo.",
+  "type": "module",
+  "main": "./dist/main.js",
+  "dependencies": {
+    "@appinity/catalog": "workspace:*",
+    "@appinity/database": "workspace:*",
+    "@appinity/ingestion": "workspace:*",
+    "@appinity/integrations": "workspace:*",
+    "@appinity/shared": "workspace:*",
+    "bullmq": "6.3.11",
+    "ioredis": "6.0.0"
+  }
+}

@@ -1,0 +1,14 @@
+packages:
+  - apps/*
+  - packages/*
+  - workers/*
+
+# Expo + React Native funcionan de forma más fiable con node_modules plano en monorepos
+# (ver docs/decisions.md). La API y los paquetes también lo usan.
+nodeLinker: hoisted
+
+# Scripts de instalación permitidos explícitamente (pnpm 11 los bloquea por defecto).
+allowBuilds:
+  '@swc/core': set this to true or false
+  esbuild: true
+  msgpackr-extract: true
