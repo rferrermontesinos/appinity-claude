@@ -115,7 +115,7 @@ Play Console.
 - **Eliminar la cuenta** (`DELETE /v1/me` y `pnpm account:delete`, el mismo `AccountService`):
   - desconecta cada fuente pidiendo al proveedor que anule el permiso (un proveedor que no responde no impide el borrado);
   - después borra al usuario y, en cascada, todo lo suyo: perfil, evidencia, votos, afinidades, amistades, seguimientos,
-    chats (también para la otra persona), sesiones, tokens push y entitlements. Los eventos de compra de RevenueCat se
+    chats (también para la otra persona), comentarios de la beta, sesiones, tokens push y entitlements. Los eventos de compra de RevenueCat se
     conservan sin el usuario (`user_id` a NULL).
 
 ### Peticiones de derechos por email (fase B3)
@@ -130,7 +130,7 @@ email de `LEGAL_CONTACT_EMAIL`. Cuando llega una petición:
    pnpm account:export --email persona@gmail.com
    ```
    Escribe `exports/appinity-<handle>-<fecha>.json` (fuera de Git; `--out ruta.json` para otra ruta). Incluye cuenta,
-   gustos, evidencias, votos, amistades, chat y ajustes. Deja fuera secretos (credenciales, huellas de sesión, tokens
+   gustos, evidencias, votos, amistades, chat, comentarios de la beta y ajustes. Deja fuera secretos (credenciales, huellas de sesión, tokens
    push), los mensajes que escribieron otras personas (solo cuántos) y las afinidades. Enviarla solo a esa persona, por un
    canal seguro, y borrarla después.
 3. **Eliminar la cuenta**:
@@ -143,6 +143,23 @@ email de `LEGAL_CONTACT_EMAIL`. Cuando llega una petición:
    `docker compose -f docker-compose.prod.yml --env-file .env.production exec api node apps/api/dist/cli/account.js delete --email …`
    (y `… account.js export --email … --out /tmp/copia.json`, que después se copia con `docker compose cp`).
 4. **Contestar** en un plazo máximo de un mes desde la petición (RGPD, art. 12.3).
+
+## Comentarios de la beta (fase B5)
+
+Los testers escriben desde **Perfil → Enviar comentario**. Se guarda el texto (hasta 2.000 caracteres) con su cuenta, la
+versión de la app y la plataforma; nada más. Cupo: 10 por persona en 24 horas (y 10 envíos por minuto e IP). Para
+leerlos:
+
+```bash
+pnpm feedback:list                    # los no leídos, los más recientes primero (50 como mucho)
+pnpm feedback:list --mark-read        # los mismos y, al final, los marca como leídos
+pnpm feedback:list --all --limit 200  # también los ya leídos
+```
+
+En el servidor, dentro del contenedor de la API:
+`docker compose -f docker-compose.prod.yml --env-file .env.production exec api node packages/ingestion/dist/cli/list-feedback.js`.
+Los comentarios salen en la copia de datos de la persona (`pnpm account:export`) y se borran con su cuenta. La app no
+contesta: si un comentario necesita respuesta, escribir al email de la cuenta desde el de soporte.
 
 ## Builds de la app (EAS)
 

@@ -1433,6 +1433,20 @@ Cierra los hallazgos bajos y medios que quedaban de la auditoría del 2026-11-22
   (RGPD art. 7 pide un consentimiento específico; hoy cada proveedor muestra además su pantalla de permiso), el mecanismo
   de transferencia de cada proveedor y si hacen falta NIF y dirección (LSSI).
 
+## 2026-11-22 · B5: comentarios de los testers
+
+- **Dentro de la app y con sesión**: Perfil → Enviar comentario guarda el texto en nuestra base de datos, sin terceros
+  (ni formularios externos ni email). Con sesión, el comentario se asocia a la cuenta para poder borrarlo con ella,
+  incluirlo en la copia de datos y saber de qué tester es; sin sesión no hay nada que comentar de la beta.
+- **Solo texto, versión y plataforma**: ni capturas, ni registros, ni la pantalla abierta. Si hace falta más contexto, se
+  pregunta a la persona fuera de la app. Lo técnico de los fallos ya llega por los avisos de errores (B4).
+- **Cupo**: 10 por persona en 24 horas (mensaje claro en la app) y 10 envíos por minuto e IP contra el abuso. La longitud
+  máxima (2.000 caracteres) se comprueba en la app, en la API y en PostgreSQL.
+- **Lectura por comando** (`pnpm feedback:list`), sin panel web: no hay un panel de administración y no se abre uno
+  para la beta. `--mark-read` marca como leídos los que se acaban de listar.
+- **Base legal**: interés legítimo (mejorar la app); los envía la persona cuando quiere. Entran en la copia de datos y se
+  borran con la cuenta.
+
 ## 2026-11-22 · B4: avisos de errores con Sentry, apagados sin DSN
 
 - **Apagados por defecto**: sin `SENTRY_DSN` no se crea cliente, no sale nada a la red y no se instalan manejadores de

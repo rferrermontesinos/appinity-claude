@@ -22,7 +22,44 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 11 | **Paso 1 implementado** (Google: Play, pedidos y guardados), comprobado automáticamente y en parte con servicios reales; falta un export real | Entrega 2026-10-14 · fase 11 (rama `fase-11-fuentes`). Análisis en [source-candidates.md](source-candidates.md) |
 | 12 | **12C (push, servidor) implementada y comprobada automáticamente**; envío real pendiente de build de desarrollo y FCM · **12B (Premium, servidor) implementada y comprobada automáticamente**; compra en la app pendiente de cuentas y build de desarrollo · **12A (chat) implementada, comprobada automáticamente y verificada en la vista web**; 12B (Premium/RevenueCat) y 12C (push) pendientes | Entrega 2026-10-14 · fase 12A (rama `fase-12a-chat`, basada en `fase-10-people`) |
 | 13 | **Preparada**: auth de producción, alta, eliminación de cuenta y despliegue probados en local; beta real pendiente de dominio, servidor y cuentas ([beta.md](beta.md)) · auditoría de seguridad de la API hecha (2026-10-26) · textos legales en borrador (2026-10-26) | Entrega 2026-10-15 · fase 13 (rama `fase-13-beta`) |
-| Beta (B1–B10) | **En curso** (2026-11-22): B1, B2, B3 y B4 con PR abierta | Plan y estado en [fases-beta.md](fases-beta.md); cada fase en su PR encadenada sobre la PR #26 |
+| Beta (B1–B10) | **En curso** (2026-11-22): B1, B2, B3, B4 y B5 con PR abierta | Plan y estado en [fases-beta.md](fases-beta.md); cada fase en su PR encadenada sobre la PR #26 |
+
+---
+
+## Entrega 2026-11-22 · B5: comentarios de los testers
+
+Rama `claude/beta-b5-feedback`, PR contra `claude/beta-b4-sentry` (B4). Detalle en [decisions.md](decisions.md) y uso
+en [operations.md](operations.md#comentarios-de-la-beta-fase-b5).
+
+### Qué se ha hecho
+
+- App: **Perfil → Enviar comentario**, una pantalla con un campo de texto (hasta 2.000 caracteres, con contador), el
+  aviso de qué se guarda y una confirmación con «Enviar otro». El campo de texto del sistema de diseño admite varias
+  líneas.
+- API: `POST /v1/me/feedback` (con sesión; 204). Valida el texto, la versión y la plataforma y rechaza cualquier campo
+  de más. Cupo de 10 por persona en 24 horas y 10 envíos por minuto e IP.
+- Base de datos: tabla `feedback` (migración `0022_beta_feedback`) que se borra en cascada con la cuenta y comprueba la
+  longitud también en PostgreSQL.
+- `pnpm feedback:list [--all] [--limit n] [--mark-read]` para leerlos.
+- Los comentarios entran en la copia de datos (`pnpm account:export`), la política de privacidad y la página de baja.
+- La versión y la plataforma de la app salen de un solo módulo (`app-info.ts`), que comparten los avisos de errores.
+
+### Comprobaciones
+
+- Tests nuevos:
+  - ingestión (7): texto recortado, cupo por persona que se renueva a las 24 horas, la base de datos rechaza textos
+    vacíos o largos, listado de los no leídos por fecha, marcar como leídos, la copia de datos y el borrado en cascada;
+  - API (4): 401 sin sesión, 400 con texto vacío o largo, campos de más, versión o plataforma raras, 204 guardado y 429
+    con el cupo agotado.
+- Vista web (412 × 915, Playwright): Perfil → Enviar comentario, «Enviar» desactivado con el campo vacío, petición con
+  `platform: web` y versión `0.1.0`, y confirmación. No sustituye a la prueba en el teléfono.
+- `pnpm feedback:list` probado contra la base de datos de test.
+- `pnpm format:check`, `pnpm lint` y `pnpm typecheck` limpios; `pnpm test`: 52 ficheros y 471 tests OK.
+
+### Pendiente
+
+- Probarlo en el teléfono con el APK nuevo.
+- Siguiente fase: B6 (push en la app).
 
 ---
 

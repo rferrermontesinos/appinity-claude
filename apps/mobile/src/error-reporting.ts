@@ -1,6 +1,5 @@
 import { APP_ERROR_REPORTS_PER_SESSION, type AppErrorReportDto } from '@appinity/shared';
-import Constants from 'expo-constants';
-import { Platform } from 'react-native';
+import { APP_PLATFORM, APP_VERSION } from './app-info';
 import { API } from './config';
 
 /**
@@ -15,7 +14,6 @@ interface ErrorUtilsLike {
   setGlobalHandler(handler: (error: unknown, isFatal?: boolean) => void): void;
 }
 
-const APP_VERSION = Constants.expoConfig?.version ?? '0.0.0';
 const sent = new Set<string>();
 let currentScreen: string | undefined;
 let installed = false;
@@ -25,13 +23,9 @@ export function setCurrentScreen(segments: readonly string[]): void {
   currentScreen = segments.length ? segments.join('/').slice(0, 120) : 'index';
 }
 
-function platform(): AppErrorReportDto['platform'] | null {
-  return Platform.OS === 'android' || Platform.OS === 'ios' || Platform.OS === 'web' ? Platform.OS : null;
-}
-
 /** Envía un error una sola vez y como mucho APP_ERROR_REPORTS_PER_SESSION por sesión. Nunca lanza. */
 export function reportAppError(error: unknown, fatal: boolean): Promise<void> {
-  const os = platform();
+  const os = APP_PLATFORM;
   if (__DEV__ || !os) return Promise.resolve();
   const err = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Error sin mensaje');
   const message = (err.message || 'Error sin mensaje').slice(0, 1_000);
@@ -45,7 +39,7 @@ export function reportAppError(error: unknown, fatal: boolean): Promise<void> {
     fatal,
     ...(currentScreen && /^[\w\-/[\]().]{1,120}$/.test(currentScreen) ? { screen: currentScreen } : {}),
     platform: os,
-    appVersion: /^\d{1,3}\.\d{1,3}\.\d{1,4}$/.test(APP_VERSION) ? APP_VERSION : '0.0.0',
+    appVersion: APP_VERSION,
   };
   return fetch(`${API.url}/v1/diagnostics/app-errors`, {
     method: 'POST',

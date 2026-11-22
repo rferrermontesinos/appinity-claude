@@ -23,6 +23,7 @@ import { TransparencyController } from './legal/transparency.controller.js';
 import { InfraModule } from './infra/infra.module.js';
 import { PipelineModule } from './infra/pipeline.module.js';
 import { MeController } from './me/me.controller.js';
+import { FeedbackController } from './me/feedback.controller.js';
 import { NotificationsController } from './me/notifications.controller.js';
 import { MeService } from './me/me.service.js';
 import { ChatController } from './people/chat.controller.js';
@@ -62,6 +63,7 @@ export class AppModule {
         AuthController,
         MeController,
         NotificationsController,
+        FeedbackController,
         SourcesController,
         ConnectionsController,
         ConnectCallbackController,

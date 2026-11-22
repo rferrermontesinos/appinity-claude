@@ -26,6 +26,7 @@ import type {
   ChatInboxDto,
   ChatMatchResultDto,
   ChatMessageDto,
+  FeedbackDto,
 } from '@appinity/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '../state/session';
@@ -85,6 +86,13 @@ export function useUpdateSettings() {
   return useMutation({
     mutationFn: (patch: SettingsPatch) => apiRequest<MeDto>('/v1/me/settings', { method: 'PATCH', body: patch }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.me }),
+  });
+}
+
+/** Comentarios de la beta (fase B5): el texto, la versión de la app y la plataforma; nada más. */
+export function useSendFeedback() {
+  return useMutation({
+    mutationFn: (body: FeedbackDto) => apiRequest<void>('/v1/me/feedback', { method: 'POST', body }),
   });
 }
 
