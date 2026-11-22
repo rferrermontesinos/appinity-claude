@@ -37,8 +37,8 @@ está hecho y probado; lo que queda necesita tus cuentas, tus datos o tus decisi
    ([operations.md](operations.md#secretos-envproduction)). La revisión por un profesional, antes de la ola 2.
 6. **Un email de soporte**: para los textos legales, la ficha de Play, la guía de testers y las suspensiones. Puede ser
    el mismo que `LEGAL_CONTACT_EMAIL`.
-7. **Sentry**: el DSN de tu proyecto (región UE) en `SENTRY_DSN`, con `SENTRY_ENVIRONMENT=beta`, y reiniciar API y
-   worker ([operations.md](operations.md#avisos-de-errores-sentry-fase-b4)).
+7. **Sentry**: el DSN de tu proyecto (región UE) en `SENTRY_DSN` de `.env`, con `SENTRY_ENVIRONMENT=beta`, y reiniciar
+   API y worker ([operations.md](operations.md#avisos-de-errores-sentry-fase-b4)).
 8. **Expo, EAS y Firebase** para el push: `eas init`, `google-services.json` y la clave de FCM V1 en EAS. Después,
    `pnpm push:test --handle <tu handle>` ([operations.md](operations.md#notificaciones-push-fase-b6)).
 9. **El APK de la ola 1**: `pnpm android:beta -ApiUrl https://api.<tu-dominio>`, instalarlo en tu teléfono y hacer la
@@ -75,15 +75,15 @@ Desde el teléfono, con datos móviles (sin la wifi de casa):
 - **El PC tiene que estar encendido** durante la prueba: la API vive en él.
 - **Google en modo Testing**: aviso de «app no verificada», máximo 100 testers y el permiso de Data Portability dura
   7 días. Salir de ahí exige la verificación de Google (CASA), después de la beta.
-- **La identidad de desarrollo sigue encendida en el PC**, para tu cuenta local. Desde fuera la cierran dos barreras
-  comprobadas: el túnel responde 404 a `/v1/dev` y la API ya no confunde `/V1/DEV`, `/v1//dev` ni `/v1/%64ev` con
-  `/v1/dev`. Si quieres una tercera, `DEV_AUTH_ENABLED=false` en `.env`; entonces tu cuenta local deja de estar
-  accesible hasta que lo vuelvas a encender.
+- **La identidad de desarrollo sigue encendida en el PC**, para tu cuenta local. Desde fuera la cierran dos barreras:
+  el túnel responde 404 a `/v1/dev` (la regla que crea `pnpm tunnel:setup`; se comprueba en la prueba de humo) y la API
+  ya no confunde `/V1/DEV`, `/v1//dev` ni `/v1/%64ev` con `/v1/dev` (comprobado con tests). Si quieres una tercera,
+  `DEV_AUTH_ENABLED=false` en `.env`; entonces tu cuenta local deja de estar accesible hasta que lo vuelvas a encender.
 - **`/health` en modo desarrollo** enseña detalles técnicos a través del túnel (versión de PostGIS, latido del worker),
   nada personal. En producción (`NODE_ENV=production`) desaparecen.
 - **Avisos de `pnpm audit` en herramientas de desarrollo**: drizzle-kit (esbuild), la CLI de Expo (uuid, glob, zod 3) y
   ESLint (minimatch). No se ejecutan en el servidor ni van dentro de la app, y arreglarlos exige saltos de versión mayor
-  de esas herramientas. Ninguno en lo que se ejecuta.
+  de esas herramientas.
 - **La imagen de Docker pesa unos 1,2 GB**: el modo plano de pnpm arrastra paquetes de la app móvil. Funciona igual
   (comprobado: migraciones, API y worker en modo producción).
 - **Sin iPhone** hasta tener Apple Developer e «Iniciar sesión con Apple».

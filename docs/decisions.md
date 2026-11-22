@@ -1600,9 +1600,9 @@ Cierra los hallazgos bajos y medios que quedaban de la auditoría del 2026-11-22
   registradas en Google. Express tampoco normaliza `//` ni `%64`; el test lo fija.
 - **La identidad de desarrollo sigue encendida en el PC durante la beta** (propuesta de Claude, revisable): la demo y
   las cuentas reales están separadas en todo (fuentes simuladas, almas gemelas, catálogo, chat y sesiones), una cuenta
-  local real exige su código de un solo uso y desde fuera hay dos barreras comprobadas. Apagarla (`DEV_AUTH_ENABLED=false`)
-  dejaría al titular sin su cuenta local, que es donde están sus gustos. Queda como opción en
-  [paso-a-beta.md](paso-a-beta.md).
+  local real exige su código de un solo uso y desde fuera hay dos barreras (el túnel y la API, esta con tests).
+  Apagarla (`DEV_AUTH_ENABLED=false`) dejaría al titular sin su cuenta local, que es donde están sus gustos. Queda como
+  opción en [paso-a-beta.md](paso-a-beta.md).
 - **La pantalla de entrada depende de lo que ofrezca el servidor**: un 404 de `/v1/dev/users` significa «sin demo»
   (producción o túnel), no un error, y solo se ve «Continuar con Google». Cualquier otro fallo sigue mostrando el error
   con «Reintentar», porque puede ser de conexión. La regla está en `packages/shared` (`devLoginState`), con sus tests.
