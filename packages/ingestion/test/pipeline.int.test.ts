@@ -235,10 +235,7 @@ describe('instantáneas, desconexión y borrado', () => {
       sync: async (ctx) => {
         calls += 1;
         if (calls === 2) {
-          await database.db
-            .update(userConnections)
-            .set({ status: 'revoked', revokedAt: new Date() })
-            .where(eq(userConnections.id, connection.id));
+          await database.db.update(userConnections).set({ status: 'revoked', revokedAt: new Date() }).where(eq(userConnections.id, connection.id));
         }
         return adapter.sync(ctx);
       },
@@ -267,9 +264,9 @@ describe('instantáneas, desconexión y borrado', () => {
 
   it('una persona no puede desconectar conexiones ajenas', async () => {
     const connection = (await findOpenConnection(database.db, ALEX, 'fixture_audio'))!;
-    await expect(
-      disconnectSource(database.db, createAdapterRegistry({ demoMode: true }), LAURA, connection.id, { purge: true }),
-    ).rejects.toThrow(/no encontrada/);
+    await expect(disconnectSource(database.db, createAdapterRegistry({ demoMode: true }), LAURA, connection.id, { purge: true })).rejects.toThrow(
+      /no encontrada/,
+    );
     expect((await findOpenConnection(database.db, ALEX, 'fixture_audio'))?.status).toBe('active');
   });
 });
@@ -279,9 +276,7 @@ describe('separación entre demo y datos reales', () => {
     await database.db.insert(users).values({ id: LIVE_USER, handle: 'live_tester', dataset: 'live' });
     await database.db.insert(userProfiles).values({ userId: LIVE_USER, displayName: 'Live' });
     await database.db.insert(userSettings).values({ userId: LIVE_USER });
-    await expect(connectSource(database.db, createAdapterRegistry({ demoMode: true }), LIVE_USER, 'fixture_screen')).rejects.toBeInstanceOf(
-      ForbiddenError,
-    );
+    await expect(connectSource(database.db, createAdapterRegistry({ demoMode: true }), LIVE_USER, 'fixture_screen')).rejects.toBeInstanceOf(ForbiddenError);
   });
 
   it('la resolución en el dataset real nunca reutiliza objetos de la demo', async () => {
@@ -298,7 +293,14 @@ describe('separación entre demo y datos reales', () => {
   it('un título parecido no basta para fusionar objetos', async () => {
     const resolver = new EntityResolver(database.db, [provider]);
     const result = await resolver.resolve(
-      { category: 'movies', itemType: 'movie', title: 'Casablanca (remastered)', sourceKey: 'fixture_screen', sourceId: 'movie:999999', attributes: { releaseYear: 1942 } },
+      {
+        category: 'movies',
+        itemType: 'movie',
+        title: 'Casablanca (remastered)',
+        sourceKey: 'fixture_screen',
+        sourceId: 'movie:999999',
+        attributes: { releaseYear: 1942 },
+      },
       'demo',
     );
     expect(result.method).toBe('created_from_source');

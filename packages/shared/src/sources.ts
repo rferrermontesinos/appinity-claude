@@ -7,13 +7,7 @@ import type { ExternalItemAttributes, NormalizedObservation } from './observatio
  * Fuentes simuladas de la demo (DEMO_MODE). Imitan clases de evidencia de fuentes reales,
  * pero nunca se presentan como conexiones reales.
  */
-export const FIXTURE_SOURCE_KEYS = [
-  'fixture_screen',
-  'fixture_diary',
-  'fixture_activity',
-  'fixture_play',
-  'fixture_audio',
-] as const;
+export const FIXTURE_SOURCE_KEYS = ['fixture_screen', 'fixture_diary', 'fixture_activity', 'fixture_play', 'fixture_audio'] as const;
 export type FixtureSourceKey = (typeof FIXTURE_SOURCE_KEYS)[number];
 
 /**
@@ -60,15 +54,7 @@ export function isFixtureSourceKey(key: string): key is FixtureSourceKey {
  * Mecanismos de autenticación (§8). `fixture` es una ampliación de esta implementación para
  * las fuentes simuladas: no hay OAuth ni credenciales y nunca se simula un éxito OAuth.
  */
-export type SourceAuthentication =
-  | 'oauth2'
-  | 'oauth1'
-  | 'api-key'
-  | 'openid'
-  | 'provider-session'
-  | 'native-permission'
-  | 'public-identifier'
-  | 'fixture';
+export type SourceAuthentication = 'oauth2' | 'oauth1' | 'api-key' | 'openid' | 'provider-session' | 'native-permission' | 'public-identifier' | 'fixture';
 
 export type SyncStrategy = 'webhook' | 'incremental' | 'scheduled' | 'full-refresh';
 
@@ -415,4 +401,3 @@ export interface InitialImportDto {
   started: number;
   next: ConnectStartDto | null;
 }
-

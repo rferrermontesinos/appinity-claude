@@ -30,5 +30,11 @@ export async function categoryRankingFor(db: Database, userId: string): Promise<
   const affinities = new Map<Category, number[]>();
   for (const r of affinityRows) if (isCategory(r.category)) affinities.set(r.category, [...(affinities.get(r.category) ?? []), r.score]);
   const likes = new Map(likeRows.filter((r) => isCategory(r.category)).map((r) => [r.category as Category, Number(r.likes)]));
-  return rankCategories([...new Set<Category>([...affinities.keys(), ...likes.keys()])].map((category) => ({ category, affinities: affinities.get(category) ?? [], likes: likes.get(category) ?? 0 })));
+  return rankCategories(
+    [...new Set<Category>([...affinities.keys(), ...likes.keys()])].map((category) => ({
+      category,
+      affinities: affinities.get(category) ?? [],
+      likes: likes.get(category) ?? 0,
+    })),
+  );
 }

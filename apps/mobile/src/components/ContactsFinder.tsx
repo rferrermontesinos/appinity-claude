@@ -140,10 +140,7 @@ export function ContactsFinder() {
                     size="small"
                     disabled={action.isPending}
                     onPress={() =>
-                      action.mutate(
-                        { kind: 'request', userId: p.userId },
-                        { onSuccess: () => setRequested((prev) => new Set(prev).add(p.userId)) },
-                      )
+                      action.mutate({ kind: 'request', userId: p.userId }, { onSuccess: () => setRequested((prev) => new Set(prev).add(p.userId)) })
                     }
                   />
                 )}

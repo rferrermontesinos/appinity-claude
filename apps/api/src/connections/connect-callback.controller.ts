@@ -5,8 +5,7 @@ import { Public } from '../common/public.decorator.js';
 import { ConnectionsService } from './connections.service.js';
 import { withResult } from './return-url.js';
 
-const escapeHtml = (text: string) =>
-  text.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
 function page(title: string, message: string, returnUrl?: string): string {
   const link = returnUrl ? `<p><a href="${escapeHtml(returnUrl)}">Volver a APPINITY</a></p>` : '<p>Ya puedes volver a la app.</p>';

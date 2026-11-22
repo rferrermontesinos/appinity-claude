@@ -45,15 +45,7 @@ function RunSummary({ run }: { run: SyncRunDto }) {
   );
 }
 
-function ConnectionRow({
-  source,
-  connection,
-  isDemoUser,
-}: {
-  source: SourceView;
-  connection: ConnectionDto | undefined;
-  isDemoUser: boolean;
-}) {
+function ConnectionRow({ source, connection, isDemoUser }: { source: SourceView; connection: ConnectionDto | undefined; isDemoUser: boolean }) {
   const { t, i18n } = useTranslation();
   const c = usePalette();
   const queryClient = useQueryClient();
@@ -125,8 +117,7 @@ function ConnectionRow({
     );
   }
 
-  const busy =
-    connect.isPending || sync.isPending || disconnect.isPending || latest?.status === 'queued' || latest?.status === 'running';
+  const busy = connect.isPending || sync.isPending || disconnect.isPending || latest?.status === 'queued' || latest?.status === 'running';
   const lastSync = connection?.lastSyncAt ? new Date(connection.lastSyncAt).toLocaleString(i18n.language) : t('sources.never');
   const realForDemo = !source.simulated && isDemoUser;
 
@@ -154,14 +145,12 @@ function ConnectionRow({
           {source.availability === 'unconfigured' ? (
             <Small style={{ color: c.warn }}>{t('sources.unconfigured', { reason: source.unavailableReason ?? '' })}</Small>
           ) : null}
-          {realForDemo && source.availability !== 'unconfigured' ? (
-            <Small style={{ color: c.warn }}>{t('sources.demoOnlyReal')}</Small>
-          ) : null}
+          {realForDemo && source.availability !== 'unconfigured' ? <Small style={{ color: c.warn }}>{t('sources.demoOnlyReal')}</Small> : null}
           {connection ? (
             <Small>
               {t(`sources.status.${connection.status}`)}
-              {connection.externalAccountHint ? ` · ${connection.externalAccountHint}` : ''} ·{' '}
-              {t('sources.lastSync', { value: lastSync })} · {t('sources.observations', { count: connection.observationCount })}
+              {connection.externalAccountHint ? ` · ${connection.externalAccountHint}` : ''} · {t('sources.lastSync', { value: lastSync })} ·{' '}
+              {t('sources.observations', { count: connection.observationCount })}
             </Small>
           ) : null}
           {connection?.status === 'error' ? (
@@ -176,12 +165,8 @@ function ConnectionRow({
             </Small>
           ) : null}
           {latest && isDemoUser ? <RunSummary run={latest} /> : null}
-          {notice ? (
-            <Small style={{ color: notice.tone === 'ok' ? c.ok : c.danger, fontWeight: '700' }}>{notice.text}</Small>
-          ) : null}
-          {connect.error || sync.error || disconnect.error ? (
-            <ErrorCard error={connect.error ?? sync.error ?? disconnect.error} />
-          ) : null}
+          {notice ? <Small style={{ color: notice.tone === 'ok' ? c.ok : c.danger, fontWeight: '700' }}>{notice.text}</Small> : null}
+          {connect.error || sync.error || disconnect.error ? <ErrorCard error={connect.error ?? sync.error ?? disconnect.error} /> : null}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, alignItems: 'center' }}>
             {!active && source.connectable && source.key === 'steam' ? (
               <View style={{ gap: spacing.xs }}>
@@ -215,67 +200,65 @@ function ConnectionRow({
             ) : null}
             {/* Acciones de una fuente conectada: pequeñas y en fila (sistema de diseño). */}
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, alignSelf: 'stretch', width: '100%' }}>
-            {active && source.supportsRenewal && source.connectable ? (
-              <Button
-                label={t('sources.renew')}
-                size="small"
-                icon="refresh"
-                variant={connection.status === 'error' || connection.missingScopes > 0 ? 'primary' : 'secondary'}
-                disabled={busy}
-                onPress={() => void startConnect()}
-              />
-            ) : null}
-            {active ? (
-              <>
+              {active && source.supportsRenewal && source.connectable ? (
                 <Button
-                  label={t('sources.sync')}
-                size="small"
-                  icon="sync"
-                  variant="secondary"
+                  label={t('sources.renew')}
+                  size="small"
+                  icon="refresh"
+                  variant={connection.status === 'error' || connection.missingScopes > 0 ? 'primary' : 'secondary'}
                   disabled={busy}
-                  onPress={() =>
-                    sync.mutate({ connectionId: connection.id, mode: source.capabilities.incrementalSync ? 'incremental' : 'full' })
-                  }
+                  onPress={() => void startConnect()}
                 />
-                {source.capabilities.incrementalSync && isDemoUser ? (
+              ) : null}
+              {active ? (
+                <>
                   <Button
-                    label={t('sources.fullSync')}
-                size="small"
-                    icon="database-sync"
+                    label={t('sources.sync')}
+                    size="small"
+                    icon="sync"
                     variant="secondary"
                     disabled={busy}
-                    onPress={() => sync.mutate({ connectionId: connection.id, mode: 'full' })}
+                    onPress={() => sync.mutate({ connectionId: connection.id, mode: source.capabilities.incrementalSync ? 'incremental' : 'full' })}
                   />
-                ) : null}
+                  {source.capabilities.incrementalSync && isDemoUser ? (
+                    <Button
+                      label={t('sources.fullSync')}
+                      size="small"
+                      icon="database-sync"
+                      variant="secondary"
+                      disabled={busy}
+                      onPress={() => sync.mutate({ connectionId: connection.id, mode: 'full' })}
+                    />
+                  ) : null}
+                  <Button
+                    label={t('sources.disconnect')}
+                    size="small"
+                    icon="link-variant-off"
+                    variant="secondary"
+                    disabled={busy}
+                    onPress={() => startDisconnect(connection.id, false)}
+                  />
+                </>
+              ) : null}
+              {connection && connection.observationCount > 0 ? (
                 <Button
-                  label={t('sources.disconnect')}
-                size="small"
-                  icon="link-variant-off"
-                  variant="secondary"
+                  label={t('sources.disconnectPurge')}
+                  size="small"
+                  icon="delete-outline"
+                  variant="danger"
                   disabled={busy}
-                  onPress={() => startDisconnect(connection.id, false)}
+                  onPress={() =>
+                    Alert.alert(t('sources.confirmPurgeTitle'), t('sources.confirmPurge'), [
+                      { text: t('common.cancel'), style: 'cancel' },
+                      {
+                        text: t('sources.disconnectPurge'),
+                        style: 'destructive',
+                        onPress: () => startDisconnect(connection.id, true),
+                      },
+                    ])
+                  }
                 />
-              </>
-            ) : null}
-            {connection && connection.observationCount > 0 ? (
-              <Button
-                label={t('sources.disconnectPurge')}
-                size="small"
-                icon="delete-outline"
-                variant="danger"
-                disabled={busy}
-                onPress={() =>
-                  Alert.alert(t('sources.confirmPurgeTitle'), t('sources.confirmPurge'), [
-                    { text: t('common.cancel'), style: 'cancel' },
-                    {
-                      text: t('sources.disconnectPurge'),
-                      style: 'destructive',
-                      onPress: () => startDisconnect(connection.id, true),
-                    },
-                  ])
-                }
-              />
-            ) : null}
+              ) : null}
             </View>
           </View>
         </>
@@ -337,17 +320,10 @@ export function SourcesCard() {
         // Cuentas reales: solo lo que se puede conectar (o ya está conectado). Lo previsto, lo no configurado y lo
         // simulado solo se ve en la demo y en desarrollo, junto con el detalle técnico de cada sincronización.
         ?.filter((source) =>
-          isDemoUser
-            ? true
-            : !source.simulated && (source.connectable || Boolean(connections.data?.some((c) => c.sourceKey === source.key))),
+          isDemoUser ? true : !source.simulated && (source.connectable || Boolean(connections.data?.some((c) => c.sourceKey === source.key))),
         )
         .map((source) => (
-          <ConnectionRow
-            key={source.key}
-            source={source}
-            connection={connections.data?.find((c) => c.sourceKey === source.key)}
-            isDemoUser={isDemoUser}
-          />
+          <ConnectionRow key={source.key} source={source} connection={connections.data?.find((c) => c.sourceKey === source.key)} isDemoUser={isDemoUser} />
         ))}
     </Card>
   );

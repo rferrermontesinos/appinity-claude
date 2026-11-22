@@ -30,11 +30,7 @@ async function uniqueHandle(db: Database): Promise<string> {
 }
 
 /** Devuelve el usuario de esa identidad o crea uno nuevo (sin mayoría de edad ni condiciones aceptadas todavía). */
-export async function findOrCreateUserForIdentity(
-  db: Database,
-  identity: VerifiedIdentity,
-  now = new Date(),
-): Promise<{ userId: string; isNew: boolean }> {
+export async function findOrCreateUserForIdentity(db: Database, identity: VerifiedIdentity, now = new Date()): Promise<{ userId: string; isNew: boolean }> {
   const [existing] = await db
     .select({ userId: authIdentities.userId, id: authIdentities.id, status: users.status, deletedAt: users.deletedAt })
     .from(authIdentities)
@@ -113,7 +109,10 @@ export async function sessionIsActive(db: Database, sessionId: string, userId: s
 }
 
 export async function revokeSession(db: Database, sessionId: string, userId: string, now = new Date()): Promise<void> {
-  await db.update(authSessions).set({ revokedAt: now }).where(and(eq(authSessions.id, sessionId), eq(authSessions.userId, userId)));
+  await db
+    .update(authSessions)
+    .set({ revokedAt: now })
+    .where(and(eq(authSessions.id, sessionId), eq(authSessions.userId, userId)));
 }
 
 /**

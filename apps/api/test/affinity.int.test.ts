@@ -1,7 +1,23 @@
 import type { INestApplication } from '@nestjs/common';
 import { createDatabase, userAffinities, userBlocks, userSettings, users, type DatabaseHandle } from '@appinity/database';
 import { DEMO_USERS, friendshipState, recomputeAffinities, seedDemo } from '@appinity/ingestion';
-import { CATEGORIES, type AffinityDto, type CategoryRankingDto, type ChatConfigDto, type ChatConversationDto, type ChatInboxDto, type ChatMatchResultDto, type FollowedPersonDto, type DefiningTastesDto, type FriendsDto, type ItemCircleDto, type PublicPersonDto, type SharedTastesDto, type RecommendationsDto, type SoulmatesDto } from '@appinity/shared';
+import {
+  CATEGORIES,
+  type AffinityDto,
+  type CategoryRankingDto,
+  type ChatConfigDto,
+  type ChatConversationDto,
+  type ChatInboxDto,
+  type ChatMatchResultDto,
+  type FollowedPersonDto,
+  type DefiningTastesDto,
+  type FriendsDto,
+  type ItemCircleDto,
+  type PublicPersonDto,
+  type SharedTastesDto,
+  type RecommendationsDto,
+  type SoulmatesDto,
+} from '@appinity/shared';
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { testEnv, truncateAll } from '../../../test/helpers.js';
@@ -30,7 +46,11 @@ beforeAll(async () => {
   app = await createApp(loadEnv(env), { logger: false });
   await app.listen(0, '127.0.0.1');
   base = `http://127.0.0.1:${(app.getHttpServer().address() as { port: number }).port}`;
-  const res = await fetch(`${base}/v1/dev/session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle: laura.handle }) });
+  const res = await fetch(`${base}/v1/dev/session`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ handle: laura.handle }),
+  });
   token = ((await res.json()) as { token: string }).token;
 });
 
@@ -128,7 +148,8 @@ describe('recomendaciones (fase 7)', () => {
       if (r.block === 'discovery') expect(r.reason.contributor?.displayName).toBeTruthy();
     }
     // Ninguna tarjeta es algo que Laura ya conoce.
-    const known = (await (await get('/v1/me/item-profiles')).json()) as { items?: Array<{ item: { id: string }; knownConfidence: number }> } | Array<{ item: { id: string }; knownConfidence: number }>;
+    const known = (await (await get('/v1/me/item-profiles')).json()) as
+      { items?: Array<{ item: { id: string }; knownConfidence: number }> } | Array<{ item: { id: string }; knownConfidence: number }>;
     const list = Array.isArray(known) ? known : (known.items ?? []);
     const knownIds = new Set(list.filter((p) => p.knownConfidence >= 0.8).map((p) => p.item.id));
     expect(knownIds.size).toBeGreaterThan(0);
@@ -149,7 +170,11 @@ describe('recomendaciones (fase 7)', () => {
 
 describe('Home (fase 8)', () => {
   const post = (path: string, body?: unknown) =>
-    fetch(`${base}${path}`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
+    fetch(`${base}${path}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
 
   it('impresión, descartar, deshacer y conservar por HTTP; NEW cambia tras la primera impresión', async () => {
     const first = (await (await get('/v1/me/recommendations?limit=5')).json()) as RecommendationsDto;
@@ -176,7 +201,11 @@ describe('Home (fase 8)', () => {
 
 describe('feed continuo y Categories (fase 9)', () => {
   const query = (body: unknown) =>
-    fetch(`${base}/v1/me/recommendations/query`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    fetch(`${base}/v1/me/recommendations/query`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
 
   it('POST /query pagina con la cola de la sesión en el cuerpo, sin repetir y con respaldos etiquetados', async () => {
     const seen: string[] = [];
@@ -205,7 +234,11 @@ describe('People y Friends (fase 10)', () => {
     return ((await res.json()) as { token: string }).token;
   }
   const call = (tok: string, method: string, path: string, body?: unknown) =>
-    fetch(`${base}${path}`, { method, headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
+    fetch(`${base}${path}`, {
+      method,
+      headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
 
   it('solicitud, aceptación, perfil con la relación y eliminación por HTTP', async () => {
     const clara = DEMO_USERS.find((u) => u.handle === 'demo_clara')!;
@@ -244,7 +277,11 @@ describe('Chat (fase 12A)', () => {
     return ((await res.json()) as { token: string }).token;
   }
   const call = (tok: string, method: string, path: string, body?: unknown) =>
-    fetch(`${base}${path}`, { method, headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
+    fetch(`${base}${path}`, {
+      method,
+      headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
 
   it('configuración: EARLY_ACCESS activo y nadie es Premium sin RevenueCat', async () => {
     const config = (await (await call(token, 'GET', '/v1/me/chats/config')).json()) as ChatConfigDto;
@@ -257,7 +294,11 @@ describe('Chat (fase 12A)', () => {
     const iris = DEMO_USERS.find((u) => u.handle === 'demo_iris')!;
     const irisToken = await tokenFor('demo_iris');
     const leoToken = await tokenFor('demo_leo');
-    expect(await (await call(token, 'POST', '/v1/me/chats/requests', { userId: iris.id })).json()).toEqual({ state: 'request_sent', conversationId: null, newMatch: false });
+    expect(await (await call(token, 'POST', '/v1/me/chats/requests', { userId: iris.id })).json()).toEqual({
+      state: 'request_sent',
+      conversationId: null,
+      newMatch: false,
+    });
     const person = (await (await call(token, 'GET', `/v1/people/${iris.id}`)).json()) as PublicPersonDto;
     expect(person.chat).toEqual({ state: 'request_sent', kind: 'interest' });
     const inbox = (await (await call(irisToken, 'GET', '/v1/me/chats')).json()) as ChatInboxDto;
@@ -292,7 +333,11 @@ describe('Seguir a creadores y amigos (2026-10-26)', () => {
     return ((await res.json()) as { token: string }).token;
   }
   const call = (tok: string, method: string, path: string, body?: unknown) =>
-    fetch(`${base}${path}`, { method, headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
+    fetch(`${base}${path}`, {
+      method,
+      headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
   const byHandle = (h: string) => DEMO_USERS.find((u) => u.handle === h)!;
   const followingIds = async (tok: string) => ((await (await call(tok, 'GET', '/v1/me/following')).json()) as FollowedPersonDto[]).map((p) => p.userId);
 
@@ -337,7 +382,11 @@ describe('Seguir a creadores y amigos (2026-10-26)', () => {
     expect((await call(token, 'POST', '/v1/me/follows', { userId: clara.id })).status).toBe(200);
     const after = await recs();
     // Los 7 primeros de consenso, idénticos y con los mismos apoyos: los seguidos no votan en el consenso.
-    const head = (r: RecommendationsDto) => r.items.filter((i) => i.block === 'consensus').slice(0, 7).map((i) => [i.item.id, i.reason.supporters]);
+    const head = (r: RecommendationsDto) =>
+      r.items
+        .filter((i) => i.block === 'consensus')
+        .slice(0, 7)
+        .map((i) => [i.item.id, i.reason.supporters]);
     expect(head(after)).toEqual(head(before));
     // Clara aparece como autora de una tarjeta de seguidos o en el motivo combinado.
     const credited = after.items.some(
@@ -356,13 +405,18 @@ describe('Seguir a creadores y amigos (2026-10-26)', () => {
 
 describe('Orden personal de Categorías (2026-10-26)', () => {
   it('ocho categorías ordenadas por afinidad y gusto propio; cada persona ve su propio orden', async () => {
-    const ranking = async (tok: string) => (await (await fetch(`${base}/v1/me/categories/ranking`, { headers: { Authorization: `Bearer ${tok}` } })).json()) as CategoryRankingDto;
+    const ranking = async (tok: string) =>
+      (await (await fetch(`${base}/v1/me/categories/ranking`, { headers: { Authorization: `Bearer ${tok}` } })).json()) as CategoryRankingDto;
     const lauraRank = await ranking(token);
     expect(lauraRank.version).toBe('category-ranking-v1');
     expect(lauraRank.items.map((i) => i.category).sort()).toEqual([...CATEGORIES].sort());
     const scores = lauraRank.items.map((i) => i.score);
     expect([...scores].sort((a, b) => b - a)).toEqual(scores);
-    const res = await fetch(`${base}/v1/dev/session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle: 'demo_alex' }) });
+    const res = await fetch(`${base}/v1/dev/session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handle: 'demo_alex' }),
+    });
     const alexRank = await ranking(((await res.json()) as { token: string }).token);
     expect(alexRank.items[0]!.category).not.toBe(lauraRank.items[0]!.category);
     expect(['games', 'music']).toContain(alexRank.items[0]!.category);
@@ -372,16 +426,26 @@ describe('Orden personal de Categorías (2026-10-26)', () => {
 describe('Escribir siempre, sin match (2026-10-27)', () => {
   it('se abre la conversación sin esperar; solo aparece en la bandeja cuando alguien escribe; bloquear la cierra', async () => {
     const tokenFor = async (handle: string) =>
-      ((await (await fetch(`${base}/v1/dev/session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle }) })).json()) as { token: string }).token;
+      (
+        (await (
+          await fetch(`${base}/v1/dev/session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle }) })
+        ).json()) as { token: string }
+      ).token;
     const call = (tok: string, method: string, path: string, body?: unknown) =>
-      fetch(`${base}${path}`, { method, headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
+      fetch(`${base}${path}`, {
+        method,
+        headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      });
     const ona = DEMO_USERS.find((u) => u.handle === 'demo_ona')!;
     const onaToken = await tokenFor(ona.handle);
     const opened = await call(token, 'POST', '/v1/me/chats/open', { userId: ona.id });
     expect(opened.status).toBe(200);
     const { conversationId } = (await opened.json()) as { conversationId: string };
     // Abrir otra vez devuelve la misma conversación.
-    expect(((await (await call(token, 'POST', '/v1/me/chats/open', { userId: ona.id })).json()) as { conversationId: string }).conversationId).toBe(conversationId);
+    expect(((await (await call(token, 'POST', '/v1/me/chats/open', { userId: ona.id })).json()) as { conversationId: string }).conversationId).toBe(
+      conversationId,
+    );
     // Sin mensajes no aparece en la bandeja de Ona (ni cuenta en el aviso).
     let inbox = (await (await call(onaToken, 'GET', '/v1/me/chats')).json()) as ChatInboxDto;
     expect(inbox.conversations.map((c) => c.conversationId)).not.toContain(conversationId);
@@ -403,7 +467,11 @@ describe('Votos en Inicio (motor v3, 2026-10-27)', () => {
     // Sesión de Laura (ya abierta): pedir otra superaría el límite de sesiones de desarrollo por minuto.
     const tok = token;
     const call = (method: string, path: string, body?: unknown) =>
-      fetch(`${base}${path}`, { method, headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
+      fetch(`${base}${path}`, {
+        method,
+        headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      });
     const recsRes = await call('GET', '/v1/me/recommendations?limit=10');
     const recs = (await recsRes.json()) as RecommendationsDto;
     if (!recs.items) throw new Error(`recomendaciones: HTTP ${recsRes.status} ${JSON.stringify(recs).slice(0, 300)}`);
@@ -412,8 +480,14 @@ describe('Votos en Inicio (motor v3, 2026-10-27)', () => {
     const opinion = async (id: string) => (await (await call('GET', `/v1/me/home/items/${id}/opinion`)).json()) as { voted: boolean; vote: number | null };
     // Me gusta: observación «appinity» con preferencia +0,5 y confianza 1 (mismo peso que una nota externa).
     expect((await call('POST', '/v1/me/home/votes', { itemId: liked, value: 1 })).status).toBe(200);
-    const profile = (await (await call('GET', `/v1/me/item-profiles/${liked}`)).json()) as { observations: Array<{ sourceKey: string; preferenceScore: number; preferenceConfidence: number; preferenceBasis: string }> };
-    expect(profile.observations.find((o) => o.sourceKey === 'appinity')).toMatchObject({ preferenceScore: 0.5, preferenceConfidence: 1, preferenceBasis: 'explicit_rating' });
+    const profile = (await (await call('GET', `/v1/me/item-profiles/${liked}`)).json()) as {
+      observations: Array<{ sourceKey: string; preferenceScore: number; preferenceConfidence: number; preferenceBasis: string }>;
+    };
+    expect(profile.observations.find((o) => o.sourceKey === 'appinity')).toMatchObject({
+      preferenceScore: 0.5,
+      preferenceConfidence: 1,
+      preferenceBasis: 'explicit_rating',
+    });
     expect(await opinion(liked)).toEqual({ voted: true, vote: 1 });
     // Solo −1, +1 y +2; «No lo conozco» es una acción, no un voto. Guardar ya no existe.
     expect((await call('POST', '/v1/me/home/votes', { itemId: unknown, value: 'unknown' })).status).toBe(400);
@@ -433,8 +507,8 @@ describe('Votos en Inicio (motor v3, 2026-10-27)', () => {
     expect((await call('POST', '/v1/me/home/actions', { itemId: liked, action: 'dismiss' })).status).toBe(409);
     for (const context of ['home', 'category'] as const) expect(await ids(context)).not.toContain(liked);
     // Deshacer «No lo conozco» y después el voto (la última acción primero).
-    expect(((await (await call('POST', '/v1/me/home/undo')).json()) as { action: string; itemId: string })).toMatchObject({ action: 'dismiss', itemId: unknown });
-    expect(((await (await call('POST', '/v1/me/home/undo')).json()) as { action: string; itemId: string })).toMatchObject({ action: 'vote', itemId: liked });
+    expect((await (await call('POST', '/v1/me/home/undo')).json()) as { action: string; itemId: string }).toMatchObject({ action: 'dismiss', itemId: unknown });
+    expect((await (await call('POST', '/v1/me/home/undo')).json()) as { action: string; itemId: string }).toMatchObject({ action: 'vote', itemId: liked });
     const reverted = (await (await call('GET', `/v1/me/item-profiles/${liked}`)).json()) as { observations: Array<{ sourceKey: string }> };
     expect(reverted.observations.filter((o) => o.sourceKey === 'appinity')).toEqual([]);
     expect(await opinion(liked)).toEqual({ voted: false, vote: null });

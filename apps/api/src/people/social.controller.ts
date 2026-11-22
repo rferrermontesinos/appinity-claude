@@ -15,7 +15,15 @@ import {
   sendFriendRequest,
   unblockUser,
 } from '@appinity/ingestion';
-import { CONTACT_HASH_BATCH_MAX, type BlockedPersonDto, type ContactMatchDto, type FollowResultDto, type FollowedPersonDto, type FriendsDto, type FriendshipResultDto } from '@appinity/shared';
+import {
+  CONTACT_HASH_BATCH_MAX,
+  type BlockedPersonDto,
+  type ContactMatchDto,
+  type FollowResultDto,
+  type FollowedPersonDto,
+  type FriendsDto,
+  type FriendshipResultDto,
+} from '@appinity/shared';
 import { z } from 'zod';
 import type { AuthContext } from '../auth/auth.types.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
@@ -23,9 +31,7 @@ import { ZodPipe } from '../common/zod.pipe.js';
 import { DATABASE } from '../infra/tokens.js';
 
 const userSchema = z.object({ userId: z.uuid() }).strict();
-const contactsSchema = z
-  .object({ hashes: z.array(z.string().regex(/^[0-9a-f]{64}$/)).max(CONTACT_HASH_BATCH_MAX) })
-  .strict();
+const contactsSchema = z.object({ hashes: z.array(z.string().regex(/^[0-9a-f]{64}$/)).max(CONTACT_HASH_BATCH_MAX) }).strict();
 const reportSchema = z
   .object({
     userId: z.uuid(),

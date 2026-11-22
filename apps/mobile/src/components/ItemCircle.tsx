@@ -58,7 +58,11 @@ export function ItemCircle({ itemId, surface }: { itemId: string; surface: strin
               <View key={l.key} style={{ flex: l.count, backgroundColor: l.color }} />
             ))}
           </View>
-          <View importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.lg, rowGap: spacing.xs }}>
+          <View
+            importantForAccessibility="no-hide-descendants"
+            accessibilityElementsHidden
+            style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.lg, rowGap: spacing.xs }}
+          >
             {shown.map((l) => (
               <View key={l.key} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
                 <MaterialCommunityIcons name={l.icon} size={16} color={l.color} />

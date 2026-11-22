@@ -33,16 +33,29 @@ export function PersonActions({ person }: { person: PublicPersonDto }) {
       {/* Seguir (2026-10-26): solo creadores con perfil público o amigos. Seguir no cambia tus gustos. */}
       {person.follow.canFollow ? (
         person.follow.state === 'following' ? (
-          <Button label={t('follow.following')} icon="account-check" variant="secondary" onPress={() => run({ kind: 'unfollow', userId: person.userId })} disabled={action.isPending} />
+          <Button
+            label={t('follow.following')}
+            icon="account-check"
+            variant="secondary"
+            onPress={() => run({ kind: 'unfollow', userId: person.userId })}
+            disabled={action.isPending}
+          />
         ) : (
           <Button label={t('follow.follow')} icon="account-star" onPress={() => run({ kind: 'follow', userId: person.userId })} loading={action.isPending} />
         )
       ) : null}
-      {state === 'none' ? <Button label={t('people.addFriend')} icon="account-plus" onPress={() => run({ kind: 'request', userId: person.userId })} loading={action.isPending} /> : null}
+      {state === 'none' ? (
+        <Button label={t('people.addFriend')} icon="account-plus" onPress={() => run({ kind: 'request', userId: person.userId })} loading={action.isPending} />
+      ) : null}
       {state === 'pending_out' ? (
         <View style={{ gap: spacing.xs }}>
           <Badge label={t('people.requestSent')} color={c.textMuted} />
-          <Button label={t('people.cancelRequest')} variant="secondary" onPress={() => run({ kind: 'remove', userId: person.userId })} disabled={action.isPending} />
+          <Button
+            label={t('people.cancelRequest')}
+            variant="secondary"
+            onPress={() => run({ kind: 'remove', userId: person.userId })}
+            disabled={action.isPending}
+          />
         </View>
       ) : null}
       {state === 'pending_in' && requestId ? (
@@ -54,7 +67,12 @@ export function PersonActions({ person }: { person: PublicPersonDto }) {
       {state === 'friends' ? (
         <View style={{ gap: spacing.xs }}>
           <Badge label={t('people.friendsLabel')} color={c.ok} />
-          <Button label={t('people.removeFriend')} variant="secondary" onPress={() => run({ kind: 'remove', userId: person.userId })} disabled={action.isPending} />
+          <Button
+            label={t('people.removeFriend')}
+            variant="secondary"
+            onPress={() => run({ kind: 'remove', userId: person.userId })}
+            disabled={action.isPending}
+          />
         </View>
       ) : null}
 

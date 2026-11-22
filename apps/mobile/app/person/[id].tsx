@@ -57,7 +57,18 @@ export default function PersonScreen() {
               {value !== null ? <Text style={{ fontSize: 26, letterSpacing: 0 }}> %</Text> : null}
             </Text>
             {data.affinity.exceptionalMutual ? (
-              <View style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: onPoster.lime, borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 5 }}>
+              <View
+                style={{
+                  alignSelf: 'flex-start',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  backgroundColor: onPoster.lime,
+                  borderRadius: radius.full,
+                  paddingHorizontal: 10,
+                  paddingVertical: 5,
+                }}
+              >
                 <MaterialCommunityIcons name="star-four-points" size={14} color={onPoster.onLime} />
                 <Text style={{ color: onPoster.onLime, fontSize: 12, fontWeight: '700' }}>{t('people.exceptionalMutual')}</Text>
               </View>

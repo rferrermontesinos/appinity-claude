@@ -10,11 +10,7 @@ type Db = Database | Tx;
  * observaciones vigentes (de cualquier fuente). Si un objeto se queda sin evidencias, su perfil se elimina.
  * Solo lo invocan los syncs y las desconexiones: ninguna acción dentro de la app modifica los perfiles.
  */
-export async function recomputeProfiles(
-  db: Db,
-  userId: string,
-  itemIds: Iterable<string>,
-): Promise<{ upserted: number; deleted: number }> {
+export async function recomputeProfiles(db: Db, userId: string, itemIds: Iterable<string>): Promise<{ upserted: number; deleted: number }> {
   const ids = [...new Set(itemIds)];
   if (!ids.length) return { upserted: 0, deleted: 0 };
 
@@ -70,9 +66,7 @@ export async function recomputeProfiles(
 
   const empty = ids.filter((id) => !byItem.has(id));
   if (empty.length) {
-    await db
-      .delete(userItemProfiles)
-      .where(and(eq(userItemProfiles.userId, userId), inArray(userItemProfiles.catalogItemId, empty)));
+    await db.delete(userItemProfiles).where(and(eq(userItemProfiles.userId, userId), inArray(userItemProfiles.catalogItemId, empty)));
   }
   return { upserted, deleted: empty.length };
 }

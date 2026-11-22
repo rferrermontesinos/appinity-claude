@@ -49,7 +49,10 @@ describe('invitaciones por enlace', () => {
     const { code } = await createInvitation(database.db, ana);
     await blockUser(database.db, carla, ana);
     await expect(acceptInvitation(database.db, code, carla)).rejects.toBeInstanceOf(NotFoundError);
-    await database.db.update(invitations).set({ expiresAt: new Date(Date.now() - 1000) }).where(eq(invitations.code, code));
+    await database.db
+      .update(invitations)
+      .set({ expiresAt: new Date(Date.now() - 1000) })
+      .where(eq(invitations.code, code));
     await expect(previewInvitation(database.db, code, ben)).rejects.toBeInstanceOf(NotFoundError);
     await expect(previewInvitation(database.db, 'zzzzzzzzzz', ben)).rejects.toBeInstanceOf(NotFoundError);
   });

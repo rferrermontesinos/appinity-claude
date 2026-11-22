@@ -33,14 +33,16 @@ export function evidenceStats(t: TFunction, r: RecommendationDto): Stat[] {
   const out: Stat[] = [];
   switch (r.reason.code) {
     case 'consensus':
-      if (r.reason.supporters !== undefined && r.reason.opinionated) out.push({ value: `${r.reason.supporters}/${r.reason.opinionated}`, label: t('categoriesScreen.why.supporters'), people: true });
+      if (r.reason.supporters !== undefined && r.reason.opinionated)
+        out.push({ value: `${r.reason.supporters}/${r.reason.opinionated}`, label: t('categoriesScreen.why.supporters'), people: true });
       if (e?.supporterAffinity !== undefined) out.push({ value: `${e.supporterAffinity} %`, label: t('categoriesScreen.why.affinityMean'), people: true });
       break;
     case 'discovery':
       if (e?.supporterAffinity !== undefined) out.push({ value: `${e.supporterAffinity} %`, label: t('categoriesScreen.why.affinityOne'), people: true });
       break;
     case 'trending':
-      if (r.reason.positiveVoters !== undefined && r.reason.totalVoters) out.push({ value: `${r.reason.positiveVoters}/${r.reason.totalVoters}`, label: t('categoriesScreen.why.areaVoters') });
+      if (r.reason.positiveVoters !== undefined && r.reason.totalVoters)
+        out.push({ value: `${r.reason.positiveVoters}/${r.reason.totalVoters}`, label: t('categoriesScreen.why.areaVoters') });
       break;
     case 'community':
       if (r.reason.supporters !== undefined) out.push({ value: String(r.reason.supporters), label: t('categoriesScreen.why.communityVoters') });
@@ -89,10 +91,23 @@ export function RankedRow({ r, rank, featured, world }: { r: RecommendationDto; 
         borderColor: featured && world ? world.border : c.hairline,
       })}
     >
-      <Text style={{ width: 24, textAlign: 'center', color: featured ? (world?.ink ?? c.text) : c.textSubtle, fontFamily: featured ? fonts.displayHeavy : fonts.display, fontSize: featured ? 20 : 15 }}>
+      <Text
+        style={{
+          width: 24,
+          textAlign: 'center',
+          color: featured ? (world?.ink ?? c.text) : c.textSubtle,
+          fontFamily: featured ? fonts.displayHeavy : fonts.display,
+          fontSize: featured ? 20 : 15,
+        }}
+      >
         {rank}
       </Text>
-      <CatalogImage image={r.item.primaryImage} category={r.item.category} compact style={{ width: size, height: size, borderRadius: radius.md, ...(world ? { borderWidth: 1.5, borderColor: world.border } : {}) }} />
+      <CatalogImage
+        image={r.item.primaryImage}
+        category={r.item.category}
+        compact
+        style={{ width: size, height: size, borderRadius: radius.md, ...(world ? { borderWidth: 1.5, borderColor: world.border } : {}) }}
+      />
       <View style={{ flex: 1, gap: 3 }}>
         <Text style={{ color: c.text, fontFamily: fonts.display, fontSize: featured ? 17 : 16, lineHeight: featured ? 20 : 19 }} numberOfLines={2}>
           {r.item.title}
@@ -109,7 +124,9 @@ export function RankedRow({ r, rank, featured, world }: { r: RecommendationDto; 
         {exceptional > 0 ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <MaterialCommunityIcons name="star-four-points" size={13} color={c.affinity} />
-            <Text style={{ color: c.affinity, fontSize: 12, fontWeight: '600', flexShrink: 1 }}>{t('categoriesScreen.why.exceptional', { count: exceptional })}</Text>
+            <Text style={{ color: c.affinity, fontSize: 12, fontWeight: '600', flexShrink: 1 }}>
+              {t('categoriesScreen.why.exceptional', { count: exceptional })}
+            </Text>
           </View>
         ) : null}
       </View>

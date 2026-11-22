@@ -30,7 +30,9 @@ export function CategoryAffinityBar({ item }: { item: AffinityCategoryDto }) {
         <Text style={{ fontFamily: fonts.displayHeavy, fontSize: 18, color: value === null ? c.textSubtle : c.text }}>{value ?? '—'}</Text>
       </View>
       <View style={{ height: 8, borderRadius: radius.full, backgroundColor: c.surfaceAlt, overflow: 'hidden' }}>
-        {item.score !== null ? <View style={{ width: `${Math.max(2, Math.min(100, item.score))}%`, height: '100%', borderRadius: radius.full, backgroundColor: meta.color }} /> : null}
+        {item.score !== null ? (
+          <View style={{ width: `${Math.max(2, Math.min(100, item.score))}%`, height: '100%', borderRadius: radius.full, backgroundColor: meta.color }} />
+        ) : null}
       </View>
     </View>
   );

@@ -4,13 +4,7 @@ import { catalogImageSchema, catalogLocationSchema, categorySchema, type Catalog
 import type { ProfileSourceKey } from './sources.js';
 
 /** Base de la preferencia, de mayor a menor prioridad en la consolidación (§10). */
-export const PREFERENCE_BASES = [
-  'explicit_rating',
-  'explicit_like',
-  'strong_behavior',
-  'attendance',
-  'weak_behavior',
-] as const;
+export const PREFERENCE_BASES = ['explicit_rating', 'explicit_like', 'strong_behavior', 'attendance', 'weak_behavior'] as const;
 export type PreferenceBasis = (typeof PREFERENCE_BASES)[number];
 
 /** Prioridad numérica: mayor valor, mayor prioridad. */
@@ -22,17 +16,7 @@ export const PREFERENCE_BASIS_PRIORITY: Record<PreferenceBasis, number> = {
   weak_behavior: 1,
 };
 
-export const ENGAGEMENT_TYPES = [
-  'rating',
-  'liked',
-  'played',
-  'listened',
-  'attendance',
-  'review',
-  'owned',
-  'saved',
-  'completed',
-] as const;
+export const ENGAGEMENT_TYPES = ['rating', 'liked', 'played', 'listened', 'attendance', 'review', 'owned', 'saved', 'completed'] as const;
 export type EngagementType = (typeof ENGAGEMENT_TYPES)[number];
 
 export type TimestampPrecision = 'instant' | 'day' | 'year';
@@ -84,14 +68,23 @@ const identifierKey = z.string().regex(/^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$/, 'Cla
 export const normalizedObservationSchema = z
   .object({
     userId: z.uuid(),
-    source: z.string().regex(/^[a-z][a-z0-9_]*$/).max(64),
+    source: z
+      .string()
+      .regex(/^[a-z][a-z0-9_]*$/)
+      .max(64),
     sourceRecordId: z.string().min(1).max(512),
-    observationKind: z.string().regex(/^[a-z][a-z0-9_]*$/).max(64),
+    observationKind: z
+      .string()
+      .regex(/^[a-z][a-z0-9_]*$/)
+      .max(64),
     mapperVersion: z.string().min(1).max(32),
     category: categorySchema,
     externalItem: z.object({
       sourceId: z.string().min(1).max(512),
-      itemType: z.string().regex(/^[a-z][a-z0-9_]*$/).max(64),
+      itemType: z
+        .string()
+        .regex(/^[a-z][a-z0-9_]*$/)
+        .max(64),
       title: z.string().trim().min(1).max(512),
       canonicalIds: z.record(identifierKey, z.string().min(1).max(256)).optional(),
       imageCandidate: catalogImageSchema.optional(),
@@ -156,9 +149,7 @@ export function parseObservation(input: unknown): NormalizedObservation {
   return normalizedObservationSchema.parse(input) as NormalizedObservation;
 }
 
-export function safeParseObservation(
-  input: unknown,
-): { success: true; data: NormalizedObservation } | { success: false; error: string } {
+export function safeParseObservation(input: unknown): { success: true; data: NormalizedObservation } | { success: false; error: string } {
   const result = normalizedObservationSchema.safeParse(input);
   if (result.success) return { success: true, data: result.data as NormalizedObservation };
   return { success: false, error: z.prettifyError(result.error) };

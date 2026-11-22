@@ -12,6 +12,8 @@
       "default": "./dist/index.js"
     }
   },
-  "dependencies": { "@appinity/shared": "workspace:*" },
+  "dependencies": {
+    "@appinity/shared": "workspace:*"
+  },
   "devDependencies": {}
 }

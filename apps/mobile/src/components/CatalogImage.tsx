@@ -13,9 +13,42 @@ function PosterBackdrop({ category }: { category: Category }) {
   return (
     <>
       <View style={[StyleSheet.absoluteFill, { backgroundColor: mixHex(color, '#000000', 0.62) }]} />
-      <View style={{ position: 'absolute', width: 420, height: 420, borderRadius: 210, top: -190, left: -120, backgroundColor: mixHex(color, '#FFFFFF', 0.12), opacity: 0.5 }} />
-      <View style={{ position: 'absolute', width: 300, height: 300, borderRadius: 150, top: -110, left: -50, backgroundColor: mixHex(color, '#FFFFFF', 0.2), opacity: 0.35 }} />
-      <View style={{ position: 'absolute', left: '-20%', width: '140%', height: 64, top: '40%', transform: [{ rotate: '-12deg' }], backgroundColor: mixHex(color, '#FFFFFF', 0.25), opacity: 0.16 }} />
+      <View
+        style={{
+          position: 'absolute',
+          width: 420,
+          height: 420,
+          borderRadius: 210,
+          top: -190,
+          left: -120,
+          backgroundColor: mixHex(color, '#FFFFFF', 0.12),
+          opacity: 0.5,
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          width: 300,
+          height: 300,
+          borderRadius: 150,
+          top: -110,
+          left: -50,
+          backgroundColor: mixHex(color, '#FFFFFF', 0.2),
+          opacity: 0.35,
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          left: '-20%',
+          width: '140%',
+          height: 64,
+          top: '40%',
+          transform: [{ rotate: '-12deg' }],
+          backgroundColor: mixHex(color, '#FFFFFF', 0.25),
+          opacity: 0.16,
+        }}
+      />
       <Grain opacity={0.55} />
     </>
   );
@@ -33,7 +66,11 @@ export function CategoryFallback({ category, title, style, compact }: { category
   const word = (title ?? t(`categories.${category}`)).split(/\s+/)[0]?.replace(/[:,.]$/, '') ?? '';
   if (compact) {
     return (
-      <View accessibilityRole="image" accessibilityLabel={t('item.imageFallback')} style={[{ backgroundColor: mixHex(meta.color, '#000000', 0.55), alignItems: 'center', justifyContent: 'center' }, style]}>
+      <View
+        accessibilityRole="image"
+        accessibilityLabel={t('item.imageFallback')}
+        style={[{ backgroundColor: mixHex(meta.color, '#000000', 0.55), alignItems: 'center', justifyContent: 'center' }, style]}
+      >
         <MaterialCommunityIcons name={icon} size={22} color={mixHex(meta.color, '#FFFFFF', 0.55)} />
       </View>
     );
@@ -46,25 +83,53 @@ export function CategoryFallback({ category, title, style, compact }: { category
           numberOfLines={1}
           ellipsizeMode="clip"
           allowFontScaling={false}
-          style={{ color: mixHex(meta.color, '#FFFFFF', 0.6), opacity: 0.32, fontFamily: fonts.displayHeavy, fontSize: 150, lineHeight: 150, letterSpacing: -7 }}
+          style={{
+            color: mixHex(meta.color, '#FFFFFF', 0.6),
+            opacity: 0.32,
+            fontFamily: fonts.displayHeavy,
+            fontSize: 150,
+            lineHeight: 150,
+            letterSpacing: -7,
+          }}
         >
           {word}
         </Text>
       </View>
-      <MaterialCommunityIcons name={icon} size={84} color={mixHex(meta.color, '#FFFFFF', 0.7)} style={{ position: 'absolute', right: 20, top: 58, opacity: 0.85 }} />
+      <MaterialCommunityIcons
+        name={icon}
+        size={84}
+        color={mixHex(meta.color, '#FFFFFF', 0.7)}
+        style={{ position: 'absolute', right: 20, top: 58, opacity: 0.85 }}
+      />
       <Text style={{ position: 'absolute', left: 14, bottom: 10, color: onImage.muted, fontSize: 11 }}>{t('item.generatedCover')}</Text>
     </View>
   );
 }
 
 /** Logotipo del título: entero (sin recortar) en la parte alta de un cartel; abajo queda sitio para el texto de la tarjeta. */
-function LogoPoster({ image, category, style, compact, onError }: { image: CatalogImageModel; category: Category; style?: StyleProp<ViewStyle>; compact?: boolean; onError: () => void }) {
+function LogoPoster({
+  image,
+  category,
+  style,
+  compact,
+  onError,
+}: {
+  image: CatalogImageModel;
+  category: Category;
+  style?: StyleProp<ViewStyle>;
+  compact?: boolean;
+  onError: () => void;
+}) {
   return (
     <View style={[{ overflow: 'hidden' }, style]}>
       <PosterBackdrop category={category} />
       <Image
         source={{ uri: image.url }}
-        style={compact ? { position: 'absolute', top: '15%', left: '12%', right: '12%', bottom: '15%' } : { position: 'absolute', top: '12%', left: '12%', right: '12%', height: '42%' }}
+        style={
+          compact
+            ? { position: 'absolute', top: '15%', left: '12%', right: '12%', bottom: '15%' }
+            : { position: 'absolute', top: '12%', left: '12%', right: '12%', height: '42%' }
+        }
         contentFit="contain"
         transition={150}
         cachePolicy="memory-disk"

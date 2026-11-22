@@ -44,12 +44,7 @@ export function TastesCard() {
           {s.noOpinion ? <Small>{t('tastes.noOpinion', { count: s.noOpinion })}</Small> : null}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
             {CATEGORIES.filter((code) => s.byCategory.has(code)).map((code) => (
-              <Badge
-                key={code}
-                label={`${t(`categories.${code}`)} · ${s.byCategory.get(code)}`}
-                color={CATEGORY_META[code].color}
-                dot
-              />
+              <Badge key={code} label={`${t(`categories.${code}`)} · ${s.byCategory.get(code)}`} color={CATEGORY_META[code].color} dot />
             ))}
           </View>
           <Small style={{ fontWeight: '700', marginTop: spacing.xs }}>{t('tastes.fromSources')}</Small>
@@ -61,9 +56,7 @@ export function TastesCard() {
         </>
       )}
       <Small>{t('tastes.onlySources')}</Small>
-      {s.total ? (
-        <Button label={t('tastes.open')} icon="heart-search" variant="secondary" size="small" onPress={() => router.push('/model')} />
-      ) : null}
+      {s.total ? <Button label={t('tastes.open')} icon="heart-search" variant="secondary" size="small" onPress={() => router.push('/model')} /> : null}
     </Card>
   );
 }

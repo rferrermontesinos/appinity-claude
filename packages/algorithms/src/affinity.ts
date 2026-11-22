@@ -169,7 +169,12 @@ export function categoryAffinity(
 }
 
 /** Afinidad global A → B: media ponderada de las categorías con resultado. */
-export function affinity(source: PreferenceIndex, target: PreferenceIndex, params: AffinityParams = AFFINITY_PARAMS_V1, rarity?: RarityWeights): GlobalAffinity {
+export function affinity(
+  source: PreferenceIndex,
+  target: PreferenceIndex,
+  params: AffinityParams = AFFINITY_PARAMS_V1,
+  rarity?: RarityWeights,
+): GlobalAffinity {
   const categories = {} as Record<Category, CategoryAffinity>;
   let weightSum = 0;
   let qualitySum = 0;

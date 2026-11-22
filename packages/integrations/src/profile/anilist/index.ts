@@ -49,7 +49,10 @@ const entrySchema = z.object({
   score: z.number().nullable().optional(),
   repeat: z.number().nullable().optional(),
   updatedAt: z.number().nullable().optional(),
-  completedAt: z.object({ year: z.number().nullable().optional(), month: z.number().nullable().optional(), day: z.number().nullable().optional() }).nullable().optional(),
+  completedAt: z
+    .object({ year: z.number().nullable().optional(), month: z.number().nullable().optional(), day: z.number().nullable().optional() })
+    .nullable()
+    .optional(),
   media: z
     .object({
       id: z.number(),
@@ -65,7 +68,13 @@ const entrySchema = z.object({
 const collectionSchema = z.object({
   data: z.object({
     MediaListCollection: z
-      .object({ hasNextChunk: z.boolean().nullable().optional(), lists: z.array(z.object({ entries: z.array(entrySchema).nullable().optional() })).nullable().optional() })
+      .object({
+        hasNextChunk: z.boolean().nullable().optional(),
+        lists: z
+          .array(z.object({ entries: z.array(entrySchema).nullable().optional() }))
+          .nullable()
+          .optional(),
+      })
       .nullable(),
   }),
 });
@@ -99,7 +108,8 @@ export function collectAniList(kind: AniListKind, entries: Entry[]): AniListItem
     const title = media?.title?.english || media?.title?.romaji;
     if (!media || !title || byId.has(media.id)) continue;
     const c = e.completedAt;
-    const date = c?.year && c.month && c.day ? `${c.year}-${pad(c.month)}-${pad(c.day)}T00:00:00Z` : e.updatedAt ? new Date(e.updatedAt * 1000).toISOString() : undefined;
+    const date =
+      c?.year && c.month && c.day ? `${c.year}-${pad(c.month)}-${pad(c.day)}T00:00:00Z` : e.updatedAt ? new Date(e.updatedAt * 1000).toISOString() : undefined;
     byId.set(media.id, {
       kind,
       anilistId: media.id,
@@ -171,7 +181,9 @@ export function mapAniList(raw: unknown, context: NormalizeContext): NormalizedO
     ];
   }
   if (item.favorite) {
-    return [{ ...base, preferenceScore: 0.8, preferenceConfidence: round(0.9 * id), preferenceBasis: 'explicit_like', engagement: { type: 'liked', value: 1 } }];
+    return [
+      { ...base, preferenceScore: 0.8, preferenceConfidence: round(0.9 * id), preferenceBasis: 'explicit_like', engagement: { type: 'liked', value: 1 } },
+    ];
   }
   const completed = item.status === 'COMPLETED' || item.status === 'REPEATING';
   return [
@@ -180,7 +192,11 @@ export function mapAniList(raw: unknown, context: NormalizeContext): NormalizedO
       preferenceScore: null,
       preferenceConfidence: null,
       preferenceBasis: null,
-      engagement: completed ? { type: 'completed', value: 1 } : consumed ? { type: 'played', unit: item.status?.toLowerCase() ?? 'started' } : { type: 'saved', unit: 'planning' },
+      engagement: completed
+        ? { type: 'completed', value: 1 }
+        : consumed
+          ? { type: 'played', unit: item.status?.toLowerCase() ?? 'started' }
+          : { type: 'saved', unit: 'planning' },
     },
   ];
 }
@@ -250,12 +266,23 @@ export function createAniListAdapter(options: AniListOptions): ProfileSourceAdap
     },
     async completeConnect(context): Promise<AuthResult> {
       const params = context.callbackParams;
-      if (params.error) throw new SourceError('verification_failed', params.error === 'access_denied' ? 'Se canceló la autorización en AniList' : 'AniList no concedió el acceso', false);
+      if (params.error)
+        throw new SourceError(
+          'verification_failed',
+          params.error === 'access_denied' ? 'Se canceló la autorización en AniList' : 'AniList no concedió el acceso',
+          false,
+        );
       if (!params.code) throw new SourceError('verification_failed', 'Respuesta de AniList incompleta: vuelve a intentarlo', false);
       const response = await fetchImpl(TOKEN, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ grant_type: 'authorization_code', client_id: options.clientId, client_secret: options.clientSecret, redirect_uri: options.redirectUri, code: params.code }),
+        body: JSON.stringify({
+          grant_type: 'authorization_code',
+          client_id: options.clientId,
+          client_secret: options.clientSecret,
+          redirect_uri: options.redirectUri,
+          code: params.code,
+        }),
         signal: AbortSignal.timeout(15_000),
       });
       if (!response.ok) throw new SourceError('verification_failed', `AniList no aceptó el código (HTTP ${response.status}): vuelve a intentarlo`, false);
@@ -288,7 +315,14 @@ export function createAniListAdapter(options: AniListOptions): ProfileSourceAdap
         }
       } catch (error) {
         if (isSourceError(error) && error.retryable) {
-          return { records: [], cursor: null, hasMore: false, partialErrors: [], snapshotComplete: false, pending: { retryAfterMs: 10 * 60_000, reason: `${error.message} (identificación de catálogo)` } };
+          return {
+            records: [],
+            cursor: null,
+            hasMore: false,
+            partialErrors: [],
+            snapshotComplete: false,
+            pending: { retryAfterMs: 10 * 60_000, reason: `${error.message} (identificación de catálogo)` },
+          };
         }
         throw error;
       }
@@ -296,7 +330,9 @@ export function createAniListAdapter(options: AniListOptions): ProfileSourceAdap
         records,
         cursor: null,
         hasMore: false,
-        partialErrors: unidentified ? [{ code: 'unidentified', message: `${unidentified} de ${items.length} obras de AniList no se pudieron identificar con seguridad`, blocking: false }] : [],
+        partialErrors: unidentified
+          ? [{ code: 'unidentified', message: `${unidentified} de ${items.length} obras de AniList no se pudieron identificar con seguridad`, blocking: false }]
+          : [],
         snapshotComplete: true,
         snapshotKinds: ['anilist_media'],
         stats: { anilist_exported: items.length, anilist_identified: records.length },

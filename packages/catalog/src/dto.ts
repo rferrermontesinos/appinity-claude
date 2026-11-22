@@ -24,8 +24,7 @@ export function formatEventDate(value: Date | null, precision: 'day' | 'instant'
 export function imageAttribution(image: Pick<ImageRow, 'author' | 'license' | 'source'>): string | undefined {
   const labels: Record<string, string> = { wikimedia_commons: 'Wikimedia Commons', steam_cdn: 'Steam', tvmaze: 'TVmaze', tmdb: 'TMDb' };
   const sourceLabel = labels[image.source] ?? image.source;
-  const parts = [image.author, image.license, sourceLabel]
-    .filter((p): p is string => Boolean(p));
+  const parts = [image.author, image.license, sourceLabel].filter((p): p is string => Boolean(p));
   return parts.length ? parts.join(' · ') : undefined;
 }
 

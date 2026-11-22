@@ -13,11 +13,7 @@ export function lanCandidates() {
       out.push({ name, address: a.address, virtual: VIRTUAL.test(name) });
     }
   }
-  return out.sort(
-    (a, b) =>
-      Number(a.virtual) - Number(b.virtual) ||
-      Number(!a.address.startsWith('192.168.')) - Number(!b.address.startsWith('192.168.')),
-  );
+  return out.sort((a, b) => Number(a.virtual) - Number(b.virtual) || Number(!a.address.startsWith('192.168.')) - Number(!b.address.startsWith('192.168.')));
 }
 
 export function parseEnv(text) {

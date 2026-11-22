@@ -56,7 +56,12 @@ export const GOOGLE_BOOKS_MANIFEST: ProfileSourceManifest = {
   description: 'Tus estanterías de Google Books: favoritos, leídos, reseñados con estrellas, por leer y comprados. Solo lectura.',
 };
 
-const tokenSchema = z.object({ access_token: z.string(), refresh_token: z.string().optional(), expires_in: z.number().optional(), scope: z.string().optional() });
+const tokenSchema = z.object({
+  access_token: z.string(),
+  refresh_token: z.string().optional(),
+  expires_in: z.number().optional(),
+  scope: z.string().optional(),
+});
 const volumesSchema = z.object({
   totalItems: z.number().optional(),
   items: z
@@ -73,7 +78,10 @@ const volumesSchema = z.object({
           .optional(),
         userInfo: z
           .object({
-            review: z.object({ rating: z.union([z.string(), z.number()]).optional() }).passthrough().optional(),
+            review: z
+              .object({ rating: z.union([z.string(), z.number()]).optional() })
+              .passthrough()
+              .optional(),
             updated: z.string().optional(),
           })
           .passthrough()
@@ -139,14 +147,22 @@ export class GoogleBooksClient {
     });
     if (response.status === 400 || response.status === 401) {
       const data = (await response.json().catch(() => ({}))) as { error?: string };
-      throw new SourceError('auth', data.error === 'invalid_grant' ? 'El permiso de Google Books ha caducado o se ha revocado: vuelve a conectarlo' : 'Google rechazó la autorización', false);
+      throw new SourceError(
+        'auth',
+        data.error === 'invalid_grant' ? 'El permiso de Google Books ha caducado o se ha revocado: vuelve a conectarlo' : 'Google rechazó la autorización',
+        false,
+      );
     }
     if (!response.ok) throw new SourceError('unavailable', `Google respondió HTTP ${response.status}`, response.status >= 500);
     return tokenSchema.parse(await response.json());
   }
 
   async revoke(token: string): Promise<void> {
-    await this.fetchImpl(REVOKE_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ token }) });
+    await this.fetchImpl(REVOKE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ token }),
+    });
   }
 
   /** Volúmenes de una estantería, paginados (como mucho MAX_PER_SHELF). */
@@ -243,7 +259,9 @@ export function mapBook(raw: unknown, context: NormalizeContext): NormalizedObse
     ];
   }
   if (book.shelves.includes('favorites')) {
-    return [{ ...base, preferenceScore: 0.8, preferenceConfidence: round(0.9 * id), preferenceBasis: 'explicit_like', engagement: { type: 'liked', value: 1 } }];
+    return [
+      { ...base, preferenceScore: 0.8, preferenceConfidence: round(0.9 * id), preferenceBasis: 'explicit_like', engagement: { type: 'liked', value: 1 } },
+    ];
   }
   return [
     {
@@ -287,7 +305,12 @@ export function createGoogleBooksAdapter(options: GoogleBooksOptions): ProfileSo
     },
     async completeConnect(context): Promise<AuthResult> {
       const params = context.callbackParams;
-      if (params.error) throw new SourceError('verification_failed', params.error === 'access_denied' ? 'Se canceló la autorización en Google' : 'Google no concedió el acceso', false);
+      if (params.error)
+        throw new SourceError(
+          'verification_failed',
+          params.error === 'access_denied' ? 'Se canceló la autorización en Google' : 'Google no concedió el acceso',
+          false,
+        );
       const verifier = context.pending?.codeVerifier;
       if (!params.code || !verifier) throw new SourceError('verification_failed', 'Respuesta de Google incompleta: vuelve a intentarlo', false);
       const token = await client.token({ grant_type: 'authorization_code', code: params.code, code_verifier: verifier, redirect_uri: options.redirectUri });
@@ -310,7 +333,14 @@ export function createGoogleBooksAdapter(options: GoogleBooksOptions): ProfileSo
         }
       } catch (error) {
         if (isSourceError(error) && error.retryable) {
-          return { records: [], cursor: null, hasMore: false, partialErrors: [], snapshotComplete: false, pending: { retryAfterMs: 10 * 60_000, reason: `${error.message} (identificación de catálogo)` } };
+          return {
+            records: [],
+            cursor: null,
+            hasMore: false,
+            partialErrors: [],
+            snapshotComplete: false,
+            pending: { retryAfterMs: 10 * 60_000, reason: `${error.message} (identificación de catálogo)` },
+          };
         }
         throw error;
       }
@@ -319,7 +349,13 @@ export function createGoogleBooksAdapter(options: GoogleBooksOptions): ProfileSo
         cursor: null,
         hasMore: false,
         partialErrors: unidentified
-          ? [{ code: 'unidentified', message: `${unidentified} de ${books.length} libros de Google Books no se pudieron identificar con seguridad`, blocking: false }]
+          ? [
+              {
+                code: 'unidentified',
+                message: `${unidentified} de ${books.length} libros de Google Books no se pudieron identificar con seguridad`,
+                blocking: false,
+              },
+            ]
           : [],
         snapshotComplete: true,
         snapshotKinds: ['gbooks_shelf'],
@@ -340,7 +376,10 @@ export function createGoogleBooksAdapter(options: GoogleBooksOptions): ProfileSo
  * `shared`: el permiso viene de «Continuar con Google» y lo comparten el inicio de sesión y otras fuentes de Google; al
  * desconectar no se revoca (revocarlo las cortaría todas).
  */
-export function googleBooksConnection(token: { access_token: string; refresh_token?: string; expires_in?: number; scope?: string }, options: { shared?: boolean } = {}): AuthResult {
+export function googleBooksConnection(
+  token: { access_token: string; refresh_token?: string; expires_in?: number; scope?: string },
+  options: { shared?: boolean } = {},
+): AuthResult {
   if (token.scope && !token.scope.split(' ').includes(GOOGLE_BOOKS_SCOPE)) {
     throw new SourceError('verification_failed', 'No se concedió el permiso de Google Books', false);
   }

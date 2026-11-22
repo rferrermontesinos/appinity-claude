@@ -42,7 +42,10 @@ export async function sendFriendRequest(db: Database, from: string, to: string, 
     // Ya enviada (o rechazada sin que se sepa): no se duplica ni se insiste.
     if (row.requesterId === from) return { state: 'pending_out' };
     // Quien había rechazado una solicitud puede pedir amistad después: la fila cambia de sentido.
-    await db.update(friendships).set({ requesterId: from, addresseeId: to, status: 'pending', createdAt: now, respondedAt: null }).where(eq(friendships.id, row.id));
+    await db
+      .update(friendships)
+      .set({ requesterId: from, addresseeId: to, status: 'pending', createdAt: now, respondedAt: null })
+      .where(eq(friendships.id, row.id));
     return { state: 'pending_out' };
   }
   await db.insert(friendships).values({ requesterId: from, addresseeId: to, createdAt: now });
@@ -50,12 +53,21 @@ export async function sendFriendRequest(db: Database, from: string, to: string, 
 }
 
 /** Solo quien recibe la solicitud puede responderla. */
-export async function respondFriendRequest(db: Database, userId: string, requestId: string, accept: boolean, now = new Date()): Promise<{ state: FriendshipState }> {
+export async function respondFriendRequest(
+  db: Database,
+  userId: string,
+  requestId: string,
+  accept: boolean,
+  now = new Date(),
+): Promise<{ state: FriendshipState }> {
   const [row] = await db.select().from(friendships).where(eq(friendships.id, requestId));
   if (!row || row.addresseeId !== userId || row.status !== 'pending') throw new NotFoundError('Solicitud no encontrada');
   if (accept && !(await canSeePerson(db, userId, row.requesterId))) throw new NotFoundError('Persona no encontrada');
   await db.transaction(async (tx) => {
-    await tx.update(friendships).set({ status: accept ? 'accepted' : 'rejected', respondedAt: now }).where(eq(friendships.id, requestId));
+    await tx
+      .update(friendships)
+      .set({ status: accept ? 'accepted' : 'rejected', respondedAt: now })
+      .where(eq(friendships.id, requestId));
     // La amistad aceptada abre el chat (equivale a un match).
     if (accept) {
       await openMatch(tx, userId, row.requesterId, 'friendship', now, userId);
@@ -104,7 +116,14 @@ export async function listFriends(db: Database, userId: string): Promise<{ frien
   const affinityOf = new Map(affinities.map((a) => [a.target, a.score]));
   const toRow = (other: string, requestId: string): FriendRow => {
     const p = profileOf.get(other);
-    return { userId: other, displayName: p?.displayName ?? '—', countryCode: p?.countryCode ?? null, avatarUrl: p?.avatarUrl ?? null, affinity: affinityOf.get(other) ?? null, requestId };
+    return {
+      userId: other,
+      displayName: p?.displayName ?? '—',
+      countryCode: p?.countryCode ?? null,
+      avatarUrl: p?.avatarUrl ?? null,
+      affinity: affinityOf.get(other) ?? null,
+      requestId,
+    };
   };
   const friends: FriendRow[] = [];
   const incoming: FriendRow[] = [];
@@ -113,7 +132,8 @@ export async function listFriends(db: Database, userId: string): Promise<{ frien
     const other = r.requesterId === userId ? r.addresseeId : r.requesterId;
     if (!visible.has(other)) continue;
     if (r.status === 'accepted') friends.push(toRow(other, r.id));
-    else if (r.requesterId === userId) outgoing.push(toRow(other, r.id)); // pendiente o rechazada: para quien la envió, pendiente
+    else if (r.requesterId === userId)
+      outgoing.push(toRow(other, r.id)); // pendiente o rechazada: para quien la envió, pendiente
     else if (r.status === 'pending') incoming.push(toRow(other, r.id));
   }
   const byName = (a: FriendRow, b: FriendRow) => a.displayName.localeCompare(b.displayName);
@@ -124,13 +144,23 @@ export async function listFriends(db: Database, userId: string): Promise<{ frien
 export async function blockUser(db: Database, userId: string, target: string, now = new Date()): Promise<void> {
   if (userId === target) throw new ForbiddenError('No puedes bloquearte');
   const [viewer] = await db.select({ dataset: users.dataset }).from(users).where(eq(users.id, userId));
-  const [other] = await db.select({ dataset: users.dataset }).from(users).where(and(eq(users.id, target), isNull(users.deletedAt)));
+  const [other] = await db
+    .select({ dataset: users.dataset })
+    .from(users)
+    .where(and(eq(users.id, target), isNull(users.deletedAt)));
   if (!viewer || !other || viewer.dataset !== other.dataset) throw new NotFoundError('Persona no encontrada');
   await db.transaction(async (tx) => {
     await tx.insert(userBlocks).values({ blockerUserId: userId, blockedUserId: target, createdAt: now }).onConflictDoNothing();
     await tx.delete(friendships).where(pair(userId, target));
     // Bloquear también deja de seguir, en ambos sentidos.
-    await tx.delete(follows).where(or(and(eq(follows.followerUserId, userId), eq(follows.followedUserId, target)), and(eq(follows.followerUserId, target), eq(follows.followedUserId, userId))));
+    await tx
+      .delete(follows)
+      .where(
+        or(
+          and(eq(follows.followerUserId, userId), eq(follows.followedUserId, target)),
+          and(eq(follows.followerUserId, target), eq(follows.followedUserId, userId)),
+        ),
+      );
     // Bloquear detiene los mensajes: la conversación se cierra y se borran las solicitudes de chat.
     await closeChatForBlock(tx, userId, target, now);
   });
@@ -165,7 +195,13 @@ export async function reportUser(
   now = new Date(),
 ): Promise<void> {
   const visible = await canSeePerson(db, userId, target);
-  const blockedByMe = (await db.select().from(userBlocks).where(and(eq(userBlocks.blockerUserId, userId), eq(userBlocks.blockedUserId, target)))).length > 0;
+  const blockedByMe =
+    (
+      await db
+        .select()
+        .from(userBlocks)
+        .where(and(eq(userBlocks.blockerUserId, userId), eq(userBlocks.blockedUserId, target)))
+    ).length > 0;
   if (!visible && !blockedByMe) throw new NotFoundError('Persona no encontrada');
   await db.insert(userReports).values({ reporterId: userId, reportedId: target, reason: input.reason, note: input.note?.trim() || null, createdAt: now });
   if (input.block) await blockUser(db, userId, target, now);

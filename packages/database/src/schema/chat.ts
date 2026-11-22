@@ -25,7 +25,9 @@ export const messageRequests = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     kind: text('kind', { enum: ['interest', 'direct'] }).notNull(),
-    status: text('status', { enum: ['pending', 'accepted', 'ignored'] }).notNull().default('pending'),
+    status: text('status', { enum: ['pending', 'accepted', 'ignored'] })
+      .notNull()
+      .default('pending'),
     /** Solo en `direct`: el primer mensaje (Premium). */
     firstMessage: text('first_message'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -59,7 +61,9 @@ export const conversations = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     origin: text('origin', { enum: ['request', 'mutual', 'friendship', 'direct'] }).notNull(),
     /** `closed`: deshecho el match o bloqueo. Invisible para ambas personas; un nuevo match la reabre vacía. */
-    status: text('status', { enum: ['active', 'closed'] }).notNull().default('active'),
+    status: text('status', { enum: ['active', 'closed'] })
+      .notNull()
+      .default('active'),
     matchedAt: timestamp('matched_at', { withTimezone: true }).notNull().defaultNow(),
     lastMessageAt: timestamp('last_message_at', { withTimezone: true }),
     closedAt: timestamp('closed_at', { withTimezone: true }),

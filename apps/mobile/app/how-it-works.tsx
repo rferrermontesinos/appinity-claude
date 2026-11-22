@@ -58,7 +58,10 @@ export default function HowItWorksScreen() {
         <>
           <Section title={t('howItWorks.tastes.title')}>
             <Point icon="link-variant" text={t('howItWorks.tastes.sources')} />
-            <Point icon="thumbs-up-down-outline" text={t('howItWorks.tastes.votes', { dislike: vote(f.votes.dislike), like: vote(f.votes.like), love: vote(f.votes.love) })} />
+            <Point
+              icon="thumbs-up-down-outline"
+              text={t('howItWorks.tastes.votes', { dislike: vote(f.votes.dislike), like: vote(f.votes.like), love: vote(f.votes.love) })}
+            />
             <Point icon="minus-circle-outline" text={t('howItWorks.tastes.neutral')} />
           </Section>
 

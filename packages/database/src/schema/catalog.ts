@@ -60,14 +60,8 @@ export const catalogItems = pgTable(
     check('catalog_items_category_valid', sql.raw(`category IN ${CATEGORY_CHECK}`)),
     check('catalog_items_item_type_format', sql`${t.itemType} ~ '^[a-z][a-z0-9_]*$'`),
     check('catalog_items_title_not_blank', sql`char_length(btrim(${t.title})) > 0`),
-    check(
-      'catalog_items_release_precision',
-      sql`(${t.releaseDate} IS NULL) = (${t.releaseDatePrecision} IS NULL)`,
-    ),
-    check(
-      'catalog_items_event_precision',
-      sql`(${t.eventStartsAt} IS NULL AND ${t.eventEndsAt} IS NULL) OR ${t.eventDatePrecision} IS NOT NULL`,
-    ),
+    check('catalog_items_release_precision', sql`(${t.releaseDate} IS NULL) = (${t.releaseDatePrecision} IS NULL)`),
+    check('catalog_items_event_precision', sql`(${t.eventStartsAt} IS NULL AND ${t.eventEndsAt} IS NULL) OR ${t.eventDatePrecision} IS NOT NULL`),
     check('catalog_items_event_order', sql`${t.eventEndsAt} IS NULL OR ${t.eventStartsAt} IS NULL OR ${t.eventEndsAt} >= ${t.eventStartsAt}`),
     check('catalog_items_location_complete', sql`(${t.latitude} IS NULL) = (${t.longitude} IS NULL)`),
     check('catalog_items_no_self_parent', sql`${t.parentItemId} IS NULL OR ${t.parentItemId} <> ${t.id}`),
@@ -117,7 +111,9 @@ export const catalogImages = pgTable(
     catalogItemId: uuid('catalog_item_id')
       .notNull()
       .references(() => catalogItems.id, { onDelete: 'cascade' }),
-    role: text('role', { enum: ['primary'] }).notNull().default('primary'),
+    role: text('role', { enum: ['primary'] })
+      .notNull()
+      .default('primary'),
     source: text('source').notNull(),
     sourceImageId: text('source_image_id'),
     url: text('url').notNull(),
@@ -138,7 +134,9 @@ export const catalogImages = pgTable(
      * fondo, no recortado). NULL = desconocido (imágenes anteriores o de la demo): se trata como foto.
      */
     kind: text('kind', { enum: ['poster', 'logo', 'photo'] }),
-    cacheStatus: text('cache_status', { enum: ['reference', 'cached', 'failed'] }).notNull().default('reference'),
+    cacheStatus: text('cache_status', { enum: ['reference', 'cached', 'failed'] })
+      .notNull()
+      .default('reference'),
     cacheError: text('cache_error'),
     fetchedAt: timestamp('fetched_at', { withTimezone: true }),
     expiresAt: timestamp('expires_at', { withTimezone: true }),

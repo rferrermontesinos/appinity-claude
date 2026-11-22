@@ -134,11 +134,17 @@ describe('recibos de Expo', () => {
     expect(await checkDigestReceipts(database.db, withReceipts, { now: new Date(sentAt.getTime() + 5 * 60_000) })).toEqual({ checked: 0, errors: 0 });
     // Aún sin recibo: no se marca como revisado.
     await checkDigestReceipts(database.db, withReceipts, { now: new Date(sentAt.getTime() + 20 * 60_000) });
-    let [delivery] = await database.db.select().from(notificationDeliveries).where(and(eq(notificationDeliveries.userId, sam.id), eq(notificationDeliveries.localDate, '2026-10-23')));
+    let [delivery] = await database.db
+      .select()
+      .from(notificationDeliveries)
+      .where(and(eq(notificationDeliveries.userId, sam.id), eq(notificationDeliveries.localDate, '2026-10-23')));
     expect(delivery!.receiptsCheckedAt).toBeNull();
     answer = { 'ticket-recibo-1': { status: 'error', message: 'gone', error: 'DeviceNotRegistered' } };
     expect(await checkDigestReceipts(database.db, withReceipts, { now: new Date(sentAt.getTime() + 40 * 60_000) })).toMatchObject({ errors: 1 });
-    [delivery] = await database.db.select().from(notificationDeliveries).where(and(eq(notificationDeliveries.userId, sam.id), eq(notificationDeliveries.localDate, '2026-10-23')));
+    [delivery] = await database.db
+      .select()
+      .from(notificationDeliveries)
+      .where(and(eq(notificationDeliveries.userId, sam.id), eq(notificationDeliveries.localDate, '2026-10-23')));
     expect(delivery).toMatchObject({ receiptErrors: 1 });
     const [token] = await database.db.select().from(pushTokens).where(eq(pushTokens.token, TOKEN));
     expect(token!.disabledAt).not.toBeNull();

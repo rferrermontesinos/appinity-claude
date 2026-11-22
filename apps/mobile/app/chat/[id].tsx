@@ -7,16 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { FlatList, KeyboardAvoidingView, Pressable, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ApiError } from '../../src/api/client';
-import {
-  chatKeys,
-  fetchOlderMessages,
-  markChatRead,
-  useChatAction,
-  useConversation,
-  usePerson,
-  useSendMessage,
-  useSocialAction,
-} from '../../src/api/queries';
+import { chatKeys, fetchOlderMessages, markChatRead, useChatAction, useConversation, usePerson, useSendMessage, useSocialAction } from '../../src/api/queries';
 import { shortTime } from '../../src/components/ChatInbox';
 import { DetailHeader, HeaderButton } from '../../src/components/DetailHeader';
 import { PersonAvatar, formatAffinity } from '../../src/components/PersonAvatar';
@@ -35,17 +26,13 @@ const newClientId = () => `${Date.now().toString(36)}-${Math.random().toString(3
 function Icebreaker({ userId }: { userId: string }) {
   const { t } = useTranslation();
   const person = usePerson(userId);
-  const best = person.data?.affinity.categories
-    .filter((cat) => cat.score !== null)
-    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
+  const best = person.data?.affinity.categories.filter((cat) => cat.score !== null).sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
   if (!person.data) return null;
   return (
     <Card>
       <Small style={{ fontWeight: '700' }}>{t('chat.icebreakerTitle')}</Small>
       <Body muted>
-        {best
-          ? t('chat.icebreakerBest', { category: t(`categories.${best.category}`), value: formatAffinity(best.score) })
-          : t('chat.icebreakerNone')}
+        {best ? t('chat.icebreakerBest', { category: t(`categories.${best.category}`), value: formatAffinity(best.score) }) : t('chat.icebreakerNone')}
       </Body>
     </Card>
   );
@@ -171,7 +158,14 @@ export default function ChatScreen() {
       mine: m.mine,
       meta: m.id === lastMine?.id ? `${shortTime(m.createdAt, i18n.language)}${seen ? ` · ${t('chat.seen')}` : ''}` : undefined,
     })),
-    ...pending.map((p) => ({ key: p.clientId, body: p.body, mine: true, meta: p.failed ? t('chat.failed') : t('chat.sending'), failed: p.failed, retry: p.failed ? p : undefined })),
+    ...pending.map((p) => ({
+      key: p.clientId,
+      body: p.body,
+      mine: true,
+      meta: p.failed ? t('chat.failed') : t('chat.sending'),
+      failed: p.failed,
+      retry: p.failed ? p : undefined,
+    })),
   ].reverse();
 
   return (
@@ -205,13 +199,23 @@ export default function ChatScreen() {
           {menu === 'unmatch' ? (
             <>
               <Body>{t('chat.unmatchConfirm')}</Body>
-              <Button label={t('people.confirm')} variant="danger" loading={chatAction.isPending} onPress={() => chatAction.mutate({ kind: 'unmatch', conversationId: id }, { onSuccess: leave })} />
+              <Button
+                label={t('people.confirm')}
+                variant="danger"
+                loading={chatAction.isPending}
+                onPress={() => chatAction.mutate({ kind: 'unmatch', conversationId: id }, { onSuccess: leave })}
+              />
             </>
           ) : null}
           {menu === 'block' ? (
             <>
               <Body>{t('chat.blockConfirm')}</Body>
-              <Button label={t('people.confirm')} variant="danger" loading={social.isPending} onPress={() => social.mutate({ kind: 'block', userId: person.userId }, { onSuccess: leave })} />
+              <Button
+                label={t('people.confirm')}
+                variant="danger"
+                loading={social.isPending}
+                onPress={() => social.mutate({ kind: 'block', userId: person.userId }, { onSuccess: leave })}
+              />
             </>
           ) : null}
           {chatAction.error ? <ErrorCard error={chatAction.error} /> : null}
@@ -255,7 +259,17 @@ export default function ChatScreen() {
         />
       ) : null}
       {data ? (
-        <View style={{ paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: Math.max(insets.bottom, spacing.sm), gap: spacing.xs, borderTopWidth: 1, borderColor: c.border, backgroundColor: c.surface }}>
+        <View
+          style={{
+            paddingHorizontal: spacing.md,
+            paddingTop: spacing.sm,
+            paddingBottom: Math.max(insets.bottom, spacing.sm),
+            gap: spacing.xs,
+            borderTopWidth: 1,
+            borderColor: c.border,
+            backgroundColor: c.surface,
+          }}
+        >
           {rateLimited ? <Small style={{ color: c.danger }}>{t('chat.rateLimited')}</Small> : null}
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm }}>
             <TextInput
@@ -266,7 +280,17 @@ export default function ChatScreen() {
               accessibilityLabel={t('chat.placeholder')}
               multiline
               maxLength={1000}
-              style={{ flex: 1, minHeight: 48, maxHeight: 120, color: c.text, backgroundColor: c.surfaceAlt, borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, ...type.body }}
+              style={{
+                flex: 1,
+                minHeight: 48,
+                maxHeight: 120,
+                color: c.text,
+                backgroundColor: c.surfaceAlt,
+                borderRadius: radius.lg,
+                paddingHorizontal: spacing.md,
+                paddingVertical: spacing.sm,
+                ...type.body,
+              }}
             />
             <Pressable
               accessibilityRole="button"

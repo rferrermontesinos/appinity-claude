@@ -5,14 +5,34 @@ import { aniListCategories, collectAniList, createAniListAdapter, mapAniList, ty
 
 /** AniList y Wikidata SIMULADOS: nada sale a la red. */
 const USER = '10000000-0000-4000-a000-0000000000c1';
-const media = (id: number, title: string, extra: Record<string, unknown> = {}) => ({ id, idMal: id + 1000, type: 'ANIME' as 'ANIME' | 'MANGA', format: 'TV', isFavourite: false, title: { romaji: title, english: null }, ...extra });
-const entity = (category: 'movies' | 'series' | 'books', title: string): IdentifiedEntity => ({ category, itemType: category === 'books' ? 'book' : category === 'movies' ? 'movie' : 'series', title, canonicalIds: { 'wikidata:entity': 'Q1' }, confidence: 0.95, method: 'wikidata_anilist' });
+const media = (id: number, title: string, extra: Record<string, unknown> = {}) => ({
+  id,
+  idMal: id + 1000,
+  type: 'ANIME' as 'ANIME' | 'MANGA',
+  format: 'TV',
+  isFavourite: false,
+  title: { romaji: title, english: null },
+  ...extra,
+});
+const entity = (category: 'movies' | 'series' | 'books', title: string): IdentifiedEntity => ({
+  category,
+  itemType: category === 'books' ? 'book' : category === 'movies' ? 'movie' : 'series',
+  title,
+  canonicalIds: { 'wikidata:entity': 'Q1' },
+  confidence: 0.95,
+  method: 'wikidata_anilist',
+});
 
 describe('AniList · listas', () => {
   it('una entrada por obra; puntuación 0 = sin puntuar; fecha de fin o, si falta, de actualización', () => {
     const items = collectAniList('anime', [
       { status: 'COMPLETED', score: 85, completedAt: { year: 2024, month: 3, day: 7 }, media: media(21, 'One Piece') },
-      { status: 'PLANNING', score: 0, updatedAt: 1_700_000_000, media: media(199, 'Sen to Chihiro', { format: 'MOVIE', title: { romaji: 'Sen to Chihiro', english: 'Spirited Away' } }) },
+      {
+        status: 'PLANNING',
+        score: 0,
+        updatedAt: 1_700_000_000,
+        media: media(199, 'Sen to Chihiro', { format: 'MOVIE', title: { romaji: 'Sen to Chihiro', english: 'Spirited Away' } }),
+      },
       { status: 'CURRENT', score: 0, media: media(21, 'Duplicada') },
       { status: 'COMPLETED', score: 50, media: null },
     ]);
@@ -26,7 +46,14 @@ describe('AniList · listas', () => {
   it('semántica: puntuación explícita; favorito → me gusta; visto/abandonado → consumido NULL; planeado → conocido', () => {
     const map = (i: Partial<AniListItem>) =>
       parseObservation(
-        mapAniList({ recordId: 'anime:1', item: { kind: 'anime', anilistId: 1, title: 'T', score: null, status: 'COMPLETED', favorite: false, ...i }, identified: entity('series', 'T') }, { userId: USER, connectionId: USER, source: 'anilist' })[0]!,
+        mapAniList(
+          {
+            recordId: 'anime:1',
+            item: { kind: 'anime', anilistId: 1, title: 'T', score: null, status: 'COMPLETED', favorite: false, ...i },
+            identified: entity('series', 'T'),
+          },
+          { userId: USER, connectionId: USER, source: 'anilist' },
+        )[0]!,
       );
     expect(map({ score: 100 })).toMatchObject({ preferenceScore: 1, preferenceBasis: 'explicit_rating', consumedConfidence: 0.95 });
     expect(map({ score: 1 })).toMatchObject({ preferenceScore: -1 });
@@ -44,7 +71,8 @@ describe('AniList · conexión y sync', () => {
       const url = input.toString();
       const body = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
       requests.push({ url, headers: init?.headers as Record<string, string>, body });
-      if (url === 'https://anilist.co/api/v2/oauth/token') return new Response(JSON.stringify({ token_type: 'Bearer', expires_in: 31_536_000, access_token: 'token-anilist' }));
+      if (url === 'https://anilist.co/api/v2/oauth/token')
+        return new Response(JSON.stringify({ token_type: 'Bearer', expires_in: 31_536_000, access_token: 'token-anilist' }));
       const query = String(body.query);
       if (query.includes('Viewer')) return new Response(JSON.stringify({ data: { Viewer: { id: 77 } } }));
       const vars = body.variables as { type: string };
@@ -62,11 +90,20 @@ describe('AniList · conexión y sync', () => {
 
   it('autoriza con authorization code y canjea el código con el secreto en el servidor', async () => {
     const { requests, fetchImpl } = fakeAniList();
-    const adapter = createAniListAdapter({ clientId: '123', clientSecret: 'secreto', redirectUri: 'http://localhost:3100/v1/connect/anilist/callback', fetchImpl });
+    const adapter = createAniListAdapter({
+      clientId: '123',
+      clientSecret: 'secreto',
+      redirectUri: 'http://localhost:3100/v1/connect/anilist/callback',
+      fetchImpl,
+    });
     const start = await adapter.connect({ userId: USER, redirectUri: 'x', state: 'estado-0123456789abcdef' });
     const url = new URL((start as { url: string }).url);
     expect(url.origin + url.pathname).toBe('https://anilist.co/api/v2/oauth/authorize');
-    expect([url.searchParams.get('client_id'), url.searchParams.get('response_type'), url.searchParams.get('state')]).toEqual(['123', 'code', 'estado-0123456789abcdef']);
+    expect([url.searchParams.get('client_id'), url.searchParams.get('response_type'), url.searchParams.get('state')]).toEqual([
+      '123',
+      'code',
+      'estado-0123456789abcdef',
+    ]);
     const done = await adapter.completeConnect!({ userId: USER, redirectUri: 'x', callbackParams: { code: 'codigo' }, pending: {} });
     expect(done).toMatchObject({ kind: 'connected', credentials: { accessToken: 'token-anilist', accessTokenExpiresAt: expect.any(String) } });
     expect(requests[0]!.body).toMatchObject({ grant_type: 'authorization_code', code: 'codigo', client_id: '123', client_secret: 'secreto' });
@@ -76,11 +113,19 @@ describe('AniList · conexión y sync', () => {
     const { requests, fetchImpl } = fakeAniList();
     const identifier = {
       identifyByExternalIds: async (items: Array<{ anilist?: number; kind: string }>) =>
-        items.map((i) => (i.anilist === 21 ? entity('series', 'One Piece') : i.anilist === 30013 && i.kind === 'manga' ? entity('books', 'One Piece (manga)') : null)),
+        items.map((i) =>
+          i.anilist === 21 ? entity('series', 'One Piece') : i.anilist === 30013 && i.kind === 'manga' ? entity('books', 'One Piece (manga)') : null,
+        ),
       identifyWork: async () => null,
     } as unknown as Parameters<typeof createAniListAdapter>[0]['identifier'];
     const adapter = createAniListAdapter({ clientId: '123', clientSecret: 's', redirectUri: 'r', fetchImpl, identifier });
-    const context = { credentials: { accessToken: 'token-anilist' }, connection: { id: USER, userId: USER, sourceKey: 'anilist', status: 'active', cursor: null }, cursor: null, pageSize: 50, now: new Date() } as unknown as SyncContext;
+    const context = {
+      credentials: { accessToken: 'token-anilist' },
+      connection: { id: USER, userId: USER, sourceKey: 'anilist', status: 'active', cursor: null },
+      cursor: null,
+      pageSize: 50,
+      now: new Date(),
+    } as unknown as SyncContext;
     const batch = await adapter.sync(context);
     expect(requests).toHaveLength(3);
     expect(requests[1]!.headers).toMatchObject({ Authorization: 'Bearer token-anilist' });
@@ -91,7 +136,13 @@ describe('AniList · conexión y sync', () => {
 
   it('un token caducado pide volver a conectar', async () => {
     const fetchImpl = (async () => new Response(JSON.stringify({ errors: [{ message: 'Invalid token', status: 400 }] }), { status: 400 })) as typeof fetch;
-    const adapter = createAniListAdapter({ clientId: '1', clientSecret: 's', redirectUri: 'r', fetchImpl, identifier: { identifyWork: async () => null } as never });
+    const adapter = createAniListAdapter({
+      clientId: '1',
+      clientSecret: 's',
+      redirectUri: 'r',
+      fetchImpl,
+      identifier: { identifyWork: async () => null } as never,
+    });
     await expect(adapter.sync({ credentials: { accessToken: 'viejo' } } as unknown as SyncContext)).rejects.toMatchObject({ code: 'auth' });
   });
 });
@@ -101,11 +152,16 @@ describe('Wikidata · AniList y MyAnimeList', () => {
     const claim = (v: unknown) => ({ mainsnak: { datavalue: { value: v } } });
     const entities: Record<string, unknown> = {
       Q710324: { id: 'Q710324', labels: { es: { value: 'One Piece' } }, claims: { P31: [claim({ id: 'Q63952888' })], P8729: [claim('21')] } },
-      Q28667972: { id: 'Q28667972', labels: { es: { value: 'One Piece (manga)' } }, claims: { P31: [claim({ id: 'Q21198342' })], P8731: [claim('30013')], P4087: [claim('13')] } },
+      Q28667972: {
+        id: 'Q28667972',
+        labels: { es: { value: 'One Piece (manga)' } },
+        claims: { P31: [claim({ id: 'Q21198342' })], P8731: [claim('30013')], P4087: [claim('13')] },
+      },
     };
     const fetchImpl = (async (input: string | URL | Request) => {
       const url = new URL(input.toString());
-      if (url.searchParams.get('action') === 'query') return new Response(JSON.stringify({ query: { search: [{ title: 'Q710324' }, { title: 'Q28667972' }] } }));
+      if (url.searchParams.get('action') === 'query')
+        return new Response(JSON.stringify({ query: { search: [{ title: 'Q710324' }, { title: 'Q28667972' }] } }));
       const ids = url.searchParams.get('ids')!.split('|');
       return new Response(JSON.stringify({ entities: Object.fromEntries(ids.map((id) => [id, entities[id]])) }));
     }) as typeof fetch;

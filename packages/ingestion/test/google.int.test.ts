@@ -66,7 +66,14 @@ async function profileByWikidata(userId: string, qid: string) {
     .select({ profile: userItemProfiles })
     .from(userItemProfiles)
     .innerJoin(catalogExternalIds, eq(catalogExternalIds.catalogItemId, userItemProfiles.catalogItemId))
-    .where(and(eq(userItemProfiles.userId, userId), eq(catalogExternalIds.provider, 'wikidata'), eq(catalogExternalIds.externalId, qid), eq(catalogExternalIds.dataset, 'live')));
+    .where(
+      and(
+        eq(userItemProfiles.userId, userId),
+        eq(catalogExternalIds.provider, 'wikidata'),
+        eq(catalogExternalIds.externalId, qid),
+        eq(catalogExternalIds.dataset, 'live'),
+      ),
+    );
   return row?.profile;
 }
 
@@ -107,7 +114,10 @@ describe('sync de Google', () => {
   let connectionId: string;
   let runId: string;
   beforeAll(async () => {
-    const [row] = await database.db.select().from(userConnections).where(and(eq(userConnections.userId, gala), eq(userConnections.sourceKey, 'google_portability')));
+    const [row] = await database.db
+      .select()
+      .from(userConnections)
+      .where(and(eq(userConnections.userId, gala), eq(userConnections.sourceKey, 'google_portability')));
     connectionId = row!.id;
   });
 
@@ -226,7 +236,10 @@ describe('sync de Google', () => {
 
   it('renovar el permiso reutiliza la conexión, sustituye las credenciales y conserva la evidencia', async () => {
     const before = await credentialsOf(connectionId);
-    await database.db.update(userConnections).set({ status: 'error', lastError: 'El permiso de Google ha caducado' }).where(eq(userConnections.id, connectionId));
+    await database.db
+      .update(userConnections)
+      .set({ status: 'error', lastError: 'El permiso de Google ha caducado' })
+      .where(eq(userConnections.id, connectionId));
     const { start, connection } = await authorize(gala);
     expect(start).toMatchObject({ renewal: true });
     expect(connection).toMatchObject({ id: connectionId, status: 'active', lastError: null });
@@ -243,7 +256,10 @@ describe('sync de Google', () => {
     const [row] = await database.db.select().from(userConnections).where(eq(userConnections.id, connectionId));
     const [consent] = await database.db.select().from(providerConsents).where(eq(providerConsents.id, row!.consentId!));
     // Como si se hubiera autorizado en la fase 3, sin los grupos de YouTube.
-    await database.db.update(providerConsents).set({ scopes: consent!.scopes.filter((sc) => !/youtube/.test(sc)) }).where(eq(providerConsents.id, consent!.id));
+    await database.db
+      .update(providerConsents)
+      .set({ scopes: consent!.scopes.filter((sc) => !/youtube/.test(sc)) })
+      .where(eq(providerConsents.id, consent!.id));
     const before = await credentialsOf(connectionId);
     const resetsBefore = google.resets();
     const state = 'estado-renovacion-0123456789';

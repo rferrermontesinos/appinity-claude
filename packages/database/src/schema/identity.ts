@@ -1,15 +1,5 @@
 import { sql } from 'drizzle-orm';
-import {
-  boolean,
-  check,
-  doublePrecision,
-  pgTable,
-  smallint,
-  text,
-  timestamp,
-  uuid,
-  index,
-} from 'drizzle-orm/pg-core';
+import { boolean, check, doublePrecision, pgTable, smallint, text, timestamp, uuid, index } from 'drizzle-orm/pg-core';
 import { geographyPoint, pointFrom } from './types.js';
 
 const timestamps = {
@@ -26,8 +16,12 @@ export const users = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     handle: text('handle').notNull().unique(),
-    dataset: text('dataset', { enum: ['demo', 'live'] }).notNull().default('live'),
-    status: text('status', { enum: ['active', 'suspended', 'deleted'] }).notNull().default('active'),
+    dataset: text('dataset', { enum: ['demo', 'live'] })
+      .notNull()
+      .default('live'),
+    status: text('status', { enum: ['active', 'suspended', 'deleted'] })
+      .notNull()
+      .default('active'),
     adultConfirmedAt: timestamp('adult_confirmed_at', { withTimezone: true }),
     termsAcceptedAt: timestamp('terms_accepted_at', { withTimezone: true }),
     /** Descripción de la persona simulada (solo dataset demo). */
@@ -77,7 +71,9 @@ export const userSettings = pgTable(
     userId: uuid('user_id')
       .primaryKey()
       .references(() => users.id, { onDelete: 'cascade' }),
-    locale: text('locale', { enum: ['es', 'en'] }).notNull().default('es'),
+    locale: text('locale', { enum: ['es', 'en'] })
+      .notNull()
+      .default('es'),
     timeZone: text('time_zone').notNull().default('Europe/Madrid'),
     radiusKm: smallint('radius_km').notNull().default(10),
     locationLabel: text('location_label'),
@@ -120,10 +116,7 @@ export const userSettings = pgTable(
       'user_settings_location_range',
       sql`${t.locationLatitude} IS NULL OR (${t.locationLatitude} BETWEEN -90 AND 90 AND ${t.locationLongitude} BETWEEN -180 AND 180)`,
     ),
-    check(
-      'user_settings_notification_frequency_valid',
-      sql`${t.notificationFrequency} IN ('daily', 'three_per_week', 'weekly', 'off')`,
-    ),
+    check('user_settings_notification_frequency_valid', sql`${t.notificationFrequency} IN ('daily', 'three_per_week', 'weekly', 'off')`),
     index('user_settings_location_gist').using('gist', t.location),
   ],
 );

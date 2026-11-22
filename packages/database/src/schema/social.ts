@@ -39,16 +39,14 @@ export const friendships = pgTable(
     addresseeId: uuid('addressee_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    status: text('status', { enum: ['pending', 'accepted', 'rejected'] }).notNull().default('pending'),
+    status: text('status', { enum: ['pending', 'accepted', 'rejected'] })
+      .notNull()
+      .default('pending'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     respondedAt: timestamp('responded_at', { withTimezone: true }),
   },
   (t) => [
-    uniqueIndex('friendships_pair_unique').using(
-      'btree',
-      sql`least(${t.requesterId}, ${t.addresseeId})`,
-      sql`greatest(${t.requesterId}, ${t.addresseeId})`,
-    ),
+    uniqueIndex('friendships_pair_unique').using('btree', sql`least(${t.requesterId}, ${t.addresseeId})`, sql`greatest(${t.requesterId}, ${t.addresseeId})`),
     index('friendships_addressee_idx').on(t.addresseeId, t.status),
     check('friendships_not_self', sql`${t.requesterId} <> ${t.addresseeId}`),
     check('friendships_status_valid', sql`${t.status} IN ('pending', 'accepted', 'rejected')`),

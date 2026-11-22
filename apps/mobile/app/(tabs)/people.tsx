@@ -25,7 +25,14 @@ function SoulmateRow({ person }: { person: SoulmateDto }) {
       accessibilityRole="button"
       accessibilityLabel={`${person.rank}. ${person.displayName}, ${t('people.affinity')} ${value ?? '—'}`}
       onPress={() => router.push(`/person/${person.userId}`)}
-      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm, minHeight: 64, opacity: pressed ? 0.7 : 1 })}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+        paddingVertical: spacing.sm,
+        minHeight: 64,
+        opacity: pressed ? 0.7 : 1,
+      })}
     >
       <PersonAvatar name={person.displayName} url={person.avatarUrl} size={48} ring />
       <View style={{ flex: 1, gap: 2 }}>
@@ -67,13 +74,33 @@ function Segments({ value, onChange, badge }: { value: Segment; onChange: (s: Se
             accessibilityState={{ selected }}
             accessibilityLabel={item.key === 'chats' && badge ? `${item.label} (${badge})` : item.label}
             onPress={() => onChange(item.key)}
-            style={{ flex: 1, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingVertical: spacing.sm, borderRadius: radius.full, backgroundColor: selected ? c.text : 'transparent' }}
+            style={{
+              flex: 1,
+              minHeight: 44,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: spacing.xs,
+              paddingVertical: spacing.sm,
+              borderRadius: radius.full,
+              backgroundColor: selected ? c.text : 'transparent',
+            }}
           >
             <Text style={{ color: selected ? c.background : c.textMuted, fontWeight: selected ? '700' : '600' }} numberOfLines={1}>
               {item.label}
             </Text>
             {item.key === 'chats' && badge ? (
-              <View style={{ minWidth: 18, height: 18, borderRadius: 9, backgroundColor: c.accent, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 }}>
+              <View
+                style={{
+                  minWidth: 18,
+                  height: 18,
+                  borderRadius: 9,
+                  backgroundColor: c.accent,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingHorizontal: 5,
+                }}
+              >
                 <Text style={{ color: c.accentText, fontSize: 11, fontWeight: '800' }}>{badge}</Text>
               </View>
             ) : null}
@@ -128,7 +155,12 @@ function SoulmatesAndFriends() {
       {soulmates.data && !soulmates.data.items.length ? (
         <Card>
           <Title>{t('people.soulmates')}</Title>
-          <EmptyState icon="account-heart-outline" title={t('people.soulmatesEmptyTitle')} body={t('people.soulmatesEmpty')} action={{ label: t('people.connectSources'), icon: 'link-variant', onPress: () => router.push('/sources') }} />
+          <EmptyState
+            icon="account-heart-outline"
+            title={t('people.soulmatesEmptyTitle')}
+            body={t('people.soulmatesEmpty')}
+            action={{ label: t('people.connectSources'), icon: 'link-variant', onPress: () => router.push('/sources') }}
+          />
         </Card>
       ) : null}
       {top ? <SoulmateHero person={top} /> : null}

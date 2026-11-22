@@ -2,15 +2,7 @@ import type { Category, IdentifiedEntity } from '@appinity/shared';
 
 /** Relaciones entre obras y su peso (propuesta sin calibrar: una saga pesa más que compartir géneros). */
 export type RelationKind =
-  | 'same_series'
-  | 'sequel'
-  | 'same_director'
-  | 'same_writer'
-  | 'same_creator'
-  | 'same_author'
-  | 'same_developer'
-  | 'influence'
-  | 'shared_genres';
+  'same_series' | 'sequel' | 'same_director' | 'same_writer' | 'same_creator' | 'same_author' | 'same_developer' | 'influence' | 'shared_genres';
 
 export const RELATION_WEIGHTS: Record<RelationKind, number> = {
   same_series: 1,

@@ -86,7 +86,10 @@ export class WikipediaSummaries {
 
   private async json(url: string): Promise<unknown> {
     for (let attempt = 0; ; attempt++) {
-      const response = await this.fetchImpl(url, { headers: { 'User-Agent': this.options.userAgent, Accept: 'application/json' }, signal: AbortSignal.timeout(20_000) });
+      const response = await this.fetchImpl(url, {
+        headers: { 'User-Agent': this.options.userAgent, Accept: 'application/json' },
+        signal: AbortSignal.timeout(20_000),
+      });
       if ((response.status === 429 || response.status >= 500) && attempt < 3) {
         await this.sleep(2_000 * 2 ** attempt);
         continue;
@@ -120,7 +123,11 @@ export class WikipediaSummaries {
       for (const batch of chunk(wanted, 20)) {
         const url = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&prop=extracts|info&inprop=url&exintro=1&explaintext=1&exsentences=${SUMMARY_MAX_SENTENCES}&exlimit=20&redirects=1&titles=${encodeURIComponent(batch.map(([, t]) => t).join('|'))}`;
         const data = (await this.json(url)) as {
-          query?: { normalized?: Array<{ from: string; to: string }>; redirects?: Array<{ from: string; to: string }>; pages?: Array<{ title: string; extract?: string; fullurl?: string; missing?: boolean }> };
+          query?: {
+            normalized?: Array<{ from: string; to: string }>;
+            redirects?: Array<{ from: string; to: string }>;
+            pages?: Array<{ title: string; extract?: string; fullurl?: string; missing?: boolean }>;
+          };
         };
         const q = data.query ?? {};
         const follow = (title: string) => {
@@ -132,7 +139,8 @@ export class WikipediaSummaries {
         for (const [qid, title] of batch) {
           const page = pages.get(follow(title));
           const text = page?.extract ? trimSummary(page.extract) : null;
-          if (page && text && !page.missing) out.get(qid)![lang] = { text, url: page.fullurl ?? `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}` };
+          if (page && text && !page.missing)
+            out.get(qid)![lang] = { text, url: page.fullurl ?? `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}` };
         }
         await this.sleep(200);
       }
@@ -155,7 +163,10 @@ export async function enrichSummariesFromWikipedia(
   const rows = await db
     .select({ itemId: catalogItems.id, qid: catalogExternalIds.externalId, metadata: catalogItems.metadata })
     .from(catalogItems)
-    .innerJoin(catalogExternalIds, and(eq(catalogExternalIds.catalogItemId, catalogItems.id), eq(catalogExternalIds.provider, 'wikidata'), eq(catalogExternalIds.idType, 'entity')))
+    .innerJoin(
+      catalogExternalIds,
+      and(eq(catalogExternalIds.catalogItemId, catalogItems.id), eq(catalogExternalIds.provider, 'wikidata'), eq(catalogExternalIds.idType, 'entity')),
+    )
     .where(
       and(
         eq(catalogItems.dataset, options.dataset ?? 'live'),

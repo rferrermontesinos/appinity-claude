@@ -7,11 +7,7 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
-    "platforms": [
-      "ios",
-      "android",
-      "web"
-    ],
+    "platforms": ["ios", "android", "web"],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "dev.appinity.claude",
@@ -25,9 +21,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0C0C0E"
       },
-      "permissions": [
-        "ACCESS_COARSE_LOCATION"
-      ]
+      "permissions": ["ACCESS_COARSE_LOCATION"]
     },
     "plugins": [
       "expo-router",

@@ -92,7 +92,13 @@ describe('textos legales', () => {
   it('«Cómo funciona» es público y sus cifras son las del motor', async () => {
     const res = await fetch(`${base}/v1/transparency`);
     expect(res.status).toBe(200);
-    const facts = (await res.json()) as { affinityVersion: string; votes: Record<string, number>; consensus: { soulmates: number }; mix: Record<string, number>; neverUsed: string[] };
+    const facts = (await res.json()) as {
+      affinityVersion: string;
+      votes: Record<string, number>;
+      consensus: { soulmates: number };
+      mix: Record<string, number>;
+      neverUsed: string[];
+    };
     expect(facts.affinityVersion).toMatch(/^affinity-v\d+$/);
     expect(facts.votes).toEqual({ dislike: -0.5, like: 0.5, love: 1 });
     expect(facts.consensus.soulmates).toBe(50);

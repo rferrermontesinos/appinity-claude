@@ -91,9 +91,16 @@ export async function topSoulmates(db: Database, userId: string, limit = FREE_SO
     ? await db
         .select({ source: userAffinities.sourceUserId, score: userAffinities.score })
         .from(userAffinities)
-        .where(and(eq(userAffinities.targetUserId, userId), inArray(userAffinities.sourceUserId, rows.map((r) => r.userId))))
+        .where(
+          and(
+            eq(userAffinities.targetUserId, userId),
+            inArray(
+              userAffinities.sourceUserId,
+              rows.map((r) => r.userId),
+            ),
+          ),
+        )
     : [];
   const reverseBy = new Map(reverse.map((r) => [r.source, r.score]));
   return rows.map((r, i) => ({ ...r, rank: i + 1, exceptionalMutual: isExceptionalMutual(r.score, reverseBy.get(r.userId) ?? null) }));
 }
-

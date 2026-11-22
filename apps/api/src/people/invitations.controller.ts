@@ -9,7 +9,11 @@ import { CurrentUser } from '../auth/current-user.decorator.js';
 import { ZodPipe } from '../common/zod.pipe.js';
 import { DATABASE } from '../infra/tokens.js';
 
-const codeSchema = z.string().trim().toLowerCase().regex(/^[a-z0-9]{10}$/);
+const codeSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(/^[a-z0-9]{10}$/);
 
 /**
  * Invitaciones por enlace (crecimiento por grupos de amigos). Todas requieren sesión: el código no revela nada a quien

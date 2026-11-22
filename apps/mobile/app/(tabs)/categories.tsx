@@ -22,7 +22,12 @@ function CategoryTile({ category, width, rank }: { category: Category; width: nu
   const name = t(`categories.${category}`);
   const object = t(`categoryObject.${category}`);
   // Por qué está en esta posición: la afinidad con tus almas gemelas o, si no hay, cuánto te gusta.
-  const why = rank?.affinity !== null && rank?.affinity !== undefined ? t('categoriesScreen.rankAffinity', { value: rank.affinity }) : rank?.likes ? t('categoriesScreen.rankLikes', { count: rank.likes }) : null;
+  const why =
+    rank?.affinity !== null && rank?.affinity !== undefined
+      ? t('categoriesScreen.rankAffinity', { value: rank.affinity })
+      : rank?.likes
+        ? t('categoriesScreen.rankLikes', { count: rank.likes })
+        : null;
   return (
     <Pressable
       accessibilityRole="button"
@@ -38,9 +43,25 @@ function CategoryTile({ category, width, rank }: { category: Category; width: nu
       })}
     >
       <View style={[StyleSheet.absoluteFill, { backgroundColor: mixHex(meta.color, '#000000', 0.62) }]} />
-      <View style={{ position: 'absolute', width: width * 0.9, height: width * 0.9, borderRadius: width, top: -width * 0.45, left: -width * 0.3, backgroundColor: mixHex(meta.color, '#FFFFFF', 0.15), opacity: 0.35 }} />
+      <View
+        style={{
+          position: 'absolute',
+          width: width * 0.9,
+          height: width * 0.9,
+          borderRadius: width,
+          top: -width * 0.45,
+          left: -width * 0.3,
+          backgroundColor: mixHex(meta.color, '#FFFFFF', 0.15),
+          opacity: 0.35,
+        }}
+      />
       <Grain opacity={0.3} />
-      <MaterialCommunityIcons name={icon} size={120} color={mixHex(meta.color, '#FFFFFF', 0.5)} style={{ position: 'absolute', right: -22, bottom: -22, opacity: 0.22 }} />
+      <MaterialCommunityIcons
+        name={icon}
+        size={120}
+        color={mixHex(meta.color, '#FFFFFF', 0.5)}
+        style={{ position: 'absolute', right: -22, bottom: -22, opacity: 0.22 }}
+      />
       <View style={{ flex: 1, padding: spacing.md + 2, justifyContent: 'space-between' }}>
         <View style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: onPoster.glass }}>
           <MaterialCommunityIcons name={icon} size={22} color={onPoster.text} />

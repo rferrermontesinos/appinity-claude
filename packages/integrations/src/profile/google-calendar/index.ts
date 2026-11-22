@@ -56,7 +56,12 @@ const eventSchema = z.object({
   start: z.object({ date: z.string().optional(), dateTime: z.string().optional() }).optional(),
 });
 const pageSchema = z.object({ items: z.array(eventSchema).optional(), nextPageToken: z.string().optional() });
-const tokenSchema = z.object({ access_token: z.string(), refresh_token: z.string().optional(), expires_in: z.number().optional(), scope: z.string().optional() });
+const tokenSchema = z.object({
+  access_token: z.string(),
+  refresh_token: z.string().optional(),
+  expires_in: z.number().optional(),
+  scope: z.string().optional(),
+});
 
 export type CalendarEvent = z.infer<typeof eventSchema>;
 
@@ -69,12 +74,17 @@ export type CalendarCandidate =
 const ONLINE = /(https?:\/\/|zoom|google meet|meet\.google|teams|skype|webex|online|videollamada|video call)/i;
 const PRIVATE_PLACE = /^(casa|mi casa|home|oficina|office|trabajo|work|despacho|gym|gimnasio)$/i;
 /** Una dirección sin nombre de lugar (p. ej., una consulta médica) no se envía a geocodificar. */
-const STREET = /^(calle|c\/|avenida|avda\.?|av\.|plaza|pza\.?|paseo|pº|carrer|carretera|camino|ronda|travesía|rua|rue|via|street|st\.|road|rd\.|avenue|ave\.|boulevard|blvd\.?|lane)\s/i;
+const STREET =
+  /^(calle|c\/|avenida|avda\.?|av\.|plaza|pza\.?|paseo|pº|carrer|carretera|camino|ronda|travesía|rua|rue|via|street|st\.|road|rd\.|avenue|ave\.|boulevard|blvd\.?|lane)\s/i;
 const CONCERT_PREFIX = /^(?:concierto(?:\s+de)?|concert(?:\s+of)?|gig)\s*[:\-–]?\s+(.{2,80})$/i;
 const CONCERT_SUFFIX = /^(.{2,80}?)\s*(?:[-–:]\s*)?(?:en concierto|en directo|in concert|live|\(concierto\)|\(concert\))$/i;
 const MOVIE_PREFIX = /^(?:cine|película|pelicula|movie|film)\s*[:\-–]\s*(.{2,100})$/i;
 
-const clean = (s: string) => s.replace(/\s+/g, ' ').replace(/^["'«“]|["'»”]$/g, '').trim();
+const clean = (s: string) =>
+  s
+    .replace(/\s+/g, ' ')
+    .replace(/^["'«“]|["'»”]$/g, '')
+    .trim();
 
 /**
  * Candidatos de un evento:
@@ -182,7 +192,12 @@ export function createGoogleCalendarAdapter(options: GoogleCalendarOptions): Pro
       const response = await fetchImpl(TOKEN_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ client_id: options.clientId, client_secret: options.clientSecret, grant_type: 'refresh_token', refresh_token: credentials.refreshToken }),
+        body: new URLSearchParams({
+          client_id: options.clientId,
+          client_secret: options.clientSecret,
+          grant_type: 'refresh_token',
+          refresh_token: credentials.refreshToken,
+        }),
         signal: AbortSignal.timeout(15_000),
       });
       if (response.status === 400 || response.status === 401) {
@@ -216,7 +231,11 @@ export function createGoogleCalendarAdapter(options: GoogleCalendarOptions): Pro
       if (response.status === 403) {
         const body = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
         const disabled = /has not been used|is disabled/i.test(body.error?.message ?? '');
-        throw new SourceError('not_configured', disabled ? 'La Google Calendar API no está activada en el proyecto de Google Cloud' : 'Google denegó el acceso al calendario', false);
+        throw new SourceError(
+          'not_configured',
+          disabled ? 'La Google Calendar API no está activada en el proyecto de Google Cloud' : 'Google denegó el acceso al calendario',
+          false,
+        );
       }
       if (response.status === 429 || response.status >= 500) throw new SourceError('unavailable', `Google Calendar respondió HTTP ${response.status}`, true);
       if (!response.ok) throw new SourceError('bad_response', `Google Calendar respondió HTTP ${response.status}`, false);
@@ -234,7 +253,11 @@ export function createGoogleCalendarAdapter(options: GoogleCalendarOptions): Pro
     snapshotObservationKinds: ['gcal_event'],
     async connect(): Promise<AuthResult> {
       // Un único momento de permisos: el calendario se concede en «Continuar con Google», no en una conexión aparte.
-      throw new SourceError('not_configured', 'Google Calendar se concede al entrar con Google: cierra sesión y vuelve a entrar con «Continuar con Google»', false);
+      throw new SourceError(
+        'not_configured',
+        'Google Calendar se concede al entrar con Google: cierra sesión y vuelve a entrar con «Continuar con Google»',
+        false,
+      );
     },
     async sync(context: SyncContext): Promise<SyncBatch> {
       const identifier = options.identifier;
@@ -272,7 +295,14 @@ export function createGoogleCalendarAdapter(options: GoogleCalendarOptions): Pro
         }
       } catch (error) {
         if (isSourceError(error) && error.retryable) {
-          return { records: [], cursor: null, hasMore: false, partialErrors: [], snapshotComplete: false, pending: { retryAfterMs: 10 * 60_000, reason: `${error.message} (identificación de catálogo)` } };
+          return {
+            records: [],
+            cursor: null,
+            hasMore: false,
+            partialErrors: [],
+            snapshotComplete: false,
+            pending: { retryAfterMs: 10 * 60_000, reason: `${error.message} (identificación de catálogo)` },
+          };
         }
         throw error;
       }
@@ -296,7 +326,13 @@ export function createGoogleCalendarAdapter(options: GoogleCalendarOptions): Pro
         cursor: null,
         hasMore: false,
         partialErrors: unidentified
-          ? [{ code: 'unidentified', message: `${unidentified} de ${candidates.length} planes del calendario no se pudieron identificar con seguridad`, blocking: false }]
+          ? [
+              {
+                code: 'unidentified',
+                message: `${unidentified} de ${candidates.length} planes del calendario no se pudieron identificar con seguridad`,
+                blocking: false,
+              },
+            ]
           : [],
         snapshotComplete: true,
         snapshotKinds: ['gcal_event'],

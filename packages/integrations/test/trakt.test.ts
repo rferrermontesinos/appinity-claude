@@ -7,13 +7,26 @@ import { collectTrakt, createTraktAdapter, mapTrakt, type TraktItem } from '../s
 const USER = '10000000-0000-4000-a000-0000000000c0';
 const movie = (trakt: number, title: string, imdb?: string) => ({ title, year: 1994, ids: { trakt, slug: 's', imdb: imdb ?? null, tmdb: 278 } });
 const show = (trakt: number, title: string) => ({ title, year: 2008, ids: { trakt, slug: 's', imdb: 'tt0903747', tmdb: 1396 } });
-const entity = (category: 'movies' | 'series', title: string): IdentifiedEntity => ({ category, itemType: category === 'movies' ? 'movie' : 'series', title, canonicalIds: { 'wikidata:entity': 'Q1' }, confidence: 0.95, method: 'wikidata_imdb' });
+const entity = (category: 'movies' | 'series', title: string): IdentifiedEntity => ({
+  category,
+  itemType: category === 'movies' ? 'movie' : 'series',
+  title,
+  canonicalIds: { 'wikidata:entity': 'Q1' },
+  confidence: 0.95,
+  method: 'wikidata_imdb',
+});
 
 describe('Trakt · listas', () => {
   it('une valoraciones, vistos, favoritos y pendientes por título; descarta valoraciones fuera de 1–10', () => {
     const items = collectTrakt({
-      ratings: [{ rating: 9, rated_at: '2026-01-01T00:00:00Z', movie: movie(1, 'Cadena perpetua', 'tt0111161') }, { rating: 11, movie: movie(2, 'Raro') }],
-      watched: [{ plays: 3, last_watched_at: '2026-02-01T00:00:00Z', movie: movie(1, 'Cadena perpetua', 'tt0111161') }, { plays: 1, show: show(10, 'Breaking Bad') }],
+      ratings: [
+        { rating: 9, rated_at: '2026-01-01T00:00:00Z', movie: movie(1, 'Cadena perpetua', 'tt0111161') },
+        { rating: 11, movie: movie(2, 'Raro') },
+      ],
+      watched: [
+        { plays: 3, last_watched_at: '2026-02-01T00:00:00Z', movie: movie(1, 'Cadena perpetua', 'tt0111161') },
+        { plays: 1, show: show(10, 'Breaking Bad') },
+      ],
       favorites: [{ show: show(10, 'Breaking Bad') }],
       watchlist: [{ movie: movie(3, 'Pendiente') }],
     });
@@ -26,7 +39,14 @@ describe('Trakt · listas', () => {
   it('semántica: valoración 1–10 explícita; favorito → me gusta; visto → consumido; pendiente → conocido', () => {
     const map = (i: Partial<TraktItem>, cat: 'movies' | 'series' = 'movies') =>
       parseObservation(
-        mapTrakt({ recordId: 'movie:1', item: { kind: 'movie', traktId: 1, title: 'T', rating: null, plays: 0, favorite: false, watchlist: false, ...i }, identified: entity(cat, 'T') }, { userId: USER, connectionId: USER, source: 'trakt' })[0]!,
+        mapTrakt(
+          {
+            recordId: 'movie:1',
+            item: { kind: 'movie', traktId: 1, title: 'T', rating: null, plays: 0, favorite: false, watchlist: false, ...i },
+            identified: entity(cat, 'T'),
+          },
+          { userId: USER, connectionId: USER, source: 'trakt' },
+        )[0]!,
       );
     expect(map({ rating: 10 })).toMatchObject({ preferenceScore: 1, preferenceBasis: 'explicit_rating', consumedConfidence: 0.95 });
     expect(map({ rating: 1 })).toMatchObject({ preferenceScore: -1 });
@@ -45,7 +65,16 @@ describe('Trakt · conexión y sync', () => {
       requests.push({ url, headers: init?.headers as Record<string, string>, ...(init?.body ? { body: JSON.parse(String(init.body)) } : {}) });
       if (url === 'https://auth.trakt.tv/oauth/token') {
         refreshCount++;
-        return new Response(JSON.stringify({ access_token: `access-${refreshCount}`, refresh_token: `refresh-nuevo-${refreshCount}`, expires_in: 604800, token_type: 'bearer', scope: 'public', created_at: 1 }));
+        return new Response(
+          JSON.stringify({
+            access_token: `access-${refreshCount}`,
+            refresh_token: `refresh-nuevo-${refreshCount}`,
+            expires_in: 604800,
+            token_type: 'bearer',
+            scope: 'public',
+            created_at: 1,
+          }),
+        );
       }
       const path = new URL(url).pathname;
       const data: Record<string, unknown[]> = {
@@ -64,10 +93,24 @@ describe('Trakt · conexión y sync', () => {
     const start = await adapter.connect({ userId: USER, redirectUri: 'x', state: 'estado-0123456789abcdef' });
     const url = new URL((start as { url: string }).url);
     expect(url.origin + url.pathname).toBe('https://auth.trakt.tv/oauth/authorize');
-    expect([url.searchParams.get('client_id'), url.searchParams.get('code_challenge_method'), url.searchParams.get('state')]).toEqual(['cliente-trakt', 'S256', 'estado-0123456789abcdef']);
-    const done = await adapter.completeConnect!({ userId: USER, redirectUri: 'x', callbackParams: { code: 'codigo' }, pending: (start as { pending: Record<string, string> }).pending });
+    expect([url.searchParams.get('client_id'), url.searchParams.get('code_challenge_method'), url.searchParams.get('state')]).toEqual([
+      'cliente-trakt',
+      'S256',
+      'estado-0123456789abcdef',
+    ]);
+    const done = await adapter.completeConnect!({
+      userId: USER,
+      redirectUri: 'x',
+      callbackParams: { code: 'codigo' },
+      pending: (start as { pending: Record<string, string> }).pending,
+    });
     expect(done).toMatchObject({ kind: 'connected', credentials: { refreshToken: 'refresh-nuevo-1' } });
-    expect(requests[0]!.body).toMatchObject({ grant_type: 'authorization_code', code: 'codigo', code_verifier: expect.any(String), client_id: 'cliente-trakt' });
+    expect(requests[0]!.body).toMatchObject({
+      grant_type: 'authorization_code',
+      code: 'codigo',
+      code_verifier: expect.any(String),
+      client_id: 'cliente-trakt',
+    });
     expect(requests[0]!.body!.client_secret).toBeUndefined();
   });
 
@@ -102,7 +145,11 @@ describe('Wikidata · IMDb y TMDB', () => {
   it('por lotes; la categoría debe coincidir con la de Trakt', async () => {
     const claim = (v: unknown) => ({ mainsnak: { datavalue: { value: v } } });
     const entities: Record<string, unknown> = {
-      Q172241: { id: 'Q172241', labels: { es: { value: 'Cadena perpetua' } }, claims: { P31: [claim({ id: 'Q11424' })], P345: [claim('tt0111161')], P577: [claim({ time: '+1994-09-10T00:00:00Z' })] } },
+      Q172241: {
+        id: 'Q172241',
+        labels: { es: { value: 'Cadena perpetua' } },
+        claims: { P31: [claim({ id: 'Q11424' })], P345: [claim('tt0111161')], P577: [claim({ time: '+1994-09-10T00:00:00Z' })] },
+      },
       Q1079: { id: 'Q1079', labels: { es: { value: 'Breaking Bad' } }, claims: { P31: [claim({ id: 'Q5398426' })], P4983: [claim('1396')] } },
     };
     let searches = 0;
@@ -142,7 +189,11 @@ describe('Wikidata · relacionados (arranque en frío)', () => {
   it('relatedWorks: misma categoría, notables, mejor relación por objeto; una consulta que agota el tiempo se omite', async () => {
     const claim = (v: unknown) => ({ mainsnak: { datavalue: { value: v } } });
     const entities: Record<string, unknown> = {
-      Q2: { id: 'Q2', labels: { es: { value: 'La milla verde' } }, claims: { P31: [claim({ id: 'Q11424' })], P577: [claim({ time: '+1999-12-10T00:00:00Z' })] } },
+      Q2: {
+        id: 'Q2',
+        labels: { es: { value: 'La milla verde' } },
+        claims: { P31: [claim({ id: 'Q11424' })], P577: [claim({ time: '+1999-12-10T00:00:00Z' })] },
+      },
       Q3: { id: 'Q3', labels: { es: { value: 'Una serie' } }, claims: { P31: [claim({ id: 'Q5398426' })] } },
     };
     let call = 0;
@@ -151,7 +202,13 @@ describe('Wikidata · relacionados (arranque en frío)', () => {
       if (url.hostname === 'query.wikidata.org') {
         call++;
         if (call === 1) throw Object.assign(new Error('timeout'), { name: 'TimeoutError' });
-        const bindings = call === 3 ? [{ item: { value: 'http://www.wikidata.org/entity/Q2' }, links: { value: '60' } }, { item: { value: 'http://www.wikidata.org/entity/Q3' }, links: { value: '90' } }] : [];
+        const bindings =
+          call === 3
+            ? [
+                { item: { value: 'http://www.wikidata.org/entity/Q2' }, links: { value: '60' } },
+                { item: { value: 'http://www.wikidata.org/entity/Q3' }, links: { value: '90' } },
+              ]
+            : [];
         return new Response(JSON.stringify({ results: { bindings } }));
       }
       const ids = url.searchParams.get('ids')!.split('|');
@@ -159,6 +216,12 @@ describe('Wikidata · relacionados (arranque en frío)', () => {
     }) as typeof fetch;
     const wd = new WikidataWorkIdentifier({ userAgent: 'APPINITY-test', fetchImpl, sleep: async () => undefined });
     const related = await wd.relatedWorks('Q1', 'movies');
-    expect(related).toEqual([expect.objectContaining({ relation: 'same_director', weight: 0.8, entity: expect.objectContaining({ title: 'La milla verde', category: 'movies', releaseYear: 1999 }) })]);
+    expect(related).toEqual([
+      expect.objectContaining({
+        relation: 'same_director',
+        weight: 0.8,
+        entity: expect.objectContaining({ title: 'La milla verde', category: 'movies', releaseYear: 1999 }),
+      }),
+    ]);
   });
 });

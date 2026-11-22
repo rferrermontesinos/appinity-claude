@@ -30,12 +30,18 @@ export async function createInvitation(db: Database, inviterId: string, now = ne
     .where(and(eq(invitations.inviterId, inviterId), isUsable(now), gt(invitations.expiresAt, new Date(now.getTime() + 7 * 86_400_000))));
   if (current) return current;
   const expiresAt = new Date(now.getTime() + INVITATION_DAYS * 86_400_000);
-  const [row] = await db.insert(invitations).values({ code: newCode(), inviterId, expiresAt, createdAt: now }).returning({ code: invitations.code, expiresAt: invitations.expiresAt });
+  const [row] = await db
+    .insert(invitations)
+    .values({ code: newCode(), inviterId, expiresAt, createdAt: now })
+    .returning({ code: invitations.code, expiresAt: invitations.expiresAt });
   return row!;
 }
 
 async function usableInvitation(db: Database, code: string, viewerId: string, now: Date) {
-  const [row] = await db.select().from(invitations).where(and(eq(invitations.code, code.trim().toLowerCase()), isUsable(now)));
+  const [row] = await db
+    .select()
+    .from(invitations)
+    .where(and(eq(invitations.code, code.trim().toLowerCase()), isUsable(now)));
   // Caducada, revocada, agotada, propia o de alguien que no se puede ver (bloqueo u otro dataset): no existe.
   if (!row || row.inviterId === viewerId || !(await canSeePerson(db, viewerId, row.inviterId))) throw new NotFoundError('Invitación no válida o caducada');
   return row;
@@ -57,11 +63,18 @@ export async function acceptInvitation(db: Database, code: string, viewerId: str
     );
     const [existing] = await tx.select().from(friendships).where(pair);
     if (existing?.status === 'accepted') return;
-    if (existing) await tx.update(friendships).set({ requesterId: row.inviterId, addresseeId: viewerId, status: 'accepted', respondedAt: now }).where(eq(friendships.id, existing.id));
+    if (existing)
+      await tx
+        .update(friendships)
+        .set({ requesterId: row.inviterId, addresseeId: viewerId, status: 'accepted', respondedAt: now })
+        .where(eq(friendships.id, existing.id));
     else await tx.insert(friendships).values({ requesterId: row.inviterId, addresseeId: viewerId, status: 'accepted', createdAt: now, respondedAt: now });
     await openMatch(tx, viewerId, row.inviterId, 'friendship', now, viewerId);
     await followEachOther(tx, viewerId, row.inviterId, now);
-    await tx.update(invitations).set({ uses: sql`${invitations.uses} + 1` }).where(eq(invitations.id, row.id));
+    await tx
+      .update(invitations)
+      .set({ uses: sql`${invitations.uses} + 1` })
+      .where(eq(invitations.id, row.id));
   });
   return { inviterId: row.inviterId, state: 'friends' };
 }

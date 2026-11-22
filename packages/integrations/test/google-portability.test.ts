@@ -1,7 +1,16 @@
 import { parseObservation, SourceError, type SourceCredentials, type SyncContext } from '@appinity/shared';
 import { strToU8, zipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
-import { classifyOsmTags, descriptorHead, matchPlace, osmScope, overpassBatchQuery, pickPlace, slotWaitMs, OsmPlaceIdentifier } from '../src/catalog/osm-places.js';
+import {
+  classifyOsmTags,
+  descriptorHead,
+  matchPlace,
+  osmScope,
+  overpassBatchQuery,
+  pickPlace,
+  slotWaitMs,
+  OsmPlaceIdentifier,
+} from '../src/catalog/osm-places.js';
 import { WikidataWorkIdentifier } from '../src/catalog/wikidata-works.js';
 import { googlePlaceIds, parseStars, readArchive, urlPattern } from '../src/profile/google-portability/archive.js';
 import { completePortabilityConnect, startPortabilityConnect } from '../src/profile/google-portability/auth.js';
@@ -96,7 +105,9 @@ describe('autorización de Google Data Portability', () => {
       code: 'verification_failed',
       message: expect.stringMatching(/cancel/),
     });
-    await expect(completePortabilityConnect(client, PHASE3_RESOURCE_GROUPS, { ...base, callbackParams: {} })).rejects.toMatchObject({ code: 'verification_failed' });
+    await expect(completePortabilityConnect(client, PHASE3_RESOURCE_GROUPS, { ...base, callbackParams: {} })).rejects.toMatchObject({
+      code: 'verification_failed',
+    });
     await expect(connect(google, client)).rejects.toMatchObject({ message: expect.stringMatching(/ningún dato/) });
     expect(google.revoked).toHaveLength(1);
   });
@@ -128,7 +139,12 @@ describe('archivo exportado', () => {
   it('lee reseñas de Maps (GeoJSON) sin guardar su texto y descarta lugares sin coordenadas', () => {
     const { records, summary } = readArchive('maps.reviews', [zipOf(defaultExports()['maps.reviews']!)]);
     expect(records).toHaveLength(3);
-    expect(records[0]).toMatchObject({ group: 'maps.reviews', rating: 5, hasText: true, place: { name: 'Museu Picasso', latitude: 41.38522, longitude: 2.18101, countryCode: 'ES' } });
+    expect(records[0]).toMatchObject({
+      group: 'maps.reviews',
+      rating: 5,
+      hasText: true,
+      place: { name: 'Museu Picasso', latitude: 41.38522, longitude: 2.18101, countryCode: 'ES' },
+    });
     expect(JSON.stringify(records)).not.toContain('NO debe guardarse');
     expect(summary).toMatchObject({
       records: 3,
@@ -169,18 +185,37 @@ describe('archivo exportado', () => {
   it('obtiene el CID de Google del enlace de Maps en sus distintos formatos', () => {
     expect(googlePlaceIds('https://www.google.com/maps/place//data=!4m2!3m1!1s0x12a4a2f7a1b2c3d4:0x1ed6b4bc2b0bd2e7')).toEqual({ cid: '2222162186422964967' });
     expect(googlePlaceIds('https://maps.google.com/?cid=1111111111111111111')).toEqual({ cid: '1111111111111111111' });
-    expect(googlePlaceIds('https://www.google.com/maps/search/?api=1&query=x&query_place_id=ChIJabcdefghijklmnop')).toEqual({ placeId: 'ChIJabcdefghijklmnop' });
+    expect(googlePlaceIds('https://www.google.com/maps/search/?api=1&query=x&query_place_id=ChIJabcdefghijklmnop')).toEqual({
+      placeId: 'ChIJabcdefghijklmnop',
+    });
     expect(googlePlaceIds('https://www.google.com/maps/place//data=!4m2!3m1!1s0x0:0x0')).toEqual({});
     expect(googlePlaceIds(undefined)).toEqual({});
     // El registro usa el CID y la observación lo añade como identificador del lugar.
-    const record = { group: 'maps.reviews' as const, place: { name: 'Can Culleretes', latitude: 41.38, longitude: 2.17, mapsUrl: 'https://www.google.com/maps/place//data=!4m2!3m1!1s0x12a4a2f7a1b2c3d4:0x1ed6b4bc2b0bd2e7' }, rating: 4, hasText: false };
+    const record = {
+      group: 'maps.reviews' as const,
+      place: {
+        name: 'Can Culleretes',
+        latitude: 41.38,
+        longitude: 2.17,
+        mapsUrl: 'https://www.google.com/maps/place//data=!4m2!3m1!1s0x12a4a2f7a1b2c3d4:0x1ed6b4bc2b0bd2e7',
+      },
+      rating: 4,
+      hasText: false,
+    };
     expect(recordIdOf(record)).toBe('place:cid:2222162186422964967');
     const [o] = mapGoogleRecord({ recordId: recordIdOf(record), record, identified: FAKE_IDENTIFICATIONS['Restaurante Can Culleretes']! }, ctx);
     expect(o!.externalItem.canonicalIds).toEqual({ 'osm:node': '1000000001', 'google_maps:cid': '2222162186422964967' });
   });
 
   it('interpreta las estrellas escritas o numéricas y rechaza lo demás', () => {
-    expect([parseStars('Five stars'), parseStars('One star'), parseStars('4 estrellas'), parseStars(3), parseStars('Six stars'), parseStars(0)]).toEqual([5, 1, 4, 3, null, null]);
+    expect([parseStars('Five stars'), parseStars('One star'), parseStars('4 estrellas'), parseStars(3), parseStars('Six stars'), parseStars(0)]).toEqual([
+      5,
+      1,
+      4,
+      3,
+      null,
+      null,
+    ]);
     expect(urlPattern('https://www.google.com/maps/place/?q=place_id:ChIJabcdefghijklmnopqrstuvwxyz123')).toBe('www.google.com/maps/place/?q=…');
   });
 });
@@ -217,7 +252,10 @@ describe('sync de Google', () => {
     const first = await syncPortability(client, context, { identifier });
     const batch = first.pending ? await syncPortability(client, context, { identifier }) : first;
     expect(batch.snapshotKinds?.sort()).toEqual(['maps_starred', 'search_rating', 'search_thumb', 'search_watched']);
-    expect(batch.partialErrors.find((e) => e.code === 'export_unsupported')).toMatchObject({ blocking: false, message: expect.stringMatching(/reseñas de Maps/) });
+    expect(batch.partialErrors.find((e) => e.code === 'export_unsupported')).toMatchObject({
+      blocking: false,
+      message: expect.stringMatching(/reseñas de Maps/),
+    });
   });
 
   it('409 (export previo en curso): adopta su id si Google lo da; si no, salta ese grupo sin hacer fallar los demás', async () => {
@@ -267,7 +305,15 @@ describe('sync de Google', () => {
     const unavailable = async (): Promise<never> => {
       throw new SourceError('unavailable', 'OpenStreetMap (Overpass) no responde; se reintentará', true);
     };
-    const failing = { identifyPlace: unavailable, identifyPlaces: unavailable, identifyPlacesByText: unavailable, identifyWork: async () => null, identifyChannels: unavailable, identifyArtists: unavailable, identifyApps: unavailable };
+    const failing = {
+      identifyPlace: unavailable,
+      identifyPlaces: unavailable,
+      identifyPlacesByText: unavailable,
+      identifyWork: async () => null,
+      identifyChannels: unavailable,
+      identifyArtists: unavailable,
+      identifyApps: unavailable,
+    };
     const context = syncContext({ ...done.credentials! });
     const progress: string[] = [];
     const deferred = await syncPortability(client, context, { identifier: failing, onProgress: (m) => progress.push(m) });
@@ -296,7 +342,11 @@ describe('sync de Google', () => {
 
 describe('mapper google-portability-v1', () => {
   const place = { name: 'Museu Picasso', latitude: 41.38522, longitude: 2.18101, mapsUrl: 'https://maps.google.com/?cid=1111111111111111111' };
-  const rec = (record: GoogleRecord['record'], name: string): GoogleRecord => ({ recordId: recordIdOf(record), record, identified: FAKE_IDENTIFICATIONS[name]! });
+  const rec = (record: GoogleRecord['record'], name: string): GoogleRecord => ({
+    recordId: recordIdOf(record),
+    record,
+    identified: FAKE_IDENTIFICATIONS[name]!,
+  });
   const map = (r: GoogleRecord) => mapGoogleRecord(r, ctx).map((o) => parseObservation(o));
 
   it('reseña de Maps con estrellas: valoración explícita (r − 3) / 2 con fecha, ponderada por la identificación', () => {
@@ -351,7 +401,7 @@ describe('mapper google-portability-v1', () => {
 });
 
 describe('identificación en el catálogo', () => {
-  const element = (id: number, tags: Record<string, string>, lat = 41.3852, lon = 2.1810) => ({ type: 'node' as const, id, lat, lon, tags });
+  const element = (id: number, tags: Record<string, string>, lat = 41.3852, lon = 2.181) => ({ type: 'node' as const, id, lat, lon, tags });
 
   it('OSM: nombre idéntico o sin palabras genéricas a ≤ 100 m, clasificado por sus etiquetas', () => {
     const place = { name: 'Restaurante Can Culleretes', latitude: 41.3813, longitude: 2.174 };
@@ -361,7 +411,11 @@ describe('identificación en el catálogo', () => {
       canonicalIds: { 'osm:node': '1' },
       confidence: 0.85,
     });
-    expect(pickPlace({ name: 'Museu Picasso', latitude: 41.3852, longitude: 2.181 }, [element(2, { name: 'Museu Picasso', tourism: 'museum', wikidata: 'Q368277' })])).toMatchObject({
+    expect(
+      pickPlace({ name: 'Museu Picasso', latitude: 41.3852, longitude: 2.181 }, [
+        element(2, { name: 'Museu Picasso', tourism: 'museum', wikidata: 'Q368277' }),
+      ]),
+    ).toMatchObject({
       category: 'culture',
       canonicalIds: { 'osm:node': '2', 'wikidata:entity': 'Q368277' },
       confidence: 0.95,
@@ -371,7 +425,19 @@ describe('identificación en el catálogo', () => {
   it('OSM: el nombre de Google contenido en el de OSM solo vale si el candidato es único o el único notable', () => {
     const place = { name: 'Sagrada Família', latitude: 41.4036, longitude: 2.1744 };
     // Caso real (OSM, 2026-10-09): la basílica es un monumento patrimonial; las estaciones homónimas no se clasifican.
-    const basilica = { type: 'relation' as const, id: 9194723, center: { lat: 41.4036, lon: 2.1744 }, tags: { name: 'Basílica de la Sagrada Família', amenity: 'place_of_worship', tourism: 'attraction', historic: 'church', heritage: '1', wikidata: 'Q48435' } };
+    const basilica = {
+      type: 'relation' as const,
+      id: 9194723,
+      center: { lat: 41.4036, lon: 2.1744 },
+      tags: {
+        name: 'Basílica de la Sagrada Família',
+        amenity: 'place_of_worship',
+        tourism: 'attraction',
+        historic: 'church',
+        heritage: '1',
+        wikidata: 'Q48435',
+      },
+    };
     const museum = element(4553142274, { name: 'Museu de la Sagrada Família', tourism: 'museum' }, 41.4037, 2.1745);
     const metro = element(462295964, { name: 'Sagrada Família', railway: 'station', station: 'subway', wikidata: 'Q2548808' });
     expect(pickPlace(place, [basilica, museum, metro])).toMatchObject({
@@ -384,9 +450,13 @@ describe('identificación en el catálogo', () => {
     // Dos candidatos por contención y ninguno (o ambos) notables → ambiguo.
     expect(pickPlace(place, [museum, element(9, { name: 'Escoles de la Sagrada Família', tourism: 'museum' })])).toBeNull();
     // Un nombre de una sola palabra no se busca por contención (demasiado ambiguo).
-    expect(pickPlace({ name: 'Picasso', latitude: 41.3852, longitude: 2.181 }, [element(2, { name: 'Fundació Picasso Barcelona', tourism: 'museum' })])).toBeNull();
+    expect(
+      pickPlace({ name: 'Picasso', latitude: 41.3852, longitude: 2.181 }, [element(2, { name: 'Fundació Picasso Barcelona', tourism: 'museum' })]),
+    ).toBeNull();
     // En cambio, quitar una palabra genérica sí identifica («Picasso» ≈ «Museu Picasso»).
-    expect(pickPlace({ name: 'Picasso', latitude: 41.3852, longitude: 2.181 }, [element(2, { name: 'Museu Picasso', tourism: 'museum' })])).toMatchObject({ confidence: 0.85 });
+    expect(pickPlace({ name: 'Picasso', latitude: 41.3852, longitude: 2.181 }, [element(2, { name: 'Museu Picasso', tourism: 'museum' })])).toMatchObject({
+      confidence: 0.85,
+    });
   });
 
   it('OSM: sin coincidencia, fuera de las categorías o ambiguo → no identifica', () => {
@@ -399,7 +469,14 @@ describe('identificación en el catálogo', () => {
 
   it('OSM: casos reales de etiquetado (Casa Batlló, Mercado de San Miguel)', () => {
     // Casa Batlló: historic=heritage + tourism=artwork (consultado el 2026-10-09).
-    const batllo = element(9427554, { name: 'Casa Batlló', historic: 'heritage', heritage: '1', tourism: 'artwork', building: 'apartments', wikidata: 'Q461371' });
+    const batllo = element(9427554, {
+      name: 'Casa Batlló',
+      historic: 'heritage',
+      heritage: '1',
+      tourism: 'artwork',
+      building: 'apartments',
+      wikidata: 'Q461371',
+    });
     expect(pickPlace({ name: 'Casa Batlló', latitude: 41.3917, longitude: 2.1649 }, [{ ...batllo, type: 'relation' as const }])).toMatchObject({
       category: 'culture',
       canonicalIds: { 'osm:relation': '9427554', 'wikidata:entity': 'Q461371' },
@@ -423,14 +500,19 @@ describe('identificación en el catálogo', () => {
     const restaurant = element(4, { name: 'Can Pep', amenity: 'restaurant' });
     expect(matchPlace({ name: 'Can Pep', ...at }, [building, restaurant])).toMatchObject({ entity: { category: 'food' } });
     expect(matchPlace({ name: 'Can Pep', ...at }, [hotel])).toMatchObject({ entity: null, reason: 'no_match' });
-    expect(matchPlace({ name: 'Can Pep', ...at }, [restaurant, element(5, { name: 'Can Pep', tourism: 'museum' })])).toEqual({ entity: null, reason: 'ambiguous' });
+    expect(matchPlace({ name: 'Can Pep', ...at }, [restaurant, element(5, { name: 'Can Pep', tourism: 'museum' })])).toEqual({
+      entity: null,
+      reason: 'ambiguous',
+    });
     expect(osmScope({ leisure: 'park' })).toBe('parque');
   });
 
   it('OSM: el descriptor que añade Google tras un separador no impide la coincidencia', () => {
     const at = { latitude: 41.38, longitude: 2.17 };
     const restaurant = element(1, { name: 'Can Pep', amenity: 'restaurant' });
-    expect(matchPlace({ name: 'Can Pep - Tapas Bar', ...at }, [restaurant])).toMatchObject({ entity: { confidence: 0.85, method: 'osm_name_sin_genericos_100m' } });
+    expect(matchPlace({ name: 'Can Pep - Tapas Bar', ...at }, [restaurant])).toMatchObject({
+      entity: { confidence: 0.85, method: 'osm_name_sin_genericos_100m' },
+    });
     expect(matchPlace({ name: 'Can Pep | Cocina mediterránea', ...at }, [restaurant])).toMatchObject({ entity: { category: 'food' } });
     expect(descriptorHead('Bar - Restaurante')).toBeNull();
     expect(descriptorHead('Sant Pau')).toBeNull();
@@ -444,9 +526,14 @@ describe('identificación en el catálogo', () => {
     const pacoFar = element(2, { name: 'Casa Paco', amenity: 'restaurant' }, 41.3858, 2.181);
     expect(matchPlace({ name: 'Bar Casa Paco Tapas', ...at }, [pacoFar])).toMatchObject({ entity: null, reason: 'no_match' });
     // Dos candidatos parecidos: ambiguo.
-    expect(matchPlace({ name: 'Bar Casa Paco Tapas', ...at }, [pacoNear, element(3, { name: 'Paco Tapas', amenity: 'bar' })])).toEqual({ entity: null, reason: 'ambiguous' });
+    expect(matchPlace({ name: 'Bar Casa Paco Tapas', ...at }, [pacoNear, element(3, { name: 'Paco Tapas', amenity: 'bar' })])).toEqual({
+      entity: null,
+      reason: 'ambiguous',
+    });
     // Una sola palabra en común entre varias no basta.
-    expect(matchPlace({ name: 'La Bodega del Puerto', ...at }, [element(4, { name: 'Bodega Antigua Casa Ramón', amenity: 'restaurant' })])).toMatchObject({ entity: null });
+    expect(matchPlace({ name: 'La Bodega del Puerto', ...at }, [element(4, { name: 'Bodega Antigua Casa Ramón', amenity: 'restaurant' })])).toMatchObject({
+      entity: null,
+    });
   });
 
   it('OSM: diagnostica qué hay cerca cuando el nombre no coincide (sin guardar nombres)', () => {
@@ -454,8 +541,12 @@ describe('identificación en el catálogo', () => {
     expect(matchPlace({ name: 'La Taberna Nueva', ...at }, [])).toEqual({ entity: null, reason: 'no_match', nearby: 'none' });
     expect(matchPlace({ name: 'La Taberna Nueva', ...at }, [element(1, { name: 'Otra Cosa', shop: 'bakery' })])).toMatchObject({ nearby: 'other' });
     // Un restaurante a pocos metros con otro nombre: probablemente el mismo sitio (renombrado o con otro nombre en OSM).
-    expect(matchPlace({ name: 'La Taberna Nueva', ...at }, [element(2, { name: 'Bodega Vieja', amenity: 'restaurant' })])).toMatchObject({ nearby: 'app_category' });
-    expect(matchPlace({ name: 'La Taberna Nueva', ...at }, [element(3, { name: 'Bodega Vieja', amenity: 'restaurant' }, 41.3862, 2.181)])).toMatchObject({ nearby: 'other' });
+    expect(matchPlace({ name: 'La Taberna Nueva', ...at }, [element(2, { name: 'Bodega Vieja', amenity: 'restaurant' })])).toMatchObject({
+      nearby: 'app_category',
+    });
+    expect(matchPlace({ name: 'La Taberna Nueva', ...at }, [element(3, { name: 'Bodega Vieja', amenity: 'restaurant' }, 41.3862, 2.181)])).toMatchObject({
+      nearby: 'other',
+    });
   });
 
   it('resume la identificación sin nombres: aviso para el usuario y desglose para el worker', () => {
@@ -474,8 +565,13 @@ describe('identificación en el catálogo', () => {
   });
 
   it('OSM: la consulta por lotes trae todo lugar con nombre y clave de comercio o servicio, con su separador', () => {
-    const query = overpassBatchQuery([{ latitude: 41.38, longitude: 2.17 }, { latitude: 40.41, longitude: -3.7 }]);
-    expect(query).toContain('nwr(around:100,41.38,2.17)["name"][~"^(amenity|shop|tourism|leisure|historic|heritage|craft|office|club|healthcare)$"~"."]->.p;make sep i=0;');
+    const query = overpassBatchQuery([
+      { latitude: 41.38, longitude: 2.17 },
+      { latitude: 40.41, longitude: -3.7 },
+    ]);
+    expect(query).toContain(
+      'nwr(around:100,41.38,2.17)["name"][~"^(amenity|shop|tourism|leisure|historic|heritage|craft|office|club|healthcare)$"~"."]->.p;make sep i=0;',
+    );
     expect(query).toContain('make sep i=1;out;.p out tags center;');
     expect(query.startsWith('[out:json][timeout:80];')).toBe(true);
   });
@@ -494,7 +590,9 @@ describe('identificación en el catálogo', () => {
       const url = String(input instanceof Request ? input.url : input);
       calls.push(url.endsWith('/status') ? 'status' : 'query');
       if (url.endsWith('/status')) {
-        return new Response('Rate limit: 4\n0 slots available now.\nSlot available after: 2026-10-09T09:19:51Z, in 24 seconds.\nSlot available after: 2026-10-09T09:19:54Z, in 27 seconds.\n');
+        return new Response(
+          'Rate limit: 4\n0 slots available now.\nSlot available after: 2026-10-09T09:19:51Z, in 24 seconds.\nSlot available after: 2026-10-09T09:19:54Z, in 27 seconds.\n',
+        );
       }
       const status = replies.shift();
       return status ? new Response('ocupado', { status }) : batchResponse([[museum()]]);
@@ -556,7 +654,9 @@ describe('identificación en el catálogo', () => {
     return (async (input: string | URL | Request) => {
       const url = new URL(input instanceof Request ? input.url : input.toString());
       if (url.searchParams.get('action') === 'wbsearchentities') {
-        return new Response(JSON.stringify({ search: (search[url.searchParams.get('search')!] ?? []).map((s) => ({ ...s, match: { type: 'label', text: s.label } })) }));
+        return new Response(
+          JSON.stringify({ search: (search[url.searchParams.get('search')!] ?? []).map((s) => ({ ...s, match: { type: 'label', text: s.label } })) }),
+        );
       }
       const ids = url.searchParams.get('ids')!.split('|');
       return new Response(JSON.stringify({ entities: Object.fromEntries(ids.map((id) => [id, entities[id] ?? { missing: '' }])) }));
@@ -568,8 +668,19 @@ describe('identificación en el catálogo', () => {
 
   it('Wikidata: candidato único con tipo reconocido → identificado con su año', async () => {
     const fetchImpl = fakeWikidata(
-      { 'Breaking Bad': [{ id: 'Q1079', label: 'Breaking Bad' }, { id: 'Q999', label: 'Breaking Bad (song)' }] },
-      { Q1079: { claims: { P31: [claim('Q5398426')], P580: [time('+2008-01-20T00:00:00Z')] }, labels: { es: { value: 'Breaking Bad' } }, sitelinks: sitelinks(80) } },
+      {
+        'Breaking Bad': [
+          { id: 'Q1079', label: 'Breaking Bad' },
+          { id: 'Q999', label: 'Breaking Bad (song)' },
+        ],
+      },
+      {
+        Q1079: {
+          claims: { P31: [claim('Q5398426')], P580: [time('+2008-01-20T00:00:00Z')] },
+          labels: { es: { value: 'Breaking Bad' } },
+          sitelinks: sitelinks(80),
+        },
+      },
     );
     const wd = new WikidataWorkIdentifier({ userAgent: 'APPINITY-test', fetchImpl, sleep: noSleep });
     await expect(wd.identifyWork({ title: 'Breaking Bad' })).resolves.toMatchObject({
@@ -582,7 +693,12 @@ describe('identificación en el catálogo', () => {
   });
 
   it('Wikidata: varios candidatos parecidos en popularidad → no identifica; uno dominante → confianza 0,65', async () => {
-    const search = { Moana: [{ id: 'Q1', label: 'Moana' }, { id: 'Q2', label: 'Moana' }] };
+    const search = {
+      Moana: [
+        { id: 'Q1', label: 'Moana' },
+        { id: 'Q2', label: 'Moana' },
+      ],
+    };
     const tied = fakeWikidata(search, {
       Q1: { claims: { P31: [claim('Q11424')] }, sitelinks: sitelinks(60) },
       Q2: { claims: { P31: [claim('Q11424')] }, sitelinks: sitelinks(40) },
@@ -621,7 +737,11 @@ describe('identificación en el catálogo', () => {
 
 describe('registro con Google', () => {
   it('sin cliente OAuth aparece «sin configurar»; con él, conectable y renovable', () => {
-    expect(createAdapterRegistry({ demoMode: false }).manifests().find((m) => m.key === 'google_portability')).toMatchObject({
+    expect(
+      createAdapterRegistry({ demoMode: false })
+        .manifests()
+        .find((m) => m.key === 'google_portability'),
+    ).toMatchObject({
       availability: 'unconfigured',
       connectable: false,
     });

@@ -19,7 +19,12 @@ const USER = '10000000-0000-4000-a000-0000000000aa';
 const RETURN_TO = 'http://192.168.1.16:3100/v1/connect/steam/callback?state=abcdefghijklmnopqrstuvwx';
 const noSleep = async () => undefined;
 
-const ctx = (stats?: Record<string, number>) => ({ userId: USER, connectionId: '20000000-0000-4000-a000-000000000001', source: 'steam' as const, ...(stats ? { stats } : {}) });
+const ctx = (stats?: Record<string, number>) => ({
+  userId: USER,
+  connectionId: '20000000-0000-4000-a000-000000000001',
+  source: 'steam' as const,
+  ...(stats ? { stats } : {}),
+});
 
 function syncContext(steamid: string): SyncContext {
   return {
@@ -95,7 +100,9 @@ describe('cliente de la Steam Web API', () => {
     const empty = new SteamClient({
       apiKey: KEY,
       sleep: noSleep,
-      fetchImpl: createFakeSteamFetch({ owned: { [SIMULATED_STEAM_IDS.emptyLibrary]: OWNED_GAMES_EMPTY, [SIMULATED_STEAM_IDS.hiddenGameDetails]: OWNED_GAMES_HIDDEN } }).fetchImpl,
+      fetchImpl: createFakeSteamFetch({
+        owned: { [SIMULATED_STEAM_IDS.emptyLibrary]: OWNED_GAMES_EMPTY, [SIMULATED_STEAM_IDS.hiddenGameDetails]: OWNED_GAMES_HIDDEN },
+      }).fetchImpl,
     });
     expect(await empty.getOwnedGames(SIMULATED_STEAM_IDS.emptyLibrary)).toEqual({ gameCount: 0, games: [] });
     expect(await empty.getOwnedGames(SIMULATED_STEAM_IDS.hiddenGameDetails)).toBeNull();
@@ -188,7 +195,9 @@ describe('mapper de Steam', () => {
 
 describe('registro con Steam', () => {
   it('sin clave, Steam aparece como «sin configurar» y no es conectable', () => {
-    const steam = createAdapterRegistry({ demoMode: false }).manifests().find((m) => m.key === 'steam')!;
+    const steam = createAdapterRegistry({ demoMode: false })
+      .manifests()
+      .find((m) => m.key === 'steam')!;
     expect(steam).toMatchObject({ availability: 'unconfigured', connectable: false, authentication: 'openid' });
     expect(steam.unavailableReason).toMatch(/STEAM_WEB_API_KEY/);
   });

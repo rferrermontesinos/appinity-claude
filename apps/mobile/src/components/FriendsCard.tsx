@@ -55,19 +55,31 @@ export function FriendsCard() {
           {data.incoming.map((p) => (
             <PersonLine key={p.userId} person={p}>
               <Button label={t('people.accept')} onPress={() => action.mutate({ kind: 'accept', requestId: p.requestId })} disabled={action.isPending} />
-              <Button label={t('people.reject')} variant="secondary" onPress={() => action.mutate({ kind: 'reject', requestId: p.requestId })} disabled={action.isPending} />
+              <Button
+                label={t('people.reject')}
+                variant="secondary"
+                onPress={() => action.mutate({ kind: 'reject', requestId: p.requestId })}
+                disabled={action.isPending}
+              />
             </PersonLine>
           ))}
         </View>
       ) : null}
       {/* Los amigos se listan en «Siguiendo» (seguidos o no); aquí quedan solicitudes, contactos y bloqueos. */}
-      {data && !data.friends.length && !data.incoming.length && !data.outgoing.length ? <EmptyState icon="account-multiple-outline" title={t('people.friendsEmptyTitle')} body={t('people.friendsEmpty')} /> : null}
+      {data && !data.friends.length && !data.incoming.length && !data.outgoing.length ? (
+        <EmptyState icon="account-multiple-outline" title={t('people.friendsEmptyTitle')} body={t('people.friendsEmpty')} />
+      ) : null}
       {data?.outgoing.length ? (
         <View style={{ gap: spacing.xs }}>
           <Small style={{ fontWeight: '700' }}>{t('people.outgoing')}</Small>
           {data.outgoing.map((p) => (
             <PersonLine key={p.userId} person={p}>
-              <Button label={t('people.cancelRequest')} variant="secondary" onPress={() => action.mutate({ kind: 'remove', userId: p.userId })} disabled={action.isPending} />
+              <Button
+                label={t('people.cancelRequest')}
+                variant="secondary"
+                onPress={() => action.mutate({ kind: 'remove', userId: p.userId })}
+                disabled={action.isPending}
+              />
             </PersonLine>
           ))}
         </View>
@@ -79,7 +91,12 @@ export function FriendsCard() {
           {blocked.data.map((p) => (
             <View key={p.userId} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md }}>
               <Body>{p.displayName}</Body>
-              <Button label={t('people.unblock')} variant="secondary" onPress={() => action.mutate({ kind: 'unblock', userId: p.userId })} disabled={action.isPending} />
+              <Button
+                label={t('people.unblock')}
+                variant="secondary"
+                onPress={() => action.mutate({ kind: 'unblock', userId: p.userId })}
+                disabled={action.isPending}
+              />
             </View>
           ))}
         </View>

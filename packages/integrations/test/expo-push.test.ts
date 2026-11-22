@@ -13,12 +13,19 @@ describe('emisor de Expo push', () => {
       bodies.push(batch);
       return new Response(
         JSON.stringify({
-          data: batch.map((m, i) => (m.to.includes('baja') ? { status: 'error', message: 'gone', details: { error: 'DeviceNotRegistered' } } : { status: 'ok', id: `t${i}` })),
+          data: batch.map((m, i) =>
+            m.to.includes('baja') ? { status: 'error', message: 'gone', details: { error: 'DeviceNotRegistered' } } : { status: 'ok', id: `t${i}` },
+          ),
         }),
       );
     }) as typeof fetch;
     const sender = new ExpoPushSender({ fetchImpl, sleep: async () => undefined, accessToken: 'token-de-test' });
-    const messages = Array.from({ length: 150 }, (_, i) => ({ to: i === 3 ? 'ExponentPushToken[baja]' : `ExponentPushToken[d${i}]`, title: 't', body: 'b', data: {} }));
+    const messages = Array.from({ length: 150 }, (_, i) => ({
+      to: i === 3 ? 'ExponentPushToken[baja]' : `ExponentPushToken[d${i}]`,
+      title: 't',
+      body: 'b',
+      data: {},
+    }));
     const tickets = await sender.send(messages);
     expect(bodies.map((b) => b.length)).toEqual([100, 50]);
     expect(bodies[0]![0]).toMatchObject({ sound: 'default', channelId: 'default' });
@@ -33,7 +40,9 @@ describe('recibos de Expo push', () => {
     let body: unknown;
     const fetchImpl = (async (_url: string | URL | Request, init?: RequestInit) => {
       body = JSON.parse(String(init!.body));
-      return new Response(JSON.stringify({ data: { a: { status: 'ok' }, b: { status: 'error', message: 'gone', details: { error: 'DeviceNotRegistered' } } } }));
+      return new Response(
+        JSON.stringify({ data: { a: { status: 'ok' }, b: { status: 'error', message: 'gone', details: { error: 'DeviceNotRegistered' } } } }),
+      );
     }) as typeof fetch;
     const sender = new ExpoPushSender({ fetchImpl, sleep: async () => undefined });
     expect(await sender.receipts(['a', 'b', 'c'])).toEqual({ a: { status: 'ok' }, b: { status: 'error', message: 'gone', error: 'DeviceNotRegistered' } });

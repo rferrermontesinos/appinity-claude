@@ -1,7 +1,32 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { categoryAffinities, userAffinities, userProfiles, userSettings, type DatabaseHandle } from '@appinity/database';
-import { AFFINITY_VERSION, FREE_SOULMATES_LIMIT, NotFoundError, PREMIUM_SOULMATES_LIMIT, CATEGORY_RANKING_VERSION, canSeePerson, categoryRankingFor, chatState, definingTastes, followState, friendshipState, isExceptionalMutual, sharedTastes, topSoulmates, type TasteRef } from '@appinity/ingestion';
-import { CATEGORIES, type AffinityDto, type CategoryRankingDto, type DefiningTastesDto, type PublicPersonDto, type SharedTastesDto, type SoulmatesDto, type TasteItemDto } from '@appinity/shared';
+import {
+  AFFINITY_VERSION,
+  FREE_SOULMATES_LIMIT,
+  NotFoundError,
+  PREMIUM_SOULMATES_LIMIT,
+  CATEGORY_RANKING_VERSION,
+  canSeePerson,
+  categoryRankingFor,
+  chatState,
+  definingTastes,
+  followState,
+  friendshipState,
+  isExceptionalMutual,
+  sharedTastes,
+  topSoulmates,
+  type TasteRef,
+} from '@appinity/ingestion';
+import {
+  CATEGORIES,
+  type AffinityDto,
+  type CategoryRankingDto,
+  type DefiningTastesDto,
+  type PublicPersonDto,
+  type SharedTastesDto,
+  type SoulmatesDto,
+  type TasteItemDto,
+} from '@appinity/shared';
 import { and, eq } from 'drizzle-orm';
 import { CatalogQueryService } from '../catalog/catalog-query.service.js';
 import { DATABASE } from '../infra/tokens.js';
@@ -39,7 +64,10 @@ export class PeopleService {
   }
 
   private async withItems(refs: TasteRef[], baseUrl: string): Promise<TasteItemDto[]> {
-    const dtos = await this.catalog.dtos(refs.map((r) => r.itemId), baseUrl);
+    const dtos = await this.catalog.dtos(
+      refs.map((r) => r.itemId),
+      baseUrl,
+    );
     return refs.flatMap((r) => {
       const item = dtos.get(r.itemId);
       return item ? [{ item, rarity: r.rarity }] : [];

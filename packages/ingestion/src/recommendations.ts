@@ -126,7 +126,9 @@ async function itemMeta(db: Database, itemIds: string[], viewerId: string, hasLo
         eventEndsAt: catalogItems.eventEndsAt,
         // Distancia en metros con PostGIS (geography), nunca en grados.
         inRadius: hasLocation
-          ? sql<boolean | null>`case when ${catalogItems.location} is null then null else st_dwithin(${catalogItems.location}, (select location from user_settings where user_id = ${viewerId}), ${radiusM}) end`
+          ? sql<
+              boolean | null
+            >`case when ${catalogItems.location} is null then null else st_dwithin(${catalogItems.location}, (select location from user_settings where user_id = ${viewerId}), ${radiusM}) end`
           : sql<null>`null`,
       })
       .from(catalogItems)
@@ -196,7 +198,12 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
   const followedIds = await activeFollowedIds(db, userId);
   const followedPrefs = followedIds.length
     ? await db
-        .select({ userId: userItemProfiles.userId, itemId: userItemProfiles.catalogItemId, score: userItemProfiles.preferenceScore, confidence: userItemProfiles.preferenceConfidence })
+        .select({
+          userId: userItemProfiles.userId,
+          itemId: userItemProfiles.catalogItemId,
+          score: userItemProfiles.preferenceScore,
+          confidence: userItemProfiles.preferenceConfidence,
+        })
         .from(userItemProfiles)
         .where(and(inArray(userItemProfiles.userId, followedIds), isNotNull(userItemProfiles.preferenceScore)))
     : [];
@@ -231,7 +238,13 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
     trendingStatus = 'insufficient_votes';
   }
 
-  const meta = await itemMeta(db, [...new Set([...prefs.map((p) => p.itemId), ...followedPrefs.map((p) => p.itemId), ...votes.map((v) => v.itemId)])], userId, hasLocation, radiusM);
+  const meta = await itemMeta(
+    db,
+    [...new Set([...prefs.map((p) => p.itemId), ...followedPrefs.map((p) => p.itemId), ...votes.map((v) => v.itemId)])],
+    userId,
+    hasLocation,
+    radiusM,
+  );
   /** Objeto recomendable: no excluido, de la categoría pedida, local dentro del radio y evento no terminado. */
   const eligible = (itemId: string) => {
     const m = meta.get(itemId);
@@ -305,13 +318,23 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
 
   const names = new Map(
     soulmateIds.length || followedIds.length
-      ? (await db.select({ id: userProfiles.userId, name: userProfiles.displayName }).from(userProfiles).where(inArray(userProfiles.userId, [...new Set([...soulmateIds, ...followedIds])]))).map((r) => [r.id, r.name])
+      ? (
+          await db
+            .select({ id: userProfiles.userId, name: userProfiles.displayName })
+            .from(userProfiles)
+            .where(inArray(userProfiles.userId, [...new Set([...soulmateIds, ...followedIds])]))
+        ).map((r) => [r.id, r.name])
       : [],
   );
   const mixed = mixRecommendations({ consensus, discovery, followed, trending }, limit, params);
   const followedAffinity = new Map(
     followedIds.length
-      ? (await db.select({ target: userAffinities.targetUserId, score: userAffinities.score }).from(userAffinities).where(and(eq(userAffinities.sourceUserId, userId), inArray(userAffinities.targetUserId, followedIds)))).map((a) => [a.target, a.score])
+      ? (
+          await db
+            .select({ target: userAffinities.targetUserId, score: userAffinities.score })
+            .from(userAffinities)
+            .where(and(eq(userAffinities.sourceUserId, userId), inArray(userAffinities.targetUserId, followedIds)))
+        ).map((a) => [a.target, a.score])
       : [],
   );
   /** Motivo combinado para una tarjeta (sin quien ya es el autor de la tarjeta). */
@@ -352,7 +375,12 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
       // Si el alma gemela que lo descubre es alguien a quien sigues, se dice en el propio motivo (no se repite su nombre).
       return {
         ...base,
-        discovery: { contributorId: d.contributorId, contributorName: names.get(d.contributorId) ?? '—', contributorAffinity: d.contributorAffinity, contributorFollowed: followedIds.includes(d.contributorId) },
+        discovery: {
+          contributorId: d.contributorId,
+          contributorName: names.get(d.contributorId) ?? '—',
+          contributorAffinity: d.contributorAffinity,
+          contributorFollowed: followedIds.includes(d.contributorId),
+        },
         evidence,
         ...combined(d.itemId, d.contributorId),
       };
@@ -367,7 +395,12 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
         ...(pref?.confidence != null ? { confidence: pct(pref.confidence) } : {}),
         ...(affinity !== null ? { supporterAffinity: Math.round(affinity) } : {}),
       };
-      return { ...base, followed: { contributorId: f.contributorId, contributorName: names.get(f.contributorId) ?? '—', contributorAffinity: affinity }, evidence, ...combined(f.itemId, f.contributorId) };
+      return {
+        ...base,
+        followed: { contributorId: f.contributorId, contributorName: names.get(f.contributorId) ?? '—', contributorAffinity: affinity },
+        evidence,
+        ...combined(f.itemId, f.contributorId),
+      };
     }
     const t = candidate as TrendingCandidate;
     const evidence: RecommendationEvidenceDto = {
@@ -383,7 +416,16 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
   const items: RecommendationItem[] = mainItems;
 
   // Respaldos, en este orden y solo si los bloques principales no llenan la página.
-  const available = { consensus: consensus.length, discovery: discovery.length, followed: followed.length, trending: trending.length, content: 0, community: 0, kept: 0, explore: 0 };
+  const available = {
+    consensus: consensus.length,
+    discovery: discovery.length,
+    followed: followed.length,
+    trending: trending.length,
+    content: 0,
+    community: 0,
+    kept: 0,
+    explore: 0,
+  };
   if (options.includeFallbacks !== false && items.length < limit && viewer) {
     const used = new Set(items.map((i) => i.itemId));
     const take = (itemId: string) => !used.has(itemId) && items.length < limit && (used.add(itemId), true);
@@ -395,9 +437,19 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
       .where(and(eq(userItemProfiles.userId, userId), gte(userItemProfiles.preferenceScore, 0.3)));
     if (likes.length) {
       const relations = await db
-        .select({ sourceItemId: catalogRelations.sourceItemId, targetItemId: catalogRelations.targetItemId, relation: catalogRelations.relation, weight: catalogRelations.weight })
+        .select({
+          sourceItemId: catalogRelations.sourceItemId,
+          targetItemId: catalogRelations.targetItemId,
+          relation: catalogRelations.relation,
+          weight: catalogRelations.weight,
+        })
         .from(catalogRelations)
-        .where(inArray(catalogRelations.sourceItemId, likes.map((l) => l.itemId)));
+        .where(
+          inArray(
+            catalogRelations.sourceItemId,
+            likes.map((l) => l.itemId),
+          ),
+        );
       const targets = [...new Set(relations.map((r) => r.targetItemId))].filter((id) => !meta.has(id));
       for (const [id, m] of await itemMeta(db, targets, userId, hasLocation, radiusM)) meta.set(id, m);
       const list = contentCandidates(
@@ -431,7 +483,14 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
         and not exists (select 1 from user_blocks b where (b.blocker_user_id = ${userId} and b.blocked_user_id = u.id) or (b.blocker_user_id = u.id and b.blocked_user_id = ${userId}))
     `);
     const communityRows = community.rows.map((r) => ({ userId: r.user_id, itemId: r.item_id, score: Number(r.score), confidence: Number(r.confidence) }));
-    for (const [id, m] of await itemMeta(db, [...new Set(communityRows.map((r) => r.itemId))].filter((id) => !meta.has(id)), userId, hasLocation, radiusM)) meta.set(id, m);
+    for (const [id, m] of await itemMeta(
+      db,
+      [...new Set(communityRows.map((r) => r.itemId))].filter((id) => !meta.has(id)),
+      userId,
+      hasLocation,
+      radiusM,
+    ))
+      meta.set(id, m);
     const byItem = new Map<string, Opinion[]>();
     for (const r of communityRows) {
       if (!eligible(r.itemId)) continue;
@@ -440,7 +499,16 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
     const communityList: CommunityCandidate[] = communityCandidates(byItem, params);
     available.community = communityList.length;
     for (const c of communityList) {
-      if (take(c.itemId)) items.push({ itemId: c.itemId, block: 'community', fillsFor: null, score: c.score, isNew: false, community: { supporters: c.supporters }, evidence: { score: pct((c.score + 1) / 2), support: pct(c.supporters / c.opinionated) } });
+      if (take(c.itemId))
+        items.push({
+          itemId: c.itemId,
+          block: 'community',
+          fillsFor: null,
+          score: c.score,
+          isNew: false,
+          community: { supporters: c.supporters },
+          evidence: { score: pct((c.score + 1) / 2), support: pct(c.supporters / c.opinionated) },
+        });
     }
 
     // Explorar: objetos del catálogo sin señales (obras, no ediciones ni temporadas), en orden estable por día.
@@ -456,17 +524,31 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
           ),
         )
         .limit(2_000);
-      for (const [id, m] of await itemMeta(db, catalog.map((r) => r.id).filter((id) => !meta.has(id)), userId, hasLocation, radiusM)) meta.set(id, m);
+      for (const [id, m] of await itemMeta(
+        db,
+        catalog.map((r) => r.id).filter((id) => !meta.has(id)),
+        userId,
+        hasLocation,
+        radiusM,
+      ))
+        meta.set(id, m);
       const seed = `${userId}:${now.toISOString().slice(0, 10)}`;
       // «Sin señales» es literal: si alguien de APPINITY ya lo valoró (también mal), no sale como «para explorar».
       const rated = new Set(communityRows.map((r) => r.itemId));
-      const explore = exploreOrder(catalog.map((r) => r.id).filter((id) => eligible(id) && !rated.has(id)), seed);
+      const explore = exploreOrder(
+        catalog.map((r) => r.id).filter((id) => eligible(id) && !rated.has(id)),
+        seed,
+      );
       available.explore = explore.length;
       for (const itemId of explore) if (take(itemId)) items.push({ itemId, block: 'explore', fillsFor: null, score: 0, isNew: false });
     }
   }
 
-  const unseen = await unseenItems(db, userId, items.map((i) => i.itemId));
+  const unseen = await unseenItems(
+    db,
+    userId,
+    items.map((i) => i.itemId),
+  );
   return {
     items: items.map((i) => ({ ...i, isNew: unseen.has(i.itemId) })),
     available,

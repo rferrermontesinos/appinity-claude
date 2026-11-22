@@ -17,7 +17,9 @@ try {
 
   // Afinidades direccionales de la demo (§11), calculadas con las preferencias recién consolidadas.
   for (const r of await recomputeAffinities(handle.db)) {
-    console.log(`✔ Afinidades (${r.dataset}): ${r.pairsWithAffinity} parejas con afinidad de ${r.pairsCompared} comparadas; ${r.eligibleUsers} usuarios elegibles`);
+    console.log(
+      `✔ Afinidades (${r.dataset}): ${r.pairsWithAffinity} parejas con afinidad de ${r.pairsCompared} comparadas; ${r.eligibleUsers} usuarios elegibles`,
+    );
   }
 
   // Caché de imágenes: lo hace el worker. Si Redis no está disponible, la app usa la URL de origen.

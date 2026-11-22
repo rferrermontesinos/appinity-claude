@@ -78,7 +78,12 @@ export function ItemOpinion({ itemId, surface }: { itemId: string; surface: stri
       <View accessibilityLiveRegion="polite" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm }}>
         <Small style={{ flexShrink: 1 }}>{status}</Small>
         {justVoted ? (
-          <Pressable accessibilityRole="button" onPress={() => undo.mutate()} disabled={busy} style={{ minHeight: 48, justifyContent: 'center', paddingHorizontal: spacing.sm }}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => undo.mutate()}
+            disabled={busy}
+            style={{ minHeight: 48, justifyContent: 'center', paddingHorizontal: spacing.sm }}
+          >
             <Text style={{ color: c.primaryInk, fontSize: 14, fontWeight: '700' }}>{t('home.undo')}</Text>
           </Pressable>
         ) : null}

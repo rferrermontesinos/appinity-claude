@@ -1,18 +1,5 @@
 import { sql } from 'drizzle-orm';
-import {
-  boolean,
-  check,
-  doublePrecision,
-  index,
-  integer,
-  jsonb,
-  pgTable,
-  primaryKey,
-  text,
-  timestamp,
-  uniqueIndex,
-  uuid,
-} from 'drizzle-orm/pg-core';
+import { boolean, check, doublePrecision, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { catalogItems } from './catalog.js';
 import { userConnections } from './connections.js';
 import { users } from './identity.js';
@@ -26,15 +13,10 @@ function dimensionChecks(table: string) {
     check(`${table}_consumed_range`, sql.raw('consumed_confidence BETWEEN 0 AND 1')),
     check(`${table}_consumed_implies_known`, sql.raw('consumed_confidence <= known_confidence')),
     check(`${table}_preference_range`, sql.raw('preference_score IS NULL OR preference_score BETWEEN -1 AND 1')),
-    check(
-      `${table}_preference_confidence_range`,
-      sql.raw('preference_confidence IS NULL OR (preference_confidence > 0 AND preference_confidence <= 1)'),
-    ),
+    check(`${table}_preference_confidence_range`, sql.raw('preference_confidence IS NULL OR (preference_confidence > 0 AND preference_confidence <= 1)')),
     check(
       `${table}_preference_nulls_coherent`,
-      sql.raw(
-        '(preference_score IS NULL) = (preference_confidence IS NULL) AND (preference_score IS NULL) = (preference_basis IS NULL)',
-      ),
+      sql.raw('(preference_score IS NULL) = (preference_confidence IS NULL) AND (preference_score IS NULL) = (preference_basis IS NULL)'),
     ),
     check(`${table}_preference_basis_valid`, sql.raw(`preference_basis IS NULL OR preference_basis IN ${BASES}`)),
   ];
@@ -82,10 +64,7 @@ export const userItemObservations = pgTable(
     index('user_item_observations_user_item_idx').on(t.userId, t.catalogItemId),
     index('user_item_observations_item_idx').on(t.catalogItemId),
     ...dimensionChecks('user_item_observations'),
-    check(
-      'user_item_observations_time_precision',
-      sql`(${t.occurredAt} IS NULL) = (${t.timestampPrecision} IS NULL)`,
-    ),
+    check('user_item_observations_time_precision', sql`(${t.occurredAt} IS NULL) = (${t.timestampPrecision} IS NULL)`),
   ],
 );
 

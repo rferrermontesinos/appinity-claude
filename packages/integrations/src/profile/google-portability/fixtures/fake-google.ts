@@ -89,7 +89,13 @@ export function defaultExports(): Record<Group, Record<string, unknown>> {
     },
     'search_ugc.media.reviews_and_stars': {
       'Portability/Search Contributions/Reviews.json': [
-        { Published: '2026-02-01T20:00:00.000Z', 'Search Query': 'Breaking Bad', 'Review Star Rating': 'Five stars', 'Review Comment': 'Simulado', Updated: '2026-02-02T20:00:00.000Z' },
+        {
+          Published: '2026-02-01T20:00:00.000Z',
+          'Search Query': 'Breaking Bad',
+          'Review Star Rating': 'Five stars',
+          'Review Comment': 'Simulado',
+          Updated: '2026-02-02T20:00:00.000Z',
+        },
         { Published: '2026-04-11T20:00:00.000Z', 'Search Query': 'Casablanca', 'Review Star Rating': 'Two stars' },
       ],
     },
@@ -116,7 +122,12 @@ export function defaultExports(): Record<Group, Record<string, unknown>> {
         // Búsqueda, anuncio y vídeo eliminado: no son escuchas válidas.
         { header: 'YouTube', title: 'Has buscado algo', titleUrl: 'https://www.youtube.com/results?search_query=simulada', time: '2026-09-07T08:00:00.000Z' },
         { ...watch('eeeeeeeeee1', FAKE_CHANNELS.vlog, 'Anunciante', '2026-09-08T08:00:00.000Z'), details: [{ name: 'From Google Ads' }] },
-        { header: 'YouTube', title: 'Has visto un vídeo que se ha eliminado', titleUrl: 'https://www.youtube.com/watch?v=ffffffffff1', time: '2026-09-09T08:00:00.000Z' },
+        {
+          header: 'YouTube',
+          title: 'Has visto un vídeo que se ha eliminado',
+          titleUrl: 'https://www.youtube.com/watch?v=ffffffffff1',
+          time: '2026-09-09T08:00:00.000Z',
+        },
       ],
     },
     'youtube.subscriptions': {
@@ -140,19 +151,42 @@ export function defaultExports(): Record<Group, Record<string, unknown>> {
     'play.library': {
       'Portability/Google Play Store/Library.json': [
         { libraryDoc: { doc: { documentType: 'Books', title: 'Cien años de soledad' }, acquisitionTime: '2025-03-01T10:00:00.000Z' } },
-        { libraryDoc: { doc: { documentType: 'Android Apps', title: 'Monument Valley', docid: 'com.ustwo.monumentvalley' }, acquisitionTime: '2025-04-01T10:00:00.000Z' } },
+        {
+          libraryDoc: {
+            doc: { documentType: 'Android Apps', title: 'Monument Valley', docid: 'com.ustwo.monumentvalley' },
+            acquisitionTime: '2025-04-01T10:00:00.000Z',
+          },
+        },
         { libraryDoc: { doc: { documentType: 'Android Apps', title: 'WhatsApp Messenger' }, acquisitionTime: '2024-01-01T10:00:00.000Z' } },
         { libraryDoc: { doc: { documentType: 'Music', title: 'Disco simulado' }, acquisitionTime: '2024-02-01T10:00:00.000Z' } },
       ],
     },
     'order_reserve.purchases_reservations': {
       'Portability/Purchases & Reservations/Purchases.json': [
-        { merchantOrderId: 'o-1', creationTime: '2026-05-01T20:00:00.000Z', orderStatus: 'COMPLETED', transactionMerchant: { name: 'Restaurante Can Culleretes' }, lineItem: [{ name: 'Plato simulado' }] },
-        { merchantOrderId: 'o-2', creationTime: '2026-06-01T20:00:00.000Z', orderStatus: 'COMPLETED', transactionMerchant: { name: 'Restaurante Can Culleretes' } },
+        {
+          merchantOrderId: 'o-1',
+          creationTime: '2026-05-01T20:00:00.000Z',
+          orderStatus: 'COMPLETED',
+          transactionMerchant: { name: 'Restaurante Can Culleretes' },
+          lineItem: [{ name: 'Plato simulado' }],
+        },
+        {
+          merchantOrderId: 'o-2',
+          creationTime: '2026-06-01T20:00:00.000Z',
+          orderStatus: 'COMPLETED',
+          transactionMerchant: { name: 'Restaurante Can Culleretes' },
+        },
         { merchantOrderId: 'o-3', creationTime: '2026-06-02T20:00:00.000Z', orderStatus: 'CANCELLED', transactionMerchant: { name: 'Pizzería cancelada' } },
       ],
       'Portability/Purchases & Reservations/Reservations.json': [
-        { uniqueId: 'r-1', merchantName: 'Restaurante Can Culleretes', address: 'Carrer d’en Quintana, 5, Barcelona', startTime: '2026-07-01T21:00:00.000Z', partySize: '2', canceled: 'false' },
+        {
+          uniqueId: 'r-1',
+          merchantName: 'Restaurante Can Culleretes',
+          address: 'Carrer d’en Quintana, 5, Barcelona',
+          startTime: '2026-07-01T21:00:00.000Z',
+          partySize: '2',
+          canceled: 'false',
+        },
         { uniqueId: 'r-2', merchantName: 'Reserva futura', startTime: '2099-01-01T21:00:00.000Z', canceled: 'false' },
       ],
     },
@@ -197,12 +231,59 @@ export const FAKE_IDENTIFICATIONS: Record<string, IdentifiedEntity> = {
     confidence: 0.95,
     method: 'osm_exact_name_100m',
   },
-  'Breaking Bad': { category: 'series', itemType: 'series', title: 'Breaking Bad', canonicalIds: { 'wikidata:entity': 'Q1079' }, releaseYear: 2008, confidence: 0.8, method: 'wikidata_titulo_exacto_unico' },
-  Casablanca: { category: 'movies', itemType: 'movie', title: 'Casablanca', canonicalIds: { 'wikidata:entity': 'Q132689' }, releaseYear: 1942, confidence: 0.65, method: 'wikidata_titulo_exacto_dominante' },
-  Hades: { category: 'games', itemType: 'game', title: 'Hades', canonicalIds: { 'wikidata:entity': 'Q61949891' }, releaseYear: 2020, confidence: 0.65, method: 'wikidata_titulo_exacto_dominante' },
-  Radiohead: { category: 'music', itemType: 'artist', title: 'Radiohead', canonicalIds: { 'wikidata:entity': 'Q44190' }, confidence: 0.8, method: 'wikidata_titulo_exacto_unico' },
-  'Cien años de soledad': { category: 'books', itemType: 'book', title: 'Cien años de soledad', canonicalIds: { 'wikidata:entity': 'Q178869' }, releaseYear: 1967, confidence: 0.8, method: 'wikidata_titulo_exacto_unico' },
-  'com.ustwo.monumentvalley': { category: 'games', itemType: 'game', title: 'Monument Valley', canonicalIds: { 'wikidata:entity': 'Q15553298' }, releaseYear: 2014, confidence: 0.95, method: 'wikidata_id_google_play' },
+  'Breaking Bad': {
+    category: 'series',
+    itemType: 'series',
+    title: 'Breaking Bad',
+    canonicalIds: { 'wikidata:entity': 'Q1079' },
+    releaseYear: 2008,
+    confidence: 0.8,
+    method: 'wikidata_titulo_exacto_unico',
+  },
+  Casablanca: {
+    category: 'movies',
+    itemType: 'movie',
+    title: 'Casablanca',
+    canonicalIds: { 'wikidata:entity': 'Q132689' },
+    releaseYear: 1942,
+    confidence: 0.65,
+    method: 'wikidata_titulo_exacto_dominante',
+  },
+  Hades: {
+    category: 'games',
+    itemType: 'game',
+    title: 'Hades',
+    canonicalIds: { 'wikidata:entity': 'Q61949891' },
+    releaseYear: 2020,
+    confidence: 0.65,
+    method: 'wikidata_titulo_exacto_dominante',
+  },
+  Radiohead: {
+    category: 'music',
+    itemType: 'artist',
+    title: 'Radiohead',
+    canonicalIds: { 'wikidata:entity': 'Q44190' },
+    confidence: 0.8,
+    method: 'wikidata_titulo_exacto_unico',
+  },
+  'Cien años de soledad': {
+    category: 'books',
+    itemType: 'book',
+    title: 'Cien años de soledad',
+    canonicalIds: { 'wikidata:entity': 'Q178869' },
+    releaseYear: 1967,
+    confidence: 0.8,
+    method: 'wikidata_titulo_exacto_unico',
+  },
+  'com.ustwo.monumentvalley': {
+    category: 'games',
+    itemType: 'game',
+    title: 'Monument Valley',
+    canonicalIds: { 'wikidata:entity': 'Q15553298' },
+    releaseYear: 2014,
+    confidence: 0.95,
+    method: 'wikidata_id_google_play',
+  },
 };
 
 /** Identificación simulada de canales por su ID (lo que devolvería Wikidata con P2397). */
@@ -256,13 +337,19 @@ export function createFakeIdentifier(identifications: Record<string, IdentifiedE
         places.map((place) => {
           calls.push(`text:${place.name}`);
           const entity = identifications[place.name];
-          return entity ? { entity: { ...entity, confidence: entity.confidence * 0.9, method: `geocodificado_${entity.method}` } } : { entity: null, reason: 'no_match', nearby: 'none' };
+          return entity
+            ? { entity: { ...entity, confidence: entity.confidence * 0.9, method: `geocodificado_${entity.method}` } }
+            : { entity: null, reason: 'no_match', nearby: 'none' };
         }),
       identifyApps: async (packages: string[]): Promise<Identification[]> =>
         packages.map((pkg) => {
           calls.push(`app:${pkg}`);
           const entity = identifications[pkg];
-          return entity ? (entity.category === 'games' ? { entity } : { entity: null, reason: 'out_of_scope', scope: 'app' }) : { entity: null, reason: 'no_match' };
+          return entity
+            ? entity.category === 'games'
+              ? { entity }
+              : { entity: null, reason: 'out_of_scope', scope: 'app' }
+            : { entity: null, reason: 'no_match' };
         }),
       identifyChannels: async (channels: ChannelToIdentify[]): Promise<Identification[]> =>
         channels.map((channel) => {
@@ -319,9 +406,7 @@ export function createFakeGoogle(options: FakeGoogleOptions = {}) {
   function approve(authorizationUrl: string): string {
     const url = new URL(authorizationUrl);
     const requested = (url.searchParams.get('scope') ?? '').split(' ');
-    const granted = options.grantedGroups
-      ? requested.filter((s) => options.grantedGroups!.some((g) => s.endsWith(`.${g}`)))
-      : requested;
+    const granted = options.grantedGroups ? requested.filter((s) => options.grantedGroups!.some((g) => s.endsWith(`.${g}`))) : requested;
     const code = `codigo-simulado-${++counter}`;
     codes.set(code, { challenge: url.searchParams.get('code_challenge') ?? '', scope: granted.join(' ') });
     return code;
@@ -331,7 +416,8 @@ export function createFakeGoogle(options: FakeGoogleOptions = {}) {
     const url = new URL(input instanceof Request ? input.url : input.toString());
     const method = (init?.method ?? 'GET').toUpperCase();
     calls.push(`${method} ${url.host}${url.pathname}`);
-    const form = init?.body instanceof URLSearchParams ? init.body : new URLSearchParams(typeof init?.body === 'string' && !init.body.startsWith('{') ? init.body : '');
+    const form =
+      init?.body instanceof URLSearchParams ? init.body : new URLSearchParams(typeof init?.body === 'string' && !init.body.startsWith('{') ? init.body : '');
     const auth = new Headers(init?.headers).get('authorization') ?? '';
 
     if (url.host === 'oauth2.googleapis.com' && url.pathname === '/token') {
@@ -339,7 +425,9 @@ export function createFakeGoogle(options: FakeGoogleOptions = {}) {
       if (form.get('grant_type') === 'authorization_code') {
         const entry = codes.get(form.get('code') ?? '');
         if (!entry) return json({ error: 'invalid_grant' }, 400);
-        const challenge = createHash('sha256').update(form.get('code_verifier') ?? '').digest('base64url');
+        const challenge = createHash('sha256')
+          .update(form.get('code_verifier') ?? '')
+          .digest('base64url');
         if (challenge !== entry.challenge) return json({ error: 'invalid_grant' }, 400);
         codes.delete(form.get('code')!);
         const refresh = `refresh-simulado-${++counter}`;
@@ -347,7 +435,14 @@ export function createFakeGoogle(options: FakeGoogleOptions = {}) {
         refreshTokens.add(refresh);
         accessTokens.add(access);
         if (options.omitRefreshToken) return json({ access_token: access, expires_in: 3599, scope: entry.scope, token_type: 'Bearer' });
-        return json({ access_token: access, expires_in: 3599, refresh_token: refresh, refresh_token_expires_in: 604_800, scope: entry.scope, token_type: 'Bearer' });
+        return json({
+          access_token: access,
+          expires_in: 3599,
+          refresh_token: refresh,
+          refresh_token_expires_in: 604_800,
+          scope: entry.scope,
+          token_type: 'Bearer',
+        });
       }
       if (form.get('grant_type') === 'refresh_token') {
         if (!refreshTokens.has(form.get('refresh_token') ?? '')) return json({ error: 'invalid_grant' }, 400);
@@ -367,7 +462,9 @@ export function createFakeGoogle(options: FakeGoogleOptions = {}) {
       const job = jobs.get(url.pathname.split('/').at(-1)!.replace('.zip', ''));
       if (!job) return new Response('no', { status: 404 });
       const files = exports[job.group] ?? {};
-      const zip = zipSync(Object.fromEntries(Object.entries(files).map(([path, data]) => [path, strToU8(typeof data === 'string' ? data : JSON.stringify(data))])));
+      const zip = zipSync(
+        Object.fromEntries(Object.entries(files).map(([path, data]) => [path, strToU8(typeof data === 'string' ? data : JSON.stringify(data))])),
+      );
       return new Response(zip, { status: 200, headers: { 'Content-Length': String(zip.byteLength) } });
     }
     if (url.host === 'dataportability.googleapis.com') {
@@ -382,7 +479,10 @@ export function createFakeGoogle(options: FakeGoogleOptions = {}) {
         if (existing !== undefined) {
           // Export de un intento anterior aún en curso: con o sin su id en el mensaje.
           if (existing) jobs.set(existing, { group, polls: 0, failed: false });
-          return json({ error: { code: 409, status: 'ALREADY_EXISTS', message: existing ? `Archive job ${existing} already exists` : 'Archive job already exists' } }, 409);
+          return json(
+            { error: { code: 409, status: 'ALREADY_EXISTS', message: existing ? `Archive job ${existing} already exists` : 'Archive job already exists' } },
+            409,
+          );
         }
         const last = exportedAt.get(group);
         if (last !== undefined && (options.oneTimeGroups ?? []).includes(group)) {

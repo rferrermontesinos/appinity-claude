@@ -11,7 +11,17 @@ import { ErrorCard, Loading, Screen, Small } from '../../src/components/ui';
 import { radius, spacing, usePalette } from '../../src/theme';
 
 /** Fila que abre una pantalla propia (Fuentes, Ajustes): icono, título, resumen y flecha. */
-function NavRow({ icon, title, subtitle, onPress }: { icon: keyof typeof MaterialCommunityIcons.glyphMap; title: string; subtitle: string; onPress: () => void }) {
+function NavRow({
+  icon,
+  title,
+  subtitle,
+  onPress,
+}: {
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  title: string;
+  subtitle: string;
+  onPress: () => void;
+}) {
   const c = usePalette();
   return (
     <Pressable

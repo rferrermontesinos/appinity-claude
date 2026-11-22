@@ -56,7 +56,10 @@ export async function itemCircle(db: Database, userId: string, itemId: string): 
   const likers = followedIds.filter((id) => (confident.get(id) ?? -1) >= LIKE);
   if (likers.length) {
     const names = new Map(
-      (await db.select({ id: userProfiles.userId, name: userProfiles.displayName }).from(userProfiles).where(inArray(userProfiles.userId, likers))).map((r) => [r.id, r.name]),
+      (await db.select({ id: userProfiles.userId, name: userProfiles.displayName }).from(userProfiles).where(inArray(userProfiles.userId, likers))).map((r) => [
+        r.id,
+        r.name,
+      ]),
     );
     circle.followedLikers = { names: likers.slice(0, 2).map((id) => names.get(id) ?? '—'), count: likers.length };
   }

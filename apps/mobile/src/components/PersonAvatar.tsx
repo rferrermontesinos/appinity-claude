@@ -22,7 +22,10 @@ export function PersonAvatar({ name, url, size = 44, ring }: { name: string; url
   const inner = url?.startsWith('https://') ? (
     <Image source={{ uri: url }} style={{ width: size, height: size, borderRadius: size / 2 }} accessibilityLabel={name} />
   ) : (
-    <View accessibilityLabel={name} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: nameColor(name), alignItems: 'center', justifyContent: 'center' }}>
+    <View
+      accessibilityLabel={name}
+      style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: nameColor(name), alignItems: 'center', justifyContent: 'center' }}
+    >
       <Text style={{ color: '#FFFFFF', fontFamily: fonts.displayHeavy, fontSize: size * 0.4 }}>{name.trim().charAt(0).toUpperCase() || '·'}</Text>
     </View>
   );

@@ -56,16 +56,8 @@ export interface SyncOutcome {
   errorMessage?: string;
 }
 
-export async function createSyncRun(
-  database: DatabaseHandle,
-  connectionId: string,
-  trigger: SyncTrigger,
-  mode: SyncMode,
-): Promise<string> {
-  const [row] = await database.db
-    .insert(sourceSyncRuns)
-    .values({ connectionId, trigger, mode, status: 'queued' })
-    .returning({ id: sourceSyncRuns.id });
+export async function createSyncRun(database: DatabaseHandle, connectionId: string, trigger: SyncTrigger, mode: SyncMode): Promise<string> {
+  const [row] = await database.db.insert(sourceSyncRuns).values({ connectionId, trigger, mode, status: 'queued' }).returning({ id: sourceSyncRuns.id });
   return row!.id;
 }
 
@@ -93,22 +85,13 @@ export function observationHash(o: NormalizedObservation, catalogItemId: string)
 
 /** Comprueba dentro de la transacción que la conexión sigue activa; bloquea frente a una desconexión simultánea. */
 async function assertActive(tx: Tx, connectionId: string): Promise<void> {
-  const [row] = await tx
-    .select({ status: userConnections.status })
-    .from(userConnections)
-    .where(eq(userConnections.id, connectionId))
-    .for('share');
+  const [row] = await tx.select({ status: userConnections.status }).from(userConnections).where(eq(userConnections.id, connectionId)).for('share');
   if (!row || row.status === 'revoked') throw new ConnectionRevokedError('La conexión se ha revocado durante el sync');
 }
 
 type WriteResult = { kind: 'inserted' | 'updated' | 'unchanged'; previousItemId: string | null };
 
-async function writeObservation(
-  tx: Tx,
-  o: NormalizedObservation,
-  connectionId: string,
-  catalogItemId: string,
-): Promise<WriteResult> {
+async function writeObservation(tx: Tx, o: NormalizedObservation, connectionId: string, catalogItemId: string): Promise<WriteResult> {
   const hash = observationHash(o, catalogItemId);
   const [existing] = await tx
     .select({ id: userItemObservations.id, itemId: userItemObservations.catalogItemId, hash: userItemObservations.contentHash })
@@ -246,10 +229,7 @@ export async function runConnectionSync(deps: SyncDeps, runId: string): Promise<
 
   try {
     const cursorBefore = run.mode === 'full' ? null : (conn.syncCursor as SyncCursor | null);
-    await db
-      .update(sourceSyncRuns)
-      .set({ status: 'running', startedAt: new Date(), cursorBefore })
-      .where(eq(sourceSyncRuns.id, runId));
+    await db.update(sourceSyncRuns).set({ status: 'running', startedAt: new Date(), cursorBefore }).where(eq(sourceSyncRuns.id, runId));
 
     let cursor: SyncCursor | null = cursorBefore;
     let watermark: string | undefined;
@@ -278,10 +258,7 @@ export async function runConnectionSync(deps: SyncDeps, runId: string): Promise<
       });
       // El proveedor aún prepara los datos: nada que escribir; la ejecución vuelve a la cola sin contar como fallo.
       if (batch.pending && page === 0) {
-        await db
-          .update(sourceSyncRuns)
-          .set({ status: 'queued', errorMessage: null })
-          .where(eq(sourceSyncRuns.id, runId));
+        await db.update(sourceSyncRuns).set({ status: 'queued', errorMessage: null }).where(eq(sourceSyncRuns.id, runId));
         outcome.status = 'deferred';
         outcome.retryAfterMs = batch.pending.retryAfterMs;
         outcome.deferReason = batch.pending.reason;
@@ -379,7 +356,12 @@ export async function runConnectionSync(deps: SyncDeps, runId: string): Promise<
           .where(and(eq(userItemObservations.connectionId, conn.id), inArray(userItemObservations.observationKind, [...snapshotKinds])));
         const stale = current.filter((c) => !seen.has(`${c.kind}\u0000${c.recordId}`));
         if (stale.length) {
-          await tx.delete(userItemObservations).where(inArray(userItemObservations.id, stale.map((s) => s.id)));
+          await tx.delete(userItemObservations).where(
+            inArray(
+              userItemObservations.id,
+              stale.map((s) => s.id),
+            ),
+          );
           outcome.observationsDeleted = stale.length;
           for (const s of stale) affected.add(s.itemId);
         }

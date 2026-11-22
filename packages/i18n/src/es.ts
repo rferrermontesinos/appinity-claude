@@ -51,11 +51,9 @@ export const es = {
   },
   demo: {
     banner: 'DEMO · actividad de usuarios simulada',
-    bannerDetail:
-      'Los usuarios y su actividad son simulados (DEMO_MODE). Los objetos del catálogo y sus imágenes son reales (Wikidata y Wikimedia Commons).',
+    bannerDetail: 'Los usuarios y su actividad son simulados (DEMO_MODE). Los objetos del catálogo y sus imágenes son reales (Wikidata y Wikimedia Commons).',
     liveBanner: 'DATOS REALES · tu cuenta',
-    liveBannerDetail:
-      'Lo que ves procede de las fuentes reales que has conectado. Nadie más ve tu historial: solo tu nombre, tu país y vuestras afinidades.',
+    liveBannerDetail: 'Lo que ves procede de las fuentes reales que has conectado. Nadie más ve tu historial: solo tu nombre, tu país y vuestras afinidades.',
   },
   home: {
     title: 'Inicio',
@@ -136,7 +134,8 @@ export const es = {
       'Las recomendaciones salen de tus almas gemelas y de las valoraciones de tu zona. Conecta más fuentes para tener más gustos en común con otras personas; no se inventan recomendaciones.',
     emptyNoLocation:
       'Añade tu zona en Perfil para ver restaurantes, lugares y lo más valorado cerca de ti. Mientras tanto solo se recomiendan contenidos sin ubicación.',
-    testActions: 'Votar (No me gusta, Me gusta, Me encanta) cuenta para tus gustos y tus almas gemelas, con el mismo peso que una nota de tus fuentes. «No lo conozco» no cuenta: sigue en Recomendaciones y vuelve a Inicio al mes. Deshacer revierte la última acción.',
+    testActions:
+      'Votar (No me gusta, Me gusta, Me encanta) cuenta para tus gustos y tus almas gemelas, con el mismo peso que una nota de tus fuentes. «No lo conozco» no cuenta: sigue en Recomendaciones y vuelve a Inicio al mes. Deshacer revierte la última acción.',
   },
   contacts: {
     title: 'Desde tus contactos',
@@ -298,16 +297,14 @@ export const es = {
   },
   sources: {
     title: 'Fuentes',
-    help:
-      'Las fuentes «Demo» son simuladas: leen actividad ficticia de archivos del repositorio, sin OAuth ni proveedores reales. Las reales se conectan con tu propia cuenta.',
+    help: 'Las fuentes «Demo» son simuladas: leen actividad ficticia de archivos del repositorio, sin OAuth ni proveedores reales. Las reales se conectan con tu propia cuenta.',
     connect: 'Conectar',
     sync: 'Sincronizar',
     fullSync: 'Resincronizar todo',
     disconnect: 'Desconectar',
     disconnectPurge: 'Desconectar y borrar lo importado',
     confirmPurgeTitle: '¿Borrar lo importado?',
-    confirmPurge:
-      'Se eliminarán las evidencias importadas de esta fuente y se recalculará tu perfil con las demás fuentes.',
+    confirmPurge: 'Se eliminarán las evidencias importadas de esta fuente y se recalculará tu perfil con las demás fuentes.',
     reconnect: 'Volver a conectar',
     connectSteam: 'Iniciar sesión con Steam',
     steamHelp:
@@ -477,7 +474,8 @@ export const es = {
     friendsNotFollowed: 'Amigos que no sigues',
     requestsAndContacts: 'Amistades y contactos',
     publicCreator: 'Perfil público de creador',
-    publicCreatorHint: 'Cualquiera podrá seguirte y lo que más te gusta aparecerá con tu nombre a quien te siga. Tus gustos siguen saliendo solo de tus fuentes.',
+    publicCreatorHint:
+      'Cualquiera podrá seguirte y lo que más te gusta aparecerá con tu nombre a quien te siga. Tus gustos siguen saliendo solo de tus fuentes.',
   },
   people: {
     personKicker: 'Tu afinidad con {{name}}',
@@ -491,8 +489,7 @@ export const es = {
     title: 'Personas',
     soulmates: 'Almas gemelas',
     friends: 'Amigos',
-    soulmatesIntro:
-      'Personas con más afinidad contigo según los gustos importados de vuestras fuentes. Versión gratuita: las 50 primeras.',
+    soulmatesIntro: 'Personas con más afinidad contigo según los gustos importados de vuestras fuentes. Versión gratuita: las 50 primeras.',
     soulmatesEmptyTitle: 'Aún no hay almas gemelas',
     connectSources: 'Conectar fuentes',
     soulmatesEmpty:
@@ -624,8 +621,10 @@ export const es = {
     active: 'Premium activo',
     activeUntil: 'Premium activo hasta el {{date}}',
     inactive: 'Sin Premium',
-    includes: 'Incluye explorar hasta 200 almas gemelas (en lugar de 50) y escribir primero a cualquier alma gemela cuando se active. Las recomendaciones de consenso siguen usando tus 50 almas gemelas más afines.',
-    notPurchasable: 'Todavía no se puede comprar desde la app: falta configurar las tiendas y RevenueCat, y una versión de la app con compras (Expo Go no las admite).',
+    includes:
+      'Incluye explorar hasta 200 almas gemelas (en lugar de 50) y escribir primero a cualquier alma gemela cuando se active. Las recomendaciones de consenso siguen usando tus 50 almas gemelas más afines.',
+    notPurchasable:
+      'Todavía no se puede comprar desde la app: falta configurar las tiendas y RevenueCat, y una versión de la app con compras (Expo Go no las admite).',
     sandbox: 'Entorno de pruebas: solo cuentan compras de prueba (sandbox).',
   },
   auth: {
@@ -635,16 +634,21 @@ export const es = {
     signInTitle: 'Entrar en APPINITY',
     signInIntro: 'Con tu cuenta de Google. Solo se usa tu identidad (nombre y email verificado); tus gustos se conectan aparte, en el alta.',
     google: 'Continuar con Google',
-    devPhoneNote: 'En desarrollo, Google solo vuelve a localhost: inicia sesión desde la vista web del PC. En producción (https) funcionará también en el teléfono.',
+    devPhoneNote:
+      'En desarrollo, Google solo vuelve a localhost: inicia sesión desde la vista web del PC. En producción (https) funcionará también en el teléfono.',
   },
   onboarding: {
     title: 'Bienvenida a APPINITY',
-    intro: 'Un único consentimiento para todas tus fuentes: confirma estos dos puntos y empezamos a importar tus gustos de Google (Maps, YouTube, Play, Libros, Calendar…). Cubre también las fuentes que conectes después y las que añadamos: no te lo volveremos a pedir.',
+    intro:
+      'Un único consentimiento para todas tus fuentes: confirma estos dos puntos y empezamos a importar tus gustos de Google (Maps, YouTube, Play, Libros, Calendar…). Cubre también las fuentes que conectes después y las que añadamos: no te lo volveremos a pedir.',
     readTerms: 'Leer las condiciones',
     readPrivacy: 'Leer la privacidad',
     howTitle: 'Cómo funciona',
     steps: {
-      connect: { title: 'Importamos tus gustos', text: 'De tus fuentes, de una vez, y de lo que votes en la app: cada voto afina tu perfil. Chatear o hacer amigos no cambia tus gustos.' },
+      connect: {
+        title: 'Importamos tus gustos',
+        text: 'De tus fuentes, de una vez, y de lo que votes en la app: cada voto afina tu perfil. Chatear o hacer amigos no cambia tus gustos.',
+      },
       soulmates: { title: 'Encuentra a tus almas gemelas', text: 'Calculamos con quién compartes gustos, categoría a categoría.' },
       discover: { title: 'Descubre', text: 'Lo que ellas valoran y tú aún no conoces, con el motivo de cada recomendación.' },
     },
@@ -656,21 +660,24 @@ export const es = {
     adult: 'Tengo 18 años o más',
     terms: 'Acepto las condiciones y la política de privacidad',
     consentNote: 'Tus gustos salen de las fuentes que conectes y de tus votos en la app. Nadie ve tu historial: solo tu nombre, tu país y vuestras afinidades.',
-    sourcesIncluded: 'Este consentimiento incluye: {{list}}, y cualquier fuente que añadamos más adelante. Cada proveedor te mostrará su propia pantalla de permiso al conectarlo.',
+    sourcesIncluded:
+      'Este consentimiento incluye: {{list}}, y cualquier fuente que añadamos más adelante. Cada proveedor te mostrará su propia pantalla de permiso al conectarlo.',
     optionsTitle: 'Opciones (puedes cambiarlas en Ajustes)',
     shareCommon: 'Mostrar «Lo que os une» a mis almas gemelas',
     shareCommonHelp: 'Hasta 5 obras que os gustan a los dos. Recíproco: solo lo ves con quien también lo activa. Nunca tu historial.',
     contacts: 'Que me encuentre quien tenga mi email en sus contactos',
     contactsHelp: 'Para que tus amigos te encuentren al unirse. No guardamos sus agendas.',
     continue: 'Aceptar y empezar a importar',
-    googleNote: 'Al aceptar, Google te pedirá una última confirmación para tus datos de Maps, YouTube, Play y búsquedas: es su forma de autorizar la exportación. Steam y otras cuentas, opcionales, en Perfil.',
+    googleNote:
+      'Al aceptar, Google te pedirá una última confirmación para tus datos de Maps, YouTube, Play y búsquedas: es su forma de autorizar la exportación. Steam y otras cuentas, opcionales, en Perfil.',
   },
   account: {
     title: 'Cuenta',
     googleIdentity: 'Cuenta de Google',
     logout: 'Cerrar sesión',
     delete: 'Eliminar mi cuenta',
-    deleteConfirm: 'Se revocarán los permisos concedidos (Google, Steam…) y se borrará todo: perfil, gustos importados, afinidades, amistades y chats. No se puede deshacer. Escribe ELIMINAR para confirmar.',
+    deleteConfirm:
+      'Se revocarán los permisos concedidos (Google, Steam…) y se borrará todo: perfil, gustos importados, afinidades, amistades y chats. No se puede deshacer. Escribe ELIMINAR para confirmar.',
     deleteType: 'Escribe ELIMINAR',
     deleteFinal: 'Eliminar definitivamente',
     deleteNote: 'Las copias de seguridad cifradas se renuevan y la cuenta desaparece también de ellas al caducar (ver la documentación de operación).',
@@ -719,12 +726,14 @@ export const es = {
       weekly: 'Semanal',
       off: 'Desactivadas',
     },
-    notificationsPending: 'Un resumen a las 19:00 de tu zona horaria (tres por semana: lunes, miércoles y viernes), solo si hay recomendaciones nuevas o mensajes pendientes.',
+    notificationsPending:
+      'Un resumen a las 19:00 de tu zona horaria (tres por semana: lunes, miércoles y viernes), solo si hay recomendaciones nuevas o mensajes pendientes.',
     notificationsDevices_one: 'Dispositivos registrados: {{count}}',
     notificationsDevices_other: 'Dispositivos registrados: {{count}}',
     notificationsLast: 'Último resumen: {{date}} ({{status}})',
     notificationsStatus: { sent: 'enviado', empty: 'nada nuevo', no_tokens: 'sin dispositivo', failed: 'fallido' },
-    notificationsExpoGo: 'En Android, Expo Go no admite notificaciones push (desde el SDK 53): llegarán con la versión de desarrollo de la app, que pedirá el permiso al registrarte.',
+    notificationsExpoGo:
+      'En Android, Expo Go no admite notificaciones push (desde el SDK 53): llegarán con la versión de desarrollo de la app, que pedirá el permiso al registrarte.',
     privacy: 'Privacidad',
     subscription: 'Suscripción',
     diagnostics: 'Diagnóstico',
@@ -756,7 +765,6 @@ export const es = {
     redis: 'Redis',
     mode: 'Modo',
     test: 'Probar conexión',
-    help:
-      'Si el teléfono no alcanza la API: comprueba que está en la misma red que el PC, que la URL usa la IP del PC (no localhost) y que el Firewall de Windows permite Node.js en redes privadas.',
+    help: 'Si el teléfono no alcanza la API: comprueba que está en la misma red que el PC, que la URL usa la IP del PC (no localhost) y que el Firewall de Windows permite Node.js en redes privadas.',
   },
 } as const;

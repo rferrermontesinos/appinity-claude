@@ -161,7 +161,13 @@ export function mapTrakt(raw: unknown, context: NormalizeContext): NormalizedObs
     ...(item.date ? { occurredAt: item.date, timestampPrecision: 'instant' as const } : {}),
     knownConfidence: round(id),
     consumedConfidence: consumed ? round(id) : 0,
-    metadata: { snapshot: true, plays: item.plays, favorite: item.favorite, watchlist: item.watchlist, identification: { method: identified.method, confidence: id } },
+    metadata: {
+      snapshot: true,
+      plays: item.plays,
+      favorite: item.favorite,
+      watchlist: item.watchlist,
+      identification: { method: identified.method, confidence: id },
+    },
   };
   if (item.rating !== null) {
     return [
@@ -175,7 +181,9 @@ export function mapTrakt(raw: unknown, context: NormalizeContext): NormalizedObs
     ];
   }
   if (item.favorite) {
-    return [{ ...base, preferenceScore: 0.8, preferenceConfidence: round(0.9 * id), preferenceBasis: 'explicit_like', engagement: { type: 'liked', value: 1 } }];
+    return [
+      { ...base, preferenceScore: 0.8, preferenceConfidence: round(0.9 * id), preferenceBasis: 'explicit_like', engagement: { type: 'liked', value: 1 } },
+    ];
   }
   return [
     {
@@ -214,10 +222,16 @@ export function createTraktAdapter(options: TraktOptions): ProfileSourceAdapter 
     const response = await fetchImpl(`${AUTH}/oauth/token`, {
       method: 'POST',
       headers: headers(),
-      body: JSON.stringify({ client_id: options.clientId, redirect_uri: options.redirectUri, ...(options.clientSecret ? { client_secret: options.clientSecret } : {}), ...body }),
+      body: JSON.stringify({
+        client_id: options.clientId,
+        redirect_uri: options.redirectUri,
+        ...(options.clientSecret ? { client_secret: options.clientSecret } : {}),
+        ...body,
+      }),
       signal: AbortSignal.timeout(15_000),
     });
-    if (response.status === 400 || response.status === 401) throw new SourceError('auth', 'El permiso de Trakt ha caducado o se ha revocado: vuelve a conectarlo', false);
+    if (response.status === 400 || response.status === 401)
+      throw new SourceError('auth', 'El permiso de Trakt ha caducado o se ha revocado: vuelve a conectarlo', false);
     if (!response.ok) throw new SourceError('unavailable', `Trakt respondió HTTP ${response.status}`, response.status === 429 || response.status >= 500);
     return tokenSchema.parse(await response.json());
   }
@@ -256,7 +270,12 @@ export function createTraktAdapter(options: TraktOptions): ProfileSourceAdapter 
     },
     async completeConnect(context): Promise<AuthResult> {
       const params = context.callbackParams;
-      if (params.error) throw new SourceError('verification_failed', params.error === 'access_denied' ? 'Se canceló la autorización en Trakt' : 'Trakt no concedió el acceso', false);
+      if (params.error)
+        throw new SourceError(
+          'verification_failed',
+          params.error === 'access_denied' ? 'Se canceló la autorización en Trakt' : 'Trakt no concedió el acceso',
+          false,
+        );
       const verifier = context.pending?.codeVerifier;
       if (!params.code || !verifier) throw new SourceError('verification_failed', 'Respuesta de Trakt incompleta: vuelve a intentarlo', false);
       const t = await token({ grant_type: 'authorization_code', code: params.code, code_verifier: verifier });
@@ -295,7 +314,14 @@ export function createTraktAdapter(options: TraktOptions): ProfileSourceAdapter 
         }
       } catch (error) {
         if (isSourceError(error) && error.retryable) {
-          return { records: [], cursor: null, hasMore: false, partialErrors: [], snapshotComplete: false, pending: { retryAfterMs: 10 * 60_000, reason: `${error.message} (identificación de catálogo)` } };
+          return {
+            records: [],
+            cursor: null,
+            hasMore: false,
+            partialErrors: [],
+            snapshotComplete: false,
+            pending: { retryAfterMs: 10 * 60_000, reason: `${error.message} (identificación de catálogo)` },
+          };
         }
         throw error;
       }
@@ -303,7 +329,9 @@ export function createTraktAdapter(options: TraktOptions): ProfileSourceAdapter 
         records,
         cursor: null,
         hasMore: false,
-        partialErrors: unidentified ? [{ code: 'unidentified', message: `${unidentified} de ${items.length} títulos de Trakt no se pudieron identificar con seguridad`, blocking: false }] : [],
+        partialErrors: unidentified
+          ? [{ code: 'unidentified', message: `${unidentified} de ${items.length} títulos de Trakt no se pudieron identificar con seguridad`, blocking: false }]
+          : [],
         snapshotComplete: true,
         snapshotKinds: ['trakt_title'],
         stats: { trakt_exported: items.length, trakt_identified: records.length },
@@ -316,7 +344,11 @@ export function createTraktAdapter(options: TraktOptions): ProfileSourceAdapter 
       if (!refresh) return;
       const t = await token({ grant_type: 'refresh_token', refresh_token: refresh }).catch(() => null);
       if (t) {
-        await fetchImpl(`${AUTH}/oauth/revoke`, { method: 'POST', headers: headers(), body: JSON.stringify({ token: t.access_token, client_id: options.clientId }) }).catch(() => undefined);
+        await fetchImpl(`${AUTH}/oauth/revoke`, {
+          method: 'POST',
+          headers: headers(),
+          body: JSON.stringify({ token: t.access_token, client_id: options.clientId }),
+        }).catch(() => undefined);
       }
     },
   };

@@ -1,4 +1,18 @@
-import { BadRequestException, Body, Controller, Delete, Get, HttpCode, Inject, Logger, Post, Query, Res, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Inject,
+  Logger,
+  Post,
+  Query,
+  Res,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { users, type DatabaseHandle } from '@appinity/database';
 import { completeOnboarding, createSession, findOrCreateUserForIdentity, revokeSession, rotateSession } from '@appinity/ingestion';
 import type { AuthProvidersDto, AuthSessionDto } from '@appinity/shared';
@@ -117,7 +131,12 @@ export class AuthController {
       books: this.connections.hasSource('google_books'),
       calendar: this.connections.hasSource('google_calendar'),
     });
-    await this.redis.set(this.key('state', state), JSON.stringify({ ...pending, returnUrl: query.returnUrl, codeChallenge: query.codeChallenge } satisfies SignInState), 'EX', STATE_TTL);
+    await this.redis.set(
+      this.key('state', state),
+      JSON.stringify({ ...pending, returnUrl: query.returnUrl, codeChallenge: query.codeChallenge } satisfies SignInState),
+      'EX',
+      STATE_TTL,
+    );
     res.setHeader('Cache-Control', 'no-store');
     res.redirect(302, url);
   }
@@ -219,8 +238,13 @@ export class AuthController {
           return null;
         })
       : null;
-    if (body.city && !city) throw new BadRequestException({ code: 'city_not_found', message: 'No encontramos esa ciudad: prueba con otro nombre o déjala en blanco' });
-    await completeOnboarding(this.database.db, auth.userId, { adult: body.adult, termsAccepted: body.termsAccepted, ...(body.displayName ? { displayName: body.displayName } : {}) });
+    if (body.city && !city)
+      throw new BadRequestException({ code: 'city_not_found', message: 'No encontramos esa ciudad: prueba con otro nombre o déjala en blanco' });
+    await completeOnboarding(this.database.db, auth.userId, {
+      adult: body.adult,
+      termsAccepted: body.termsAccepted,
+      ...(body.displayName ? { displayName: body.displayName } : {}),
+    });
     await this.me.updateSettings(auth.userId, {
       ...(city ? { location: { label: city.label, latitude: city.latitude, longitude: city.longitude, source: 'manual' as const } } : {}),
       ...(body.shareCommonTastes !== undefined ? { shareCommonTastes: body.shareCommonTastes } : {}),

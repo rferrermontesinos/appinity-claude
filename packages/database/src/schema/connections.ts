@@ -11,7 +11,10 @@ export const providerConsents = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     sourceKey: text('source_key').notNull(),
-    scopes: text('scopes').array().notNull().default(sql`'{}'::text[]`),
+    scopes: text('scopes')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
     consentVersion: text('consent_version').notNull(),
     grantedAt: timestamp('granted_at', { withTimezone: true }).notNull().defaultNow(),
     revokedAt: timestamp('revoked_at', { withTimezone: true }),
@@ -31,7 +34,9 @@ export const userConnections = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     sourceKey: text('source_key').notNull(),
-    status: text('status', { enum: ['active', 'error', 'revoked'] }).notNull().default('active'),
+    status: text('status', { enum: ['active', 'error', 'revoked'] })
+      .notNull()
+      .default('active'),
     externalAccountRef: text('external_account_ref'),
     consentId: uuid('consent_id').references(() => providerConsents.id, { onDelete: 'set null' }),
     syncCursor: jsonb('sync_cursor').$type<Record<string, string | number | boolean | null>>(),
@@ -79,7 +84,9 @@ export const sourceSyncRuns = pgTable(
       .notNull()
       .references(() => userConnections.id, { onDelete: 'cascade' }),
     trigger: text('trigger', { enum: ['user', 'seed', 'schedule', 'connect'] }).notNull(),
-    mode: text('mode', { enum: ['incremental', 'full'] }).notNull().default('incremental'),
+    mode: text('mode', { enum: ['incremental', 'full'] })
+      .notNull()
+      .default('incremental'),
     status: text('status', { enum: ['queued', 'running', 'succeeded', 'partial', 'failed', 'cancelled'] })
       .notNull()
       .default('queued'),
@@ -92,20 +99,14 @@ export const sourceSyncRuns = pgTable(
     observationsUnchanged: integer('observations_unchanged').notNull().default(0),
     observationsDeleted: integer('observations_deleted').notNull().default(0),
     itemsCreated: integer('items_created').notNull().default(0),
-    partialErrors: jsonb('partial_errors')
-      .$type<Array<{ sourceRecordId?: string; code: string; message: string }>>()
-      .notNull()
-      .default([]),
+    partialErrors: jsonb('partial_errors').$type<Array<{ sourceRecordId?: string; code: string; message: string }>>().notNull().default([]),
     errorMessage: text('error_message'),
     cursorBefore: jsonb('cursor_before'),
     cursorAfter: jsonb('cursor_after'),
   },
   (t) => [
     index('source_sync_runs_connection_idx').on(t.connectionId, t.queuedAt),
-    check(
-      'source_sync_runs_status_valid',
-      sql`${t.status} IN ('queued', 'running', 'succeeded', 'partial', 'failed', 'cancelled')`,
-    ),
+    check('source_sync_runs_status_valid', sql`${t.status} IN ('queued', 'running', 'succeeded', 'partial', 'failed', 'cancelled')`),
     check(
       'source_sync_runs_counts_non_negative',
       sql`${t.recordsReceived} >= 0 AND ${t.observationsInserted} >= 0 AND ${t.observationsUpdated} >= 0 AND ${t.observationsUnchanged} >= 0 AND ${t.observationsDeleted} >= 0 AND ${t.itemsCreated} >= 0`,

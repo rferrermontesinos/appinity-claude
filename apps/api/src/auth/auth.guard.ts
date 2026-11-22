@@ -45,9 +45,7 @@ export class AuthGuard implements CanActivate {
     }
 
     if (!this.devAuth.enabled) {
-      throw new UnauthorizedException(
-        'Sesión no válida: la identidad de desarrollo está desactivada',
-      );
+      throw new UnauthorizedException('Sesión no válida: la identidad de desarrollo está desactivada');
     }
 
     let userId: string;
@@ -61,10 +59,7 @@ export class AuthGuard implements CanActivate {
     const user = await this.users.findActiveById(userId);
     // La identidad de desarrollo solo vale para usuarios simulados o para cuentas locales reales creadas con
     // `pnpm user:local` (con código vigente). Nunca para usuarios reales sin ese consentimiento local explícito.
-    const allowed =
-      user &&
-      (user.dataset === 'demo' ||
-        (user.localLoginCodeHash !== null && fingerprint === localCodeFingerprint(user.localLoginCodeHash)));
+    const allowed = user && (user.dataset === 'demo' || (user.localLoginCodeHash !== null && fingerprint === localCodeFingerprint(user.localLoginCodeHash)));
     if (!user || !allowed) throw new UnauthorizedException('Sesión no válida');
 
     request.auth = { userId: user.id, dataset: user.dataset, kind: 'dev' };

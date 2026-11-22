@@ -44,9 +44,27 @@ export function CategoryPoster({ category }: { category: Category }) {
       style={{ height: 196, borderRadius: radius.xl, overflow: 'hidden', backgroundColor: world.posterBase, boxShadow: `0px 22px 48px -26px ${world.color}` }}
     >
       <View aria-hidden accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
-        <View style={{ position: 'absolute', width: 300, height: 300, borderRadius: 150, top: -150, left: -90, backgroundColor: mixHex(world.color, '#FFFFFF', 0.15), opacity: 0.35 }} />
-        <View style={{ position: 'absolute', width: 220, height: 220, borderRadius: 110, bottom: -120, right: 40, backgroundColor: world.color, opacity: 0.25 }} />
-        <MaterialCommunityIcons name={icon} size={210} color={mixHex(world.color, '#FFFFFF', 0.5)} style={{ position: 'absolute', right: -36, bottom: -44, opacity: 0.2, transform: [{ rotate: '-8deg' }] }} />
+        <View
+          style={{
+            position: 'absolute',
+            width: 300,
+            height: 300,
+            borderRadius: 150,
+            top: -150,
+            left: -90,
+            backgroundColor: mixHex(world.color, '#FFFFFF', 0.15),
+            opacity: 0.35,
+          }}
+        />
+        <View
+          style={{ position: 'absolute', width: 220, height: 220, borderRadius: 110, bottom: -120, right: 40, backgroundColor: world.color, opacity: 0.25 }}
+        />
+        <MaterialCommunityIcons
+          name={icon}
+          size={210}
+          color={mixHex(world.color, '#FFFFFF', 0.5)}
+          style={{ position: 'absolute', right: -36, bottom: -44, opacity: 0.2, transform: [{ rotate: '-8deg' }] }}
+        />
         <Grain opacity={0.3} />
       </View>
       <View style={{ flex: 1, padding: spacing.lg + 2, justifyContent: 'space-between' }}>

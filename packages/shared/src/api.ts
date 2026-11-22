@@ -105,7 +105,7 @@ export interface DisconnectResultDto {
   providerRevocation: 'revoked' | 'failed' | 'not_applicable';
 }
 
-export type SyncRunStatus ='queued' | 'running' | 'succeeded' | 'partial' | 'failed' | 'cancelled';
+export type SyncRunStatus = 'queued' | 'running' | 'succeeded' | 'partial' | 'failed' | 'cancelled';
 
 export interface ConnectionDto {
   id: string;

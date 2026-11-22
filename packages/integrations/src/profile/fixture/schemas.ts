@@ -11,7 +11,10 @@ export const screenRecordSchema = z
     media: z.object({
       kind: z.enum(['movie', 'tv']),
       tmdbId: z.number().int().positive(),
-      imdbId: z.string().regex(/^tt\d+$/).optional(),
+      imdbId: z
+        .string()
+        .regex(/^tt\d+$/)
+        .optional(),
       title: z.string().min(1),
       year: z.number().int().min(1870).max(2100).optional(),
     }),
@@ -29,9 +32,18 @@ export const diaryRecordSchema = z
     entryId: z.string().min(1),
     kind: z.enum(['film', 'book']),
     ref: z.object({
-      imdb: z.string().regex(/^tt\d+$/).optional(),
-      isbn13: z.string().regex(/^97[89]\d{10}$/).optional(),
-      openlibrary: z.string().regex(/^OL\d+W$/).optional(),
+      imdb: z
+        .string()
+        .regex(/^tt\d+$/)
+        .optional(),
+      isbn13: z
+        .string()
+        .regex(/^97[89]\d{10}$/)
+        .optional(),
+      openlibrary: z
+        .string()
+        .regex(/^OL\d+W$/)
+        .optional(),
       title: z.string().min(1),
       year: z.number().int().min(1000).max(2100).optional(),
       author: z.string().min(1).optional(),
@@ -54,8 +66,14 @@ export const activityRecordSchema = z
     activityId: z.string().min(1),
     category: z.enum(['food', 'culture', 'movies']),
     entity: z.object({
-      wikidataId: z.string().regex(/^Q\d+$/).optional(),
-      kgId: z.string().regex(/^\/m\/[0-9a-z_]+$/).optional(),
+      wikidataId: z
+        .string()
+        .regex(/^Q\d+$/)
+        .optional(),
+      kgId: z
+        .string()
+        .regex(/^\/m\/[0-9a-z_]+$/)
+        .optional(),
       name: z.string().min(1),
       lat: z.number().min(-90).max(90).optional(),
       lng: z.number().min(-180).max(180).optional(),

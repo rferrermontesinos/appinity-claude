@@ -16,7 +16,14 @@ afterAll(async () => {
   await db?.close();
 });
 
-const work = (qid: string, title: string): IdentifiedEntity => ({ category: 'movies', itemType: 'movie', title, canonicalIds: { 'wikidata:entity': qid }, confidence: 0.95, method: 'wikidata_popular' });
+const work = (qid: string, title: string): IdentifiedEntity => ({
+  category: 'movies',
+  itemType: 'movie',
+  title,
+  canonicalIds: { 'wikidata:entity': qid },
+  confidence: 0.95,
+  method: 'wikidata_popular',
+});
 
 describe('ampliación del catálogo bajo demanda', () => {
   it('da de alta obras populares, avanza la página, no duplica y se detiene al agotarse', async () => {
@@ -42,7 +49,10 @@ describe('ampliación del catálogo bajo demanda', () => {
     // Agotada: ya no se pregunta más a Wikidata.
     expect((await expandCatalog(db.db, resolver, provider, { dataset: 'live', category: 'movies' })).requested).toBe(0);
     expect(offsets).toEqual([0, EXPANSION_PAGE, EXPANSION_PAGE * 2]);
-    const movies = await db.db.select({ title: catalogItems.title }).from(catalogItems).where(and(eq(catalogItems.dataset, 'live'), eq(catalogItems.category, 'movies')));
+    const movies = await db.db
+      .select({ title: catalogItems.title })
+      .from(catalogItems)
+      .where(and(eq(catalogItems.dataset, 'live'), eq(catalogItems.category, 'movies')));
     expect(movies.map((m) => m.title).sort()).toEqual(['Avatar', 'Origen', 'Titanic']);
     const [state] = await db.db.select().from(catalogExpansions).where(eq(catalogExpansions.category, 'movies'));
     expect(state).toMatchObject({ exhausted: true, itemsCreated: 3 });

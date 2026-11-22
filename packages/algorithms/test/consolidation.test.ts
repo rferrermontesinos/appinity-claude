@@ -82,10 +82,7 @@ describe('consolidación v1', () => {
   });
 
   it('combina valoraciones de fuentes distintas por confianza y registra el conflicto', () => {
-    const p = consolidate([
-      ev({ sourceKey: 'a', ...pref(1, 'explicit_rating', 1) }),
-      ev({ sourceKey: 'b', ...pref(-0.6, 'explicit_rating', 0.6) }),
-    ]);
+    const p = consolidate([ev({ sourceKey: 'a', ...pref(1, 'explicit_rating', 1) }), ev({ sourceKey: 'b', ...pref(-0.6, 'explicit_rating', 0.6) })]);
     expect(p.preferenceScore).toBeCloseTo((1 * 1 + -0.6 * 0.6) / 1.6, 4);
     expect(p.preferenceConfidence).toBe(1);
     expect(p.hasConflict).toBe(true);
@@ -93,14 +90,10 @@ describe('consolidación v1', () => {
   });
 
   it('un like explícito prevalece sobre la conducta, que prevalece sobre la asistencia', () => {
-    expect(
-      consolidate([ev({ ...pref(0.3, 'strong_behavior', 0.6) }), ev({ sourceKey: 'b', ...pref(-0.8, 'explicit_like', 0.9) })])
-        .preferenceBasis,
-    ).toBe('explicit_like');
-    expect(
-      consolidate([ev({ ...pref(1, 'attendance', 0.7) }), ev({ sourceKey: 'b', ...pref(0.4, 'strong_behavior', 0.6) })])
-        .preferenceScore,
-    ).toBe(0.4);
+    expect(consolidate([ev({ ...pref(0.3, 'strong_behavior', 0.6) }), ev({ sourceKey: 'b', ...pref(-0.8, 'explicit_like', 0.9) })]).preferenceBasis).toBe(
+      'explicit_like',
+    );
+    expect(consolidate([ev({ ...pref(1, 'attendance', 0.7) }), ev({ sourceKey: 'b', ...pref(0.4, 'strong_behavior', 0.6) })]).preferenceScore).toBe(0.4);
   });
 
   it('calcula el rango de fechas de actividad e ignora las ausentes', () => {

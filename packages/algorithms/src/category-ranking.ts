@@ -34,7 +34,7 @@ export function rankCategories(signals: readonly CategorySignals[], params = CAT
     const s = byCategory.get(category);
     const affinity = s && s.affinities.length ? s.affinities.reduce((a, b) => a + b, 0) / s.affinities.length : null;
     const likes = s?.likes ?? 0;
-    const score = (affinity ?? 0) / 100 * params.affinityWeight + (Math.min(likes, params.likesCap) / params.likesCap) * params.likesWeight;
+    const score = ((affinity ?? 0) / 100) * params.affinityWeight + (Math.min(likes, params.likesCap) / params.likesCap) * params.likesWeight;
     return { category, score: round(score), affinity: affinity === null ? null : Math.round(affinity), likes, defaultIndex };
   });
   // Empates (incluido «sin datos»): orden por defecto, para que sea estable.

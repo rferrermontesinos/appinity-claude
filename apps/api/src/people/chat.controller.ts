@@ -26,11 +26,15 @@ const interestSchema = z.object({ userId: z.uuid() }).strict();
 const directSchema = z.object({ userId: z.uuid(), body }).strict();
 const openSchema = z.object({ userId: z.uuid() }).strict();
 const messageSchema = z
-  .object({ body, clientId: z.string().regex(/^[\w-]{1,64}$/).optional() })
+  .object({
+    body,
+    clientId: z
+      .string()
+      .regex(/^[\w-]{1,64}$/)
+      .optional(),
+  })
   .strict();
-const pageSchema = z
-  .object({ before: z.iso.datetime({ offset: true }).optional(), limit: z.coerce.number().int().min(1).max(100).optional() })
-  .strict();
+const pageSchema = z.object({ before: z.iso.datetime({ offset: true }).optional(), limit: z.coerce.number().int().min(1).max(100).optional() }).strict();
 
 /**
  * Chat (§16, fase 12A): interés → match → conversación. Los permisos se validan aquí y en el dominio: solo miembros de

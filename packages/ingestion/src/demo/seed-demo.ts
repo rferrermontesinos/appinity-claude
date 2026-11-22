@@ -12,7 +12,12 @@ import { DEMO_USERS } from './users.js';
 export interface DemoSeedSummary {
   users: number;
   catalog: { total: number; created: number };
-  syncs: Array<{ handle: string; source: string } & Pick<SyncOutcome, 'status' | 'observationsInserted' | 'observationsUpdated' | 'observationsUnchanged' | 'partialErrors'>>;
+  syncs: Array<
+    { handle: string; source: string } & Pick<
+      SyncOutcome,
+      'status' | 'observationsInserted' | 'observationsUpdated' | 'observationsUnchanged' | 'partialErrors'
+    >
+  >;
   pendingImageIds: string[];
 }
 

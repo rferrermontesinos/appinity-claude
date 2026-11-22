@@ -46,7 +46,10 @@ const likeSchema = z.object({
   name: z.string(),
   username: z.string().nullable().optional(),
   category: z.string().nullable().optional(),
-  category_list: z.array(z.object({ name: z.string().nullable().optional() })).nullable().optional(),
+  category_list: z
+    .array(z.object({ name: z.string().nullable().optional() }))
+    .nullable()
+    .optional(),
   location: z
     .object({ latitude: z.number().nullable().optional(), longitude: z.number().nullable().optional(), country: z.string().nullable().optional() })
     .nullable()
@@ -195,7 +198,12 @@ export function createFacebookAdapter(options: FacebookOptions): ProfileSourceAd
     },
     async completeConnect(context): Promise<AuthResult> {
       const params = context.callbackParams;
-      if (params.error) throw new SourceError('verification_failed', params.error === 'access_denied' ? 'Se canceló la autorización en Facebook' : 'Facebook no concedió el acceso', false);
+      if (params.error)
+        throw new SourceError(
+          'verification_failed',
+          params.error === 'access_denied' ? 'Se canceló la autorización en Facebook' : 'Facebook no concedió el acceso',
+          false,
+        );
       if (!params.code) throw new SourceError('verification_failed', 'Respuesta de Facebook incompleta: vuelve a intentarlo', false);
       const exchange = new URL(`${graph}/oauth/access_token`);
       exchange.searchParams.set('client_id', options.appId);
@@ -214,12 +222,18 @@ export function createFacebookAdapter(options: FacebookOptions): ProfileSourceAd
       const long = await fetchImpl(longUrl, { signal: AbortSignal.timeout(15_000) });
       const token = long.ok ? tokenSchema.parse(await long.json()) : shortToken;
       // Comprobar que se concedió `user_likes` (en Facebook se puede desmarcar en el diálogo).
-      const permissions = (await get(`${graph}/me/permissions?access_token=${encodeURIComponent(token.access_token)}`)) as { data?: Array<{ permission: string; status: string }> };
+      const permissions = (await get(`${graph}/me/permissions?access_token=${encodeURIComponent(token.access_token)}`)) as {
+        data?: Array<{ permission: string; status: string }>;
+      };
       if (!permissions.data?.some((p) => p.permission === 'user_likes' && p.status === 'granted')) {
         throw new SourceError('verification_failed', 'No se concedió el permiso de páginas que te gustan: vuelve a conectar y déjalo marcado', false);
       }
       const expiresAt = token.expires_in ? new Date(Date.now() + token.expires_in * 1000).toISOString() : undefined;
-      return { kind: 'connected', credentials: { accessToken: token.access_token, ...(expiresAt ? { accessTokenExpiresAt: expiresAt } : {}) }, scopes: ['user_likes'] };
+      return {
+        kind: 'connected',
+        credentials: { accessToken: token.access_token, ...(expiresAt ? { accessTokenExpiresAt: expiresAt } : {}) },
+        scopes: ['user_likes'],
+      };
     },
     async sync(context: SyncContext): Promise<SyncBatch> {
       const identifier = options.identifier;
@@ -254,7 +268,14 @@ export function createFacebookAdapter(options: FacebookOptions): ProfileSourceAd
         }
       } catch (error) {
         if (isSourceError(error) && error.retryable) {
-          return { records: [], cursor: null, hasMore: false, partialErrors: [], snapshotComplete: false, pending: { retryAfterMs: 10 * 60_000, reason: `${error.message} (identificación de catálogo)` } };
+          return {
+            records: [],
+            cursor: null,
+            hasMore: false,
+            partialErrors: [],
+            snapshotComplete: false,
+            pending: { retryAfterMs: 10 * 60_000, reason: `${error.message} (identificación de catálogo)` },
+          };
         }
         throw error;
       }
@@ -262,7 +283,9 @@ export function createFacebookAdapter(options: FacebookOptions): ProfileSourceAd
         records,
         cursor: null,
         hasMore: false,
-        partialErrors: unidentified ? [{ code: 'unidentified', message: `${unidentified} páginas de Facebook no se pudieron identificar con seguridad`, blocking: false }] : [],
+        partialErrors: unidentified
+          ? [{ code: 'unidentified', message: `${unidentified} páginas de Facebook no se pudieron identificar con seguridad`, blocking: false }]
+          : [],
         snapshotComplete: true,
         snapshotKinds: ['fb_page_like'],
         stats: { facebook_likes: all.length, facebook_identified: records.length, facebook_ignored: ignored },
@@ -274,7 +297,10 @@ export function createFacebookAdapter(options: FacebookOptions): ProfileSourceAd
     async disconnect(_connection, credentials) {
       const accessToken = credentials?.accessToken;
       if (!accessToken) return;
-      await fetchImpl(`${graph}/me/permissions?access_token=${encodeURIComponent(accessToken)}`, { method: 'DELETE', signal: AbortSignal.timeout(10_000) }).catch(() => undefined);
+      await fetchImpl(`${graph}/me/permissions?access_token=${encodeURIComponent(accessToken)}`, {
+        method: 'DELETE',
+        signal: AbortSignal.timeout(10_000),
+      }).catch(() => undefined);
     },
   };
 }

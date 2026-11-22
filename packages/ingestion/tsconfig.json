@@ -5,11 +5,5 @@
     "outDir": "dist"
   },
   "include": ["src"],
-  "references": [
-    { "path": "../shared" },
-    { "path": "../algorithms" },
-    { "path": "../database" },
-    { "path": "../catalog" },
-    { "path": "../integrations" }
-  ]
+  "references": [{ "path": "../shared" }, { "path": "../algorithms" }, { "path": "../database" }, { "path": "../catalog" }, { "path": "../integrations" }]
 }

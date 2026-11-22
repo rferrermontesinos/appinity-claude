@@ -138,8 +138,20 @@ export default function OnboardingScreen() {
         {row(t('onboarding.adult'), adult, setAdult)}
         {row(t('onboarding.terms'), terms, setTerms)}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-          <Button label={t('onboarding.readTerms')} variant="secondary" size="small" icon="file-document-outline" onPress={() => void WebBrowser.openBrowserAsync(`${API.url}/legal/condiciones`)} />
-          <Button label={t('onboarding.readPrivacy')} variant="secondary" size="small" icon="shield-account-outline" onPress={() => void WebBrowser.openBrowserAsync(`${API.url}/legal/privacidad`)} />
+          <Button
+            label={t('onboarding.readTerms')}
+            variant="secondary"
+            size="small"
+            icon="file-document-outline"
+            onPress={() => void WebBrowser.openBrowserAsync(`${API.url}/legal/condiciones`)}
+          />
+          <Button
+            label={t('onboarding.readPrivacy')}
+            variant="secondary"
+            size="small"
+            icon="shield-account-outline"
+            onPress={() => void WebBrowser.openBrowserAsync(`${API.url}/legal/privacidad`)}
+          />
         </View>
         <Small>{t('onboarding.consentNote')}</Small>
         {sourceList ? <Small>{t('onboarding.sourcesIncluded', { list: sourceList })}</Small> : null}

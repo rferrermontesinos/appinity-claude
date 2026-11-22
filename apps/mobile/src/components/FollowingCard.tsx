@@ -27,13 +27,21 @@ function FollowingHero({ person, kind }: { person: FollowedPersonDto; kind: Kind
   const { t } = useTranslation();
   const router = useRouter();
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`${person.displayName}, ${kind.label}, ${t('people.affinity')} ${formatAffinity(person.affinity) ?? '—'}`} onPress={() => router.push(`/person/${person.userId}`)}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${person.displayName}, ${kind.label}, ${t('people.affinity')} ${formatAffinity(person.affinity) ?? '—'}`}
+      onPress={() => router.push(`/person/${person.userId}`)}
+    >
       <AuraCard accent={kind.color} style={{ gap: spacing.md }}>
         <Text style={{ color: onPoster.muted, fontSize: 12, fontWeight: '600', letterSpacing: 0.4, textTransform: 'uppercase' }}>{t('follow.heroKicker')}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
           <PersonAvatar name={person.displayName} url={person.avatarUrl} size={64} ring={onPoster.lime} />
           <View style={{ flex: 1, gap: 4 }}>
-            <Text accessibilityRole="header" style={{ color: onPoster.text, fontFamily: fonts.displayHeavy, fontSize: 26, letterSpacing: -0.7 }} numberOfLines={1}>
+            <Text
+              accessibilityRole="header"
+              style={{ color: onPoster.text, fontFamily: fonts.displayHeavy, fontSize: 26, letterSpacing: -0.7 }}
+              numberOfLines={1}
+            >
               {person.displayName}
             </Text>
             <View style={{ flexDirection: 'row' }}>
@@ -59,7 +67,14 @@ function PersonRow({ person, kind, action }: { person: FollowedPersonDto | Frien
         accessibilityRole="button"
         accessibilityLabel={`${person.displayName}, ${kind.label}, ${t('people.affinity')} ${formatAffinity(person.affinity) ?? '—'}`}
         onPress={() => router.push(`/person/${person.userId}`)}
-        style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: spacing.md, flex: 1, paddingVertical: spacing.sm, opacity: pressed ? 0.7 : 1 })}
+        style={({ pressed }) => ({
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.md,
+          flex: 1,
+          paddingVertical: spacing.sm,
+          opacity: pressed ? 0.7 : 1,
+        })}
       >
         <PersonAvatar name={person.displayName} url={person.avatarUrl} size={48} ring />
         <View style={{ flex: 1, gap: 2 }}>
@@ -103,7 +118,10 @@ export function FollowingCard() {
       {top ? <FollowingHero person={top} kind={kindOf(top)} /> : null}
       {rest.length ? (
         <View>
-          <Text accessibilityRole="header" style={{ color: c.text, fontFamily: fonts.display, fontSize: 20, letterSpacing: -0.4, marginTop: spacing.sm, marginBottom: spacing.xs }}>
+          <Text
+            accessibilityRole="header"
+            style={{ color: c.text, fontFamily: fonts.display, fontSize: 20, letterSpacing: -0.4, marginTop: spacing.sm, marginBottom: spacing.xs }}
+          >
             {t('follow.more')}
           </Text>
           {rest.map((p) => (
@@ -113,7 +131,10 @@ export function FollowingCard() {
       ) : null}
       {notFollowedFriends.length ? (
         <View>
-          <Text accessibilityRole="header" style={{ color: c.text, fontFamily: fonts.display, fontSize: 20, letterSpacing: -0.4, marginTop: spacing.sm, marginBottom: spacing.xs }}>
+          <Text
+            accessibilityRole="header"
+            style={{ color: c.text, fontFamily: fonts.display, fontSize: 20, letterSpacing: -0.4, marginTop: spacing.sm, marginBottom: spacing.xs }}
+          >
             {t('follow.friendsNotFollowed')}
           </Text>
           {notFollowedFriends.map((p) => (
@@ -121,7 +142,14 @@ export function FollowingCard() {
               key={p.userId}
               person={p}
               kind={{ label: t('follow.friend'), color: c.ok }}
-              action={<Button label={t('follow.follow')} size="small" onPress={() => action.mutate({ kind: 'follow', userId: p.userId })} disabled={action.isPending} />}
+              action={
+                <Button
+                  label={t('follow.follow')}
+                  size="small"
+                  onPress={() => action.mutate({ kind: 'follow', userId: p.userId })}
+                  disabled={action.isPending}
+                />
+              }
             />
           ))}
         </View>

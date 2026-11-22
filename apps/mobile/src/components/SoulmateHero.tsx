@@ -51,7 +51,9 @@ function HeroBar({ item, reduce }: { item: AffinityCategoryDto; reduce: boolean 
       <View style={{ flex: 1, height: 8, borderRadius: radius.full, backgroundColor: onPoster.track, overflow: 'hidden' }}>
         {item.score !== null ? <Animated.View style={{ width, height: '100%', borderRadius: radius.full, backgroundColor: meta.color }} /> : null}
       </View>
-      <Text style={{ width: 30, textAlign: 'right', color: value === null ? HERO_MUTED : HERO_TEXT, fontFamily: fonts.display, fontSize: 14 }}>{value ?? '—'}</Text>
+      <Text style={{ width: 30, textAlign: 'right', color: value === null ? HERO_MUTED : HERO_TEXT, fontFamily: fonts.display, fontSize: 14 }}>
+        {value ?? '—'}
+      </Text>
     </View>
   );
 }
@@ -70,7 +72,10 @@ export function SoulmateHero({ person }: { person: SoulmateDto }) {
   const affinity = detail.data?.affinity;
   const score = affinity?.score ?? person.score;
   const shown = useCountUp(score === null ? null : Math.round(score), reduce);
-  const top = (affinity?.categories ?? []).filter((x) => x.score !== null).sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, 3);
+  const top = (affinity?.categories ?? [])
+    .filter((x) => x.score !== null)
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+    .slice(0, 3);
   const common = (affinity?.categories ?? []).reduce((sum, x) => sum + x.commonItems, 0);
   const accent = top[0] ? CATEGORY_META[top[0].category].color : c.accent;
   const version = affinity?.algorithmVersion;
@@ -85,7 +90,9 @@ export function SoulmateHero({ person }: { person: SoulmateDto }) {
         </Text>
       </View>
 
-      <Text style={{ color: LIME, fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', marginTop: spacing.md }}>{t('people.heroKicker')}</Text>
+      <Text style={{ color: LIME, fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase', marginTop: spacing.md }}>
+        {t('people.heroKicker')}
+      </Text>
       <Text
         accessibilityLabel={`${t('people.affinity')} ${score === null ? '—' : t('people.affinityValue', { value: Math.round(score) })}`}
         style={{ color: HERO_TEXT, ...type.figure, includeFontPadding: false }}
@@ -94,14 +101,23 @@ export function SoulmateHero({ person }: { person: SoulmateDto }) {
         {shown !== null ? <Text style={{ fontSize: 26, letterSpacing: 0 }}> %</Text> : null}
       </Text>
       {person.exceptionalMutual ? (
-        <View style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: LIME, borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 5 }}>
+        <View
+          style={{
+            alignSelf: 'flex-start',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            backgroundColor: LIME,
+            borderRadius: radius.full,
+            paddingHorizontal: 10,
+            paddingVertical: 5,
+          }}
+        >
           <MaterialCommunityIcons name="star-four-points" size={14} color="#141A02" />
           <Text style={{ color: '#141A02', fontSize: 12, fontWeight: '700' }}>{t('people.exceptionalMutual')}</Text>
         </View>
       ) : null}
-      <Text style={{ color: HERO_MUTED, fontSize: 12, lineHeight: 17 }}>
-        {t('people.heroVersion', { version: version ?? '—', name: person.displayName })}
-      </Text>
+      <Text style={{ color: HERO_MUTED, fontSize: 12, lineHeight: 17 }}>{t('people.heroVersion', { version: version ?? '—', name: person.displayName })}</Text>
 
       {top.length ? (
         <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
@@ -110,7 +126,9 @@ export function SoulmateHero({ person }: { person: SoulmateDto }) {
           ))}
         </View>
       ) : null}
-      {common > 0 ? <Text style={{ color: HERO_TEXT, fontSize: 14, fontWeight: '600', marginTop: spacing.sm }}>{t('people.heroCommon', { count: common })}</Text> : null}
+      {common > 0 ? (
+        <Text style={{ color: HERO_TEXT, fontSize: 14, fontWeight: '600', marginTop: spacing.sm }}>{t('people.heroCommon', { count: common })}</Text>
+      ) : null}
 
       <Pressable
         accessibilityRole="button"

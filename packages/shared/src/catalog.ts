@@ -89,8 +89,14 @@ export interface ExternalIdRef {
 }
 
 export const externalIdRefSchema = z.object({
-  provider: z.string().regex(/^[a-z][a-z0-9_]*$/).max(64),
-  idType: z.string().regex(/^[a-z][a-z0-9_]*$/).max(64),
+  provider: z
+    .string()
+    .regex(/^[a-z][a-z0-9_]*$/)
+    .max(64),
+  idType: z
+    .string()
+    .regex(/^[a-z][a-z0-9_]*$/)
+    .max(64),
   value: z.string().min(1).max(256),
 });
 
@@ -99,11 +105,4 @@ export function externalIdKey(ref: Pick<ExternalIdRef, 'provider' | 'idType'>): 
 }
 
 /** Proveedores cuyos IDs identifican el objeto entre plataformas (resolución prioritaria). */
-export const CANONICAL_ID_KEYS = [
-  'wikidata:entity',
-  'imdb:title',
-  'musicbrainz:artist',
-  'openlibrary:work',
-  'isbn:isbn13',
-  'freebase:mid',
-] as const;
+export const CANONICAL_ID_KEYS = ['wikidata:entity', 'imdb:title', 'musicbrainz:artist', 'openlibrary:work', 'isbn:isbn13', 'freebase:mid'] as const;

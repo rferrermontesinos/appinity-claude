@@ -1,11 +1,4 @@
-import {
-  generateLocalCode,
-  hashLocalCode,
-  userProfiles,
-  userSettings,
-  users,
-  type Database,
-} from '@appinity/database';
+import { generateLocalCode, hashLocalCode, userProfiles, userSettings, users, type Database } from '@appinity/database';
 import { eq, sql } from 'drizzle-orm';
 import { ConflictError } from './errors.js';
 
@@ -28,7 +21,10 @@ export async function createOrResetLocalUser(
     const [existing] = await tx.select().from(users).where(eq(users.handle, input.handle));
     if (existing && existing.dataset !== 'live') throw new ConflictError('Ese handle pertenece a un usuario de demo');
     if (existing) {
-      await tx.update(users).set({ localLoginCodeHash: hash, status: 'active', updatedAt: sql`now()` }).where(eq(users.id, existing.id));
+      await tx
+        .update(users)
+        .set({ localLoginCodeHash: hash, status: 'active', updatedAt: sql`now()` })
+        .where(eq(users.id, existing.id));
       await tx
         .update(userProfiles)
         .set({ displayName: input.displayName, countryCode: input.countryCode ?? null, updatedAt: sql`now()` })

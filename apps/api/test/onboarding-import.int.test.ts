@@ -52,7 +52,12 @@ async function newGoogleUser(subject: string): Promise<{ userId: string; token: 
   const code = `codigo-de-prueba-${subject}-0123456789`;
   const verifier = 'verificador-pkce-de-prueba-0123456789-abcdefghij';
   const codeChallenge = createHash('sha256').update(verifier).digest('base64url');
-  await redis.set(`${env.QUEUE_PREFIX}:auth-handoff:${code}`, JSON.stringify({ userId, sessionId: session.sessionId, refreshToken: session.refreshToken, isNew, codeChallenge }), 'EX', 60);
+  await redis.set(
+    `${env.QUEUE_PREFIX}:auth-handoff:${code}`,
+    JSON.stringify({ userId, sessionId: session.sessionId, refreshToken: session.refreshToken, isNew, codeChallenge }),
+    'EX',
+    60,
+  );
   const dto = (await (await call('POST', '/v1/auth/exchange', undefined, { code, codeVerifier: verifier })).json()) as AuthSessionDto;
   return { userId, token: dto.accessToken };
 }
@@ -68,7 +73,12 @@ describe('alta única con importación de Google', () => {
     const connections = app.get(ConnectionsService);
 
     // Books concedido en el inicio de sesión: la conexión se guarda, pero sin sync (no hay consentimiento aún).
-    await connections.attachGoogleBooks(userId, { access_token: 'token-simulado', refresh_token: 'refresh-simulado', expires_in: 3600, scope: 'https://www.googleapis.com/auth/books' });
+    await connections.attachGoogleBooks(userId, {
+      access_token: 'token-simulado',
+      refresh_token: 'refresh-simulado',
+      expires_in: 3600,
+      scope: 'https://www.googleapis.com/auth/books',
+    });
     expect(await runsOf(userId)).toHaveLength(0);
 
     // Ni conectar otra fuente ni la importación inicial antes del alta.

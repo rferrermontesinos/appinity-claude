@@ -79,7 +79,10 @@ export async function syncFixture(client: FixtureClient, context: SyncContext): 
     lastPlayedAt: s.lastPlayedAt,
   }));
   const artistP95 = percentile(playcounts, 0.95);
-  const showP95 = percentile(aggregated.map((a) => a.episodesPlayed), 0.95);
+  const showP95 = percentile(
+    aggregated.map((a) => a.episodesPlayed),
+    0.95,
+  );
   return {
     records: [...passthrough, ...aggregated],
     cursor: null,

@@ -1,14 +1,6 @@
 /** Motivos de fallo de una fuente externa, con indicación de si tiene sentido reintentar. */
 export type SourceErrorCode =
-  | 'not_configured'
-  | 'auth'
-  | 'rate_limited'
-  | 'unavailable'
-  | 'profile_inaccessible'
-  | 'bad_response'
-  | 'not_found'
-  | 'aborted'
-  | 'verification_failed';
+  'not_configured' | 'auth' | 'rate_limited' | 'unavailable' | 'profile_inaccessible' | 'bad_response' | 'not_found' | 'aborted' | 'verification_failed';
 
 /**
  * Error de una fuente de perfil. `retryable = false` indica que reintentar no servirá (clave inválida, perfil

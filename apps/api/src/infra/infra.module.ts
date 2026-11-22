@@ -10,15 +10,13 @@ import { DATABASE, REDIS } from './tokens.js';
     {
       provide: DATABASE,
       inject: [APP_ENV],
-      useFactory: (env: AppEnv): DatabaseHandle =>
-        createDatabase(env.DATABASE_URL, { max: 10, applicationName: 'appinity-claude-api' }),
+      useFactory: (env: AppEnv): DatabaseHandle => createDatabase(env.DATABASE_URL, { max: 10, applicationName: 'appinity-claude-api' }),
     },
     {
       provide: REDIS,
       inject: [APP_ENV],
       // Productor: falla rápido si Redis no responde en lugar de bloquear peticiones HTTP.
-      useFactory: (env: AppEnv): Redis =>
-        new Redis(env.REDIS_URL, { maxRetriesPerRequest: 1, enableOfflineQueue: false, lazyConnect: false }),
+      useFactory: (env: AppEnv): Redis => new Redis(env.REDIS_URL, { maxRetriesPerRequest: 1, enableOfflineQueue: false, lazyConnect: false }),
     },
   ],
   exports: [DATABASE, REDIS],

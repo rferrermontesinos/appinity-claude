@@ -30,7 +30,10 @@ describe('Recomendación por contenido (arranque en frío)', () => {
   });
 
   it('no recomienda lo que ya le gusta y limita a 3 por gusto de origen (variedad)', () => {
-    const likes = [{ itemId: 'saga1', score: 1, confidence: 1 }, { itemId: 'saga2', score: 1, confidence: 1 }];
+    const likes = [
+      { itemId: 'saga1', score: 1, confidence: 1 },
+      { itemId: 'saga2', score: 1, confidence: 1 },
+    ];
     const out = contentCandidates(likes, [rel('saga1', 'saga2'), ...['a', 'b', 'c', 'd', 'e'].map((t) => rel('saga1', t))]);
     expect(out.map((c) => c.itemId)).not.toContain('saga2');
     expect(out).toHaveLength(3);

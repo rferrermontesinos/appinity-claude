@@ -15,7 +15,9 @@ describe('sinopsis de Wikipedia (ficha)', () => {
   });
 
   it('no corta en abreviaturas («EE. UU.», «Dr.»)', () => {
-    expect(trimSummary('Es un grupo de EE. UU. Fue fundado en 1990 por el Dr. Pérez. Otra frase.', 70)).toBe('Es un grupo de EE. UU. Fue fundado en 1990 por el Dr. Pérez.');
+    expect(trimSummary('Es un grupo de EE. UU. Fue fundado en 1990 por el Dr. Pérez. Otra frase.', 70)).toBe(
+      'Es un grupo de EE. UU. Fue fundado en 1990 por el Dr. Pérez.',
+    );
   });
 
   it('una primera frase demasiado larga se corta por palabra con «…»', () => {
@@ -47,13 +49,26 @@ describe('sinopsis de Wikipedia (ficha)', () => {
       const body = url.includes('wikidata.org')
         ? { entities: { Q1: { sitelinks: { eswiki: { title: 'Merlí (serie)' }, enwiki: { title: 'Merlí' } } }, Q2: { sitelinks: {} } } }
         : url.includes('es.wikipedia.org')
-          ? { query: { redirects: [{ from: 'Merlí (serie)', to: 'Merlí (serie de televisión)' }], pages: [{ title: 'Merlí (serie de televisión)', extract: 'Merlí es una serie de televisión. Se estrenó en 2015.', fullurl: 'https://es.wikipedia.org/wiki/Merl%C3%AD_(serie_de_televisi%C3%B3n)' }] } }
+          ? {
+              query: {
+                redirects: [{ from: 'Merlí (serie)', to: 'Merlí (serie de televisión)' }],
+                pages: [
+                  {
+                    title: 'Merlí (serie de televisión)',
+                    extract: 'Merlí es una serie de televisión. Se estrenó en 2015.',
+                    fullurl: 'https://es.wikipedia.org/wiki/Merl%C3%AD_(serie_de_televisi%C3%B3n)',
+                  },
+                ],
+              },
+            }
           : { query: { pages: [{ title: 'Merlí', missing: true }] } };
       return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }) as typeof fetch;
     const client = new WikipediaSummaries({ userAgent: 'test', fetchImpl, sleep: async () => undefined });
     const out = await client.summariesFor(['Q1', 'Q2']);
-    expect(out.get('Q1')).toEqual({ es: { text: 'Merlí es una serie de televisión. Se estrenó en 2015.', url: 'https://es.wikipedia.org/wiki/Merl%C3%AD_(serie_de_televisi%C3%B3n)' } });
+    expect(out.get('Q1')).toEqual({
+      es: { text: 'Merlí es una serie de televisión. Se estrenó en 2015.', url: 'https://es.wikipedia.org/wiki/Merl%C3%AD_(serie_de_televisi%C3%B3n)' },
+    });
     expect(out.get('Q2')).toEqual({});
     expect(calls.some((u) => u.includes('exsentences=4') && u.includes('explaintext=1'))).toBe(true);
   });

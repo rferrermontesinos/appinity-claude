@@ -147,9 +147,7 @@ async function createConnection(
 
 /** Revoca en el proveedor unas credenciales recién emitidas que no llegaron a guardarse (best effort). */
 async function revokeOrphan(adapter: ProfileSourceAdapter, userId: string, sourceKey: string, credentials: SourceCredentials) {
-  await adapter
-    .disconnect({ id: '', userId, sourceKey: sourceKey as ProfileSourceKey, status: 'revoked', cursor: null }, credentials)
-    .catch(() => undefined);
+  await adapter.disconnect({ id: '', userId, sourceKey: sourceKey as ProfileSourceKey, status: 'revoked', cursor: null }, credentials).catch(() => undefined);
 }
 
 export type ConnectStart =
@@ -288,12 +286,7 @@ export async function attachConnection(
 }
 
 /** Atajo para fuentes sin redirección (simuladas, seed y tests). */
-export async function connectSource(
-  db: Database,
-  registry: AdapterRegistry,
-  userId: string,
-  sourceKey: string,
-): Promise<ConnectionRow> {
+export async function connectSource(db: Database, registry: AdapterRegistry, userId: string, sourceKey: string): Promise<ConnectionRow> {
   const result = await startConnect(db, registry, userId, sourceKey);
   if (result.kind === 'redirect') throw new UnavailableError('Esta fuente requiere iniciar sesión en el proveedor');
   return result.connection;
@@ -359,11 +352,12 @@ export async function disconnectSource(
       .selectDistinct({ itemId: userItemObservations.catalogItemId })
       .from(userItemObservations)
       .where(eq(userItemObservations.connectionId, connectionId));
-    const deleted = await tx
-      .delete(userItemObservations)
-      .where(eq(userItemObservations.connectionId, connectionId))
-      .returning({ id: userItemObservations.id });
-    await recomputeProfiles(tx, userId, items.map((i) => i.itemId));
+    const deleted = await tx.delete(userItemObservations).where(eq(userItemObservations.connectionId, connectionId)).returning({ id: userItemObservations.id });
+    await recomputeProfiles(
+      tx,
+      userId,
+      items.map((i) => i.itemId),
+    );
     return { connection, credentials, purgedObservations: deleted.length, affectedItems: items.length };
   });
 

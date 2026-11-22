@@ -23,7 +23,11 @@ beforeAll(async () => {
   app = await createApp(loadEnv({ ...env, REVENUECAT_WEBHOOK_AUTH: WEBHOOK_AUTH }), { logger: false });
   await app.listen(0, '127.0.0.1');
   base = `http://127.0.0.1:${(app.getHttpServer().address() as { port: number }).port}`;
-  const res = await fetch(`${base}/v1/dev/session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle: laura.handle }) });
+  const res = await fetch(`${base}/v1/dev/session`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ handle: laura.handle }),
+  });
   token = ((await res.json()) as { token: string }).token;
 });
 
@@ -34,7 +38,11 @@ afterAll(async () => {
 
 const me = async <T>(path: string) => (await fetch(`${base}${path}`, { headers: { Authorization: `Bearer ${token}` } })).json() as Promise<T>;
 const hook = (body: unknown, authorization = WEBHOOK_AUTH) =>
-  fetch(`${base}/v1/webhooks/revenuecat`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: authorization }, body: JSON.stringify(body) });
+  fetch(`${base}/v1/webhooks/revenuecat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: authorization },
+    body: JSON.stringify(body),
+  });
 
 describe('Premium (fase 12B)', () => {
   it('sin compra: no es Premium y el ranking es el gratuito (50)', async () => {
@@ -68,8 +76,21 @@ describe('Premium (fase 12B)', () => {
 
   it('una compra de producción no cuenta en una instalación de sandbox', async () => {
     const other = DEMO_USERS[1]!;
-    await hook({ event: { id: 'evt-http-2', type: 'INITIAL_PURCHASE', app_user_id: other.id, entitlement_ids: ['premium'], environment: 'PRODUCTION', event_timestamp_ms: Date.now() } });
-    const res = await fetch(`${base}/v1/dev/session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle: other.handle }) });
+    await hook({
+      event: {
+        id: 'evt-http-2',
+        type: 'INITIAL_PURCHASE',
+        app_user_id: other.id,
+        entitlement_ids: ['premium'],
+        environment: 'PRODUCTION',
+        event_timestamp_ms: Date.now(),
+      },
+    });
+    const res = await fetch(`${base}/v1/dev/session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handle: other.handle }),
+    });
     const otherToken = ((await res.json()) as { token: string }).token;
     const status = (await (await fetch(`${base}/v1/me/premium`, { headers: { Authorization: `Bearer ${otherToken}` } })).json()) as PremiumDto;
     expect(status.premium).toBe(false);

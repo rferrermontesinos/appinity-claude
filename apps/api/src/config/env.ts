@@ -33,14 +33,15 @@ const envSchema = z
       .optional()
       .transform((v) => (v ? v.trim() : undefined))
       .refine(
-        (v) =>
-          v === undefined ||
-          v.split(',').every((part) => /^(loopback|linklocal|uniquelocal|[0-9a-f]*[.:][0-9a-f.:]*(\/\d{1,3})?)$/i.test(part.trim())),
+        (v) => v === undefined || v.split(',').every((part) => /^(loopback|linklocal|uniquelocal|[0-9a-f]*[.:][0-9a-f.:]*(\/\d{1,3})?)$/i.test(part.trim())),
         'TRUST_PROXY: rangos con nombre (loopback, linklocal, uniquelocal) o subredes, separados por comas',
       ),
     PUBLIC_API_URL: z.union([z.literal(''), z.url()]).optional(),
     STORAGE_DIR: z.string().default('.data/media'),
-    QUEUE_PREFIX: z.string().regex(/^[a-z0-9-]+$/).default('appinity-claude'),
+    QUEUE_PREFIX: z
+      .string()
+      .regex(/^[a-z0-9-]+$/)
+      .default('appinity-claude'),
     STEAM_WEB_API_KEY: z
       .string()
       .optional()
@@ -52,7 +53,10 @@ const envSchema = z
       .string()
       .optional()
       .transform((v) => (v ? v.trim() : undefined))
-      .refine((v) => v === undefined || /^[\w-]+\.apps\.googleusercontent\.com$/.test(v), 'GOOGLE_OAUTH_CLIENT_ID debe terminar en .apps.googleusercontent.com'),
+      .refine(
+        (v) => v === undefined || /^[\w-]+\.apps\.googleusercontent\.com$/.test(v),
+        'GOOGLE_OAUTH_CLIENT_ID debe terminar en .apps.googleusercontent.com',
+      ),
     GOOGLE_OAUTH_CLIENT_SECRET: z
       .string()
       .optional()
@@ -91,17 +95,38 @@ const envSchema = z
     APP_WEB_ORIGIN: z.url().optional(),
     GOOGLE_RESTRICTED_SCOPES: z.enum(['true', 'false']).optional(),
     /** Trakt (fase 11): client_id de la app creada en Trakt; el secreto es opcional (PKCE). */
-    TRAKT_CLIENT_ID: z.string().optional().transform((v) => (v ? v.trim() : undefined)),
-    TRAKT_CLIENT_SECRET: z.string().optional().transform((v) => (v ? v.trim() : undefined)),
+    TRAKT_CLIENT_ID: z
+      .string()
+      .optional()
+      .transform((v) => (v ? v.trim() : undefined)),
+    TRAKT_CLIENT_SECRET: z
+      .string()
+      .optional()
+      .transform((v) => (v ? v.trim() : undefined)),
     TRAKT_REDIRECT_URI: z.url().default('http://localhost:3100/v1/connect/trakt/callback'),
-    ANILIST_CLIENT_ID: z.string().optional().transform((v) => (v ? v.trim() : undefined)),
-    ANILIST_CLIENT_SECRET: z.string().optional().transform((v) => (v ? v.trim() : undefined)),
+    ANILIST_CLIENT_ID: z
+      .string()
+      .optional()
+      .transform((v) => (v ? v.trim() : undefined)),
+    ANILIST_CLIENT_SECRET: z
+      .string()
+      .optional()
+      .transform((v) => (v ? v.trim() : undefined)),
     ANILIST_REDIRECT_URI: z.url().default('http://localhost:3100/v1/connect/anilist/callback'),
     /** Facebook (páginas que te gustan): app de developers.facebook.com. El secreto solo vive en el servidor. */
-    FACEBOOK_APP_ID: z.string().optional().transform((v) => (v ? v.trim() : undefined)),
-    FACEBOOK_APP_SECRET: z.string().optional().transform((v) => (v ? v.trim() : undefined)),
+    FACEBOOK_APP_ID: z
+      .string()
+      .optional()
+      .transform((v) => (v ? v.trim() : undefined)),
+    FACEBOOK_APP_SECRET: z
+      .string()
+      .optional()
+      .transform((v) => (v ? v.trim() : undefined)),
     FACEBOOK_REDIRECT_URI: z.url().default('http://localhost:3100/v1/connect/facebook/callback'),
-    FACEBOOK_GRAPH_VERSION: z.string().regex(/^v\d+\.\d+$/).default('v23.0'),
+    FACEBOOK_GRAPH_VERSION: z
+      .string()
+      .regex(/^v\d+\.\d+$/)
+      .default('v23.0'),
     GOOGLE_OAUTH_REDIRECT_URI: z.url().default('http://localhost:3100/v1/connect/google_portability/callback'),
   })
   .superRefine((env, ctx) => {

@@ -51,9 +51,9 @@ function registry() {
 
 async function sync(connectionId: string) {
   const runId = await createSyncRun(database, connectionId, 'user', 'full');
-  return runConnectionSync({ database, registry: registry(), resolver: new EntityResolver(database.db, [provider]) }, runId).catch(
-    (error: unknown) => ({ error }),
-  );
+  return runConnectionSync({ database, registry: registry(), resolver: new EntityResolver(database.db, [provider]) }, runId).catch((error: unknown) => ({
+    error,
+  }));
 }
 
 async function connectSteam(userId: string, steamid: string) {
@@ -140,7 +140,10 @@ describe('conexión con Steam (OpenID simulado)', () => {
 describe('sync de Steam', () => {
   let connectionId: string;
   beforeAll(async () => {
-    const [row] = await database.db.select().from(userConnections).where(and(eq(userConnections.userId, ana), eq(userConnections.sourceKey, 'steam')));
+    const [row] = await database.db
+      .select()
+      .from(userConnections)
+      .where(and(eq(userConnections.userId, ana), eq(userConnections.sourceKey, 'steam')));
     connectionId = row!.id;
   });
 
@@ -210,7 +213,10 @@ describe('sync de Steam', () => {
   });
 
   it('el programador solo encola fuentes reales vencidas y sin otro sync pendiente', async () => {
-    await database.db.update(userConnections).set({ lastSyncAt: new Date('2026-01-01T00:00:00Z') }).where(eq(userConnections.id, connectionId));
+    await database.db
+      .update(userConnections)
+      .set({ lastSyncAt: new Date('2026-01-01T00:00:00Z') })
+      .where(eq(userConnections.id, connectionId));
     const first = await scheduleDueSyncs(database, registry(), { intervalHours: 24 });
     expect(first.map((d) => d.connectionId)).toEqual([connectionId]);
     const second = await scheduleDueSyncs(database, registry(), { intervalHours: 24 });

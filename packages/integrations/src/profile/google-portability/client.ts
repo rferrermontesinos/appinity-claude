@@ -136,9 +136,7 @@ export class GooglePortabilityClient {
   }
 
   async state(accessToken: string, jobId: string): Promise<ArchiveState> {
-    const data = archiveStateSchema.safeParse(
-      await this.api(accessToken, 'GET', `/v1/archiveJobs/${encodeURIComponent(jobId)}/portabilityArchiveState`),
-    );
+    const data = archiveStateSchema.safeParse(await this.api(accessToken, 'GET', `/v1/archiveJobs/${encodeURIComponent(jobId)}/portabilityArchiveState`));
     if (!data.success) throw new SourceError('bad_response', 'Respuesta inesperada del estado del export de Google', false);
     return data.data;
   }
@@ -219,10 +217,7 @@ export class GooglePortabilityClient {
   }
 
   /** Petición con reintentos ante red caída, 5xx y 429 genéricos (no los límites de export, que se tratan aparte). */
-  private async send(
-    url: string,
-    init: { method: string; body?: URLSearchParams | string; contentType?: string; authorization?: string },
-  ): Promise<Response> {
+  private async send(url: string, init: { method: string; body?: URLSearchParams | string; contentType?: string; authorization?: string }): Promise<Response> {
     let last: SourceError | null = null;
     for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
       try {

@@ -1,11 +1,5 @@
 import { SourceError } from '@appinity/shared';
-import {
-  STEAM_API_BASE,
-  STEAM_BACKOFF_BASE_MS,
-  STEAM_MAX_RETRIES,
-  STEAM_MAX_RETRY_AFTER_MS,
-  STEAM_REQUEST_TIMEOUT_MS,
-} from './constants.js';
+import { STEAM_API_BASE, STEAM_BACKOFF_BASE_MS, STEAM_MAX_RETRIES, STEAM_MAX_RETRY_AFTER_MS, STEAM_REQUEST_TIMEOUT_MS } from './constants.js';
 import { ownedGamesSchema, playerSummariesSchema } from './schemas.js';
 
 export interface SteamClientOptions {
@@ -73,11 +67,7 @@ export class SteamClient {
         }
       }
       if (response.status === 401 || response.status === 403) {
-        throw new SourceError(
-          'auth',
-          'Steam rechaza la clave de la Web API (HTTP ' + response.status + '): revisa STEAM_WEB_API_KEY en .env',
-          false,
-        );
+        throw new SourceError('auth', 'Steam rechaza la clave de la Web API (HTTP ' + response.status + '): revisa STEAM_WEB_API_KEY en .env', false);
       }
       if (response.status === 429) {
         const wait = retryAfterMs(response.headers.get('retry-after')) ?? backoff;
