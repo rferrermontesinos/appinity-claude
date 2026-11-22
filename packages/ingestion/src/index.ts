@@ -13,3 +13,4 @@ export * from './affinities.js';
 export * from './soulmates.js';
 export * from './recommendations.js';
 export * from './home.js';
+export * from './social.js';

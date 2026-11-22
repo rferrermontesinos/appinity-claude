@@ -2,6 +2,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 import { usePerson } from '../../src/api/queries';
+import { PersonActions } from '../../src/components/PersonActions';
 import { PersonAvatar, formatAffinity } from '../../src/components/PersonAvatar';
 import { Badge, Body, Card, CategoryIcon, ErrorCard, Loading, Screen, Small, Title } from '../../src/components/ui';
 import { spacing, usePalette } from '../../src/theme';
@@ -55,6 +56,7 @@ export default function PersonScreen() {
             })}
             {data.affinity.algorithmVersion ? <Small>{t('people.algorithm', { version: data.affinity.algorithmVersion })}</Small> : null}
           </Card>
+          <PersonActions person={data} />
           <Body muted>{t('people.privacyNote')}</Body>
         </>
       ) : null}

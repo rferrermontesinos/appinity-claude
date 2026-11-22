@@ -1,5 +1,5 @@
 import { isExceptionalMutual } from '@appinity/algorithms';
-import { userAffinities, userBlocks, userProfiles, users, type Database } from '@appinity/database';
+import { userAffinities, userBlocks, userProfiles, userSettings, users, type Database } from '@appinity/database';
 import { and, asc, desc, eq, inArray, isNotNull, isNull, sql, type AnyColumn } from 'drizzle-orm';
 
 /**
@@ -67,6 +67,8 @@ export async function topSoulmates(db: Database, userId: string, limit = FREE_SO
     .from(userAffinities)
     .innerJoin(users, eq(users.id, userAffinities.targetUserId))
     .innerJoin(userProfiles, eq(userProfiles.userId, userAffinities.targetUserId))
+    // Solo quien acepta aparecer como alma gemela (ajuste de privacidad; por defecto, sí).
+    .innerJoin(userSettings, and(eq(userSettings.userId, userAffinities.targetUserId), eq(userSettings.discoverableAsSoulmate, true)))
     .where(
       and(
         eq(userAffinities.sourceUserId, userId),

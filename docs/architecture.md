@@ -1,6 +1,6 @@
 # Arquitectura · APPINITY Claude
 
-Documento vivo. Describe lo implementado (fases 0 a 9) y marca lo pendiente. Requisitos:
+Documento vivo. Describe lo implementado (fases 0 a 10) y marca lo pendiente. Requisitos:
 [APPINITY_Especificacion.md](APPINITY_Especificacion.md). Decisiones y parámetros: [decisions.md](decisions.md).
 
 ## Vista general
@@ -76,6 +76,8 @@ Tablas de la fase 1:
 | `recommendation_impressions` (fase 8) | Primera y última impresión por usuario y objeto (NEW) |
 | `recommendation_actions` (fase 8) | Descartar o conservar, con `undone_at` para deshacer |
 | `home_dismissals` (fase 7) | Descarte de Home por usuario y objeto canónico. Solo filtra Home; nunca toca los gustos |
+| `friendships` (fase 10) | Una fila por pareja (único sobre la pareja ordenada): pending, accepted o rejected; el rechazo no se revela |
+| `user_reports` (fase 10) | Reportes con motivo cerrado y nota opcional (≤ 500) |
 | `user_blocks` (fase 6) | Bloqueo por pareja ordenada (sin autorreferencia). Excluye en ambas direcciones del ranking, del perfil y de la afinidad |
 | `category_affinities` (fase 5) | Una fila por pareja ordenada y categoría con resultado (sin fila = NULL): puntuación, confianza, evidencia efectiva, acuerdo, cobertura y versión |
 

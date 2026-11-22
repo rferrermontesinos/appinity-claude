@@ -87,6 +87,8 @@ export const userSettings = pgTable(
     location: geographyPoint('location').generatedAlwaysAs(pointFrom('location_longitude', 'location_latitude')),
     locationUpdatedAt: timestamp('location_updated_at', { withTimezone: true }),
     discoverableByContacts: boolean('discoverable_by_contacts').notNull().default(true),
+    /** Aparecer en el ranking de almas gemelas de otras personas (§4: disponibles conforme a los ajustes de privacidad). */
+    discoverableAsSoulmate: boolean('discoverable_as_soulmate').notNull().default(true),
     notificationFrequency: text('notification_frequency', {
       enum: ['daily', 'three_per_week', 'weekly', 'off'],
     })

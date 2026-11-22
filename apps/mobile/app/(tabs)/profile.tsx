@@ -139,6 +139,17 @@ function SettingsCard({ settings }: { settings: SettingsDto }) {
           accessibilityLabel={t('profile.discoverable')}
         />
       </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Body>{t('profile.discoverableAsSoulmate')}</Body>
+          <Small>{t('profile.discoverableAsSoulmateHint')}</Small>
+        </View>
+        <Switch
+          value={settings.discoverableAsSoulmate}
+          onValueChange={(value) => save({ discoverableAsSoulmate: value })}
+          accessibilityLabel={t('profile.discoverableAsSoulmate')}
+        />
+      </View>
 
       <Small style={{ fontWeight: '700', marginTop: spacing.sm }}>{t('profile.notifications')}</Small>
       <ChipRow>
