@@ -16,7 +16,7 @@ Android» del proyecto; este fichero es su copia en el repositorio.
 | B7 · Rareza al día | Recálculo completo agrupado tras los recálculos parciales, para que todas las parejas usen los mismos pesos de `affinity-v5` | Test: una pareja ajena al usuario que cambió queda con los pesos nuevos | PR abierta (#33) |
 | B8 · Preparar Google Play (sin publicar) | Build bloqueada si la URL de la API es un marcador, versión visible en Ajustes, permisos revisados, borradores de ficha, seguridad de datos y clasificación, y guía de prueba cerrada | Ficha y formularios listos para copiar ([google-play.md](google-play.md)) | PR abierta (#34) |
 | B9 · Operación de la beta | Copias cifradas con restauración probada, moderación de reportes y suspensión de cuentas (la pide Play), métricas de la beta sin terceros, guía para testers ([guia-testers.md](guia-testers.md)) y manual de incidencias ([incidencias.md](incidencias.md)) | Copia cifrada restaurada en una base de prueba; métricas calculadas sobre la demo | PR abierta (#35) |
-| B10 · Auditoría final | Seguridad, QA, lista de publicación y paso a beta revisados de nuevo sobre todo lo anterior, y documentación al día | Paso a beta en verde salvo lo que solo puede hacer el titular ([paso-a-beta.md](paso-a-beta.md)) | PR abierta |
+| B10 · Auditoría final | Seguridad, QA, lista de publicación y paso a beta revisados de nuevo sobre todo lo anterior, y documentación al día | Paso a beta en verde salvo lo que solo puede hacer el titular ([paso-a-beta.md](paso-a-beta.md)) | PR abierta (#36) |
 
 ## Después de la beta cerrada
 
