@@ -5,6 +5,7 @@
 //   pnpm secret:set STEAM_WEB_API_KEY --clipboard  → lo lee del portapapeles (copia la clave antes)
 //   pnpm secret:set GOOGLE_OAUTH_CLIENT_ID --clipboard      → ID de cliente OAuth de Google (…apps.googleusercontent.com)
 //   pnpm secret:set GOOGLE_OAUTH_CLIENT_SECRET --clipboard  → secreto del cliente OAuth de Google (empieza por GOCSPX-)
+//   pnpm secret:set REVENUECAT_WEBHOOK_AUTH --clipboard     → cabecera Authorization del webhook de RevenueCat
 // Solo admite claves de la lista blanca; .env está ignorado por Git.
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
@@ -21,6 +22,10 @@ const ALLOWED = {
     description: 'el secreto del cliente OAuth de Google, que empieza por GOCSPX-',
     hint: (value) =>
       value.endsWith('.apps.googleusercontent.com') ? 'Eso es el ID de cliente: guárdalo con GOOGLE_OAUTH_CLIENT_ID.' : undefined,
+  },
+  REVENUECAT_WEBHOOK_AUTH: {
+    pattern: /^[!-~][ -~]{22,}[!-~]$/,
+    description: 'el valor exacto de la cabecera Authorization del webhook de RevenueCat (mín. 24 caracteres imprimibles)',
   },
 };
 

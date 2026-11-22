@@ -882,3 +882,26 @@ gente con la que tienes afinidad, igual que en Tinder cuando haces match»).
 - **Vista web: página completa en vez de ventana emergente**: Google corta el vínculo con la ventana de origen
   (Cross-Origin-Opener-Policy), así que la emergente no podía cerrarse ni avisar a la app y se acumulaban ventanas. La
   API vuelve a `/profile?source=…&result=…&message=…` y la tarjeta de fuentes muestra el resultado.
+
+## Fase 12B · 2026-10-15 (Premium con RevenueCat)
+
+- **El servidor es la única fuente de verdad**: Premium solo se concede con webhooks de RevenueCat. La app nunca se
+  declara Premium. El `app_user_id` de RevenueCat es el id de usuario de APPINITY (también se buscan sus alias).
+- **Reglas de la documentación de RevenueCat** (consultada el 2026-10-15):
+  - entrega «al menos una vez»: idempotencia por `event.id` (tabla `revenuecat_events`);
+  - `EXPIRATION` retira el acceso; `CANCELLATION` y `SUBSCRIPTION_PAUSED`, no (sigue hasta la caducidad);
+  - `TRANSFER` quita el acceso al origen y lo da al destino;
+  - `TEST` se registra sin efecto;
+  - un evento más antiguo que el último aplicado se ignora.
+- **Autenticación del webhook**: cabecera `Authorization` configurada en el panel de RevenueCat
+  (`REVENUECAT_WEBHOOK_AUTH`), comparada en tiempo constante. Sin configurar: 503. Incorrecta: 401.
+- **Sandbox y producción**: el entitlement se guarda por entorno. Cada instalación solo cuenta el suyo
+  (`PREMIUM_ENVIRONMENT`; por defecto, sandbox salvo con `NODE_ENV=production`).
+- **Qué da Premium ahora**:
+  - explorar hasta **200 almas gemelas**, en vez de 50;
+  - escribir sin match si `CHAT_PREMIUM_DIRECT_MESSAGE` está activo.
+  El consenso del recomendador sigue usando **siempre el Top 50** (`CONSENSUS_SOULMATES`, explícito en el código).
+- **Regla de producto «más adelante»**: `CHAT_SOULMATES_PREMIUM` (desactivado). Activado, pedir chat a un alma gemela
+  que no es amiga exige Premium; con los amigos se puede hablar siempre.
+- **Compra en la app: pendiente**. El SDK de RevenueCat necesita una build de desarrollo (Expo Go no admite compras)
+  y productos configurados en App Store Connect y Google Play. No se instala ni se simula: el Perfil lo explica.

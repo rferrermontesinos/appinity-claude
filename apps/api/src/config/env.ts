@@ -43,10 +43,24 @@ const envSchema = z
       .optional()
       .transform((v) => (v ? v.trim() : undefined)),
     /** Debe coincidir EXACTAMENTE con la URI autorizada del cliente. Google solo admite http con localhost. */
+    /** RevenueCat (fase 12B): valor exacto de la cabecera Authorization configurada en su panel para el webhook. */
+    REVENUECAT_WEBHOOK_AUTH: z
+      .string()
+      .optional()
+      .transform((v) => (v ? v.trim() : undefined))
+      .refine((v) => v === undefined || v.length >= 24, 'REVENUECAT_WEBHOOK_AUTH debe tener al menos 24 caracteres'),
+    REVENUECAT_ENTITLEMENT_ID: z.string().min(1).default('premium'),
+    /** Entorno cuyas compras cuentan aquí. Por defecto, sandbox salvo con NODE_ENV=production. */
+    PREMIUM_ENVIRONMENT: z
+      .union([z.literal(''), z.enum(['sandbox', 'production'])])
+      .optional()
+      .transform((v) => v || undefined),
     /** Flags de mensajería (§16). EARLY_ACCESS: chat gratuito con solicitud y aceptación (activado por defecto). */
     CHAT_EARLY_ACCESS: flag(true),
     /** PREMIUM_DIRECT_MESSAGE: Premium escribe sin match. Sin RevenueCat nadie es Premium, así que no tiene efecto. */
     CHAT_PREMIUM_DIRECT_MESSAGE: flag(false),
+    /** Regla de producto «más adelante»: hablar con almas gemelas (no amigas) exige Premium. Desactivado por defecto. */
+    CHAT_SOULMATES_PREMIUM: flag(false),
     GOOGLE_OAUTH_REDIRECT_URI: z.url().default('http://localhost:3100/v1/connect/google_portability/callback'),
   })
   .superRefine((env, ctx) => {

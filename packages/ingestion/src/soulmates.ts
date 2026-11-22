@@ -12,6 +12,10 @@ import { and, asc, desc, eq, inArray, isNotNull, isNull, sql, type AnyColumn } f
  * - Versión gratuita: las 50 primeras. Si hay 12 candidatas, se devuelven 12; nunca se rellena.
  */
 export const FREE_SOULMATES_LIMIT = 50;
+/** Premium explora más personas (fase 12B). No cambia el consenso, que siempre usa el Top 50 (§16). */
+export const PREMIUM_SOULMATES_LIMIT = 200;
+/** Personas del bloque de consenso: siempre las 50 primeras, con igual peso, sea cual sea el plan. */
+export const CONSENSUS_SOULMATES = 50;
 
 export interface SoulmateRow {
   rank: number;

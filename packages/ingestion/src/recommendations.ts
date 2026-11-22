@@ -32,7 +32,7 @@ import {
 import { isCategory, type Category } from '@appinity/shared';
 import { and, eq, gte, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { unseenItems } from './home.js';
-import { topSoulmates } from './soulmates.js';
+import { CONSENSUS_SOULMATES, topSoulmates } from './soulmates.js';
 
 /**
  * Recomendaciones para un usuario (§12 y §13), calculadas al pedirlas a partir de lo ya consolidado (perfiles y
@@ -149,7 +149,8 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
   }
 
   // Almas gemelas: SOLO el Top 50 (la persona 51 no influye en el consenso ni en el descubrimiento).
-  const soulmates = await topSoulmates(db, userId);
+  // Siempre el Top 50, también con Premium (§16).
+  const soulmates = await topSoulmates(db, userId, CONSENSUS_SOULMATES);
   const soulmateIds = soulmates.map((s) => s.userId);
   const prefs = soulmateIds.length
     ? await db

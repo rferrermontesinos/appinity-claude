@@ -224,6 +224,20 @@ export type ChatStateDto =
   | { state: 'request_received'; requestId: string; kind: 'interest' | 'direct'; firstMessage: string | null }
   | { state: 'matched'; conversationId: string };
 
+/** Premium (fase 12B): estado verificado en servidor a partir de RevenueCat. */
+export interface PremiumDto {
+  premium: boolean;
+  /** Entorno cuyas compras cuentan en esta instalación. */
+  environment: 'sandbox' | 'production';
+  productId: string | null;
+  expiresAt: string | null;
+  source: 'revenuecat';
+  /** El servidor tiene configurado el webhook de RevenueCat. */
+  webhookConfigured: boolean;
+  /** La app puede comprar (SDK de RevenueCat integrado en una build de desarrollo). Falso en Expo Go. */
+  purchasesInApp: boolean;
+}
+
 export interface ChatConfigDto {
   /** EARLY_ACCESS: chat gratuito con solicitud y aceptación. */
   earlyAccess: boolean;
@@ -231,7 +245,7 @@ export interface ChatConfigDto {
   premiumDirectMessage: boolean;
   /** Entitlement verificado en servidor. Falso mientras no exista RevenueCat (fase 12B). */
   premium: boolean;
-  premiumSource: 'none';
+  premiumSource: 'revenuecat';
   limits: { requestsPerDay: number; messagesPerMinute: number; messagesPerDay: number; bodyMaxLength: number };
 }
 
