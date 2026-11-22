@@ -1433,43 +1433,6 @@ Cierra los hallazgos bajos y medios que quedaban de la auditoría del 2026-11-22
   (RGPD art. 7 pide un consentimiento específico; hoy cada proveedor muestra además su pantalla de permiso), el mecanismo
   de transferencia de cada proveedor y si hacen falta NIF y dirección (LSSI).
 
-## 2026-11-22 · B6: notificaciones push en la app
-
-- **Cuándo se pide el permiso**: una sola vez, al entrar con el alta hecha y la frecuencia distinta de «Desactivadas».
-  Es lo que la app ya prometía en Ajustes y lo que espera quien dejó la frecuencia por defecto (tres por semana). Si la
-  persona lo deniega, el sistema no deja volver a preguntar: Ajustes ofrece «Abrir ajustes del teléfono». Si cambia
-  después de «Desactivadas» a otra frecuencia, se pregunta entonces.
-- **El token se registra en cada arranque** (la API lo guarda una sola vez): Expo lo recomienda para que su token siga
-  apuntando al dispositivo cuando el de FCM cambia.
-- **Al cerrar sesión se da de baja el teléfono** antes de cerrar la sesión, para que no lleguen resúmenes de una cuenta
-  que ya no está en el teléfono. Si falla (sin red), al entrar otra cuenta el token pasa a ella. Si la sesión caduca sin
-  cerrar sesión, el teléfono sigue registrado hasta que entre alguien.
-- **Sin `expo-notifications` donde no puede funcionar**: en la web, en Expo Go (Android no admite push desde el SDK 53 y
-  la librería avisa solo con importarla) y en una build sin proyecto de EAS, no se carga (import dinámico). Ajustes dice
-  por qué no llegan, sin simular nada.
-- **Con la app abierta**, el resumen va a la lista de notificaciones sin sonido ni banner: la persona ya está dentro.
-- **Al tocar**, solo se abren las pantallas de una lista cerrada (`PUSH_SCREENS`, hoy solo Inicio). Nunca una ruta que
-  venga en la notificación.
-- **Configuración por variables de entorno** (`app.config.ts`): `EAS_PROJECT_ID` y `GOOGLE_SERVICES_JSON`. Sin ellas la
-  app se compila igual. El `google-services.json` queda fuera de Git: no es un secreto fuerte, pero identifica el
-  proyecto de Firebase y no hace falta publicarlo.
-- **`expo-notifications` fijada en 57.0.22**, la del SDK 57: las 57.0.23 a 57.0.25 traen otra versión de
-  `expo-constants` y habría dos copias del mismo módulo nativo.
-
-## 2026-11-22 · B5: comentarios de los testers
-
-- **Dentro de la app y con sesión**: Perfil → Enviar comentario guarda el texto en nuestra base de datos, sin terceros
-  (ni formularios externos ni email). Con sesión, el comentario se asocia a la cuenta para poder borrarlo con ella,
-  incluirlo en la copia de datos y saber de qué tester es; sin sesión no hay nada que comentar de la beta.
-- **Solo texto, versión y plataforma**: ni capturas, ni registros, ni la pantalla abierta. Si hace falta más contexto, se
-  pregunta a la persona fuera de la app. Lo técnico de los fallos ya llega por los avisos de errores (B4).
-- **Cupo**: 10 por persona en 24 horas (mensaje claro en la app) y 10 envíos por minuto e IP contra el abuso. La longitud
-  máxima (2.000 caracteres) se comprueba en la app, en la API y en PostgreSQL.
-- **Lectura por comando** (`pnpm feedback:list`), sin panel web: no hay un panel de administración y no se abre uno
-  para la beta. `--mark-read` marca como leídos los que se acaban de listar.
-- **Base legal**: interés legítimo (mejorar la app); los envía la persona cuando quiere. Entran en la copia de datos y se
-  borran con la cuenta.
-
 ## 2026-11-22 · B4: avisos de errores con Sentry, apagados sin DSN
 
 - **Apagados por defecto**: sin `SENTRY_DSN` no se crea cliente, no sale nada a la red y no se instalan manejadores de
@@ -1506,3 +1469,65 @@ Cierra los hallazgos bajos y medios que quedaban de la auditoría del 2026-11-22
   entienden. El filtro los sustituye enteros por `[redacted]`.
 - **Política de privacidad**: con `SENTRY_DSN`, Sentry aparece entre los proveedores técnicos (qué se envía y qué se
   quita); sin él, no se nombra.
+
+## 2026-11-22 · B5: comentarios de los testers
+
+- **Dentro de la app y con sesión**: Perfil → Enviar comentario guarda el texto en nuestra base de datos, sin terceros
+  (ni formularios externos ni email). Con sesión, el comentario se asocia a la cuenta para poder borrarlo con ella,
+  incluirlo en la copia de datos y saber de qué tester es; sin sesión no hay nada que comentar de la beta.
+- **Solo texto, versión y plataforma**: ni capturas, ni registros, ni la pantalla abierta. Si hace falta más contexto, se
+  pregunta a la persona fuera de la app. Lo técnico de los fallos ya llega por los avisos de errores (B4).
+- **Cupo**: 10 por persona en 24 horas (mensaje claro en la app) y 10 envíos por minuto e IP contra el abuso. La longitud
+  máxima (2.000 caracteres) se comprueba en la app, en la API y en PostgreSQL.
+- **Lectura por comando** (`pnpm feedback:list`), sin panel web: no hay un panel de administración y no se abre uno
+  para la beta. `--mark-read` marca como leídos los que se acaban de listar.
+- **Base legal**: interés legítimo (mejorar la app); los envía la persona cuando quiere. Entran en la copia de datos y se
+  borran con la cuenta.
+
+## 2026-11-22 · B6: notificaciones push en la app
+
+- **Cuándo se pide el permiso**: una sola vez, al entrar con el alta hecha y la frecuencia distinta de «Desactivadas».
+  Es lo que la app ya prometía en Ajustes y lo que espera quien dejó la frecuencia por defecto (tres por semana). Si la
+  persona lo deniega, el sistema no deja volver a preguntar: Ajustes ofrece «Abrir ajustes del teléfono». Si cambia
+  después de «Desactivadas» a otra frecuencia, se pregunta entonces.
+- **El token se registra en cada arranque** (la API lo guarda una sola vez): Expo lo recomienda para que su token siga
+  apuntando al dispositivo cuando el de FCM cambia.
+- **Al cerrar sesión se da de baja el teléfono** antes de cerrar la sesión, para que no lleguen resúmenes de una cuenta
+  que ya no está en el teléfono. Si falla (sin red), al entrar otra cuenta el token pasa a ella. Si la sesión caduca sin
+  cerrar sesión, el teléfono sigue registrado hasta que entre alguien.
+- **Sin `expo-notifications` donde no puede funcionar**: en la web, en Expo Go (Android no admite push desde el SDK 53 y
+  la librería avisa solo con importarla) y en una build sin proyecto de EAS, no se carga (import dinámico). Ajustes dice
+  por qué no llegan, sin simular nada.
+- **Con la app abierta**, el resumen va a la lista de notificaciones sin sonido ni banner: la persona ya está dentro.
+- **Al tocar**, solo se abren las pantallas de una lista cerrada (`PUSH_SCREENS`, hoy solo Inicio). Nunca una ruta que
+  venga en la notificación.
+- **Configuración por variables de entorno** (`app.config.ts`): `EAS_PROJECT_ID` y `GOOGLE_SERVICES_JSON`. Sin ellas la
+  app se compila igual. El `google-services.json` queda fuera de Git: no es un secreto fuerte, pero identifica el
+  proyecto de Firebase y no hace falta publicarlo.
+- **`expo-notifications` fijada en 57.0.22**, la del SDK 57: las 57.0.23 a 57.0.25 traen otra versión de
+  `expo-constants` y habría dos copias del mismo módulo nativo.
+
+## 2026-11-22 · B7: rareza al día en todas las parejas
+
+- **El problema**: la rareza de `affinity-v5` depende de todo el dataset (cuánta gente tiene preferencia sobre cada obra y
+  cuántas personas son comparables). Cuando alguien vota o sincroniza, el recálculo parcial reescribe solo sus parejas,
+  con la rareza nueva; las demás conservaban los pesos con los que se calcularon hasta el recálculo diario. Con pocos
+  datos la diferencia es pequeña, pero dos parejas podían compararse con pesos distintos durante horas.
+- **Solución**: cada recálculo parcial pide un **recálculo completo agrupado** que sale 10 minutos después. Uno
+  pendiente vale para todos los cambios que lleguen mientras espera; si llegan durante el cálculo, se encola otro al
+  terminar. Así hay como mucho un completo cada 10 minutos mientras haya actividad, y ninguno sin ella. El diario se
+  queda como red de seguridad. También se pide al eliminar una cuenta, que cambia la población y la rareza de sus obras.
+- **Coste medido** (contenedor de pruebas, datos sintéticos): 100 personas con 300 gustos cada una, unos 6 s por
+  completo (9.900 parejas y 78.718 filas por categoría); la demo (12 personas), menos de 0,1 s. Crece con el cuadrado de
+  las personas: sirve para la beta, pero con miles habrá que repensarlo (por ejemplo, recalcular solo las parejas que
+  comparten obras cuya rareza cambió de verdad).
+- **Recálculos sin perder cambios**: la cola usa la deduplicación de BullMQ con `keepLastIfActive` en lugar de un id de
+  trabajo fijo. Con el id fijo, un voto que llegaba mientras se calculaban las afinidades de esa persona no encolaba
+  nada (el trabajo ya en marcha quizá había leído los gustos antes del voto), y si el trabajo fallaba del todo, quedaba
+  guardado y bloqueaba sus recálculos hasta que se purgase (comprobado con BullMQ 6.3.11). Ahora el cambio se guarda y
+  se encola al terminar, y un fallo libera la deduplicación.
+- **Un voto no falla por Redis**: si no se puede encolar el recálculo, el voto (ya guardado) responde igual y queda un
+  aviso en el registro; el recálculo llega con el siguiente cambio o con el diario.
+- **Misma población para la rareza en toda la app**: «Lo que os une» y «Lo que te define» contaban también a personas
+  sin la mayoría de edad confirmada, que nunca entran en la afinidad. Ahora las dos partes cuentan a las mismas personas.
+- Sin cambios en la fórmula ni en la versión del motor (`affinity-v5`): solo cuándo se aplica.

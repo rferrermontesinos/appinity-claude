@@ -119,6 +119,13 @@ Revisión de todas las rutas de `apps/api` (sin herramientas externas):
 - Falta lo del titular: proyecto de EAS, Firebase y la clave de FCM V1. Después, un APK nuevo y `pnpm push:test`
   ([operations.md](operations.md#notificaciones-push-fase-b6)).
 
+### Rareza al día (2026-11-22, fase B7)
+
+- Tras cada voto o sync, las afinidades de esa persona se recalculan a los 10 s y, como mucho 10 minutos después, todas
+  las demás, porque la rareza de las obras es de todo el grupo. Con 100 personas, cada recálculo completo tarda unos 6 s.
+- Un voto que llega mientras se calcula ya no se pierde, un fallo no bloquea los recálculos siguientes y un problema de
+  Redis no hace fallar el voto.
+
 ## Prueba con amigos y familiares: alta única (2026-10-26)
 
 ### Qué hace ya la app

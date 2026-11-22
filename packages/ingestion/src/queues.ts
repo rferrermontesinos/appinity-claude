@@ -45,12 +45,51 @@ export function enqueueSync(queues: ProducerQueues, job: ProfileSyncJob) {
   return queues.profileSync.add('sync', job, { jobId: job.runId });
 }
 
+/** Espera del recálculo de un usuario: agrupa los votos y syncs de unos segundos en un solo trabajo. */
+export const AFFINITY_USER_DELAY_MS = 10_000;
 /**
- * Recálculo de afinidades de un usuario. Se agrupan los cambios cercanos: mientras el trabajo espera (10 s), otro sync
- * del mismo usuario no encola otro (mismo id); al completarse se puede volver a encolar.
+ * Espera del recálculo completo que sigue a los parciales (fase B7). La rareza de `affinity-v5` depende de todo el
+ * dataset: cuando alguien cambia sus gustos, cambian un poco los pesos de las parejas en las que no está. Como mucho
+ * una vez cada 10 minutos mientras haya cambios; el recálculo diario queda de red de seguridad.
+ */
+export const AFFINITY_REFRESH_DELAY_MS = 10 * 60_000;
+
+/**
+ * Recálculo de afinidades de un usuario. Se agrupan los cambios cercanos: mientras el trabajo espera, otro voto o sync
+ * del mismo usuario no encola otro. Si llega mientras el trabajo se ejecuta (y quizá ya leyó los gustos), se guarda y
+ * se encola al terminar (`keepLastIfActive`): ningún cambio se pierde. La deduplicación se libera al completarse o al
+ * fallar del todo, así que un fallo no bloquea los recálculos siguientes (con un id de trabajo fijo, sí los bloqueaba
+ * mientras el trabajo fallido siguiera guardado).
  */
 export function enqueueAffinity(queues: Pick<ProducerQueues, 'affinity'>, userId: string) {
-  return queues.affinity.add('recompute', { userId }, { jobId: `affinity-${userId}`, delay: 10_000, removeOnComplete: true, removeOnFail: { count: 100 } });
+  return queues.affinity.add(
+    'recompute',
+    { userId },
+    {
+      deduplication: { id: `affinity-user-${userId}`, keepLastIfActive: true },
+      delay: AFFINITY_USER_DELAY_MS,
+      removeOnComplete: true,
+      removeOnFail: { count: 100 },
+    },
+  );
+}
+
+/**
+ * Recálculo completo agrupado, tras los parciales: todas las parejas vuelven a usar los mismos pesos de rareza. Uno
+ * pendiente basta para todos los cambios que lleguen mientras espera; si llegan mientras se ejecuta, se encola otro al
+ * terminar.
+ */
+export function enqueueAffinityRefresh(queues: Pick<ProducerQueues, 'affinity'>) {
+  return queues.affinity.add(
+    'recompute-all',
+    {},
+    {
+      deduplication: { id: 'affinity-refresh', keepLastIfActive: true },
+      delay: AFFINITY_REFRESH_DELAY_MS,
+      removeOnComplete: true,
+      removeOnFail: { count: 100 },
+    },
+  );
 }
 
 /** Una imagen pendiente no se encola dos veces; al completarse puede volver a encolarse. */

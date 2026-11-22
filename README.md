@@ -7,7 +7,7 @@ Implementación independiente de APPINITY construida desde cero a partir de
 
 **Estado:**
 - 2026-11-22: plan de fases hasta la beta cerrada Android en [docs/fases-beta.md](docs/fases-beta.md) (B1–B10, una PR
-  encadenada por fase).
+  encadenada por fase; B1 a B7 con PR abierta).
 - 2026-11-22: todas las fases fusionadas en `main` y alcance congelado hasta la beta cerrada. Entrega de seguridad
   (PKCE y conexión confirmada), consentimiento único, privacidad por defecto y tarjeta «Cuatro direcciones»
   ([docs/progress.md](docs/progress.md)).

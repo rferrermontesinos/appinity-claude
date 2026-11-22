@@ -86,16 +86,19 @@ function candidatesOf(userId: string, profiles: Map<string, PreferenceIndex>, us
   return out;
 }
 
-/**
- * Recalcula y guarda las afinidades. Sustituye, en una transacción, todas las filas en las que interviene un usuario
- * del foco (como origen o como destino); con el dataset entero, todas las del dataset.
- */
 /** ¿Quedan afinidades calculadas con otra versión del motor? El worker lo comprueba al arrancar y lo recalcula todo. */
 export async function hasStaleAffinities(db: Database): Promise<boolean> {
   const [row] = await db.select({ id: userAffinities.sourceUserId }).from(userAffinities).where(ne(userAffinities.algorithmVersion, AFFINITY_VERSION)).limit(1);
   return Boolean(row);
 }
 
+/**
+ * Recalcula y guarda las afinidades. Sustituye, en una transacción, todas las filas en las que interviene un usuario
+ * del foco (como origen o como destino); con el dataset entero, todas las del dataset.
+ *
+ * Un recálculo parcial usa la rareza del momento, pero solo reescribe las parejas del foco: las demás conservan los
+ * pesos con los que se calcularon. Por eso cada parcial pide después un completo agrupado (`runAffinityJob`, B7).
+ */
 export async function recomputeAffinities(db: Database, options: AffinityRecomputeOptions = {}): Promise<AffinityRecomputeResult[]> {
   const params = options.params ?? AFFINITY_PARAMS_V1;
   const computedAt = options.now ?? new Date();
