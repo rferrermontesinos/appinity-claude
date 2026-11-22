@@ -161,6 +161,14 @@ export const en: TranslationResources = {
     connectSteam: 'Sign in through Steam',
     steamHelp:
       'Steam will open so you can sign in there (APPINITY never sees your password). Only your SteamID is linked; your library is read with the Steam Web API.',
+    googleHelp:
+      'Google will open: tick the data you want to share and choose 180 days to keep it up to date. APPINITY only reads; it never writes to your account.',
+    localOnlyNotice:
+      'In development, Google can only return to this PC: connect Google from the web view on the PC (port 8092) with your local account. You will then see it here.',
+    renew: 'Renew permission',
+    revokedAtProvider: 'Disconnected. The provider confirmed that APPINITY access is revoked.',
+    revokeFailed:
+      'Disconnected in APPINITY and credentials deleted, but the provider did not confirm the revocation. You can check it in your provider account settings.',
     unconfigured: 'Not available on this server: {{reason}}',
     demoOnlyReal: 'Real accounts only. Sign in with a local real account to connect it.',
     connectedResult: 'Account connected. The first sync is running.',
@@ -196,6 +204,13 @@ export const en: TranslationResources = {
       fixture_play: 'Demo · Game library',
       fixture_audio: 'Demo · Music and podcasts',
     },
+  },
+  credits: {
+    title: 'Credits and data sources',
+    osm: 'Places identified with data © OpenStreetMap contributors (ODbL license).',
+    wikidata: 'Catalog: Wikidata (CC0) and images from Wikimedia Commons; every image shows its author and license.',
+    steam: 'Games: data from the Steam Web API and Steam store art, as reference only.',
+    google: 'Your Google data is imported with your permission through Google Data Portability and is never shared.',
   },
   categoriesScreen: {
     title: 'Categories',

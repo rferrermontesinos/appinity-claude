@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Switch, Text, View } from 'react-native';
 import { useMe, useUpdateSettings, type SettingsPatch } from '../../src/api/queries';
+import { CreditsCard } from '../../src/components/CreditsCard';
 import { DataBanner } from '../../src/components/DataBanner';
 import { Diagnostics } from '../../src/components/Diagnostics';
 import { SourcesCard } from '../../src/components/SourcesCard';
@@ -187,6 +188,7 @@ export default function ProfileScreen() {
           </Card>
         </>
       ) : null}
+      <CreditsCard />
       <Diagnostics />
     </Screen>
   );

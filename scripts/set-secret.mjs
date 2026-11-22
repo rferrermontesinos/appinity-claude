@@ -3,13 +3,25 @@
 // Uso (en TU terminal):
 //   pnpm secret:set STEAM_WEB_API_KEY              → pide el valor (se muestran asteriscos)
 //   pnpm secret:set STEAM_WEB_API_KEY --clipboard  → lo lee del portapapeles (copia la clave antes)
+//   pnpm secret:set GOOGLE_OAUTH_CLIENT_ID --clipboard      → ID de cliente OAuth de Google (…apps.googleusercontent.com)
+//   pnpm secret:set GOOGLE_OAUTH_CLIENT_SECRET --clipboard  → secreto del cliente OAuth de Google (empieza por GOCSPX-)
 // Solo admite claves de la lista blanca; .env está ignorado por Git.
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { describeInvalid, sanitizeSecret } from './lib/secret-input.mjs';
 
 const ALLOWED = {
-  STEAM_WEB_API_KEY: { pattern: /^[0-9A-F]{32}$/i, description: '32 caracteres hexadecimales (0-9, A-F)' },
+  STEAM_WEB_API_KEY: { pattern: /^[0-9A-F]{32}$/i, description: '32 caracteres hexadecimales (0-9, A-F)', hexOnly: true },
+  GOOGLE_OAUTH_CLIENT_ID: {
+    pattern: /^[\w-]+\.apps\.googleusercontent\.com$/,
+    description: 'el ID de cliente OAuth de Google, que termina en .apps.googleusercontent.com',
+  },
+  GOOGLE_OAUTH_CLIENT_SECRET: {
+    pattern: /^GOCSPX-[A-Za-z0-9_-]{20,}$/,
+    description: 'el secreto del cliente OAuth de Google, que empieza por GOCSPX-',
+    hint: (value) =>
+      value.endsWith('.apps.googleusercontent.com') ? 'Eso es el ID de cliente: guárdalo con GOOGLE_OAUTH_CLIENT_ID.' : undefined,
+  },
 };
 
 const args = process.argv.slice(2).filter((a) => a !== '--');
@@ -83,14 +95,16 @@ function readHidden(prompt) {
   });
 }
 
-const { pattern, description } = ALLOWED[name];
+const { pattern, description, hexOnly = false, hint } = ALLOWED[name];
 const raw = fromClipboard
   ? readClipboard()
   : await readHidden(`Pega el valor de ${name} y pulsa Enter (verás un * por carácter, no el valor): `);
 const value = sanitizeSecret(raw);
 if (!pattern.test(value)) {
   console.error(`El valor no tiene el formato esperado para ${name}. No se ha guardado nada.`);
-  console.error(describeInvalid(value, description));
+  console.error(describeInvalid(value, description, { hexOnly }));
+  const extra = hint?.(value);
+  if (extra) console.error(extra);
   if (!fromClipboard) {
     console.error('Si al pegar no aparecieron asteriscos, prueba a pegar con clic derecho o usa:');
     console.error(`  pnpm secret:set ${name} --clipboard   (copia antes la clave al portapapeles)`);

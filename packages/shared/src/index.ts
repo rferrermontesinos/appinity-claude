@@ -6,3 +6,4 @@ export * from './profile.js';
 export * from './api.js';
 export * from './queues.js';
 export * from './errors.js';
+export * from './text.js';

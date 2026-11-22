@@ -25,6 +25,18 @@ const envSchema = z
       .transform((v) => (v ? v.trim() : undefined))
       .refine((v) => v === undefined || /^[0-9A-F]{32}$/i.test(v), 'STEAM_WEB_API_KEY debe tener 32 caracteres hexadecimales'),
     SYNC_INTERVAL_HOURS: z.coerce.number().min(1).max(168).default(24),
+    /** Cliente OAuth de Google (tipo «Aplicación web») para Data Portability. Solo servidor. */
+    GOOGLE_OAUTH_CLIENT_ID: z
+      .string()
+      .optional()
+      .transform((v) => (v ? v.trim() : undefined))
+      .refine((v) => v === undefined || /^[\w-]+\.apps\.googleusercontent\.com$/.test(v), 'GOOGLE_OAUTH_CLIENT_ID debe terminar en .apps.googleusercontent.com'),
+    GOOGLE_OAUTH_CLIENT_SECRET: z
+      .string()
+      .optional()
+      .transform((v) => (v ? v.trim() : undefined)),
+    /** Debe coincidir EXACTAMENTE con la URI autorizada del cliente. Google solo admite http con localhost. */
+    GOOGLE_OAUTH_REDIRECT_URI: z.url().default('http://localhost:3100/v1/connect/google_portability/callback'),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === 'production' && (env.DEMO_MODE || env.DEV_AUTH_ENABLED)) {

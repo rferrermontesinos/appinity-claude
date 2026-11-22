@@ -88,6 +88,7 @@ export class EntityResolver {
 
     if (!itemId) {
       for (const provider of this.providers) {
+        if (provider.datasets && !provider.datasets.includes(dataset)) continue;
         const found = await provider.resolve(candidate);
         if (!found) continue;
         const upserted = await this.upsertProviderItem(found.item, dataset, provider);

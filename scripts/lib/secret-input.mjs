@@ -15,7 +15,7 @@ export function sanitizeSecret(raw) {
 }
 
 /** Describe por qué un valor no es válido sin revelarlo (solo longitud y tipo de caracteres). */
-export function describeInvalid(value, pattern) {
-  const nonHex = [...value].filter((c) => !/[0-9a-f]/i.test(c)).length;
+export function describeInvalid(value, pattern, { hexOnly = true } = {}) {
+  const nonHex = hexOnly ? [...value].filter((c) => !/[0-9a-f]/i.test(c)).length : 0;
   return `Se recibieron ${value.length} caracteres${nonHex ? ` (${nonHex} no hexadecimales)` : ''}; el formato esperado es ${pattern}.`;
 }

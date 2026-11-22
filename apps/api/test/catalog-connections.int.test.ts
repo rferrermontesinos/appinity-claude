@@ -99,9 +99,10 @@ describe('fuentes y conexiones', () => {
   it('las fuentes simuladas son conectables para usuarios de demo; las reales previstas no', async () => {
     const { body } = await call<SourceDto[]>('/v1/sources', 'demo_sam');
     expect(body.filter((s) => s.connectable).every((s) => s.simulated)).toBe(true);
-    // Sin STEAM_WEB_API_KEY en el entorno de test, Steam aparece sin configurar; Google está prevista (fases 3–4).
+    // Sin STEAM_WEB_API_KEY ni cliente OAuth de Google en el entorno de test, ambas aparecen sin configurar.
     expect(body.find((s) => s.key === 'steam')).toMatchObject({ connectable: false, availability: 'unconfigured' });
-    expect(body.find((s) => s.key === 'google_portability')).toMatchObject({ connectable: false, availability: 'planned', plannedPhase: '3–4' });
+    expect(body.find((s) => s.key === 'google_portability')).toMatchObject({ connectable: false, availability: 'unconfigured' });
+    expect(body.find((s) => s.key === 'google_books')).toMatchObject({ connectable: false, availability: 'planned', plannedPhase: '11' });
     // Las fuentes que requieren acuerdo comercial no se anuncian (revisión de fuentes 2026-10-08).
     expect(body.map((s) => s.key)).not.toContain('tmdb');
     expect(body.map((s) => s.key)).not.toContain('lastfm');

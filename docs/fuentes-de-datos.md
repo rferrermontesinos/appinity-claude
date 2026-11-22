@@ -57,6 +57,11 @@ que se redacta antes de implementar cada fuente (§9 de la especificación).
 
 ### Google Data Portability API · veredicto **B** · prioridad P0
 
+> **Fase 3 (2026-10-09):** valoraciones y lugares implementados; pendiente de validar con una cuenta real. Requisitos
+> descubiertos al implementar: cuenta de facturación en el proyecto, scopes no combinables con openid/email (sin
+> identidad de cuenta), datos sin identificadores (hay que identificar cada registro) y, en modo de pruebas, permiso de
+> 7 días y vuelta solo a `localhost`. Detalle en [integration-capabilities.md](integration-capabilities.md).
+
 Un consentimiento de Google (OAuth) con los grupos de recursos elegidos. Los datos llegan como un archivo que la API
 prepara de forma asíncrona.
 

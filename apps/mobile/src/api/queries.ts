@@ -5,6 +5,7 @@ import type {
   ConnectionDto,
   DevSessionDto,
   DevUserDto,
+  DisconnectResultDto,
   ItemProfileDetailDto,
   ItemProfileDto,
   MeDto,
@@ -153,7 +154,7 @@ export function useDisconnect() {
   const invalidate = useInvalidateUserData();
   return useMutation({
     mutationFn: ({ connectionId, purge }: { connectionId: string; purge: boolean }) =>
-      apiRequest<{ purgedObservations: number; affectedItems: number }>(
+      apiRequest<DisconnectResultDto>(
         `/v1/me/connections/${connectionId}?purge=${purge ? 'true' : 'false'}`,
         { method: 'DELETE' },
       ),

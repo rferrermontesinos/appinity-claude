@@ -90,17 +90,18 @@ describe('conexión con Steam desde la API', () => {
     const url = new URL((body as { authorizationUrl: string }).authorizationUrl);
     expect(url.origin + url.pathname).toBe('https://steamcommunity.com/openid/login');
     const returnTo = new URL(url.searchParams.get('openid.return_to')!);
-    expect(returnTo.pathname).toBe('/v1/connect/steam/callback');
-    const state = returnTo.searchParams.get('state')!;
+    // El state va en la ruta (sin query propia: los proveedores añaden la suya).
+    const [, state] = /^\/v1\/connect\/steam\/callback\/([A-Za-z0-9_-]+)$/.exec(returnTo.pathname) ?? [];
     expect(state).toMatch(/^[A-Za-z0-9_-]{30,}$/);
+    expect(returnTo.search).toBe('');
 
     // Una respuesta sin datos OpenID se rechaza y vuelve a la app con el error.
-    const callback = await fetch(`${base}/v1/connect/steam/callback?state=${state}`, { redirect: 'manual' });
+    const callback = await fetch(`${base}/v1/connect/steam/callback/${state}`, { redirect: 'manual' });
     expect(callback.status).toBe(302);
     const back = new URL(callback.headers.get('location')!);
     expect(back.protocol).toBe('exp:');
     expect(back.searchParams.get('result')).toBe('error');
-    // El state ya se consumió: reutilizarlo no sirve.
+    // El state ya se consumió: reutilizarlo no sirve (tampoco con la forma antigua ?state=).
     const replay = await fetch(`${base}/v1/connect/steam/callback?state=${state}`, { redirect: 'manual' });
     expect(replay.status).toBe(400);
     expect(await replay.text()).toMatch(/caducado o ya se usó/);

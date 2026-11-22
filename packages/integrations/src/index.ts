@@ -5,3 +5,9 @@ export { createFixtureAdapter, createFixtureAdapters, FIXTURE_MANIFESTS } from '
 export * as steam from './profile/steam/index.js';
 export { createSteamAdapter } from './profile/steam/index.js';
 export * as steamFixtures from './profile/steam/fixtures/responses.js';
+export * as googlePortability from './profile/google-portability/index.js';
+export { createGooglePortabilityAdapter, GOOGLE_PORTABILITY_MANIFEST } from './profile/google-portability/index.js';
+export * as googleFixtures from './profile/google-portability/fixtures/fake-google.js';
+export { createCatalogIdentifier, type CatalogIdentifierOptions } from './catalog/identifier.js';
+export { OsmPlaceIdentifier, classifyOsmTags, pickPlace } from './catalog/osm-places.js';
+export { WikidataWorkIdentifier } from './catalog/wikidata-works.js';
