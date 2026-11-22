@@ -905,3 +905,22 @@ gente con la que tienes afinidad, igual que en Tinder cuando haces match»).
   que no es amiga exige Premium; con los amigos se puede hablar siempre.
 - **Compra en la app: pendiente**. El SDK de RevenueCat necesita una build de desarrollo (Expo Go no admite compras)
   y productos configurados en App Store Connect y Google Play. No se instala ni se simula: el Perfil lo explica.
+
+## Fase 12C · 2026-10-15 (notificaciones push, servidor)
+
+- **Expo Go en Android no admite push** desde el SDK 53 (documentación de `expo-notifications`, consultada el
+  2026-10-15). Hacen falta una build de desarrollo y credenciales FCM V1. Por eso la parte de la app que pide el permiso
+  y registra el token llega con esa build. Además, instalar `expo-notifications` con Metro y la vista web abiertos
+  falló en Windows (ENOENT de pnpm al importar el paquete), y se restauró el lockfile.
+- **Calendario**:
+  - un resumen como mucho al día, a las 19:00 de la zona horaria de la persona, con ventana hasta las 22:00;
+  - `three_per_week` (por defecto): lunes, miércoles y viernes; `daily`; `weekly`: domingo; `off`.
+- **Deduplicación**: la fila de envío (único por persona, tipo y fecha local) se reserva antes de enviar.
+- **Contenido de evidencia vigente**: recomendaciones aún no vistas (las marcadas NEW) y conversaciones o solicitudes
+  pendientes. Sin nada nuevo no se envía; se registra «empty».
+- **Expo push**:
+  - lotes de 100 y reintentos ante 429 o 5xx;
+  - `EXPO_ACCESS_TOKEN` opcional (seguridad reforzada de EAS);
+  - `DeviceNotRegistered` desactiva el token.
+  Los recibos (comprobar a los ~15 min que FCM o APNs aceptó) quedan pendientes.
+- **Permiso**: según la regla del usuario, se pedirá una sola vez durante el alta (build de desarrollo), nunca después.

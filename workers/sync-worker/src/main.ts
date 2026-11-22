@@ -1,7 +1,7 @@
 import { EntityResolver, LocalDiskStorage, WikidataSnapshotProvider, cacheCatalogImage } from '@appinity/catalog';
 import { createDatabase } from '@appinity/database';
-import { createProducerQueues, enqueueAffinity, enqueueSync, recomputeAffinities, runConnectionSync, scheduleDueSyncs } from '@appinity/ingestion';
-import { createAdapterRegistry, createCatalogIdentifier } from '@appinity/integrations';
+import { createProducerQueues, enqueueAffinity, enqueueSync, recomputeAffinities, runConnectionSync, scheduleDueSyncs, sendDueDigests } from '@appinity/ingestion';
+import { ExpoPushSender, createAdapterRegistry, createCatalogIdentifier } from '@appinity/integrations';
 import {
   QUEUES,
   isSourceError,
@@ -40,6 +40,7 @@ const producer = createProducerQueues(env.redisUrl, env.queuePrefix);
 const resolver = new EntityResolver(database.db, env.demoMode ? [new WikidataSnapshotProvider()] : []);
 const storage = new LocalDiskStorage(env.storageDir);
 /** Syncs en curso: al cerrar el worker se devuelven a la cola en vez de esperar a que terminen (pueden tardar minutos). */
+const pushSender = new ExpoPushSender(env.expoAccessToken ? { accessToken: env.expoAccessToken } : {});
 const activeSyncs = new Map<string, { job: Job<ProfileSyncJob>; token: string | undefined }>();
 
 const workers: Worker[] = [
@@ -52,6 +53,12 @@ const workers: Worker[] = [
         for (const item of due) await enqueueSync(producer, item);
         if (due.length) console.log(`[scheduler] ${due.length} sync(s) programado(s)`);
         return { scheduled: due.length };
+      }
+      // Resúmenes push (fase 12C): a la hora local de cada persona y según su frecuencia; uno al día como mucho.
+      if (job.name === 'send-digests') {
+        const result = await sendDueDigests(database.db, pushSender);
+        if (result.considered) console.log(`[push] resúmenes: ${JSON.stringify(result)}`);
+        return result;
       }
       return { pong: `${job.data.requestedAt} → ${new Date().toISOString()}` };
     },
@@ -136,6 +143,7 @@ const heartbeat = setInterval(beat, 10_000);
 // Revisión horaria de syncs pendientes (idempotente: el programador se registra con un id fijo).
 const systemQueue = new Queue(QUEUES.system, { connection, prefix: env.queuePrefix });
 await systemQueue.upsertJobScheduler('schedule-syncs', { every: 60 * 60 * 1000 }, { name: 'schedule-syncs', data: { requestedAt: 'scheduler' } });
+await systemQueue.upsertJobScheduler('send-digests', { every: 30 * 60 * 1000 }, { name: 'send-digests', data: { requestedAt: 'scheduler' } });
 // Recálculo completo diario de afinidades (cubre cambios no ligados a un sync, como un usuario que deja de ser elegible).
 const affinityQueue = new Queue<AffinityJob>(QUEUES.affinity, { connection, prefix: env.queuePrefix });
 await affinityQueue.upsertJobScheduler('recompute-affinities', { every: 24 * 60 * 60 * 1000 }, { name: 'recompute-all', data: {} });

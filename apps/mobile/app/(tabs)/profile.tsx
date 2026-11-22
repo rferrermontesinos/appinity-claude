@@ -1,4 +1,6 @@
-import type { NotificationFrequency, SettingsDto } from '@appinity/shared';
+import type { NotificationFrequency, NotificationsStatusDto, SettingsDto } from '@appinity/shared';
+import { useQuery } from '@tanstack/react-query';
+import { apiRequest } from '../../src/api/client';
 import * as Location from 'expo-location';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -164,7 +166,26 @@ function SettingsCard({ settings }: { settings: SettingsDto }) {
         ))}
       </ChipRow>
       <Small>{t('profile.notificationsPending')}</Small>
+      <NotificationsStatus />
     </Card>
+  );
+}
+
+/** Estado real de las notificaciones (dispositivos y último resumen), sin simular envíos. */
+function NotificationsStatus() {
+  const { t, i18n } = useTranslation();
+  const hasSession = useSession((s) => Boolean(s.session?.token));
+  const status = useQuery({ queryKey: ['notifications'], queryFn: () => apiRequest<NotificationsStatusDto>('/v1/me/notifications'), enabled: hasSession });
+  if (!status.data) return null;
+  const last = status.data.lastDelivery;
+  return (
+    <>
+      <Small>{t('profile.notificationsDevices', { count: status.data.devices })}</Small>
+      {last ? (
+        <Small>{t('profile.notificationsLast', { date: new Date(last.createdAt).toLocaleString(i18n.language), status: t(`profile.notificationsStatus.${last.status}`) })}</Small>
+      ) : null}
+      {!status.data.devices ? <Small>{t('profile.notificationsExpoGo')}</Small> : null}
+    </>
   );
 }
 

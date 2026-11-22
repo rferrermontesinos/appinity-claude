@@ -20,8 +20,47 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 9 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-14 · fase 9 (rama `fase-9-categories`, basada en `fase-8-home`). Incluye el feed continuo pedido por el usuario |
 | 10 | **Implementado, comprobado automáticamente y verificado en la vista web** | Entrega 2026-10-14 · fase 10 (rama `fase-10-people`, basada en `fase-9-categories`). Contactos: pendiente (fase 13) |
 | 11 | **Paso 1 implementado** (Google: Play, pedidos y guardados), comprobado automáticamente y en parte con servicios reales; falta un export real | Entrega 2026-10-14 · fase 11 (rama `fase-11-fuentes`). Análisis en [source-candidates.md](source-candidates.md) |
-| 12 | **12B (Premium, servidor) implementada y comprobada automáticamente**; compra en la app pendiente de cuentas y build de desarrollo · **12A (chat) implementada, comprobada automáticamente y verificada en la vista web**; 12B (Premium/RevenueCat) y 12C (push) pendientes | Entrega 2026-10-14 · fase 12A (rama `fase-12a-chat`, basada en `fase-10-people`) |
+| 12 | **12C (push, servidor) implementada y comprobada automáticamente**; envío real pendiente de build de desarrollo y FCM · **12B (Premium, servidor) implementada y comprobada automáticamente**; compra en la app pendiente de cuentas y build de desarrollo · **12A (chat) implementada, comprobada automáticamente y verificada en la vista web**; 12B (Premium/RevenueCat) y 12C (push) pendientes | Entrega 2026-10-14 · fase 12A (rama `fase-12a-chat`, basada en `fase-10-people`) |
 | 13 | Pendiente | Preparación y prueba de beta |
+
+---
+
+## Entrega 2026-10-15 · fase 12C (notificaciones push, servidor)
+
+### Qué se ha hecho
+
+- **Migración 0011**: `push_tokens` y `notification_deliveries`.
+- **Calendario y contenido**: frecuencia y zona horaria de cada persona; como mucho un resumen al día; contenido de
+  recomendaciones no vistas y chats pendientes; sin nada nuevo no se envía.
+- **Worker**: trabajo `send-digests` cada 30 min, con el emisor de Expo push (lotes, reintentos y desactivación de
+  tokens no registrados).
+- **API**:
+  - `POST|DELETE /v1/me/push-tokens` (solo su dueño);
+  - `GET /v1/me/notifications` (dispositivos y último resumen).
+- **App**: el Perfil muestra el estado real y explica que en Android, con Expo Go, no hay push.
+
+### Comandos ejecutados y resultados (Windows 11, 2026-10-15)
+
+| Comando | Resultado |
+|---|---|
+| `pnpm lint` / `pnpm typecheck` | 0 errores / OK |
+| `pnpm test` | **29 ficheros, 317 tests OK**. Nuevos: 6 de integración (zonas horarias, frecuencias, tokens, deduplicación, desactivadas, otra zona horaria, DeviceNotRegistered) y 1 del emisor de Expo (lotes, 429, tickets) |
+| `pnpm db:migrate` | 0011 aplicada |
+| `npx expo install expo-notifications` | **Falló** (ENOENT de pnpm en Windows con Metro y la web abiertos). Lockfile restaurado; instalación verificada con `pnpm install --frozen-lockfile` |
+
+**No se ha probado ningún envío real**: los tests usan un emisor simulado.
+
+### Para recibir notificaciones reales en Android
+
+1. `eas init` con tu cuenta de Expo (gratuito): crea el `projectId`.
+2. Proyecto de Firebase y clave de cuenta de servicio FCM V1, subida a EAS (`eas credentials`).
+3. Con Metro y la vista web parados: `pnpm --filter @appinity/mobile add expo-notifications`. Después, permiso en el
+   alta y registro del token (`POST /v1/me/push-tokens`).
+4. Build de desarrollo (`eas build --profile development --platform android`) e instalarla en el teléfono.
+
+### Siguiente paso
+
+Fase 13 (registro real y beta). En ella encaja la build de desarrollo que necesitan las compras (12B) y el push (12C).
 
 ---
 
