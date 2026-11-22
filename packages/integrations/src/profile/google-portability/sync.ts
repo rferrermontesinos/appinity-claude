@@ -1,3 +1,4 @@
+import { percentile } from '@appinity/algorithms';
 import {
   isSourceError,
   normalizeTitle,
@@ -16,6 +17,8 @@ import {
   EXPORT_MAX_WAIT_MS,
   EXPORT_MIN_INTERVAL_MS,
   OBSERVATION_KIND,
+  PLAY_MAX_ITEMS,
+  TEXT_PLACES_MAX,
   isResourceGroup,
   pollDelayMs,
   type ResourceGroup,
@@ -31,6 +34,9 @@ export interface PortabilityState {
   exportedAt: Partial<Record<ResourceGroup, string>>;
 }
 
+/** Motivos de descarte que no son errores: lo que el usuario canceló, aún no ocurrió o APPINITY no usa. */
+const DELIBERATE_SKIPS = new Set(['tipo_no_usado', 'pedido_cancelado', 'reserva_cancelada', 'reserva_futura', 'no_es_lugar']);
+
 /** Espera ante un catálogo (OSM, Wikidata) saturado o caído. */
 const IDENTIFIER_RETRY_MS = 10 * 60_000;
 
@@ -43,6 +49,9 @@ const GROUP_LABEL: Record<ResourceGroup, string> = {
   'myactivity.youtube': 'canales vistos o escuchados en YouTube',
   'youtube.music': 'artistas de la biblioteca de YouTube Music',
   'youtube.subscriptions': 'suscripciones de YouTube',
+  'play.library': 'objetos de la biblioteca de Google Play',
+  'order_reserve.purchases_reservations': 'restaurantes de pedidos y reservas',
+  'saved.collections': 'lugares guardados en colecciones',
 };
 
 function json<T>(value: string | undefined, fallback: T): T {
@@ -68,6 +77,16 @@ const writeState = (state: PortabilityState) => ({
   exportedAt: JSON.stringify(state.exportedAt),
 });
 
+/**
+ * Token de acceso vigente: con refresh token se pide uno nuevo; si Google no lo entregó, el access token guardado
+ * mientras le quede al menos un minuto. Null si no hay forma de acceder.
+ */
+export async function accessTokenFor(client: GooglePortabilityClient, credentials: Record<string, string>, now: Date): Promise<string | null> {
+  if (credentials.refreshToken) return client.refresh(credentials.refreshToken);
+  const expires = Date.parse(credentials.accessTokenExpiresAt ?? '');
+  return credentials.accessToken && expires - now.getTime() > 60_000 ? credentials.accessToken : null;
+}
+
 /** Identificador estable del registro (no depende de la identificación, que puede mejorar con el tiempo). */
 export function recordIdOf(record: ExportRecord): string {
   if (record.group === 'maps.reviews' || record.group === 'maps.starred_places') {
@@ -75,6 +94,15 @@ export function recordIdOf(record: ExportRecord): string {
     if (cid) return `place:cid:${cid}`;
     if (placeId) return `place:pid:${placeId}`;
     return `place:${record.place.latitude.toFixed(5)},${record.place.longitude.toFixed(5)}:${normalizeTitle(record.place.name)}`;
+  }
+  if (record.group === 'play.library') return `play:${record.docType}:${record.packageName ?? normalizeTitle(record.title)}`;
+  if (record.group === 'saved.collections') {
+    const { cid, placeId } = googlePlaceIds(record.mapsUrl);
+    if (cid) return `place:cid:${cid}`;
+    if (placeId) return `place:pid:${placeId}`;
+  }
+  if (record.group === 'saved.collections' || record.group === 'order_reserve.purchases_reservations') {
+    return `venue:${normalizeTitle(record.venue.name)}|${normalizeTitle(record.venue.address ?? '')}`;
   }
   // Los registros de YouTube llegan ya agregados con su id (youtube.ts); este caso no se da.
   return 'query' in record ? `work:${normalizeTitle(record.query)}` : `${record.group}:sin-id`;
@@ -101,13 +129,20 @@ export async function syncPortability(
   options: PortabilitySyncOptions,
 ): Promise<SyncBatch> {
   const credentials = context.credentials;
-  if (!credentials?.refreshToken) {
-    throw new SourceError('verification_failed', 'La conexión con Google está incompleta: vuelve a autorizarla', false);
+  const now = context.now;
+  const accessToken = credentials ? await accessTokenFor(client, credentials, now) : null;
+  if (!credentials || !accessToken) {
+    throw new SourceError(
+      'verification_failed',
+      credentials?.accessToken
+        ? 'El acceso de Google (sin renovación automática) ha caducado: renueva el permiso para volver a importar'
+        : 'La conexión con Google está incompleta: vuelve a autorizarla',
+      false,
+    );
   }
+  options.onProgress?.(credentials.refreshToken ? 'acceso con renovación automática' : `acceso sin renovación hasta ${credentials.accessTokenExpiresAt}`);
   const state = readState(credentials);
   const persist = async () => context.saveState?.(writeState(state));
-  const accessToken = await client.refresh(credentials.refreshToken);
-  const now = context.now;
   const partialErrors: SyncPartialError[] = [];
   const completed = new Map<ResourceGroup, string[]>();
   let retryAfterMs: number | null = null;
@@ -125,6 +160,29 @@ export async function syncPortability(
         await persist();
       } catch (error) {
         if (!(error instanceof ExportLimitError)) throw error;
+        if (error.kind === 'unsupported') {
+          partialErrors.push({
+            code: 'export_unsupported',
+            message: `Google no permite exportar ${GROUP_LABEL[group]} para esta cuenta, aunque se concedió el permiso; el resto se importa con normalidad`,
+            blocking: false,
+          });
+          continue;
+        }
+        if (error.kind === 'already_exists') {
+          if (error.existingJobId) {
+            state.jobs[group] = { id: error.existingJobId, initiatedAt: now.toISOString(), retries: 0 };
+            await persist();
+            // Se consultará su estado en la siguiente pasada, como cualquier export recién pedido.
+            retryAfterMs = Math.min(retryAfterMs ?? Infinity, 60_000);
+          } else {
+            partialErrors.push({
+              code: 'export_in_progress',
+              message: `Google ya está preparando un export de ${GROUP_LABEL[group]} pedido en un intento anterior; se volverá a pedir en el próximo sync (${error.message})`,
+              blocking: false,
+            });
+            continue;
+          }
+        }
         if (error.kind === 'one_time') {
           state.exportedAt[group] ??= now.toISOString();
           await persist();
@@ -138,7 +196,17 @@ export async function syncPortability(
       }
     }
 
-    const archive = await client.state(accessToken, job.id);
+    let archive;
+    try {
+      archive = await client.state(accessToken, job.id);
+    } catch (error) {
+      // Export pedido con un permiso anterior que Google ya no deja consultar: se olvida y se pedirá de nuevo.
+      if (!isSourceError(error) || error.retryable) throw error;
+      delete state.jobs[group];
+      await persist();
+      partialErrors.push({ code: 'export_lost', message: `El export anterior de ${GROUP_LABEL[group]} ya no está disponible; se pedirá de nuevo`, blocking: false });
+      continue;
+    }
     if (archive.state === 'COMPLETE') {
       completed.set(group, archive.urls ?? []);
       continue;
@@ -229,7 +297,9 @@ export async function syncPortability(
       continue;
     }
     const mappable = exported.filter(isMappable);
-    const invalid = summary.skipped + exported.length - mappable.length;
+    // Los descartes deliberados (cancelado, futuro, no es un lugar, tipo que no se usa) no son datos incompletos.
+    const ignored = Object.entries(summary.skippedReasons).reduce((n, [reason, count]) => n + (DELIBERATE_SKIPS.has(reason) ? count : 0), 0);
+    const invalid = summary.skipped - ignored + exported.length - mappable.length;
     let identified: PlaceIdentification[];
     try {
       identified = await identifyAll(group, mappable, options);
@@ -252,7 +322,13 @@ export async function syncPortability(
       const entity = identified[i]!.entity;
       if (entity) records.push({ recordId: recordIdOf(record), record, identified: entity });
     });
-    const outcome = summarizeIdentification(identified);
+    if (group === 'order_reserve.purchases_reservations') {
+      // Referencia personal para la preferencia por frecuencia (como las escuchas de YouTube).
+      const visits = records.flatMap((r) => (r.record.group === group ? [r.record.orders + r.record.reservations] : []));
+      const p95 = percentile(visits, 0.95);
+      if (p95 !== null) stats.food_visits_p95 = p95;
+    }
+    const outcome = summarizeIdentification(identified, group === 'play.library' ? 'son apps que no son videojuegos' : undefined);
     options.onProgress?.(`${group}: ${outcome.identified} de ${mappable.length} identificados${outcome.detail}`);
     const kind = OBSERVATION_KIND[group];
     stats[`${kind}_exported`] = exported.length;
@@ -343,6 +419,8 @@ export function summarizeIdentification(results: Array<PlaceIdentification | Ide
 async function identifyAll(group: ResourceGroup, records: ExportRecord[], options: PortabilitySyncOptions): Promise<PlaceIdentification[]> {
   const progress = options.onProgress;
   if (!records.length) return [];
+  if (group === 'play.library') return identifyPlay(records as PlayRecord[], options);
+  if (group === 'order_reserve.purchases_reservations' || group === 'saved.collections') return identifyVenues(group, records as VenueRecord[], options);
   const places = records.filter(isPlaceRecord);
   if (places.length === records.length) {
     progress?.(`${group}: identificando ${places.length} lugares con OpenStreetMap`);
@@ -363,6 +441,67 @@ async function identifyAll(group: ResourceGroup, records: ExportRecord[], option
     results.push(entity ? { entity } : { entity: null, reason: 'no_match' });
     if (results.length % 25 === 0 && results.length < records.length) progress?.(`${group}: ${results.length}/${records.length} títulos consultados`);
   }
+  return results;
+}
+
+type PlayRecord = Extract<ExportRecord, { group: 'play.library' }>;
+type VenueRecord = Extract<ExportRecord, { venue: unknown }>;
+
+const PLAY_CATEGORIES = { book: ['books'], movie: ['movies'], series: ['series'], app: ['games'] } as const;
+
+/**
+ * Biblioteca de Play: apps con ID de paquete por su ID exacto en Wikidata (solo videojuegos); el resto por título
+ * exacto limitado a su categoría (un libro solo puede ser un libro). Una app sin ID cuyo título no es un videojuego
+ * del catálogo queda fuera de las categorías de APPINITY (WhatsApp, Gmail…). Como mucho PLAY_MAX_ITEMS, los más recientes.
+ */
+async function identifyPlay(records: PlayRecord[], options: PortabilitySyncOptions): Promise<PlaceIdentification[]> {
+  const progress = options.onProgress;
+  const order = records.map((r, i) => ({ r, i })).sort((a, b) => (b.r.date ?? '').localeCompare(a.r.date ?? ''));
+  const chosen = new Set(order.slice(0, PLAY_MAX_ITEMS).map((o) => o.i));
+  const results: PlaceIdentification[] = records.map(() => ({ entity: null, reason: 'no_match' }));
+  const withPackage = records.map((r, i) => ({ r, i })).filter(({ r, i }) => chosen.has(i) && r.docType === 'app' && r.packageName);
+  if (withPackage.length) {
+    progress?.(`play.library: identificando ${withPackage.length} apps por su ID de Google Play`);
+    const found = await options.identifier.identifyApps(withPackage.map(({ r }) => r.packageName!));
+    withPackage.forEach(({ i }, k) => (results[i] = found[k]!));
+  }
+  const byTitle = records.map((r, i) => ({ r, i })).filter(({ r, i }) => chosen.has(i) && !(r.docType === 'app' && r.packageName));
+  if (byTitle.length) progress?.(`play.library: identificando ${byTitle.length} títulos con Wikidata`);
+  for (const [k, { r, i }] of byTitle.entries()) {
+    const entity = await options.identifier.identifyWork({ title: r.title, languages: ['es', 'en'], categories: [...PLAY_CATEGORIES[r.docType]] });
+    results[i] = entity ? { entity } : r.docType === 'app' ? { entity: null, reason: 'out_of_scope', scope: 'app' } : { entity: null, reason: 'no_match' };
+    if ((k + 1) % 25 === 0 && k + 1 < byTitle.length) progress?.(`play.library: ${k + 1}/${byTitle.length} títulos consultados`);
+  }
+  if (records.length > PLAY_MAX_ITEMS) progress?.(`play.library: ${records.length - PLAY_MAX_ITEMS} objetos más antiguos sin consultar (tope por sync)`);
+  return results;
+}
+
+/**
+ * Pedidos, reservas y guardados: los que traen coordenadas (enlace de Maps con `@lat,lng`) van directos a OSM; el
+ * resto se geocodifica por nombre y dirección (como mucho TEXT_PLACES_MAX por sync, por la política de Nominatim).
+ */
+async function identifyVenues(group: ResourceGroup, records: VenueRecord[], options: PortabilitySyncOptions): Promise<PlaceIdentification[]> {
+  const progress = options.onProgress;
+  const results: PlaceIdentification[] = records.map(() => ({ entity: null, reason: 'no_match' }));
+  const located = records.map((r, i) => ({ r, i })).filter(({ r }) => r.venue.latitude !== undefined && r.venue.longitude !== undefined);
+  if (located.length) {
+    progress?.(`${group}: identificando ${located.length} lugares con coordenadas en OpenStreetMap`);
+    const found = await options.identifier.identifyPlaces(
+      located.map(({ r }) => ({ name: r.venue.name, latitude: r.venue.latitude!, longitude: r.venue.longitude! })),
+    );
+    located.forEach(({ i }, k) => (results[i] = found[k]!));
+  }
+  const textual = records.map((r, i) => ({ r, i })).filter(({ r }) => r.venue.latitude === undefined || r.venue.longitude === undefined);
+  const capped = textual.slice(0, TEXT_PLACES_MAX);
+  if (capped.length) {
+    progress?.(`${group}: localizando ${capped.length} lugares por nombre y dirección (Nominatim) e identificándolos en OpenStreetMap`);
+    const found = await options.identifier.identifyPlacesByText(
+      capped.map(({ r }) => ({ name: r.venue.name, ...(r.venue.address ? { address: r.venue.address } : {}) })),
+      (done, total) => progress?.(`${group}: ${done}/${total} lugares localizados`),
+    );
+    capped.forEach(({ i }, k) => (results[i] = found[k]!));
+  }
+  if (textual.length > capped.length) progress?.(`${group}: ${textual.length - capped.length} lugares sin localizar (tope por sync)`);
   return results;
 }
 

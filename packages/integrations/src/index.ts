@@ -8,6 +8,7 @@ export * as steamFixtures from './profile/steam/fixtures/responses.js';
 export * as googlePortability from './profile/google-portability/index.js';
 export { createGooglePortabilityAdapter, GOOGLE_PORTABILITY_MANIFEST } from './profile/google-portability/index.js';
 export * as googleFixtures from './profile/google-portability/fixtures/fake-google.js';
-export { createCatalogIdentifier, type CatalogIdentifierOptions } from './catalog/identifier.js';
+export { createCatalogIdentifier, identifyPlacesByText, GEOCODED_CONFIDENCE_FACTOR, type CatalogIdentifierOptions } from './catalog/identifier.js';
+export { NominatimGeocoder, geocodeQueries, NOMINATIM_DEFAULT_URL } from './catalog/nominatim.js';
 export { OsmPlaceIdentifier, classifyOsmTags, pickPlace } from './catalog/osm-places.js';
 export { WikidataWorkIdentifier } from './catalog/wikidata-works.js';

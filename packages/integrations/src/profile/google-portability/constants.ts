@@ -34,8 +34,14 @@ export const PHASE3_RESOURCE_GROUPS = [
  */
 export const PHASE4_RESOURCE_GROUPS = ['myactivity.youtube', 'youtube.music', 'youtube.subscriptions'] as const;
 
+/**
+ * Grupos de la fase 11 (esquemas consultados el 2026-10-14): biblioteca de Google Play (libros, juegos, películas y
+ * series), pedidos y reservas de comida y colecciones guardadas. Todos «Sensitive». Entran en el mismo consentimiento.
+ */
+export const PHASE11_RESOURCE_GROUPS = ['play.library', 'order_reserve.purchases_reservations', 'saved.collections'] as const;
+
 /** Todos los grupos que importa APPINITY (los que pide el consentimiento por defecto). */
-export const ALL_RESOURCE_GROUPS = [...PHASE3_RESOURCE_GROUPS, ...PHASE4_RESOURCE_GROUPS] as const;
+export const ALL_RESOURCE_GROUPS = [...PHASE3_RESOURCE_GROUPS, ...PHASE4_RESOURCE_GROUPS, ...PHASE11_RESOURCE_GROUPS] as const;
 export type ResourceGroup = (typeof ALL_RESOURCE_GROUPS)[number];
 export type YouTubeGroup = (typeof PHASE4_RESOURCE_GROUPS)[number];
 
@@ -57,6 +63,9 @@ export const OBSERVATION_KIND: Record<ResourceGroup, string> = {
   'myactivity.youtube': 'yt_plays',
   'youtube.music': 'ytm_library',
   'youtube.subscriptions': 'yt_subscription',
+  'play.library': 'play_library',
+  'order_reserve.purchases_reservations': 'food_order',
+  'saved.collections': 'saved_place',
 };
 
 /** Re-export mínimo entre exports de un mismo grupo con acceso temporal (lo impone Google). */
@@ -98,6 +107,19 @@ export const YT_PREFERENCE_CONFIDENCE = 0.6;
 export const YT_MAX_CHANNELS = 400;
 export const YT_MAX_SUBSCRIPTIONS = 400;
 export const YT_MAX_LIBRARY_ARTISTS = 300;
+
+/**
+ * Fase 11 (propuestas sin calibrar):
+ * - Biblioteca de Play: conocido, no consumido, preferencia NULL (descargar o comprar no prueba uso ni gusto).
+ * - Pedidos y reservas: conocido y consumido (se pidió o se fue). Desde 2 visitas, preferencia inferida
+ *   `min(1, log1p(n) / log1p(p95 del usuario))` con confianza 0,5 (repetir sugiere gusto, pero es conducta).
+ * - Guardados: conocido, no consumido, preferencia NULL (§5: guardar no prueba gusto), como los sitios con estrella.
+ * - Topes por sync: 400 objetos de Play y 150 lugares sin coordenadas (la geocodificación pública admite 1 consulta/s).
+ */
+export const FOOD_MIN_VISITS_FOR_PREFERENCE = 2;
+export const FOOD_PREFERENCE_CONFIDENCE = 0.5;
+export const PLAY_MAX_ITEMS = 400;
+export const TEXT_PLACES_MAX = 150;
 
 /** Las estrellas de la Búsqueda llegan como texto («Five stars»). Escala por confirmar con un export real. */
 export const STAR_WORDS: Record<string, number> = {

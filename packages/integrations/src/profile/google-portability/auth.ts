@@ -55,22 +55,25 @@ export async function completePortabilityConnect(
   if (!params.code || !verifier) throw new SourceError('verification_failed', 'Respuesta de Google incompleta: vuelve a intentarlo', false);
 
   const token = await client.exchangeCode(params.code, verifier);
-  if (!token.refresh_token) {
-    throw new SourceError('verification_failed', 'Google no entregó un acceso continuado: vuelve a autorizar', false);
-  }
   const granted = scopesToGroups(token.scope).filter((g): g is ResourceGroup => (requested as readonly string[]).includes(g));
   if (!granted.length) {
-    await client.revoke(token.refresh_token).catch(() => undefined);
+    await client.revoke(token.refresh_token ?? token.access_token).catch(() => undefined);
     throw new SourceError('verification_failed', 'No marcaste ningún dato en Google: vuelve a conectar y elige al menos uno', false);
   }
   const access = await client.accessType(token.access_token);
   const expiresAt = token.refresh_token_expires_in
     ? new Date(Date.now() + token.refresh_token_expires_in * 1000).toISOString()
     : undefined;
+  // Sin refresh token (Google no lo entrega en todos los casos; comprobado el 2026-10-15 con un consentimiento real
+  // mostrado y aceptado): se guarda el access token y su caducidad. Basta para iniciar los exports en el primer sync,
+  // que la API lanza al conectar; cuando caduque, el usuario tendrá que renovar el permiso para volver a exportar.
+  const tokens: Record<string, string> = token.refresh_token
+    ? { refreshToken: token.refresh_token }
+    : { accessToken: token.access_token, accessTokenExpiresAt: new Date(Date.now() + (token.expires_in ?? 3600) * 1000).toISOString() };
   return {
     kind: 'connected',
     credentials: {
-      refreshToken: token.refresh_token,
+      ...tokens,
       groups: JSON.stringify(granted),
       oneTime: JSON.stringify(access.oneTime),
       jobs: '{}',

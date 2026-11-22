@@ -28,7 +28,7 @@ const registry = createAdapterRegistry({
         google: {
           ...env.google,
           // Lugares con OpenStreetMap y obras con Wikidata (licencias de uso comercial).
-          identifier: createCatalogIdentifier({ userAgent: env.catalogUserAgent, log: (message) => console.log(`[catálogo] ${message}`) }),
+          identifier: createCatalogIdentifier({ userAgent: env.catalogUserAgent, ...(env.nominatimUrl ? { nominatimUrl: env.nominatimUrl } : {}), log: (message) => console.log(`[catálogo] ${message}`) }),
           // Estructura del export SIN datos personales: sirve para contrastar el formato real con el documentado.
           onArchiveSummary: (summary) => console.log(`[google] export ${summary.group}: ${JSON.stringify({ ...summary, group: undefined })}`),
           onProgress: (message) => console.log(`[google] ${message}`),

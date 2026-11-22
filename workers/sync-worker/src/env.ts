@@ -12,6 +12,8 @@ export interface WorkerEnv {
   google?: { clientId: string; clientSecret: string; redirectUri: string };
   /** User-Agent identificable para Wikidata y OpenStreetMap (sus políticas lo exigen). */
   catalogUserAgent: string;
+  /** Geocodificador Nominatim (por defecto la instancia pública; en producción, una propia). */
+  nominatimUrl?: string;
 }
 
 function required(name: string): string {
@@ -43,6 +45,7 @@ export function loadWorkerEnv(): WorkerEnv {
           },
         }
       : {}),
+    ...(process.env.NOMINATIM_URL?.trim() ? { nominatimUrl: process.env.NOMINATIM_URL.trim() } : {}),
     catalogUserAgent:
       process.env.CATALOG_USER_AGENT?.trim() || 'APPINITY-Claude/0.1 (desarrollo; https://github.com/rferrermontesinos/appinity-claude)',
   };

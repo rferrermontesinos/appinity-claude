@@ -1,6 +1,7 @@
 import { unzipSync } from 'fflate';
 import { STAR_WORDS, isYouTubeGroup, type ResourceGroup } from './constants.js';
 import type { ExportRecord, ExportedPlace } from './schemas.js';
+import { extractOrders, extractPlayLibrary, extractSaved, savedCsvBody } from './play-orders-saved.js';
 import { extractYouTube, parseCsv, type YouTubeExtract } from './youtube.js';
 
 /**
@@ -154,6 +155,8 @@ function isoDate(value: unknown): string | undefined {
 export function extractRecords(
   group: ResourceGroup,
   jsonFiles: unknown[],
+  csvFiles: Array<Array<Record<string, string>>> = [],
+  now: Date = new Date(),
 ): {
   records: ExportRecord[];
   skipped: number;
@@ -179,7 +182,21 @@ export function extractRecords(
     if (text && text.length <= 40) (enums[field] ??= new Set()).add(text);
   };
 
-  if (group === 'maps.reviews' || group === 'maps.starred_places') {
+  const notes = {
+    skip,
+    key: (k: string) => void keys.add(k),
+    enumValue: noteEnum,
+    url: (url: string) => {
+      if (urls.size < 200) urls.add(url);
+    },
+  };
+  if (group === 'play.library') {
+    records.push(...extractPlayLibrary(jsonFiles, notes));
+  } else if (group === 'order_reserve.purchases_reservations') {
+    records.push(...extractOrders(jsonFiles, notes, now));
+  } else if (group === 'saved.collections') {
+    records.push(...extractSaved(csvFiles, notes));
+  } else if (group === 'maps.reviews' || group === 'maps.starred_places') {
     for (const file of jsonFiles) {
       const features = collectObjects(file, ['geometry', 'location', 'properties']);
       for (const feature of features) {
@@ -260,7 +277,7 @@ export function readArchive(
     for (const [path, data] of Object.entries(entries)) {
       try {
         const text = new TextDecoder().decode(data);
-        if (/\.csv$/i.test(path)) csv.push(parseCsv(text));
+        if (/\.csv$/i.test(path)) csv.push(parseCsv(group === 'saved.collections' ? savedCsvBody(text) : text));
         else json.push(JSON.parse(text));
       } catch {
         // Un archivo ilegible se refleja en el resumen (0 registros), no rompe el resto.
@@ -304,7 +321,7 @@ export function readArchive(
       },
     };
   }
-  const { records, skipped, skippedReasons, skippedShapes, enums, keys, urls } = extractRecords(group, json);
+  const { records, skipped, skippedReasons, skippedShapes, enums, keys, urls } = extractRecords(group, json, csv);
   return {
     records,
     summary: {

@@ -830,3 +830,55 @@ gente con la que tienes afinidad, igual que en Tinder cuando haces match»).
 - **Gustos intactos**: ningún paso del chat lee ni escribe preferencias, perfiles de objetos ni afinidades (lo comprueba
   un test). La pantalla de match solo dice «os gustan cosas parecidas» con afinidad calculada ≥ 50. La sugerencia para
   romper el hielo usa la categoría de mayor afinidad, nunca objetos del historial ajeno.
+
+## 2026-10-14 · Aceptación del chat y reglas sociales (usuario)
+
+- Chat aceptado en el teléfono.
+- **Almas gemelas**: se ven sus datos de afinidad y se puede elegir hablar con ellas. **Más adelante, hablar con almas
+  gemelas será una opción Premium.**
+- **Amigos**: siempre aparecen en el listado, con afinidad alta, baja o «—», con sus datos de afinidad, y siempre se puede
+  hablar con ellos.
+
+## Fase 11 · 2026-10-14 (análisis de fuentes)
+
+- Análisis completo en [source-candidates.md](source-candidates.md).
+- Spotify, Last.fm, Deezer, TMDB y Open Library quedan **bloqueadas** para uso comercial gratuito (condiciones oficiales
+  comprobadas hoy).
+- **Prioridad 1: ampliar Google Data Portability** (libros y juegos de Play, pedidos de comida, guardados) dentro del
+  mismo consentimiento del alta.
+- Prioridad 2: Apple Music (MusicKit).
+- Prioridad 3: las APIs de portabilidad DMA (TikTok, Meta, Amazon, Apple App Store), gratuitas por ley pero con
+  aprobación previa del desarrollador.
+- Las exportaciones RGPD subidas como archivo quedan aparcadas: exigen pasos después del alta.
+
+## Fase 11 · 2026-10-14 (Google ampliado: Play, pedidos y guardados)
+
+- Apple Music queda **descartada** mientras exija pago (decisión del usuario).
+- Se añaden `play.library`, `order_reserve.purchases_reservations` y `saved.collections` al **mismo consentimiento
+  de Google** del alta: ningún permiso ni configuración posterior para usuarios nuevos.
+- **Semántica**:
+  - descargar o comprar en Play prueba que se conoce, no que se use ni que guste: conocido, preferencia NULL;
+  - pedir o reservar prueba consumo; repetir sugiere gusto (preferencia por frecuencia desde 2 visitas, confianza 0,5
+    porque es conducta, no un voto);
+  - guardar no prueba gusto (§5), igual que los sitios con estrella.
+- **Geocodificación**: Nominatim (OSM, ODbL) en vez de un proveedor de pago. Su política obliga a ≤ 1 consulta/s, caché
+  y uso moderado, así que hay tope por sync y endpoint configurable; para producción a escala, instancia propia. La
+  identificación final sigue siendo la regla OSM (nombre y tipo a ≤ 100 m), así que un geocodificado erróneo no
+  identifica un lugar equivocado. En una prueba real, nombre y dirección juntos no dan resultado: se consulta primero la
+  dirección y después nombre + ciudad.
+- **Apps**: solo cuentan los videojuegos (P3418 en Wikidata, o el título limitado a juegos). WhatsApp, Gmail y similares
+  quedan fuera de categoría y se informan como tales, no como «no identificados».
+- **Minimización**: ni platos, ni importes, ni pagos, ni notas o comentarios de las colecciones.
+
+## 2026-10-15 · Conexión de Google: incidencias reales y arreglos
+
+- **`prompt=consent` retirado**: Google lo rechaza con 400 invalid_request para este cliente. Se aisló probando cada
+  parámetro por separado: los 11 permisos, `access_type=offline` y PKCE funcionan; `prompt=consent` no.
+- **Sin refresh token, se conecta igualmente**: con un consentimiento real mostrado y aceptado, Google no entregó
+  refresh token. Se guarda el access token cifrado con su caducidad (≈ 1 h). Basta para iniciar los exports en el
+  primer sync, que la API lanza al conectar. Cuando caduca, la conexión pide renovar el permiso. El worker registra qué
+  tipo de acceso dio Google («con renovación automática» o «sin renovación hasta …») para seguir investigándolo sin
+  pruebas aparte.
+- **Vista web: página completa en vez de ventana emergente**: Google corta el vínculo con la ventana de origen
+  (Cross-Origin-Opener-Policy), así que la emergente no podía cerrarse ni avisar a la app y se acumulaban ventanas. La
+  API vuelve a `/profile?source=…&result=…&message=…` y la tarjeta de fuentes muestra el resultado.

@@ -49,9 +49,21 @@ async function renewConnection(
   existing: ConnectionRow,
   auth: Extract<AuthResult, { kind: 'connected' }>,
   credentialsKey: string | undefined,
+  keptKeys: string[] = [],
 ): Promise<ConnectionRow> {
   if (auth.credentials && !credentialsKey) {
     throw new UnavailableError('Falta CREDENTIALS_ENCRYPTION_KEY en el servidor: no se pueden guardar credenciales');
+  }
+  let credentials = auth.credentials;
+  if (credentials && keptKeys.length) {
+    const [stored] = await db.select().from(sourceCredentials).where(eq(sourceCredentials.connectionId, existing.id));
+    let previous: SourceCredentials | undefined;
+    try {
+      previous = stored ? decryptCredentials(stored.ciphertext, credentialsKey!, existing.id) : undefined;
+    } catch {
+      previous = undefined;
+    }
+    if (previous) credentials = { ...credentials, ...Object.fromEntries(keptKeys.filter((k) => previous![k] !== undefined).map((k) => [k, previous![k]!])) };
   }
   return db.transaction(async (tx) => {
     const [connection] = await tx
@@ -71,10 +83,10 @@ async function renewConnection(
         .where(eq(providerConsents.id, existing.consentId));
     }
     await tx.delete(sourceCredentials).where(eq(sourceCredentials.connectionId, existing.id));
-    if (auth.credentials) {
+    if (credentials) {
       await tx.insert(sourceCredentials).values({
         connectionId: existing.id,
-        ciphertext: encryptCredentials(auth.credentials, credentialsKey!, existing.id),
+        ciphertext: encryptCredentials(credentials, credentialsKey!, existing.id),
       });
     }
     return connection!;
@@ -188,7 +200,7 @@ export async function startConnect(
       ...(auth.localOnly ? { localOnly: true } : {}),
     };
   }
-  if (existing) return { kind: 'connected', connection: await renewConnection(db, existing, auth, options.credentialsKey) };
+  if (existing) return { kind: 'connected', connection: await renewConnection(db, existing, auth, options.credentialsKey, adapter.credentialsKeptOnRenewal) };
   return { kind: 'connected', connection: await createConnection(db, userId, sourceKey, auth, options.credentialsKey) };
 }
 
@@ -248,7 +260,7 @@ export async function completeConnect(
   });
   if (auth.kind !== 'connected') throw new UnavailableError('El proveedor no confirmó la conexión');
   try {
-    if (existing) return await renewConnection(db, existing, auth, context.credentialsKey);
+    if (existing) return await renewConnection(db, existing, auth, context.credentialsKey, adapter.credentialsKeptOnRenewal);
     return await createConnection(db, userId, sourceKey, auth, context.credentialsKey);
   } catch (error) {
     // Si no se pudo guardar (p. ej. la cuenta ya está vinculada a otro usuario), no se deja viva la sesión emitida.

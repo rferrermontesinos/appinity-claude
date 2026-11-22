@@ -70,7 +70,8 @@ describe('autorización de Google Data Portability', () => {
     expect(url.origin + url.pathname).toBe('https://accounts.google.com/o/oauth2/v2/auth');
     expect(url.searchParams.get('scope')!.split(' ')).toEqual(PHASE3_RESOURCE_GROUPS.map((g) => `https://www.googleapis.com/auth/dataportability.${g}`));
     expect(url.searchParams.get('access_type')).toBe('offline');
-    expect(url.searchParams.get('prompt')).toBe('consent');
+    // `prompt=consent` se retiró el 2026-10-15: Google lo rechaza (400 invalid_request).
+    expect(url.searchParams.get('prompt')).toBeNull();
     expect(url.searchParams.get('state')).toBe('estado-0123456789abcdef');
     expect(url.searchParams.get('code_challenge_method')).toBe('S256');
     expect(url.searchParams.has('include_granted_scopes')).toBe(false);
@@ -98,6 +99,26 @@ describe('autorización de Google Data Portability', () => {
     await expect(completePortabilityConnect(client, PHASE3_RESOURCE_GROUPS, { ...base, callbackParams: {} })).rejects.toMatchObject({ code: 'verification_failed' });
     await expect(connect(google, client)).rejects.toMatchObject({ message: expect.stringMatching(/ningún dato/) });
     expect(google.revoked).toHaveLength(1);
+  });
+
+  it('sin refresh token: conecta con el access token y su caducidad; el sync funciona mientras es válido', async () => {
+    const { google, client } = setup({ omitRefreshToken: true });
+    const done = await connect(google, client);
+    expect(done.credentials).toMatchObject({ accessToken: expect.stringMatching(/^access-/), accessTokenExpiresAt: expect.any(String) });
+    expect(done.credentials!.refreshToken).toBeUndefined();
+    expect(google.revoked).toEqual([]);
+    const { identifier } = createFakeIdentifier();
+    const progress: string[] = [];
+    const first = await syncPortability(client, syncContext({ ...done.credentials! }), { identifier, onProgress: (m) => progress.push(m) });
+    expect(first.records.length).toBeGreaterThan(0);
+    expect(google.calls.some((c) => c.endsWith(':initiate'))).toBe(true);
+    expect(progress[0]).toMatch(/^acceso sin renovación hasta /);
+    // Caducado: no se puede seguir y se pide renovar.
+    const later = new Date(Date.now() + 2 * 3600_000);
+    await expect(syncPortability(client, syncContext({ ...done.credentials! }, later), { identifier })).rejects.toMatchObject({
+      code: 'verification_failed',
+      message: expect.stringMatching(/caducado/),
+    });
   });
 });
 
@@ -188,6 +209,30 @@ describe('sync de Google', () => {
     expect(JSON.parse(context.credentials!.jobs!)).toEqual({});
   });
 
+  it('grupo que Google no permite exportar (400 «do not correspond to valid scopes»): se salta y el resto se importa', async () => {
+    const { google, client } = setup({ unsupportedGroups: ['maps.reviews'] });
+    const done = await connect(google, client);
+    const { identifier } = createFakeIdentifier();
+    const context = syncContext({ ...done.credentials! });
+    const first = await syncPortability(client, context, { identifier });
+    const batch = first.pending ? await syncPortability(client, context, { identifier }) : first;
+    expect(batch.snapshotKinds?.sort()).toEqual(['maps_starred', 'search_rating', 'search_thumb', 'search_watched']);
+    expect(batch.partialErrors.find((e) => e.code === 'export_unsupported')).toMatchObject({ blocking: false, message: expect.stringMatching(/reseñas de Maps/) });
+  });
+
+  it('409 (export previo en curso): adopta su id si Google lo da; si no, salta ese grupo sin hacer fallar los demás', async () => {
+    const PREVIOUS = '0b3f7a52-1c2d-4e5f-8a9b-0c1d2e3f4a5b';
+    const { google, client } = setup({ alreadyExists: { 'maps.reviews': PREVIOUS, 'search_ugc.media.thumbs': '' } });
+    const done = await connect(google, client);
+    const { identifier } = createFakeIdentifier();
+    const context = syncContext({ ...done.credentials! });
+    const first = await syncPortability(client, context, { identifier });
+    expect(JSON.parse(context.credentials!.jobs!)['maps.reviews']).toMatchObject({ id: PREVIOUS });
+    const second = first.pending ? await syncPortability(client, context, { identifier }) : first;
+    expect(second.snapshotKinds?.sort()).toEqual(['maps_review', 'maps_starred', 'search_rating', 'search_watched']);
+    expect(second.partialErrors.find((e) => e.code === 'export_in_progress')).toMatchObject({ blocking: false, message: expect.stringMatching(/pulgares/) });
+  });
+
   it('no repite un export antes de 24 h y respeta el acceso único', async () => {
     const { google, client } = setup({ oneTimeGroups: ['maps.reviews'] });
     const done = await connect(google, client);
@@ -222,7 +267,7 @@ describe('sync de Google', () => {
     const unavailable = async (): Promise<never> => {
       throw new SourceError('unavailable', 'OpenStreetMap (Overpass) no responde; se reintentará', true);
     };
-    const failing = { identifyPlace: unavailable, identifyPlaces: unavailable, identifyWork: async () => null, identifyChannels: unavailable, identifyArtists: unavailable };
+    const failing = { identifyPlace: unavailable, identifyPlaces: unavailable, identifyPlacesByText: unavailable, identifyWork: async () => null, identifyChannels: unavailable, identifyArtists: unavailable, identifyApps: unavailable };
     const context = syncContext({ ...done.credentials! });
     const progress: string[] = [];
     const deferred = await syncPortability(client, context, { identifier: failing, onProgress: (m) => progress.push(m) });

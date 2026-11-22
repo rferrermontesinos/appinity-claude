@@ -54,6 +54,15 @@ export interface ExportedPlace {
   mapsUrl?: string;
 }
 
+/** Comercio o lugar exportado sin coordenadas fiables (pedidos, reservas, guardados): se identifica por texto. */
+export interface Venue {
+  name: string;
+  address?: string;
+  /** Solo si el enlace de Maps las trae (`@lat,lng`). */
+  latitude?: number;
+  longitude?: number;
+}
+
 /** Registro ya extraído del archivo de un grupo. Nunca incluye el texto de las reseñas (minimización). */
 export type ExportRecord =
   | { group: 'maps.reviews'; place: ExportedPlace; rating: number | null; hasText: boolean; date?: string }
@@ -65,7 +74,13 @@ export type ExportRecord =
   | { group: 'myactivity.youtube'; plays: number; musicPlays: number; channels: number; date?: string }
   | { group: 'youtube.subscriptions'; channels: number; date?: string }
   /** Canciones de un artista en la biblioteca de YouTube Music. */
-  | { group: 'youtube.music'; songs: number; date?: string };
+  | { group: 'youtube.music'; songs: number; date?: string }
+  /** Fase 11: un objeto de la biblioteca de Google Play (descargado o comprado). */
+  | { group: 'play.library'; title: string; docType: 'book' | 'app' | 'movie' | 'series'; packageName?: string; date?: string }
+  /** Fase 11: pedidos y reservas agregados por comercio (sin importes, platos ni pagos). */
+  | { group: 'order_reserve.purchases_reservations'; venue: Venue; orders: number; reservations: number; date?: string }
+  /** Fase 11: un lugar de Maps guardado en una o varias colecciones (sin notas ni comentarios). */
+  | { group: 'saved.collections'; venue: Venue; lists: number; mapsUrl?: string; date?: string };
 
 /** Registro que el sync entrega al mapper: el dato exportado y su identificación en el catálogo. */
 export interface GoogleRecord {
