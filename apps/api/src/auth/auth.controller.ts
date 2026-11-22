@@ -38,7 +38,15 @@ const startSchema = z
 const codeSchema = z.object({ code: z.string().regex(/^[\w-]{20,64}$/), codeVerifier: z.string().regex(/^[A-Za-z0-9._~-]{43,128}$/) }).strict();
 const refreshSchema = z.object({ refreshToken: z.string().min(20).max(200) }).strict();
 const onboardingSchema = z
-  .object({ adult: z.literal(true), termsAccepted: z.literal(true), displayName: z.string().trim().min(1).max(60).optional(), city: z.string().trim().min(2).max(80).optional() })
+  .object({
+    adult: z.literal(true),
+    termsAccepted: z.literal(true),
+    displayName: z.string().trim().min(1).max(60).optional(),
+    city: z.string().trim().min(2).max(80).optional(),
+    /** Opciones de privacidad del alta (apagadas por defecto; se pueden cambiar en Ajustes). */
+    shareCommonTastes: z.boolean().optional(),
+    discoverableByContacts: z.boolean().optional(),
+  })
   .strict();
 /** Identificación ante Nominatim (OSM). Sin «Claude»: algunos servicios tras Cloudflare lo bloquean. */
 const GEOCODER_USER_AGENT = 'APPINITY/0.1 (+https://github.com/rferrermontesinos/appinity-claude)';
@@ -213,7 +221,11 @@ export class AuthController {
       : null;
     if (body.city && !city) throw new BadRequestException({ code: 'city_not_found', message: 'No encontramos esa ciudad: prueba con otro nombre o déjala en blanco' });
     await completeOnboarding(this.database.db, auth.userId, { adult: body.adult, termsAccepted: body.termsAccepted, ...(body.displayName ? { displayName: body.displayName } : {}) });
-    if (city) await this.me.updateSettings(auth.userId, { location: { label: city.label, latitude: city.latitude, longitude: city.longitude, source: 'manual' } });
+    await this.me.updateSettings(auth.userId, {
+      ...(city ? { location: { label: city.label, latitude: city.latitude, longitude: city.longitude, source: 'manual' as const } } : {}),
+      ...(body.shareCommonTastes !== undefined ? { shareCommonTastes: body.shareCommonTastes } : {}),
+      ...(body.discoverableByContacts !== undefined ? { discoverableByContacts: body.discoverableByContacts } : {}),
+    });
   }
 
   /**

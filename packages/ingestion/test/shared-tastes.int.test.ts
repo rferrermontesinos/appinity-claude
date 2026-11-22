@@ -1,6 +1,6 @@
 import { catalogItems, createDatabase, userItemProfiles, userSettings, type DatabaseHandle } from '@appinity/database';
 import type { Category } from '@appinity/shared';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { testEnv, truncateAll } from '../../../test/helpers.js';
 import { createOrResetLocalUser, definingTastes, rarityLabel, sharedTastes } from '../src/index.js';
@@ -44,6 +44,8 @@ beforeAll(async () => {
   for (const [key, category] of [['A', 'movies'], ['B', 'movies'], ['C', 'movies'], ['D', 'music'], ['E', 'music'], ['F1', 'series'], ['F2', 'series'], ['F3', 'series']] as const) await item(key, category);
   vera = (await createOrResetLocalUser(database.db, { handle: 'test_une_vera', displayName: 'Vera' })).userId;
   tomas = (await createOrResetLocalUser(database.db, { handle: 'test_une_tomas', displayName: 'Tomás' })).userId;
+  // Apagado por defecto (se elige en el alta): las dos lo activan.
+  await database.db.update(userSettings).set({ shareCommonTastes: true }).where(inArray(userSettings.userId, [vera, tomas]));
   for (const [key, v, t, tc] of [['A', 1, 1, 1], ['B', 1, 1, 1], ['C', 0.5, 1, 1], ['D', 1, -0.5, 1], ['E', 0.5, 1, 0.3]] as const) {
     await prefer(vera, key, v);
     await prefer(tomas, key, t, tc);
@@ -64,6 +66,11 @@ afterAll(async () => {
 });
 
 describe('Lo que os une', () => {
+  it('apagado por defecto en una cuenta nueva', async () => {
+    const { userId } = await createOrResetLocalUser(database.db, { handle: 'test_une_nueva', displayName: 'Nueva' });
+    expect((await sharedTastes(database.db, userId, vera)).status).toBe('off_you');
+  });
+
   it('solo obras que gustan a los dos (ni disgustos ni poca confianza), de la más rara a la más común', async () => {
     const shared = await sharedTastes(database.db, vera, tomas);
     expect(shared.status).toBe('ok');

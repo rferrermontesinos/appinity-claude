@@ -14,7 +14,9 @@ import { AFFINITY_MIN_PREFERENCES } from './affinities.js';
  * Privacidad (cambia la regla anterior «nunca qué objetos coinciden», con salvaguardas):
  * - Solo obras que os GUSTAN A LOS DOS (≥ umbral de apoyo del consenso, con confianza suficiente); nunca disgustos.
  * - Como mucho `SHARED_TASTES_LIMIT` obras y el recuento total; nada más de su historial.
- * - Recíproco y desactivable: si una de las dos personas lo apaga (`shareCommonTastes`), ninguna ve el de la otra.
+ * - Recíproco y opcional: apagado por defecto, se elige en el alta; si una de las dos personas lo apaga
+ *   (`shareCommonTastes`), ninguna ve el de la otra.
+ * - Quien se ocultó del ranking de almas gemelas solo lo comparte con sus amistades.
  * - «Lo que te define» solo lo ve la propia persona.
  */
 export const SHARED_TASTES_LIMIT = 5;
@@ -69,7 +71,7 @@ async function sharing(db: Database, userId: string): Promise<{ dataset: 'demo' 
     .from(users)
     .leftJoin(userSettings, eq(userSettings.userId, users.id))
     .where(eq(users.id, userId));
-  return row ? { dataset: row.dataset, on: row.on ?? true } : null;
+  return row ? { dataset: row.dataset, on: row.on ?? false } : null;
 }
 
 export interface TasteRef {

@@ -1,6 +1,6 @@
 import type { INestApplication } from '@nestjs/common';
-import { createDatabase, userAffinities, userBlocks, users, type DatabaseHandle } from '@appinity/database';
-import { DEMO_USERS, recomputeAffinities, seedDemo } from '@appinity/ingestion';
+import { createDatabase, userAffinities, userBlocks, userSettings, users, type DatabaseHandle } from '@appinity/database';
+import { DEMO_USERS, friendshipState, recomputeAffinities, seedDemo } from '@appinity/ingestion';
 import { CATEGORIES, type AffinityDto, type CategoryRankingDto, type ChatConfigDto, type ChatConversationDto, type ChatInboxDto, type ChatMatchResultDto, type FollowedPersonDto, type DefiningTastesDto, type FriendsDto, type ItemCircleDto, type PublicPersonDto, type SharedTastesDto, type RecommendationsDto, type SoulmatesDto } from '@appinity/shared';
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -452,6 +452,14 @@ describe('Votos en Inicio (motor v3, 2026-10-27)', () => {
     expect(shared.total).toBeGreaterThanOrEqual(shared.items.length);
     expect((await call('/v1/people/no-uuid/shared')).status).toBe(400);
     expect((await call('/v1/people/00000000-0000-4000-8000-000000000000/shared')).status).toBe(404);
+    // Quien se ocultó del ranking de almas gemelas solo lo comparte con sus amistades.
+    const me = (await (await call('/v1/me')).json()) as { user: { id: string } };
+    const stranger = soulmates.items.find((s) => s.userId !== other) ?? soulmates.items[0]!;
+    if ((await friendshipState(db.db, me.user.id, stranger.userId)).state !== 'friends') {
+      await db.db.update(userSettings).set({ discoverableAsSoulmate: false }).where(eq(userSettings.userId, stranger.userId));
+      expect(((await (await call(`/v1/people/${stranger.userId}/shared`)).json()) as SharedTastesDto).status).toBe('off_them');
+      await db.db.update(userSettings).set({ discoverableAsSoulmate: true }).where(eq(userSettings.userId, stranger.userId));
+    }
     const defining = (await (await call('/v1/me/defining')).json()) as DefiningTastesDto;
     expect(defining.items.length).toBeGreaterThan(0);
     expect(defining.items.length).toBeLessThanOrEqual(6);

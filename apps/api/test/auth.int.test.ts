@@ -182,18 +182,28 @@ describe('sesiones de producción (fase 13)', () => {
 
 describe('amigos desde los contactos (SHA-256 de emails verificados)', () => {
   const sha = (s: string) => createHash('sha256').update(s).digest('hex');
-  async function signedUp(subject: string, name: string): Promise<{ token: string; userId: string }> {
+  async function signedUp(subject: string, name: string, discoverableByContacts = true): Promise<{ token: string; userId: string }> {
     const { code, userId } = await handoff(subject);
     const session = (await (await call('POST', '/v1/auth/exchange', undefined, { code, codeVerifier: VERIFIER })).json()) as AuthSessionDto;
-    expect((await call('POST', '/v1/me/onboarding', session.accessToken, { adult: true, termsAccepted: true, displayName: name })).status).toBe(204);
+    // En el alta se elige si te pueden encontrar por tus contactos (apagado por defecto).
+    expect((await call('POST', '/v1/me/onboarding', session.accessToken, { adult: true, termsAccepted: true, displayName: name, discoverableByContacts })).status).toBe(204);
     return { token: session.accessToken, userId };
   }
+
+  it('las opciones de privacidad del alta empiezan apagadas y se guardan si se eligen', async () => {
+    const { code } = await handoff('sub-opciones');
+    const session = (await (await call('POST', '/v1/auth/exchange', undefined, { code, codeVerifier: VERIFIER })).json()) as AuthSessionDto;
+    let me = (await (await call('GET', '/v1/me', session.accessToken)).json()) as MeDto;
+    expect(me.settings).toMatchObject({ discoverableByContacts: false, shareCommonTastes: false });
+    expect((await call('POST', '/v1/me/onboarding', session.accessToken, { adult: true, termsAccepted: true, shareCommonTastes: true })).status).toBe(204);
+    me = (await (await call('GET', '/v1/me', session.accessToken)).json()) as MeDto;
+    expect(me.settings).toMatchObject({ discoverableByContacts: false, shareCommonTastes: true });
+  });
 
   it('encuentra a quien lo permite, sin guardar nada, y respeta el ajuste y los bloqueos', async () => {
     const marta = await signedUp('contacto-marta', 'Marta');
     const pau = await signedUp('contacto-pau', 'Pau');
-    const oculta = await signedUp('contacto-oculta', 'Oculta');
-    expect((await call('PATCH', '/v1/me/settings', oculta.token, { discoverableByContacts: false })).status).toBe(200);
+    await signedUp('contacto-oculta', 'Oculta', false);
     const agenda = ['Contacto-Pau@Example.com', 'contacto-oculta@example.com', 'nadie@example.com', 'contacto-marta@example.com'].map((e) =>
       sha(e.trim().toLowerCase()),
     );
