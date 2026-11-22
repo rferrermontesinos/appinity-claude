@@ -76,16 +76,14 @@ describe('POST /v1/me/feedback', () => {
 
   it(`con ${FEEDBACK_PER_DAY} en 24 horas responde 429 con un mensaje claro`, async () => {
     const already = (await stored()).length;
-    await db.db
-      .insert(feedback)
-      .values(
-        Array.from({ length: FEEDBACK_PER_DAY - already }, (_, i) => ({
-          userId,
-          message: `Comentario ${i}`,
-          appVersion: '0.1.0',
-          platform: 'android' as const,
-        })),
-      );
+    await db.db.insert(feedback).values(
+      Array.from({ length: FEEDBACK_PER_DAY - already }, (_, i) => ({
+        userId,
+        message: `Comentario ${i}`,
+        appVersion: '0.1.0',
+        platform: 'android' as const,
+      })),
+    );
     const res = await post(COMMENT);
     expect(res.status).toBe(429);
     expect(((await res.json()) as { message: string }).message).toMatch(/Has enviado 10 comentarios hoy/);
