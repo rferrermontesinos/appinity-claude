@@ -1,6 +1,6 @@
 # Arquitectura · APPINITY Claude
 
-Documento vivo. Describe lo implementado (fases 0 a 8) y marca lo pendiente. Requisitos:
+Documento vivo. Describe lo implementado (fases 0 a 9) y marca lo pendiente. Requisitos:
 [APPINITY_Especificacion.md](APPINITY_Especificacion.md). Decisiones y parámetros: [decisions.md](decisions.md).
 
 ## Vista general
@@ -179,6 +179,8 @@ GET /v1/me/recommendations → recommendFor(usuario)
   zona (user_settings.location, st_dwithin en metros) → votos explícitos del año (occurred_at, zona horaria) → Trending
   filtros de objeto: lugares dentro del radio, eventos no terminados; Trending: estreno del año en obras con fecha
   mezcla 7/2/1 con cesión de huecos (fillsFor) → tarjetas con motivo verificable
+  fase 9: si falta, respaldos → comunidad (≥ 2 personas, bayes > 0) → conservados (Inicio) → explorar (sin valoraciones)
+  POST /v1/me/recommendations/query { limit, category, context: home|category, exclude[] } → Inicio y Categories
 ```
 
 ## Resolución de entidades (§6)

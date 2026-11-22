@@ -197,3 +197,48 @@ export function currentYear(now: Date, timeZone: string): number {
 
 /** Categorías con regla de estreno: el objeto debe haberse estrenado o publicado este año para ser Trending. */
 export const DATED_CATEGORIES: readonly Category[] = ['movies', 'series', 'books', 'games'];
+
+/**
+ * Respaldos (fase 9) para que el mazo no se agote mientras haya algo honesto que enseñar (decisión del usuario,
+ * 2026-10-14: «un número que tienda al infinito, al estilo de Tinder»). Van DESPUÉS de los bloques principales y cada
+ * tarjeta dice de dónde sale; nunca se presentan como consenso, descubrimiento ni Trending.
+ * - Comunidad: lo valorado positivamente por al menos 2 personas de APPINITY (cualquiera, sin afinidad ni zona), con
+ *   media bayesiana que incluye los votos bajos.
+ * - Conservados: lo que el usuario conservó en otra sesión (puede volver, §2).
+ * - Explorar: objetos del catálogo sin señales, en un orden estable por usuario y día.
+ */
+export type FallbackBlock = 'community' | 'kept' | 'explore';
+
+export interface CommunityCandidate {
+  itemId: string;
+  score: number;
+  supporters: number;
+  opinionated: number;
+}
+
+export function communityCandidates(
+  opinionsByItem: ReadonlyMap<string, readonly Opinion[]>,
+  params: RecommendationParams = RECOMMENDATION_PARAMS_V1,
+): CommunityCandidate[] {
+  const out: CommunityCandidate[] = [];
+  for (const [itemId, all] of opinionsByItem) {
+    const opinions = [...new Map(all.map((o) => [o.userId, o])).values()];
+    const supporters = opinions.filter((o) => o.score >= params.consensus.positiveScore && o.confidence >= params.consensus.positiveConfidence).length;
+    if (supporters < params.consensus.minSupporters) continue;
+    const sum = opinions.reduce((a, o) => a + o.score, 0);
+    const score = (params.trending.priorWeight * params.trending.priorMean + sum) / (params.trending.priorWeight + opinions.length);
+    if (score <= 0) continue;
+    out.push({ itemId, score: round(score), supporters, opinionated: opinions.length });
+  }
+  return out.sort((a, b) => b.score - a.score || b.supporters - a.supporters || a.itemId.localeCompare(b.itemId));
+}
+
+/** Orden estable y variado para explorar: hash de usuario, día y objeto (FNV-1a). Mismo día, mismo orden. */
+export function exploreOrder(itemIds: readonly string[], seed: string): string[] {
+  const hash = (text: string) => {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193) >>> 0;
+    return h;
+  };
+  return [...itemIds].sort((a, b) => hash(`${seed}:${a}`) - hash(`${seed}:${b}`) || a.localeCompare(b));
+}

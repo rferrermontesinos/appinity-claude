@@ -1,4 +1,4 @@
-import { Controller, Get, Inject, Query, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Inject, Post, Query, Req } from '@nestjs/common';
 import { type DatabaseHandle } from '@appinity/database';
 import { recommendFor } from '@appinity/ingestion';
 import { CATEGORIES, type RecommendationsDto } from '@appinity/shared';
@@ -27,6 +27,15 @@ const querySchema = z
   })
   .strict();
 
+const bodySchema = z
+  .object({
+    limit: z.number().int().min(1).max(50).default(30),
+    category: z.enum(CATEGORIES).optional(),
+    exclude: z.array(z.uuid()).max(5_000).default([]),
+    context: z.enum(['home', 'category']).default('home'),
+  })
+  .strict();
+
 /**
  * Recomendaciones del usuario de la sesión (§12 y §13). Cada tarjeta lleva su motivo verificable: cuántas almas gemelas
  * la apoyan (sin decir quiénes), qué persona la descubrió (nombre, que el motivo permite revelar) o cuántas personas de
@@ -41,10 +50,29 @@ export class RecommendationsController {
   ) {}
 
   @Get()
-  async list(
+  list(
     @CurrentUser() auth: AuthContext,
     @Req() req: Request,
     @Query(new ZodPipe(querySchema)) query: z.infer<typeof querySchema>,
+  ): Promise<RecommendationsDto> {
+    return this.build(auth, req, query);
+  }
+
+  /** Igual que GET, con la cola de la sesión en el cuerpo: un mazo sin fin no cabe en una URL. */
+  @Post('query')
+  @HttpCode(200)
+  query(
+    @CurrentUser() auth: AuthContext,
+    @Req() req: Request,
+    @Body(new ZodPipe(bodySchema)) body: z.infer<typeof bodySchema>,
+  ): Promise<RecommendationsDto> {
+    return this.build(auth, req, body);
+  }
+
+  private async build(
+    auth: AuthContext,
+    req: Request,
+    query: { limit: number; category?: (typeof CATEGORIES)[number] | undefined; exclude: string[]; context: 'home' | 'category' },
   ): Promise<RecommendationsDto> {
     const result = await recommendFor(this.database.db, auth.userId, {
       limit: query.limit,
@@ -71,6 +99,7 @@ export class RecommendationsController {
               ...(r.consensus ? { supporters: r.consensus.supporters, opinionated: r.consensus.opinionated } : {}),
               ...(r.discovery ? { contributor: { userId: r.discovery.contributorId, displayName: r.discovery.contributorName } } : {}),
               ...(r.trending ? { positiveVoters: r.trending.positiveVoters, totalVoters: r.trending.totalVoters } : {}),
+              ...(r.community ? { supporters: r.community.supporters } : {}),
             },
           },
         ];

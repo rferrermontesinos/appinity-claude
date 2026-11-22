@@ -45,8 +45,11 @@ export function useHomeDeck(enabled: boolean): HomeDeck {
     fetching.current = true;
     setLoading(true);
     try {
-      const exclude = [...seen.current].join(',');
-      const page = await apiRequest<RecommendationsDto>(`/v1/me/recommendations?limit=${BATCH}&context=home${exclude ? `&exclude=${exclude}` : ''}`);
+      // La cola de la sesión va en el cuerpo: el mazo no tiene fin y no cabría en una URL.
+      const page = await apiRequest<RecommendationsDto>('/v1/me/recommendations/query', {
+        method: 'POST',
+        body: { limit: BATCH, context: 'home', exclude: [...seen.current] },
+      });
       const { items, ...rest } = page;
       setMeta(rest);
       const fresh = items.filter((r) => !seen.current.has(r.item.id));

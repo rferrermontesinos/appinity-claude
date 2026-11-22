@@ -19,7 +19,9 @@ Implementación independiente de APPINITY construida desde cero a partir de
 - Fase 6 (Top 50 de almas gemelas) **implementada**: la pestaña Personas muestra el ranking y el perfil mínimo de cada
   persona.
 - Fase 7 (recomendador y Trending local) **implementada**.
-- Fase 8 (Home) **implementada**: Inicio muestra las recomendaciones con descartar, conservar, deshacer y NEW.
+- Fase 8 (Home) **aceptada en el teléfono**: Inicio muestra las recomendaciones con descartar, conservar, deshacer y NEW.
+- Fase 9 (Categories) **implementada**: recomendaciones por categoría y un mazo continuo. Cuando se agotan las almas
+  gemelas y la zona, siguen «comunidad» y «para explorar», siempre con su motivo real.
 
 ## Qué es real y qué es simulado
 

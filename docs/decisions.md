@@ -729,3 +729,31 @@ actual.
   - el mazo se monta por usuario: al cambiar de sesión empieza de cero;
   - sin recomendaciones se explica por qué (sin almas gemelas o sin zona) y no se inventa nada;
   - no se muestra ningún porcentaje «Para ti» (no hay una puntuación calibrada).
+
+## Fase 9 · 2026-10-14 (Categories y feed continuo)
+
+> Requisito del usuario (2026-10-14): «las recomendaciones tendrían que tener un número que tienda al infinito; al estilo
+> de Tinder».
+
+- **Feed continuo sin inventar nada.** Cuando se agotan los bloques principales (70/20/10) siguen tres respaldos, en
+  este orden y cada uno con su motivo. §12 permite usar otro bloque válido con `reasonCode` y fallback explícitos.
+  - **Comunidad**: valorado muy bien por al menos 2 personas de APPINITY (cualquiera elegible del dataset, sin afinidad
+    ni zona). Media bayesiana con los votos bajos; si sale ≤ 0, no se muestra. Motivo: «Lo valoraron muy bien N personas
+    de APPINITY». Nunca se presenta como «tus almas gemelas».
+  - **Conservados**: lo que el usuario conservó en otra sesión vuelve (§2). Solo en Inicio. Motivo: «Lo conservaste en
+    otra sesión».
+  - **Explorar**: obras y lugares del catálogo que **nadie** de APPINITY ha valorado todavía, en un orden estable por
+    usuario y día. Motivo literal: «todavía no tenemos señales sobre esto». Lo valorado, aunque sea mal, no sale aquí.
+  - Los filtros comunes (conocidos, descartes en Inicio, sesión, radio, eventos terminados) valen también para los
+    respaldos.
+  - Con un catálogo finito el mazo termina cuando se ha visto todo; con el catálogo real, que crece con las
+    importaciones, se acerca al «infinito» pedido.
+- **Paginación**: `POST /v1/me/recommendations/query` recibe la cola de la sesión en el cuerpo (hasta 5.000 ids),
+  porque un mazo sin fin no cabe en una URL. El `GET` se mantiene.
+- **Categories (§3)**:
+  - recomendaciones de la categoría con el mismo motor;
+  - no aplica los descartes de Inicio, pero sí los conocidos;
+  - lugares dentro del radio; sin ubicación, sin lugares;
+  - el consenso usa las almas gemelas por afinidad global, así que una categoría sin historial propio también recibe
+    recomendaciones; no se muestra ninguna «afinidad de categoría» inventada;
+  - selector «Recomendado / Catálogo» con el color de la categoría y paginación al llegar al final.
