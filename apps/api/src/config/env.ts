@@ -61,6 +61,14 @@ const envSchema = z
     CHAT_PREMIUM_DIRECT_MESSAGE: flag(false),
     /** Regla de producto «más adelante»: hablar con almas gemelas (no amigas) exige Premium. Desactivado por defecto. */
     CHAT_SOULMATES_PREMIUM: flag(false),
+    /** Firma de las sesiones de producción (fase 13). Obligatorio con NODE_ENV=production. */
+    AUTH_SECRET: z
+      .string()
+      .optional()
+      .transform((v) => (v ? v.trim() : undefined))
+      .refine((v) => v === undefined || v.length >= 32, 'AUTH_SECRET debe tener al menos 32 caracteres'),
+    /** Vuelta de «Continuar con Google». Debe estar autorizada en el cliente OAuth (en desarrollo, localhost). */
+    GOOGLE_SIGNIN_REDIRECT_URI: z.url().default('http://localhost:3100/v1/auth/google/callback'),
     GOOGLE_OAUTH_REDIRECT_URI: z.url().default('http://localhost:3100/v1/connect/google_portability/callback'),
   })
   .superRefine((env, ctx) => {
@@ -70,6 +78,9 @@ const envSchema = z
         path: ['DEMO_MODE'],
         message: 'DEMO_MODE y DEV_AUTH_ENABLED están prohibidos con NODE_ENV=production',
       });
+    }
+    if (env.NODE_ENV === 'production' && !env.AUTH_SECRET) {
+      ctx.addIssue({ code: 'custom', path: ['AUTH_SECRET'], message: 'AUTH_SECRET es obligatorio con NODE_ENV=production' });
     }
     if (env.DEV_AUTH_ENABLED && !env.DEMO_MODE) {
       ctx.addIssue({ code: 'custom', path: ['DEV_AUTH_ENABLED'], message: 'La identidad de desarrollo requiere DEMO_MODE=true' });

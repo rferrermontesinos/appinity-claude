@@ -1,6 +1,6 @@
 import { EntityResolver, LocalDiskStorage, WikidataSnapshotProvider, cacheCatalogImage } from '@appinity/catalog';
 import { createDatabase } from '@appinity/database';
-import { createProducerQueues, enqueueAffinity, enqueueSync, recomputeAffinities, runConnectionSync, scheduleDueSyncs, sendDueDigests } from '@appinity/ingestion';
+import { createProducerQueues, enqueueAffinity, enqueueSync, recomputeAffinities, runConnectionSync, scheduleDueSyncs, sendDueDigests, checkDigestReceipts } from '@appinity/ingestion';
 import { ExpoPushSender, createAdapterRegistry, createCatalogIdentifier } from '@appinity/integrations';
 import {
   QUEUES,
@@ -58,7 +58,10 @@ const workers: Worker[] = [
       if (job.name === 'send-digests') {
         const result = await sendDueDigests(database.db, pushSender);
         if (result.considered) console.log(`[push] resúmenes: ${JSON.stringify(result)}`);
-        return result;
+        // Recibos de los envíos de hace más de 15 min (FCM/APNs los aceptaron o no).
+        const receipts = await checkDigestReceipts(database.db, pushSender);
+        if (receipts.checked) console.log(`[push] recibos: ${JSON.stringify(receipts)}`);
+        return { ...result, receipts };
       }
       return { pong: `${job.data.requestedAt} → ${new Date().toISOString()}` };
     },

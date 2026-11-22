@@ -4,6 +4,11 @@
  */
 const PRIVATE_HOST = /^(localhost|127\.0\.0\.1|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})$/;
 
+const WEB_ORIGINS = (process.env.APP_WEB_ORIGIN ?? '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter((o) => o.startsWith('https://'));
+
 export function isAllowedReturnUrl(value: string): boolean {
   let url: URL;
   try {
@@ -15,6 +20,8 @@ export function isAllowedReturnUrl(value: string): boolean {
   if (url.protocol === 'appinity-claude:') return true;
   if (url.protocol === 'exp:' || url.protocol === 'exps:') return PRIVATE_HOST.test(url.hostname);
   if (url.protocol === 'http:') return url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+  // Producción: el origen https de la app web, si se configura (APP_WEB_ORIGIN, separados por comas).
+  if (url.protocol === 'https:') return WEB_ORIGINS.includes(url.origin);
   return false;
 }
 

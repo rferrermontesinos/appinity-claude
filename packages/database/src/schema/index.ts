@@ -8,3 +8,4 @@ export * from './home.js';
 export * from './chat.js';
 export * from './premium.js';
 export * from './notifications.js';
+export * from './auth.js';

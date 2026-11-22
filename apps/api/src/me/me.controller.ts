@@ -38,7 +38,7 @@ export class MeController {
 
   @Get()
   get(@CurrentUser() auth: AuthContext): Promise<MeDto> {
-    return this.me.getMe(auth.userId);
+    return this.me.getMe(auth.userId, auth.kind);
   }
 
   @Patch('settings')

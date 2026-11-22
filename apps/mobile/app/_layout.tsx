@@ -29,9 +29,17 @@ function SessionGate() {
   useEffect(() => {
     if (!hydrated) return;
     const onLogin = segments[0] === 'dev-login';
-    if (!session && !onLogin) router.replace('/dev-login');
+    // /auth recibe la vuelta de Google antes de que haya sesión.
+    const onAuthReturn = segments[0] === 'auth';
+    if (!session && !onLogin && !onAuthReturn) router.replace('/dev-login');
     if (session && onLogin) router.replace('/');
   }, [hydrated, session, segments, router]);
+
+  // Alta pendiente (cuenta real nueva): primero mayoría de edad y condiciones.
+  const needsOnboarding = me.data?.needsOnboarding ?? false;
+  useEffect(() => {
+    if (session && needsOnboarding && segments[0] !== 'onboarding') router.replace('/onboarding');
+  }, [session, needsOnboarding, segments, router]);
 
   // El idioma guardado en los ajustes del usuario prevalece sobre el del sistema.
   const locale = me.data?.settings.locale;
@@ -62,6 +70,8 @@ export default function RootLayout() {
           >
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="dev-login" options={{ headerShown: false, gestureEnabled: false }} />
+            <Stack.Screen name="auth" options={{ headerShown: false }} />
+            <Stack.Screen name="onboarding" options={{ gestureEnabled: false, title: 'APPINITY' }} />
             <Stack.Screen name="model" />
             <Stack.Screen name="category/[code]" />
             <Stack.Screen name="item/[id]" />

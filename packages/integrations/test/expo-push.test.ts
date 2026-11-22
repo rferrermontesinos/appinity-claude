@@ -27,3 +27,16 @@ describe('emisor de Expo push', () => {
     expect(tickets[0]).toEqual({ status: 'ok', id: 't0' });
   });
 });
+
+describe('recibos de Expo push', () => {
+  it('consulta por ids y devuelve ok o el error de FCM/APNs; los ids sin recibo no aparecen', async () => {
+    let body: unknown;
+    const fetchImpl = (async (_url: string | URL | Request, init?: RequestInit) => {
+      body = JSON.parse(String(init!.body));
+      return new Response(JSON.stringify({ data: { a: { status: 'ok' }, b: { status: 'error', message: 'gone', details: { error: 'DeviceNotRegistered' } } } }));
+    }) as typeof fetch;
+    const sender = new ExpoPushSender({ fetchImpl, sleep: async () => undefined });
+    expect(await sender.receipts(['a', 'b', 'c'])).toEqual({ a: { status: 'ok' }, b: { status: 'error', message: 'gone', error: 'DeviceNotRegistered' } });
+    expect(body).toEqual({ ids: ['a', 'b', 'c'] });
+  });
+});

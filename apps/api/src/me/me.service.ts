@@ -23,7 +23,7 @@ export function approximateCoordinate(value: number): number {
 export class MeService {
   constructor(@Inject(DATABASE) private readonly database: DatabaseHandle) {}
 
-  async getMe(userId: string): Promise<MeDto> {
+  async getMe(userId: string, authKind: 'dev' | 'user' = 'dev'): Promise<MeDto> {
     const [row] = await this.database.db
       .select({ user: users, profile: userProfiles, settings: userSettings })
       .from(users)
@@ -58,7 +58,8 @@ export class MeService {
               }
             : null,
       },
-      authKind: 'dev',
+      authKind,
+      needsOnboarding: row.user.dataset === 'live' && (!row.user.adultConfirmedAt || !row.user.termsAcceptedAt),
     };
   }
 

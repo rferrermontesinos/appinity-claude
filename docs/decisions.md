@@ -924,3 +924,28 @@ gente con la que tienes afinidad, igual que en Tinder cuando haces match»).
   - `DeviceNotRegistered` desactiva el token.
   Los recibos (comprobar a los ~15 min que FCM o APNs aceptó) quedan pendientes.
 - **Permiso**: según la regla del usuario, se pedirá una sola vez durante el alta (build de desarrollo), nunca después.
+
+## Fase 13 · 2026-10-15 (preparación de la beta)
+
+- **Autenticación de producción: «Continuar con Google» (OpenID Connect)**.
+  - Gratuita; usa el mismo cliente OAuth que Data Portability, en una autorización aparte (Google no mezcla esos
+    scopes con `openid`).
+  - La API hace todo el flujo: PKCE, `nonce` y verificación del ID token con las claves públicas de Google. La app
+    recibe un **código de un solo uso** (2 min) y lo canjea; los tokens nunca van en una URL.
+  - Solo se guarda el email si Google lo da verificado.
+  - Sin `prompt=consent`, porque Google lo rechaza para este cliente.
+- **Sesiones**:
+  - access token de 15 min (HS256 con `AUTH_SECRET`, distinto del de desarrollo);
+  - refresh token opaco de 90 días, guardado solo como hash y **rotado en cada uso**;
+  - cerrar sesión y eliminar la cuenta surten efecto al momento (el guard comprueba la sesión en cada petición).
+- **Alta = único momento de consentimiento**: mayoría de edad y condiciones, y a continuación las fuentes. Una cuenta
+  sin alta no aparece para nadie.
+- **Eliminar la cuenta**: revoca los permisos en cada proveedor y borra al usuario en cascada. Las copias de seguridad
+  (14 días) caducan después.
+- **Producción blindada**: la API no arranca con `DEMO_MODE`/`DEV_AUTH_ENABLED` ni sin `AUTH_SECRET`. Imagen sin root ni
+  secretos. API solo en 127.0.0.1, detrás de un proxy HTTPS.
+- **Reutilización del refresh token** (migración 0013): se guarda el hash del token anterior. Si alguien lo presenta
+  después de rotarlo, lo tienen dos partes y se revoca la sesión entera (OAuth 2.0 Security BCP).
+- **Recibos de Expo push**: ~15 min después del envío se consulta si FCM o APNs aceptaron cada notificación.
+  DeviceNotRegistered desactiva el token. Sin recibo todavía, se vuelve a mirar, como mucho hasta las 23 h.
+- **Pendiente con justificación**: «Iniciar sesión con Apple» (iOS; requiere Apple Developer Program, de pago).

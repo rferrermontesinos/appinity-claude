@@ -35,3 +35,6 @@ Thumbs.db
 
 # Configuración local de herramientas
 .claude/
+
+# Copias de seguridad de la base de datos (datos personales)
+backups/

@@ -55,9 +55,9 @@ export const en: TranslationResources = {
     banner: 'DEMO · simulated user activity',
     bannerDetail:
       'Users and their activity are simulated (DEMO_MODE). Catalog items and their images are real (Wikidata and Wikimedia Commons).',
-    liveBanner: 'REAL DATA · local development account',
+    liveBanner: 'REAL DATA · your account',
     liveBannerDetail:
-      'What you see comes from your connected real sources (e.g. Steam). It is stored only in the local database on this PC. The session is a development one, not production.',
+      'What you see comes from the real sources you connected. Nobody else sees your history: only your name, your country and your affinities.',
   },
   home: {
     title: 'Home',
@@ -356,6 +356,34 @@ export const en: TranslationResources = {
     includes: 'Includes exploring up to 200 soulmates (instead of 50) and writing without a match once enabled. Consensus recommendations still use your 50 closest soulmates.',
     notPurchasable: 'You cannot buy it from the app yet: the stores and RevenueCat still need to be configured, plus an app build with purchases (Expo Go does not support them).',
     sandbox: 'Test environment: only test (sandbox) purchases count.',
+  },
+  auth: {
+    title: 'Signing in',
+    failed: 'Could not sign in.',
+    back: 'Back',
+    signInTitle: 'Sign in to APPINITY',
+    signInIntro: 'With your Google account. Only your identity is used (name and verified email); your tastes are connected separately, during sign-up.',
+    google: 'Continue with Google',
+    devPhoneNote: 'In development Google only returns to localhost: sign in from the PC web view. In production (https) it will also work on the phone.',
+  },
+  onboarding: {
+    title: 'Welcome to APPINITY',
+    intro: 'A single consent step: confirm these two points and then connect the sources of your tastes. We will not ask for anything else later.',
+    namePlaceholder: 'Your display name (optional)',
+    adult: 'I am 18 or older',
+    terms: 'I accept the terms and the privacy policy',
+    consentNote: 'Your tastes only come from the sources you connect. Nobody sees your history: only your name, your country and your affinities.',
+    continue: 'Continue and connect my sources',
+  },
+  account: {
+    title: 'Account',
+    googleIdentity: 'Google account',
+    logout: 'Sign out',
+    delete: 'Delete my account',
+    deleteConfirm: 'Granted permissions (Google, Steam…) will be revoked and everything will be deleted: profile, imported tastes, affinities, friendships and chats. This cannot be undone. Type ELIMINAR to confirm.',
+    deleteType: 'Type ELIMINAR',
+    deleteFinal: 'Delete permanently',
+    deleteNote: 'Encrypted backups rotate and the account also disappears from them when they expire (see the operations documentation).',
   },
   profile: {
     title: 'Profile',

@@ -2,7 +2,9 @@ import { type DynamicModule, Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AuthGuard } from './auth/auth.guard.js';
+import { AuthController } from './auth/auth.controller.js';
 import { DevAuthController } from './auth/dev-auth.controller.js';
+import { SessionTokensService } from './auth/session-tokens.service.js';
 import { DevAuthService } from './auth/dev-auth.service.js';
 import { UsersRepository } from './auth/users.repository.js';
 import { CatalogQueryService } from './catalog/catalog-query.service.js';
@@ -49,6 +51,7 @@ export class AppModule {
       controllers: [
         HealthController,
         DevAuthController,
+        AuthController,
         MeController,
         NotificationsController,
         SourcesController,
@@ -66,6 +69,7 @@ export class AppModule {
       ],
       providers: [
         DevAuthService,
+        SessionTokensService,
         UsersRepository,
         MeService,
         ConnectionsService,

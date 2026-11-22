@@ -1,6 +1,6 @@
 import { catalogItems, notificationDeliveries, pushTokens, userSettings, users, type Database } from '@appinity/database';
 import type { NotificationFrequency } from '@appinity/shared';
-import { and, eq, inArray, isNull, ne, sql } from 'drizzle-orm';
+import { and, eq, gt, inArray, isNull, lt, ne, sql } from 'drizzle-orm';
 import { chatInbox } from './chat.js';
 import { ConflictError } from './errors.js';
 import { recommendFor } from './recommendations.js';
@@ -61,8 +61,11 @@ export interface PushMessage {
 
 export type PushTicket = { status: 'ok'; id: string } | { status: 'error'; message: string; error?: string };
 
+export type PushReceipt = { status: 'ok' } | { status: 'error'; message: string; error?: string };
+
 export interface PushSender {
   send(messages: PushMessage[]): Promise<PushTicket[]>;
+  receipts?(ids: string[]): Promise<Record<string, PushReceipt>>;
 }
 
 export interface Digest {
@@ -155,12 +158,13 @@ export async function sendDueDigests(db: Database, sender: PushSender, options: 
         return ticket?.status === 'error' && ticket.error === 'DeviceNotRegistered';
       });
       if (gone.length) await db.update(pushTokens).set({ disabledAt: now }).where(inArray(pushTokens.token, gone.map((t) => t.token)));
-      const ok = tickets.filter((t): t is { status: 'ok'; id: string } => t.status === 'ok');
+      // Cada ticket se guarda con su token («id|token») para poder desactivarlo si el recibo dice que ya no existe.
+      const ok = tickets.flatMap((t, i) => (t.status === 'ok' ? [{ id: t.id, token: tokens[i]!.token }] : []));
       await finish({
         status: ok.length ? 'sent' : 'failed',
         recommendations: digest.recommendations,
         unreadChats: digest.unreadChats,
-        tickets: ok.map((t) => t.id),
+        tickets: ok.map((t) => `${t.id}|${t.token}`),
         error: ok.length ? null : (tickets.find((t) => t.status === 'error') as { message?: string } | undefined)?.message?.slice(0, 200) ?? 'sin tickets',
       });
       if (ok.length) result.sent++;
@@ -171,4 +175,45 @@ export async function sendDueDigests(db: Database, sender: PushSender, options: 
     }
   }
   return result;
+}
+
+/**
+ * Recibos de Expo (~15 min después del envío y antes de que caduquen a las 24 h): confirman si FCM/APNs aceptaron
+ * cada notificación. DeviceNotRegistered desactiva el token. Se anota cuántos fallaron; un envío solo cuenta como
+ * entregado al proveedor con recibo «ok».
+ */
+export async function checkDigestReceipts(db: Database, sender: PushSender, options: { now?: Date } = {}): Promise<{ checked: number; errors: number }> {
+  if (!sender.receipts) return { checked: 0, errors: 0 };
+  const now = options.now ?? new Date();
+  const pending = await db
+    .select({ id: notificationDeliveries.id, tickets: notificationDeliveries.tickets })
+    .from(notificationDeliveries)
+    .where(
+      and(
+        eq(notificationDeliveries.status, 'sent'),
+        isNull(notificationDeliveries.receiptsCheckedAt),
+        lt(notificationDeliveries.createdAt, new Date(now.getTime() - 15 * 60_000)),
+        gt(notificationDeliveries.createdAt, new Date(now.getTime() - 23 * 3600_000)),
+      ),
+    );
+  if (!pending.length) return { checked: 0, errors: 0 };
+  const pairs = pending.flatMap((d) => d.tickets.map((t) => ({ delivery: d.id, id: t.split('|')[0]!, token: t.split('|')[1] ?? '' })));
+  const receipts = await sender.receipts(pairs.map((p) => p.id));
+  const gone = pairs.filter((p) => {
+    const r = receipts[p.id];
+    return r?.status === 'error' && r.error === 'DeviceNotRegistered';
+  });
+  if (gone.length) await db.update(pushTokens).set({ disabledAt: now }).where(inArray(pushTokens.token, gone.map((p) => p.token)));
+  let errors = 0;
+  let checked = 0;
+  for (const delivery of pending) {
+    const mine = pairs.filter((p) => p.delivery === delivery.id);
+    // Recibos aún no disponibles: se vuelve a mirar en la siguiente pasada (como mucho hasta las 23 h).
+    if (mine.some((p) => !receipts[p.id])) continue;
+    const failed = mine.filter((p) => receipts[p.id]?.status === 'error').length;
+    errors += failed;
+    await db.update(notificationDeliveries).set({ receiptsCheckedAt: now, receiptErrors: failed }).where(eq(notificationDeliveries.id, delivery.id));
+    checked++;
+  }
+  return { checked, errors };
 }

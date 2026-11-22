@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDevLogin, useDevUsers } from '../src/api/queries';
+import { GoogleSignIn } from '../src/components/GoogleSignIn';
 import { Diagnostics } from '../src/components/Diagnostics';
 import { Body, Button, Card, DemoBanner, ErrorCard, Loading, Screen, Small, Title } from '../src/components/ui';
 import { radius, spacing, usePalette } from '../src/theme';
@@ -73,6 +74,7 @@ export default function DevLoginScreen() {
           <Text style={{ color: c.accent, fontSize: 28, fontWeight: '800' }}>{t('common.appName')}</Text>
           <Body muted>{t('common.tagline')}</Body>
         </View>
+        <GoogleSignIn />
         <DemoBanner detailed />
         <Title>{t('devLogin.title')}</Title>
         <Body muted>{t('devLogin.help')}</Body>

@@ -33,7 +33,8 @@
     "dev": "pnpm build && concurrently -k -n build,api,worker -c gray,cyan,magenta \"pnpm build:watch\" \"node --env-file-if-exists=.env --watch apps/api/dist/main.js\" \"node --env-file-if-exists=.env --watch workers/sync-worker/dist/main.js\"",
     "mobile": "pnpm build && pnpm --filter @appinity/mobile start",
     "fixtures:catalog": "node scripts/fixtures/build-catalog-snapshot.mjs",
-    "secret:set": "node scripts/set-secret.mjs"
+    "secret:set": "node scripts/set-secret.mjs",
+    "db:backup": "node scripts/backup-db.mjs"
   },
   "devDependencies": {
     "@appinity/algorithms": "workspace:*",
