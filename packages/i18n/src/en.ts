@@ -779,6 +779,7 @@ export const en: TranslationResources = {
   },
   diagnostics: {
     title: 'API connection',
+    appVersion: 'App version',
     apiUrl: 'API URL',
     apiUrlSource: 'URL source',
     apiUrlSourceEnv: 'EXPO_PUBLIC_API_URL',

@@ -1,16 +1,22 @@
 import type { CheckResult } from '@appinity/shared';
 import { useTranslation } from 'react-i18next';
 import { useHealth } from '../api/queries';
+import { APP_PLATFORM, APP_VERSION } from '../app-info';
 import { API } from '../config';
 import { usePalette } from '../theme';
 import { Body, Button, Card, Row, Small, Title } from './ui';
+
+const PLATFORM_NAMES = { android: 'Android', ios: 'iOS', web: 'Web' } as const;
 
 function checkLabel(check: CheckResult | undefined): string {
   if (!check) return '—';
   return check.ok ? `OK${check.latencyMs !== undefined ? ` · ${check.latencyMs} ms` : ''}` : `✕ ${check.detail ?? ''}`;
 }
 
-/** Comprueba desde el teléfono que la API, la base de datos y Redis responden. */
+/**
+ * Comprueba desde el teléfono que la API, la base de datos y Redis responden. Empieza por la versión de la app: es lo
+ * primero que hay que saber de un fallo de la beta (la misma que se envía con los comentarios y los avisos de errores).
+ */
 export function Diagnostics() {
   const { t } = useTranslation();
   const c = usePalette();
@@ -33,6 +39,7 @@ export function Diagnostics() {
   return (
     <Card>
       <Title>{t('diagnostics.title')}</Title>
+      <Row label={t('diagnostics.appVersion')} value={APP_PLATFORM ? `${APP_VERSION} · ${PLATFORM_NAMES[APP_PLATFORM]}` : APP_VERSION} />
       <Row label={t('diagnostics.apiUrl')} value={API.url} />
       <Row label={t('diagnostics.apiUrlSource')} value={sourceLabel} />
       <Row label={t('diagnostics.status')} value={status.label} valueColor={status.color} />

@@ -22,7 +22,45 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 11 | **Paso 1 implementado** (Google: Play, pedidos y guardados), comprobado automáticamente y en parte con servicios reales; falta un export real | Entrega 2026-10-14 · fase 11 (rama `fase-11-fuentes`). Análisis en [source-candidates.md](source-candidates.md) |
 | 12 | **12C (push, servidor) implementada y comprobada automáticamente**; envío real pendiente de build de desarrollo y FCM · **12B (Premium, servidor) implementada y comprobada automáticamente**; compra en la app pendiente de cuentas y build de desarrollo · **12A (chat) implementada, comprobada automáticamente y verificada en la vista web**; 12B (Premium/RevenueCat) y 12C (push) pendientes | Entrega 2026-10-14 · fase 12A (rama `fase-12a-chat`, basada en `fase-10-people`) |
 | 13 | **Preparada**: auth de producción, alta, eliminación de cuenta y despliegue probados en local; beta real pendiente de dominio, servidor y cuentas ([beta.md](beta.md)) · auditoría de seguridad de la API hecha (2026-10-26) · textos legales en borrador (2026-10-26) | Entrega 2026-10-15 · fase 13 (rama `fase-13-beta`) |
-| Beta (B1–B10) | **En curso** (2026-11-22): B1 a B7 con PR abierta | Plan y estado en [fases-beta.md](fases-beta.md); cada fase en su PR encadenada sobre la PR #26 |
+| Beta (B1–B10) | **En curso** (2026-11-22): B1 a B8 con PR abierta | Plan y estado en [fases-beta.md](fases-beta.md); cada fase en su PR encadenada sobre la PR #26 |
+
+---
+
+## Entrega 2026-11-22 · B8: preparar Google Play (sin publicar)
+
+Rama `claude/beta-b8-play`, PR contra `claude/beta-b7-rareza` (B7). Ficha, formularios y guía en
+[google-play.md](google-play.md); motivos en [decisions.md](decisions.md).
+
+### Qué se ha hecho
+
+- `app.config.ts` para la build de los perfiles `preview` y `production` (y la de `pnpm android:beta`) si la URL de la
+  API falta, es la de ejemplo de `eas.json` o no es `https://dominio`.
+- Versión 0.2.0, visible en Ajustes → Conexión con la API («Versión de la app» y plataforma). `autoIncrement` del
+  número interno de Android en el perfil `production`.
+- Permisos de Android revisados: fuera la ubicación precisa, escribir contactos, almacenamiento y mostrar sobre otras
+  apps (`blockedPermissions`).
+- Borradores para Play Console: ficha (nombre, descripciones, categoría), icono de 512 × 512 y gráfico destacado de
+  1024 × 500 en `docs/play/`, contenido de la app, seguridad de los datos, cuestionario de clasificación y el paso a paso
+  de la prueba cerrada (12 testers durante 14 días).
+
+### Comprobaciones
+
+- La comprobación de la URL con `npx expo config` en 7 combinaciones: sin perfil, OK; `preview` con el ejemplo de
+  `eas.json`, falla; `production` sin URL, falla; `production` con `https://api.ejemplo.com`, OK; build local de release
+  con una IP, falla; con ruta, falla; `development` con la IP del PC, OK.
+- `expo prebuild` (carpeta `android/` borrada después): los cinco permisos bloqueados quedan con `tools:node="remove"`
+  en el manifiesto; `targetSdkVersion` sale del catálogo de versiones de React Native 0.86 (36).
+- Vista web (8092, demo): Ajustes → Conexión con la API muestra «Versión de la app · 0.2.0 · Web».
+- `scripts/android-beta-build.ps1`: solo se añade una variable de entorno; no se ha ejecutado aquí (no hay Windows).
+- `pnpm format:check`, `pnpm lint` y `pnpm typecheck` limpios; `pnpm test`: 55 ficheros y 482 tests OK (sin tests nuevos:
+  la comprobación de la URL se probó con `expo config`).
+
+### Pendiente
+
+- Del titular: cuenta de Play Console, identificador de la app antes de la primera subida, email de soporte, cuenta de
+  Google para la revisión y capturas con la demo (lista completa en [google-play.md](google-play.md#7-lo-que-solo-puede-hacer-el-titular)).
+- Sin probar en el teléfono: el diálogo de ubicación con solo «Aproximada» y la lista final de permisos del AAB.
+- Siguiente fase: B9 (operación de la beta).
 
 ---
 

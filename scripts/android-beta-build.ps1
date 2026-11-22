@@ -45,6 +45,8 @@ if ($LASTEXITCODE -ne 0) { throw 'pnpm build falló' }
 # Se fija al empaquetar el JavaScript; tiene prioridad sobre apps/mobile/.env.
 $env:EXPO_PUBLIC_API_URL = $ApiUrl
 $env:NODE_ENV = 'production'
+# La misma comprobación de la URL que en las builds de EAS para otras personas (app.config.ts, fase B8).
+$env:APPINITY_RELEASE_BUILD = '1'
 Set-Location (Join-Path $BuildDir 'apps\mobile')
 npx expo prebuild --platform android --no-install
 if ($LASTEXITCODE -ne 0) { throw 'expo prebuild falló' }
