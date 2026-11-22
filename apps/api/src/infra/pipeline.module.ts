@@ -20,6 +20,9 @@ import { ADAPTER_REGISTRY, DATABASE, ENTITY_RESOLVER, QUEUES, STORAGE } from './
         createAdapterRegistry({
           demoMode: env.DEMO_MODE,
           ...(env.STEAM_WEB_API_KEY ? { steam: { apiKey: env.STEAM_WEB_API_KEY } } : {}),
+          ...(env.TRAKT_CLIENT_ID
+            ? { trakt: { clientId: env.TRAKT_CLIENT_ID, redirectUri: env.TRAKT_REDIRECT_URI, ...(env.TRAKT_CLIENT_SECRET ? { clientSecret: env.TRAKT_CLIENT_SECRET } : {}) } }
+            : {}),
           // La API solo conecta y desconecta Google; la identificación de catálogo la hace el worker al sincronizar.
           ...(env.GOOGLE_OAUTH_CLIENT_ID && env.GOOGLE_OAUTH_CLIENT_SECRET
             ? {
@@ -27,6 +30,11 @@ import { ADAPTER_REGISTRY, DATABASE, ENTITY_RESOLVER, QUEUES, STORAGE } from './
                   clientId: env.GOOGLE_OAUTH_CLIENT_ID,
                   clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET,
                   redirectUri: env.GOOGLE_OAUTH_REDIRECT_URI,
+                },
+                googleBooks: {
+                  clientId: env.GOOGLE_OAUTH_CLIENT_ID,
+                  clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET,
+                  redirectUri: env.GOOGLE_BOOKS_REDIRECT_URI,
                 },
               }
             : {}),

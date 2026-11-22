@@ -69,6 +69,12 @@ const envSchema = z
       .refine((v) => v === undefined || v.length >= 32, 'AUTH_SECRET debe tener al menos 32 caracteres'),
     /** Vuelta de «Continuar con Google». Debe estar autorizada en el cliente OAuth (en desarrollo, localhost). */
     GOOGLE_SIGNIN_REDIRECT_URI: z.url().default('http://localhost:3100/v1/auth/google/callback'),
+    /** Vuelta de la conexión de Google Books (cuentas ya creadas). Debe estar autorizada en el cliente OAuth. */
+    GOOGLE_BOOKS_REDIRECT_URI: z.url().default('http://localhost:3100/v1/connect/google_books/callback'),
+    /** Trakt (fase 11): client_id de la app creada en Trakt; el secreto es opcional (PKCE). */
+    TRAKT_CLIENT_ID: z.string().optional().transform((v) => (v ? v.trim() : undefined)),
+    TRAKT_CLIENT_SECRET: z.string().optional().transform((v) => (v ? v.trim() : undefined)),
+    TRAKT_REDIRECT_URI: z.url().default('http://localhost:3100/v1/connect/trakt/callback'),
     GOOGLE_OAUTH_REDIRECT_URI: z.url().default('http://localhost:3100/v1/connect/google_portability/callback'),
   })
   .superRefine((env, ctx) => {

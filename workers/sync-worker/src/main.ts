@@ -20,18 +20,40 @@ const env = loadWorkerEnv();
 const connection = new Redis(env.redisUrl, { maxRetriesPerRequest: null });
 const heartbeatClient = new Redis(env.redisUrl, { maxRetriesPerRequest: 1 });
 const database = createDatabase(env.databaseUrl, { max: 6, applicationName: 'appinity-claude-worker' });
+const catalogIdentifier = createCatalogIdentifier({
+  userAgent: env.catalogUserAgent,
+  ...(env.nominatimUrl ? { nominatimUrl: env.nominatimUrl } : {}),
+  log: (message) => console.log(`[catálogo] ${message}`),
+});
 const registry = createAdapterRegistry({
   demoMode: env.demoMode,
   ...(env.steamApiKey ? { steam: { apiKey: env.steamApiKey } } : {}),
+  ...(process.env.TRAKT_CLIENT_ID?.trim()
+    ? {
+        trakt: {
+          clientId: process.env.TRAKT_CLIENT_ID.trim(),
+          redirectUri: process.env.TRAKT_REDIRECT_URI?.trim() || 'http://localhost:3100/v1/connect/trakt/callback',
+          ...(process.env.TRAKT_CLIENT_SECRET?.trim() ? { clientSecret: process.env.TRAKT_CLIENT_SECRET.trim() } : {}),
+          identifier: catalogIdentifier,
+        },
+      }
+    : {}),
   ...(env.google
     ? {
         google: {
           ...env.google,
           // Lugares con OpenStreetMap y obras con Wikidata (licencias de uso comercial).
-          identifier: createCatalogIdentifier({ userAgent: env.catalogUserAgent, ...(env.nominatimUrl ? { nominatimUrl: env.nominatimUrl } : {}), log: (message) => console.log(`[catálogo] ${message}`) }),
+          identifier: catalogIdentifier,
           // Estructura del export SIN datos personales: sirve para contrastar el formato real con el documentado.
           onArchiveSummary: (summary) => console.log(`[google] export ${summary.group}: ${JSON.stringify({ ...summary, group: undefined })}`),
           onProgress: (message) => console.log(`[google] ${message}`),
+        },
+        // Google Books: el worker solo renueva el acceso y sincroniza (la URL de vuelta la usa la API al conectar).
+        googleBooks: {
+          clientId: env.google.clientId,
+          clientSecret: env.google.clientSecret,
+          redirectUri: process.env.GOOGLE_BOOKS_REDIRECT_URI?.trim() || 'http://localhost:3100/v1/connect/google_books/callback',
+          identifier: catalogIdentifier,
         },
       }
     : {}),

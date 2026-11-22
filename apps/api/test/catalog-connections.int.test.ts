@@ -102,7 +102,8 @@ describe('fuentes y conexiones', () => {
     // Sin STEAM_WEB_API_KEY ni cliente OAuth de Google en el entorno de test, ambas aparecen sin configurar.
     expect(body.find((s) => s.key === 'steam')).toMatchObject({ connectable: false, availability: 'unconfigured' });
     expect(body.find((s) => s.key === 'google_portability')).toMatchObject({ connectable: false, availability: 'unconfigured' });
-    expect(body.find((s) => s.key === 'google_books')).toMatchObject({ connectable: false, availability: 'planned', plannedPhase: '11' });
+    expect(body.find((s) => s.key === 'google_books')).toMatchObject({ connectable: false, availability: 'unconfigured' });
+    expect(body.find((s) => s.key === 'apple_music')).toMatchObject({ connectable: false, availability: 'planned' });
     // Las fuentes que requieren acuerdo comercial no se anuncian (revisión de fuentes 2026-10-08).
     expect(body.map((s) => s.key)).not.toContain('tmdb');
     expect(body.map((s) => s.key)).not.toContain('lastfm');

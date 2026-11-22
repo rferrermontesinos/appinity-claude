@@ -24,6 +24,7 @@ export const PLANNED_SOURCE_KEYS = [
   'steam',
   'google_portability',
   'google_books',
+  'trakt',
   'apple_music',
   'device_calendar',
   'itchio',
@@ -243,6 +244,10 @@ export interface EntityIdentifier {
   identifyPlaces(places: PlaceToIdentify[], onProgress?: (done: number, total: number) => void): Promise<PlaceIdentification[]>;
   /** `categories`: solo se aceptan obras de esas categorías (p. ej., un libro de Play solo puede ser un libro). */
   identifyWork(work: { title: string; languages?: string[]; categories?: Category[] }): Promise<IdentifiedEntity | null>;
+  /** Libro por su ID de Google Books (P675 en Wikidata; una edición se atribuye a su obra). Opcional. */
+  identifyGoogleBooksVolume?(volumeId: string): Promise<IdentifiedEntity | null>;
+  /** Películas y series por IMDb o TMDB (Wikidata P345, P4947, P4983). Opcional. Mismo orden que la entrada. */
+  identifyByExternalIds?(items: Array<{ imdb?: string; tmdb?: number; kind: 'movie' | 'show' }>): Promise<Array<IdentifiedEntity | null>>;
   /**
    * Lugares sin coordenadas (pedidos, reservas y guardados de Google): se geocodifican por nombre y dirección y después
    * pasan por la misma comprobación que `identifyPlaces` (nombre y tipo del elemento de OSM). Mismo orden.
