@@ -1,6 +1,7 @@
 import { type DynamicModule, Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { AccountService } from './auth/account.service.js';
 import { AuthGuard } from './auth/auth.guard.js';
 import { AuthController } from './auth/auth.controller.js';
 import { DevAuthController } from './auth/dev-auth.controller.js';
@@ -79,6 +80,7 @@ export class AppModule {
         UsersRepository,
         MeService,
         ConnectionsService,
+        AccountService,
         CatalogQueryService,
         PeopleService,
         ChatPolicyService,

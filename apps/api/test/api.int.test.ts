@@ -99,15 +99,76 @@ describe('health', () => {
 });
 
 describe('textos legales', () => {
-  it('condiciones y privacidad son públicas, en HTML y marcadas como borrador', async () => {
-    for (const path of ['/legal/condiciones', '/legal/privacidad']) {
+  const LEGAL_PAGES = ['/legal/condiciones', '/legal/privacidad', '/legal/eliminar-cuenta'];
+  const page = async (root: string, path: string) => (await fetch(`${root}${path}`)).text();
+
+  it('condiciones, privacidad y eliminar la cuenta son públicas, en HTML y marcadas como borrador', async () => {
+    for (const path of LEGAL_PAGES) {
       const res = await fetch(`${base}${path}`);
       expect(res.status).toBe(200);
       expect(res.headers.get('content-type')).toMatch(/text\/html/);
       expect(await res.text()).toMatch(/Borrador pendiente de revisión legal/);
     }
     // La verificación de Google exige la declaración de uso limitado en la política de privacidad.
-    expect(await (await fetch(`${base}/legal/privacidad`)).text()).toMatch(/requisitos de uso limitado/);
+    expect(await page(base, '/legal/privacidad')).toMatch(/requisitos de uso limitado/);
+  });
+
+  it('sin LEGAL_* muestran el hueco marcado en lugar de inventar al responsable', async () => {
+    for (const path of LEGAL_PAGES) {
+      const html = await page(base, path);
+      expect(html).toMatch(/\[pendiente: nombre y apellidos o razón social del responsable\]/);
+      expect(html).toMatch(/\[pendiente: email de contacto para privacidad\]/);
+      expect(html).not.toMatch(/mailto:/);
+    }
+  });
+
+  it('con LEGAL_* muestran los datos del responsable, escapados, y el email como enlace', async () => {
+    const legal = await start(
+      testEnv({
+        LEGAL_CONTROLLER_NAME: 'Persona <Responsable> & Cía',
+        LEGAL_CONTROLLER_ID: '00000000T',
+        LEGAL_CONTROLLER_ADDRESS: 'Calle Falsa 123, Valencia',
+        LEGAL_CONTACT_EMAIL: 'privacidad@example.org',
+      }),
+    );
+    try {
+      for (const path of LEGAL_PAGES) {
+        const html = await page(legal.base, path);
+        expect(html).not.toMatch(/\[pendiente:/);
+        expect(html).toContain('Persona &lt;Responsable&gt; &amp; Cía');
+        expect(html).not.toContain('<Responsable>');
+      }
+      const privacy = await page(legal.base, '/legal/privacidad');
+      expect(privacy).toContain('NIF 00000000T, Calle Falsa 123, Valencia');
+      expect(privacy).toContain('href="mailto:privacidad@example.org"');
+      // La página de baja abre el email con el asunto ya escrito.
+      expect(await page(legal.base, '/legal/eliminar-cuenta')).toContain('mailto:privacidad@example.org?subject=Eliminar%20mi%20cuenta%20de%20APPINITY');
+    } finally {
+      await legal.app.close();
+    }
+    // Un email mal escrito no arranca la API.
+    expect(() => loadEnv(testEnv({ LEGAL_CONTACT_EMAIL: 'no-es-un-email' }))).toThrow(/LEGAL_CONTACT_EMAIL/);
+  });
+
+  it('la política describe la app de hoy: votos que cuentan, privacidad apagada por defecto y baja sin la app', async () => {
+    const privacy = await page(base, '/legal/privacidad');
+    // Los votos en la app cuentan (decisión 2026-10-27); «No lo conozco», amistades y chat no.
+    expect(privacy).toMatch(/«Me encanta» cuentan como una nota más/);
+    expect(privacy).toMatch(/«No lo conozco», deshacer, abrir enlaces, las amistades y el chat\s+no cambian tus gustos/);
+    expect(privacy).not.toMatch(/activado por defecto/);
+    expect(privacy).toMatch(/apagado por defecto y recíproco/);
+    // Quién ve qué: descubrimientos con nombre y lo que ven quienes te siguen.
+    expect(privacy).toMatch(/Lo descubre/);
+    expect(privacy).toMatch(/al menos 5 personas de la zona/);
+    expect(privacy).toMatch(/href="\/legal\/eliminar-cuenta"/);
+
+    const deletion = await page(base, '/legal/eliminar-cuenta');
+    expect(deletion).toMatch(/Perfil → Ajustes/);
+    expect(deletion).toMatch(/Eliminar mi cuenta/);
+    expect(deletion).toMatch(/Escribe ELIMINAR/);
+    expect(deletion).toMatch(/Sin la app/);
+    expect(deletion).toMatch(/máximo de 14 días/);
+    expect(deletion).toMatch(/Desconectar y borrar lo\s+importado/);
   });
 
   it('«Cómo funciona» es público y sus cifras son las del motor', async () => {

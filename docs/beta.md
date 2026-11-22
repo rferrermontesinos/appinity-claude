@@ -78,7 +78,7 @@ Revisión de todas las rutas de `apps/api` (sin herramientas externas):
   - cliente de push en la app (`expo-notifications` y el registro del token);
   - Sentry;
   - un canal de feedback dentro de la app;
-  - los datos del titular en los textos legales;
+  - los datos del titular en los textos legales (desde B3, variables `LEGAL_*`);
   - 1 aviso alto en `pnpm audit` (zod 3 dentro de `@expo/cli`, solo al compilar).
 
 ### Tercera revisión (2026-11-22, fase B2)
@@ -88,6 +88,13 @@ Revisión de todas las rutas de `apps/api` (sin herramientas externas):
   de la API), no el usuario de GitHub del titular.
 - La búsqueda por contactos tiene un cupo de 5.000 comprobaciones al día por cuenta.
 - `pnpm audit --prod`: ningún aviso en la API ni en el worker (los que quedan son de `@expo/cli`, solo al compilar).
+
+### Textos legales y derechos (2026-11-22, fase B3)
+
+- Política y condiciones al día con la app; datos del responsable en `LEGAL_*` (huecos «[pendiente: …]» mientras
+  falten).
+- Página pública `https://api.<tu-dominio>/legal/eliminar-cuenta` para la ficha de Google Play.
+- Peticiones por email: `pnpm account:export` y `pnpm account:delete` ([operations.md](operations.md)).
 
 ## Prueba con amigos y familiares: alta única (2026-10-26)
 

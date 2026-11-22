@@ -28,6 +28,7 @@ import { APP_ENV, type AppEnv } from '../config/env.js';
 import { isAllowedReturnUrl } from '../connections/return-url.js';
 import { ConnectionsService } from '../connections/connections.service.js';
 import { DATABASE, REDIS } from '../infra/tokens.js';
+import { AccountService } from './account.service.js';
 import type { AuthContext } from './auth.types.js';
 import { CurrentUser } from './current-user.decorator.js';
 import { DevAuthService } from './dev-auth.service.js';
@@ -101,6 +102,7 @@ export class AuthController {
     private readonly devAuth: DevAuthService,
     private readonly connections: ConnectionsService,
     private readonly me: MeService,
+    private readonly account: AccountService,
   ) {
     const clientId = env.GOOGLE_OAUTH_CLIENT_ID;
     const clientSecret = env.GOOGLE_OAUTH_CLIENT_SECRET;
@@ -251,21 +253,14 @@ export class AuthController {
   }
 
   /**
-   * Eliminar la cuenta: desconecta cada fuente revocando el permiso en el proveedor y borrando lo importado, y después
-   * borra al usuario (en cascada: perfil, ajustes, evidencia, afinidades, amistades, chats, sesiones, tokens push…).
-   * Solo cuentas reales: las personas de la demo se gestionan con el seed.
+   * Eliminar la cuenta (AccountService, lo mismo que `pnpm account:delete`). Solo cuentas reales: las personas de la demo
+   * se gestionan con el seed.
    */
   @Delete('v1/me')
   @HttpCode(204)
   async deleteAccount(@CurrentUser() auth: AuthContext, @Body(new ZodPipe(deleteSchema)) _body: z.infer<typeof deleteSchema>): Promise<void> {
     if (auth.dataset !== 'live') throw new UnauthorizedException('Las personas de la demo no se eliminan desde la app');
-    for (const connection of await this.connections.list(auth.userId)) {
-      if (connection.status === 'revoked') continue;
-      await this.connections.disconnect(auth.userId, connection.id, true).catch((error: Error) => {
-        this.logger.warn(`Al eliminar la cuenta no se pudo desconectar ${connection.sourceKey}: ${error.message.slice(0, 120)}`);
-      });
-    }
-    await this.database.db.delete(users).where(eq(users.id, auth.userId));
+    await this.account.deleteAccount(auth.userId);
   }
 
   private async sessionDto(userId: string, sessionId: string, refreshToken: string, isNew: boolean): Promise<AuthSessionDto> {

@@ -22,9 +22,37 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 11 | **Paso 1 implementado** (Google: Play, pedidos y guardados), comprobado automáticamente y en parte con servicios reales; falta un export real | Entrega 2026-10-14 · fase 11 (rama `fase-11-fuentes`). Análisis en [source-candidates.md](source-candidates.md) |
 | 12 | **12C (push, servidor) implementada y comprobada automáticamente**; envío real pendiente de build de desarrollo y FCM · **12B (Premium, servidor) implementada y comprobada automáticamente**; compra en la app pendiente de cuentas y build de desarrollo · **12A (chat) implementada, comprobada automáticamente y verificada en la vista web**; 12B (Premium/RevenueCat) y 12C (push) pendientes | Entrega 2026-10-14 · fase 12A (rama `fase-12a-chat`, basada en `fase-10-people`) |
 | 13 | **Preparada**: auth de producción, alta, eliminación de cuenta y despliegue probados en local; beta real pendiente de dominio, servidor y cuentas ([beta.md](beta.md)) · auditoría de seguridad de la API hecha (2026-10-26) · textos legales en borrador (2026-10-26) | Entrega 2026-10-15 · fase 13 (rama `fase-13-beta`) |
-| Beta (B1–B10) | **En curso** (2026-11-22): B1 y B2 con PR abierta | Plan y estado en [fases-beta.md](fases-beta.md); cada fase en su PR encadenada sobre la PR #26 |
+| Beta (B1–B10) | **En curso** (2026-11-22): B1, B2 y B3 con PR abierta | Plan y estado en [fases-beta.md](fases-beta.md); cada fase en su PR encadenada sobre la PR #26 |
 
 ---
+
+## Entrega 2026-11-22 · B3: textos legales y derechos
+
+Rama `claude/beta-b3-legal`, PR contra `claude/beta-b2-seguridad` (B2). Detalle en [decisions.md](decisions.md).
+
+### Qué se ha hecho
+
+- Política de privacidad y condiciones reescritas para que cuenten lo que hace la app hoy (votos, privacidad apagada por
+  defecto, quién ve qué, encargados y plazos). La versión anterior decía lo contrario en dos puntos.
+- Datos del responsable por `LEGAL_*`, con huecos «[pendiente: …]» mientras falten y aviso al arrancar en producción.
+- Página pública `/legal/eliminar-cuenta` para Google Play.
+- `pnpm account:export` (copia en JSON) y `pnpm account:delete` (baja pedida por email), con el procedimiento en
+  [operations.md](operations.md#peticiones-de-derechos-por-email-fase-b3).
+- La nota de la app al eliminar la cuenta ya no dice «cifradas» (las copias se cifran en B9).
+
+### Comprobaciones
+
+- Tests nuevos: las tres páginas (públicas, huecos sin `LEGAL_*`, datos escapados con `LEGAL_*`, contenido al día),
+  copia de los datos (5: búsqueda por email, contenido, solo los mensajes propios, ningún secreto ni afinidad) y comandos
+  (copia en fichero sin tokens; baja que no borra sin `--confirm` ni con otro handle, ni a personas de la demo).
+- `pnpm format:check`, `pnpm lint` y `pnpm typecheck` limpios; `pnpm test`: 46 ficheros y 433 tests OK (el fichero
+  nuevo fallaba en la preparación del test; corregido y re-ejecutado aparte).
+
+### Pendiente
+
+- Del titular: rellenar `LEGAL_*` y pasar los textos por una revisión legal (puntos abiertos en
+  [decisions.md](decisions.md)).
+- Siguiente fase: B4 (Sentry).
 
 ## Entrega 2026-11-22 · B2: restos de la auditoría de seguridad
 

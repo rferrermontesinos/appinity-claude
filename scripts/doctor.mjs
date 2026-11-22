@@ -31,6 +31,9 @@ const mobileUrl = mobileEnv.get('EXPO_PUBLIC_API_URL');
 if (mobileUrl) ok(`EXPO_PUBLIC_API_URL=${mobileUrl}`);
 else info('EXPO_PUBLIC_API_URL vacía: la app usará la IP de Metro + :3100');
 if (mobileUrl && /localhost|127\.0\.0\.1/.test(mobileUrl)) bad('La URL del móvil usa localhost: en el teléfono apunta al propio teléfono');
+const legalMissing = ['LEGAL_CONTROLLER_NAME', 'LEGAL_CONTACT_EMAIL'].filter((key) => !env.get(key)?.trim());
+if (legalMissing.length) info(`Textos legales con huecos: falta ${legalMissing.join(' y ')} en .env (antes de la beta; ver docs/operations.md)`);
+else ok('Textos legales: responsable y contacto configurados');
 
 console.log('\nServicios Docker (proyecto appinity-claude)');
 try {

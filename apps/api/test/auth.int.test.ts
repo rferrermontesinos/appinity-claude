@@ -1,5 +1,8 @@
 import type { INestApplication } from '@nestjs/common';
 import { createHash } from 'node:crypto';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { authSessions, createDatabase, users, type DatabaseHandle } from '@appinity/database';
 import { createSession, findOrCreateUserForIdentity } from '@appinity/ingestion';
 import { CONTACT_HASH_DAILY_MAX, type AuthProvidersDto, type AuthSessionDto, type ContactMatchDto, type MeDto } from '@appinity/shared';
@@ -8,8 +11,10 @@ import { Redis } from 'ioredis';
 import { SignJWT, createLocalJWKSet, exportJWK, generateKeyPair } from 'jose';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { testEnv, truncateAll } from '../../../test/helpers.js';
+import { AccountService } from '../dist/auth/account.service.js';
 import { GoogleOidc } from '../dist/auth/google-oidc.js';
 import { createApp } from '../dist/bootstrap.js';
+import { runAccountDelete, runAccountExport } from '../dist/cli/account-commands.js';
 import { loadEnv } from '../dist/config/env.js';
 import { isAllowedReturnUrl } from '../dist/connections/return-url.js';
 import { contactsQuotaKey } from '../dist/people/contacts-quota.js';
@@ -258,5 +263,52 @@ describe('amigos desde los contactos (SHA-256 de emails verificados)', () => {
     } finally {
       await fresh.close();
     }
+  });
+});
+
+describe('peticiones por email: copia de los datos y eliminación (pnpm account:export y account:delete)', () => {
+  const quiet = () => undefined;
+
+  it('la copia sale en JSON en la ruta pedida, sin tokens de sesión', async () => {
+    const { code, userId } = await handoff('sub-copia');
+    const session = (await (await call('POST', '/v1/auth/exchange', undefined, { code, codeVerifier: VERIFIER })).json()) as AuthSessionDto;
+    const dir = mkdtempSync(join(tmpdir(), 'appinity-export-'));
+    try {
+      const lines: string[] = [];
+      const { file } = await runAccountExport(db.db, { email: 'SUB-COPIA@example.com', out: join(dir, 'copia.json') }, (line) => lines.push(line));
+      const text = readFileSync(file, 'utf8');
+      const data = JSON.parse(text) as { format: string; account: { id: string }; identities: Array<{ email: string }> };
+      expect(data.format).toBe('appinity-account-export-v1');
+      expect(data.account.id).toBe(userId);
+      expect(data.identities.map((i) => i.email)).toEqual(['sub-copia@example.com']);
+      const [stored] = await db.db.select().from(authSessions).where(eq(authSessions.userId, userId));
+      for (const secret of [session.refreshToken, session.accessToken, stored!.refreshTokenHash]) expect(text).not.toContain(secret);
+      expect(lines.join('\n')).toMatch(/datos personales/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('eliminar: sin --confirm no borra, con otro handle tampoco y con el suyo borra como «Eliminar mi cuenta»', async () => {
+    const { userId } = await handoff('sub-baja');
+    const service = app.get(AccountService);
+    const lines: string[] = [];
+    expect(await runAccountDelete(db.db, service, { email: 'sub-baja@example.com' }, (line) => lines.push(line))).toBeNull();
+    expect(lines.join('\n')).toMatch(/No se ha borrado nada/);
+    const [user] = await db.db.select({ handle: users.handle }).from(users).where(eq(users.id, userId));
+    await expect(runAccountDelete(db.db, service, { email: 'sub-baja@example.com', confirm: 'otra_cuenta' }, quiet)).rejects.toThrow(/no coincide/);
+    expect(await db.db.select().from(users).where(eq(users.id, userId))).toHaveLength(1);
+
+    expect(await runAccountDelete(db.db, service, { email: 'sub-baja@example.com', confirm: user!.handle }, quiet)).toEqual({ disconnected: [], failed: [] });
+    expect(await db.db.select().from(users).where(eq(users.id, userId))).toEqual([]);
+    expect(await db.db.select().from(authSessions).where(eq(authSessions.userId, userId))).toEqual([]);
+  });
+
+  it('eliminar: ni personas de la demo, ni cuentas que no existen, ni peticiones sin email o handle', async () => {
+    const service = app.get(AccountService);
+    await db.db.insert(users).values({ handle: 'demo_baja', dataset: 'demo' });
+    await expect(runAccountDelete(db.db, service, { handle: 'demo_baja', confirm: 'demo_baja' }, quiet)).rejects.toThrow(/persona de la demo/);
+    await expect(runAccountDelete(db.db, service, { email: 'nadie@example.com' }, quiet)).rejects.toThrow(/No hay ninguna cuenta/);
+    await expect(runAccountDelete(db.db, service, {}, quiet)).rejects.toThrow(/--email/);
   });
 });

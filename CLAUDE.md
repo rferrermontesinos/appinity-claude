@@ -62,6 +62,8 @@ y detener procesos solo si su línea de comandos contiene `APPINITY CLAUDE`.
 - `pnpm --filter @appinity/mobile web` (puerto 8092): vista web solo para verificar pantallas; no sustituye al teléfono.
 - `pnpm fixtures:catalog`: regenera la instantánea de Wikidata/Commons (red; cambia la demo, revisar el diff).
 - `pnpm user:local --handle h --name "N"`: cuenta local real (dataset live) con código de un solo uso.
+- `pnpm account:export|account:delete --email x`: peticiones de derechos por email (copia en `exports/`; la baja exige
+  `--confirm <handle>`). Ver docs/operations.md.
 - `pnpm secret:set STEAM_WEB_API_KEY`: guarda la clave de Steam en .env sin mostrarla (el usuario, en su terminal).
 - `pnpm secret:set GOOGLE_OAUTH_CLIENT_ID|GOOGLE_OAUTH_CLIENT_SECRET --clipboard`: cliente OAuth de Google. En
   desarrollo Google solo vuelve a `localhost`: el usuario conecta Google desde la vista web del PC (8092) y el permiso
