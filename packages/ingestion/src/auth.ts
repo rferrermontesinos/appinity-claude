@@ -1,7 +1,7 @@
 import { authIdentities, authSessions, userProfiles, userSettings, users, type Database } from '@appinity/database';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import { createHash, randomBytes } from 'node:crypto';
-import { NotFoundError } from './errors.js';
+import { AccountSuspendedError, NotFoundError } from './errors.js';
 
 /**
  * Identidad y sesiones de producción (fase 13). La API verifica la identidad externa (ID token de OpenID Connect) y
@@ -37,6 +37,7 @@ export async function findOrCreateUserForIdentity(db: Database, identity: Verifi
     .innerJoin(users, eq(users.id, authIdentities.userId))
     .where(and(eq(authIdentities.provider, identity.provider), eq(authIdentities.subject, identity.subject)));
   if (existing) {
+    if (existing.status === 'suspended') throw new AccountSuspendedError('Esta cuenta está suspendida');
     if (existing.status !== 'active' || existing.deletedAt) throw new NotFoundError('Esta cuenta no está activa');
     await db
       .update(authIdentities)

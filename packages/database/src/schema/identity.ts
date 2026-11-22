@@ -31,6 +31,8 @@ export const users = pgTable(
      * Solo sirve para la identidad de desarrollo; no es autenticación de producción.
      */
     localLoginCodeHash: text('local_login_code_hash'),
+    /** Cuándo se suspendió la cuenta (`pnpm account:suspend`, fase B9). Solo con `status = 'suspended'`. */
+    suspendedAt: timestamp('suspended_at', { withTimezone: true }),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
     ...timestamps,
   },
@@ -40,6 +42,7 @@ export const users = pgTable(
     check('users_status_valid', sql`${t.status} IN ('active', 'suspended', 'deleted')`),
     check('users_demo_note_only_demo', sql`${t.demoNote} IS NULL OR ${t.dataset} = 'demo'`),
     check('users_local_code_only_live', sql`${t.localLoginCodeHash} IS NULL OR ${t.dataset} = 'live'`),
+    check('users_suspended_at', sql`(${t.status} = 'suspended') = (${t.suspendedAt} IS NOT NULL)`),
   ],
 );
 

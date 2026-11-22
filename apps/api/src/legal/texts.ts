@@ -212,8 +212,9 @@ también las condiciones de cada proveedor.</p>
 
 <h2>4. Normas de convivencia</h2>
 <p>No acoses, suplantes a nadie, envíes spam ni compartas contenido ilegal o sexual no solicitado. Eres responsable de lo
-que escribes. Puedes bloquear y reportar a cualquier persona. Podemos suspender las cuentas que incumplan estas
-normas.</p>
+que escribes. Puedes bloquear y reportar a cualquier persona: revisamos cada reporte. Podemos suspender las cuentas que
+incumplan estas normas; si suspendemos la tuya, te escribimos con el motivo y puedes pedir que lo revisemos escribiendo a
+${contactHtml(info)}.</p>
 
 <h2>5. Premium</h2>
 <p>Las funciones de pago, cuando existan, se contratarán en la tienda de tu dispositivo y se regirán por sus condiciones

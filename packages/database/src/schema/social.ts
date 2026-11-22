@@ -54,7 +54,10 @@ export const friendships = pgTable(
   ],
 );
 
-/** Reportes (§16 y §17): quedan para revisión; no se muestran a la persona reportada. */
+/**
+ * Reportes (§16 y §17): quedan para revisión; no se muestran a la persona reportada. Los revisa el titular con
+ * `pnpm reports:list` (fase B9), que marca `reviewed_at`.
+ */
 export const userReports = pgTable(
   'user_reports',
   {
@@ -68,6 +71,7 @@ export const userReports = pgTable(
     reason: text('reason', { enum: ['spam', 'harassment', 'inappropriate', 'impersonation', 'other'] }).notNull(),
     note: text('note'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
   },
   (t) => [
     index('user_reports_reported_idx').on(t.reportedId),
