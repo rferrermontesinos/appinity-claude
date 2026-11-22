@@ -25,6 +25,37 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-10-16 · fase 11D (AniList) y arreglo de Trakt
+
+### Qué se ha hecho
+
+- **Arreglo de Trakt**:
+  - **Causa**: Cloudflare de Trakt responde 403 a cualquier User-Agent que contenga «Claude», y el worker usaba el del catálogo.
+  - **Cambio**: ahora Trakt lleva su propio User-Agent.
+  - **Resultado del sync real**: 3 títulos recibidos y 3 identificados, sin errores.
+- **Google Books, comprobado con la cuenta real**: la API responde, pero las 10 estanterías están vacías (0 libros).
+- **AniList**:
+  - lee el anime y el manga del usuario: puntuaciones 1–100, favoritos, estados y fechas;
+  - identificación exacta por AniList o MAL en Wikidata;
+  - manga y novela ligera van a libros.
+- La identificación por IDs externos acepta ahora AniList y MyAnimeList.
+- `pnpm secret:set` acepta el formato actual de las claves de Trakt y también `ANILIST_CLIENT_ID` y `ANILIST_CLIENT_SECRET`.
+
+### Comprobaciones
+
+- `pnpm test`: 33 ficheros y 341 tests OK.
+- `pnpm lint` y `pnpm typecheck` limpios.
+- Consulta GraphQL contra listas públicas reales de AniList: OK.
+- Identificación real en Wikidata:
+  - IDs conocidos: OK;
+  - una lista real de anime: 22 de 40 obras;
+  - una lista de manga poco conocido: 9 de 60 por ID.
+- **Validado con la cuenta real** (2026-10-16): sync de AniList con 3 obras recibidas y 3 identificadas, sin errores. Una por ID de AniList y dos por título exacto; 2 mangas y 1 anime.
+
+### Siguiente paso
+
+Crear la app de AniList y conectar. Después, Google Calendar (requiere la verificación de Google).
+
 ## Entrega 2026-10-15 · fase 11C (Google Books y Trakt)
 
 ### Qué se ha hecho

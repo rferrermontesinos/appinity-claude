@@ -977,3 +977,10 @@ El acuerdo de desarrolladores de Twitch exige permiso escrito para guardar sus d
   nuevo antes de leer nada.
 - Identificación exacta por IMDb o TMDB en Wikidata. Si no hay ID, título exacto limitado a la categoría.
 - Valoración 1–10 explícita; favorito = me gusta; visto = consumido sin preferencia; pendiente = solo conocido.
+
+## 2026-10-16 · AniList y User-Agent de Trakt
+
+- AniList usa «authorization code» con el secreto en el servidor. El token dura 1 año y no tiene renovación: al caducar se pide volver a conectar.
+- En AniList, «abandonado» cuenta como consumido con preferencia NULL. No se trata como rechazo, porque AniList no dice el motivo.
+- Anime película va a cine y el resto del anime a series. Manga y novela ligera van a libros: no se crea una novena categoría.
+- Las fuentes detrás de Cloudflare no reciben el User-Agent del catálogo, que contiene «Claude» y se bloquea como bot.

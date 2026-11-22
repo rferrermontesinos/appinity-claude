@@ -38,6 +38,16 @@ const registry = createAdapterRegistry({
         },
       }
     : {}),
+  ...(process.env.ANILIST_CLIENT_ID?.trim() && process.env.ANILIST_CLIENT_SECRET?.trim()
+    ? {
+        anilist: {
+          clientId: process.env.ANILIST_CLIENT_ID.trim(),
+          clientSecret: process.env.ANILIST_CLIENT_SECRET.trim(),
+          redirectUri: process.env.ANILIST_REDIRECT_URI?.trim() || 'http://localhost:3100/v1/connect/anilist/callback',
+          identifier: catalogIdentifier,
+        },
+      }
+    : {}),
   ...(env.google
     ? {
         google: {
