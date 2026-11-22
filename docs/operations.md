@@ -15,7 +15,7 @@ qué está ya preparado y probado.
 - **Salvaguardas**: la API se niega a arrancar con `NODE_ENV=production` y `DEMO_MODE`/`DEV_AUTH_ENABLED`, o sin
   `AUTH_SECRET` (probado con el contenedor real).
 - **Copias de seguridad**: `pnpm db:backup` crea un volcado y se restauró completo (13 migraciones, PostGIS) en otra base
-  de datos.
+  de datos. Desde la fase B9 van cifradas y `pnpm db:restore` las comprueba (ver «Copias de seguridad»).
 
 ## Despliegue
 
@@ -52,10 +52,13 @@ qué está ya preparado y probado.
 | `LEGAL_CONTROLLER_ID` / `LEGAL_CONTROLLER_ADDRESS` | NIF y dirección postal del responsable. Opcionales; la LSSI los exige si hay actividad económica | Que lo confirme la revisión legal |
 | `SENTRY_DSN` | Avisos de errores de la API, el worker y la app (fase B4). Vacía: apagados, no sale nada. Con ella, la política de privacidad nombra a Sentry | Proyecto de Sentry en la región de la UE (ver «Avisos de errores») |
 | `SENTRY_ENVIRONMENT` | Entorno que ve Sentry (p. ej. `beta`). Vacía: `NODE_ENV` | — |
+| `BACKUP_ENCRYPTION_KEY` | Cifrado de las copias de seguridad (fase B9). Sin ella, `db:backup` no hace copias | 32 bytes en base64 (como genera `pnpm setup`). **Guardarla también en un gestor de contraseñas** |
+| `BACKUP_COPY_TO` | Carpeta donde dejar además cada copia (otro disco, una carpeta sincronizada). Opcional | — |
 
 **Rotación**:
 - `AUTH_SECRET`: cambiarlo invalida todos los access tokens (las sesiones se renuevan con su refresh token).
 - `CREDENTIALS_ENCRYPTION_KEY`: si cambia, obliga a reconectar las fuentes.
+- `BACKUP_ENCRYPTION_KEY`: las copias anteriores siguen necesitando la clave de entonces (guardar las dos hasta que roten).
 
 ## Avisos de errores (Sentry, fase B4)
 
@@ -85,21 +88,46 @@ personal o secreto se sustituyen enteras; y las rutas de la pila quedan relativa
 La app no lleva el SDK de Sentry ni su DSN: los cierres nativos (fuera de JavaScript) se ven en Android vitals de Google
 Play Console.
 
-## Copias de seguridad
+## Copias de seguridad (cifradas desde la fase B9)
 
-- Diarias:
+- **Clave**: `BACKUP_ENCRYPTION_KEY` (32 bytes en base64). `pnpm setup` la crea en `.env` si no está; en producción va
+  en `.env.production`. **Guárdala también fuera del equipo** (gestor de contraseñas): sin ella no se puede restaurar
+  ninguna copia, y si se pierde el disco se pierde con él. Cambiarla no estropea las copias anteriores, pero para
+  restaurarlas hace falta la clave de entonces (el comando dice la huella de cada una).
+- **Hacer una copia**:
   ```bash
-  node scripts/backup-db.mjs --container <contenedor-postgres> --keep 14
+  pnpm db:backup                                   # desarrollo / PC de la beta (contenedor appinity-claude-postgres)
+  node --env-file=.env.production scripts/backup-db.mjs --container appinity-claude-prod-postgres-1   # pila de producción
   ```
-  Se programan con cron o con el programador de tareas.
-- Contienen datos personales: guárdalas **cifradas** y fuera del servidor, con acceso restringido.
-- **Retención**: 14 días (una copia diaria, se conservan 14). Una cuenta eliminada desaparece de las copias cuando
-  caducan; así lo dicen la app al eliminar la cuenta, la política de privacidad y la página de baja. Si las copias no son
-  diarias, esa promesa no se cumple: programarlas es parte de la puesta en marcha.
-- Restaurar:
+  Vuelca la base con `pg_dump` y la cifra al vuelo con AES-256-GCM (el volcado sin cifrar nunca toca el disco). Deja
+  `backups/appinity_claude-<fecha>.dump.enc` (fuera de Git) y conserva las 14 más recientes (`--keep`).
+- **Fuera del equipo**: `BACKUP_COPY_TO=<carpeta>` en `.env` (o `--copy-to <carpeta>`) deja además cada copia en otra
+  carpeta, por ejemplo otro disco o una carpeta sincronizada con Google Drive o OneDrive. Como van cifradas, se pueden
+  guardar en la nube. Esa carpeta rota igual que `backups/`.
+- **A diario** (la política de privacidad promete que lo borrado desaparece de las copias en 14 días, y eso solo se
+  cumple con una copia al día y la rotación). En Windows, una tarea programada (en una terminal, cambiando la ruta):
+  ```bat
+  schtasks /Create /TN "APPINITY CLAUDE copia diaria" /SC DAILY /ST 03:30 /TR "cmd /c cd /d C:\ruta\appinity-claude && pnpm db:backup >> backups\copias.log 2>&1"
+  ```
+  El PC tiene que estar encendido a esa hora (durante la beta lo está, porque sirve la API). `pnpm doctor` avisa si la
+  última copia tiene más de 36 horas. En un servidor Linux, lo mismo con cron.
+- **Comprobar una copia** (una vez al mes y siempre después de cambiar la clave):
   ```bash
-  docker exec -i <contenedor> pg_restore -U appinity_claude -d appinity_claude --clean --if-exists < backups/<archivo>.dump
+  pnpm db:restore backups/<copia>.dump.enc
   ```
+  Comprueba la integridad (si se ha tocado un solo byte, falla), la restaura en una base temporal
+  (`appinity_claude_restore_check`), enseña cuántas migraciones, personas, evidencias, votos y mensajes tiene, y la
+  borra. No toca la base de la app.
+- **Restaurar de verdad**: parar la API y el worker y
+  ```bash
+  pnpm db:restore backups/<copia>.dump.enc --confirm appinity_claude
+  ```
+  Si hay conexiones abiertas, se niega. Antes guarda una copia cifrada del estado actual (por si hay que volver atrás),
+  restaura la copia entera en otra base y solo entonces cambia una por otra; si algo falla, la base de la app queda como
+  estaba. Si la copia es de una versión anterior, después `pnpm db:migrate`. Con la pila de producción:
+  `node --env-file=.env.production scripts/restore-db.mjs <copia> --container appinity-claude-prod-postgres-1 --confirm appinity_claude`
+  (con `docker compose -f docker-compose.prod.yml stop api worker` antes y `start api worker` después).
+- Las copias antiguas sin cifrar (`.dump`, de antes de B9) se siguen pudiendo restaurar y la rotación las va borrando.
 - Redis guarda colas y estados temporales (AOF activado). No contiene datos que no se puedan regenerar.
 
 ## Datos y privacidad
@@ -160,6 +188,50 @@ En el servidor, dentro del contenedor de la API:
 `docker compose -f docker-compose.prod.yml --env-file .env.production exec api node packages/ingestion/dist/cli/list-feedback.js`.
 Los comentarios salen en la copia de datos de la persona (`pnpm account:export`) y se borran con su cuenta. La app no
 contesta: si un comentario necesita respuesta, escribir al email de la cuenta desde el de soporte.
+
+## Moderación (fase B9)
+
+Desde la app, cualquiera puede bloquear y reportar a otra persona (acoso, spam, contenido inapropiado, suplantación u
+otro, con una nota opcional). Google Play exige que los reportes se revisen y que se actúe. Revisarlos **a diario**
+durante la beta:
+
+```bash
+pnpm reports:list                    # reportes pendientes, agrupados por persona reportada
+pnpm reports:list --mark-reviewed    # los mismos y, al final, los marca como revisados
+pnpm reports:list --all              # también los ya revisados
+pnpm account:suspend --handle u_1a2b3c                      # enseña la cuenta; no cambia nada
+pnpm account:suspend --handle u_1a2b3c --confirm u_1a2b3c   # la suspende
+pnpm account:unsuspend --handle u_1a2b3c --confirm u_1a2b3c # levanta la suspensión
+```
+
+- **Suspender** cierra todas sus sesiones al momento. La persona ya no puede entrar (al intentarlo, la app le dice que
+  la cuenta está suspendida y a qué email escribir) y desaparece para los demás en todas partes: almas gemelas,
+  personas, chat, amistades, Trending y afinidades. Sus datos se conservan; al levantar la suspensión vuelve todo.
+  Para borrarla del todo, `pnpm account:delete`.
+- **Después de suspender**, escribir a la persona desde el email de contacto con el motivo y cómo pedir una revisión
+  (lo dicen las condiciones). Ver [incidencias.md](incidencias.md#una-persona-reportada).
+- En el servidor, dentro del contenedor de la API:
+  `docker compose -f docker-compose.prod.yml --env-file .env.production exec api node packages/ingestion/dist/cli/moderation.js list`
+  (o `suspend --handle … --confirm …`).
+
+## Métricas de la beta (fase B9)
+
+```bash
+pnpm beta:metrics                     # todas las cuentas reales
+pnpm beta:metrics --since 2026-12-01  # solo quienes se dieron de alta desde el inicio de la ola
+pnpm beta:metrics --json              # para guardarlas o compararlas
+pnpm beta:metrics --dataset demo      # para probar el comando con la demo
+```
+
+Sin terceros: solo recuentos sacados de la base de datos, nunca nombres. Responde a los criterios de cada ola
+([fases-beta.md](fases-beta.md)): alta completa y gustos importados en menos de 24 h; almas gemelas tras 48 h y la mezcla
+de Inicio (consenso y descubrimiento frente a Trending y relleno); vuelta entre el día 7 y el 13; Trending, zona y push.
+Al final dice cuántos reportes y comentarios quedan por revisar. En el servidor:
+`docker compose -f docker-compose.prod.yml --env-file .env.production exec api node packages/ingestion/dist/cli/beta-metrics.js`.
+Dos medidas son aproximadas y lo dicen:
+- «alma gemela tras 48 h» se mira ahora, no a las 48 h exactas;
+- «vuelve entre el día 7 y el 13» se deduce de lo que deja huella (votos, tarjetas vistas, mensajes enviados, sesiones y
+  comentarios), porque la app no registra cada vez que se abre.
 
 ## Builds de la app (EAS)
 

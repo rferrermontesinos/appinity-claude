@@ -65,6 +65,12 @@ y detener procesos solo si su línea de comandos contiene `APPINITY CLAUDE`.
 - `pnpm account:export|account:delete --email x`: peticiones de derechos por email (copia en `exports/`; la baja exige
   `--confirm <handle>`). Ver docs/operations.md.
 - `pnpm feedback:list [--all] [--mark-read]`: comentarios de los testers de la beta (Perfil → Enviar comentario).
+- `pnpm db:backup`: copia cifrada (clave `BACKUP_ENCRYPTION_KEY`, que crea `pnpm setup`) en `backups/`, rota 14.
+  `pnpm db:restore <copia>` la comprueba en una base temporal; con `--confirm appinity_claude` la restaura de verdad
+  (API y worker parados). Ver docs/operations.md.
+- `pnpm reports:list [--all] [--mark-reviewed]` y `pnpm account:suspend|account:unsuspend --handle h [--confirm h]`:
+  moderación de la beta (docs/incidencias.md). `pnpm beta:metrics [--since AAAA-MM-DD] [--json]`: métricas de la beta,
+  solo recuentos de la base de datos.
 - `pnpm push:test --handle h`: notificación de prueba al teléfono (push con EAS_PROJECT_ID y google-services.json; no en
   Expo Go).
 - `pnpm secret:set STEAM_WEB_API_KEY`: guarda la clave de Steam en .env sin mostrarla (el usuario, en su terminal).

@@ -22,7 +22,63 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 11 | **Paso 1 implementado** (Google: Play, pedidos y guardados), comprobado automáticamente y en parte con servicios reales; falta un export real | Entrega 2026-10-14 · fase 11 (rama `fase-11-fuentes`). Análisis en [source-candidates.md](source-candidates.md) |
 | 12 | **12C (push, servidor) implementada y comprobada automáticamente**; envío real pendiente de build de desarrollo y FCM · **12B (Premium, servidor) implementada y comprobada automáticamente**; compra en la app pendiente de cuentas y build de desarrollo · **12A (chat) implementada, comprobada automáticamente y verificada en la vista web**; 12B (Premium/RevenueCat) y 12C (push) pendientes | Entrega 2026-10-14 · fase 12A (rama `fase-12a-chat`, basada en `fase-10-people`) |
 | 13 | **Preparada**: auth de producción, alta, eliminación de cuenta y despliegue probados en local; beta real pendiente de dominio, servidor y cuentas ([beta.md](beta.md)) · auditoría de seguridad de la API hecha (2026-10-26) · textos legales en borrador (2026-10-26) | Entrega 2026-10-15 · fase 13 (rama `fase-13-beta`) |
-| Beta (B1–B10) | **En curso** (2026-11-22): B1 a B8 con PR abierta | Plan y estado en [fases-beta.md](fases-beta.md); cada fase en su PR encadenada sobre la PR #26 |
+| Beta (B1–B10) | **En curso** (2026-11-22): B1 a B9 con PR abierta | Plan y estado en [fases-beta.md](fases-beta.md); cada fase en su PR encadenada sobre la PR #26 |
+
+---
+
+## Entrega 2026-11-22 · B9: operación de la beta
+
+Rama `claude/beta-b9-operacion`, PR contra `claude/beta-b8-play` (B8). Uso en [operations.md](operations.md), qué hacer
+cuando algo falla en [incidencias.md](incidencias.md), guía para testers en [guia-testers.md](guia-testers.md) y motivos
+en [decisions.md](decisions.md).
+
+### Qué se ha hecho
+
+- **Copias cifradas**:
+  - `pnpm db:backup` cifra el volcado al vuelo (AES-256-GCM, clave `BACKUP_ENCRYPTION_KEY`, que crea `pnpm setup`),
+    conserva 14 y puede dejar otra copia en `BACKUP_COPY_TO`;
+  - `pnpm db:restore` comprueba una copia en una base temporal o, con `--confirm appinity_claude`, la restaura sin
+    dejar la base a medias;
+  - `pnpm doctor` avisa si falta la clave o la última copia tiene más de 36 h. Las copias antiguas sin cifrar se siguen
+    pudiendo restaurar.
+- **Moderación**:
+  - `pnpm reports:list` agrupa los reportes por persona y los marca como revisados;
+  - `pnpm account:suspend|account:unsuspend`: cierra sus sesiones, desaparece para los demás y Google ya no la deja
+    entrar (la app le dice a qué email escribir);
+  - migración 0023: `users.suspended_at` con un CHECK y `user_reports.reviewed_at`. `pnpm user:local` ya no levanta una
+    suspensión;
+  - las condiciones dicen que se pueden suspender cuentas y que se escribe con el motivo. La copia de datos de una
+    persona incluye la fecha de suspensión y si sus reportes se revisaron.
+- **Métricas** de cada ola: `pnpm beta:metrics`, solo recuentos.
+- **Textos legales**: la política de privacidad y la página de baja dicen que las copias van cifradas.
+- **Documentación**: guía para testers, manual de incidencias, operaciones y el apartado de contenido generado por
+  usuarios de Play.
+
+### Comprobaciones
+
+- Tests nuevos (13):
+  - 6 del cifrado de las copias: ida y vuelta, IV distinto, manipulación (datos, huella, IV, etiqueta y copia cortada),
+    otra clave, copias sin cifrar y basura, y formato de la clave;
+  - 4 de moderación: reportes agrupados y revisados; suspender y levantar (también que `user:local` no la levanta);
+    Google rechaza una cuenta suspendida; la base no admite una suspensión sin fecha;
+  - 1 de la API: el token, el refresh y el handoff de una cuenta suspendida dan 401;
+  - 2 de métricas con fechas controladas: recuentos exactos, `--since`, la demo aparte y ni nombres ni ids.
+- Tres tests antiguos que suspendían cuentas a mano ponen ahora también la fecha (la restricción nueva lo exige).
+- Copias y restauración, a mano contra un PostgreSQL con PostGIS real:
+  - comprobación y restauración de verdad (se niega con conexiones abiertas y guarda una copia antes);
+  - un byte cambiado, otra clave, sin clave y sin contenedor;
+  - rotación, carpeta con espacios, copias antiguas sin cifrar y un volcado que no es de PostgreSQL.
+- La migración 0023, sobre una base con una cuenta suspendida a mano: rellena la fecha y crea la restricción.
+- `pnpm beta:metrics --dataset demo`: 0,75 s.
+- `pnpm format:check`, `pnpm lint` y `pnpm typecheck` limpios; `pnpm test`: 58 ficheros y 495 tests OK.
+- Sin probar: el mensaje de cuenta suspendida al volver de Google (necesita Google real) y la tarea programada de
+  Windows (no hay Windows aquí).
+
+### Pendiente
+
+- Del titular: guardar `BACKUP_ENCRYPTION_KEY` en un gestor de contraseñas, programar la copia diaria y probar una
+  restauración en el PC; un email de contacto para los textos legales y las suspensiones.
+- Siguiente fase: B10 (auditoría final).
 
 ---
 

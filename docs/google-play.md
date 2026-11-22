@@ -84,7 +84,7 @@ los textos legales (que también son borrador, ver [beta.md](beta.md)) antes de 
 | Apps de noticias, gobierno, funciones financieras, salud | No |
 | Seguridad de los datos | Ver el apartado 4 |
 | Eliminación de cuenta | Dentro de la app (Perfil → Ajustes → Eliminar mi cuenta) y en `https://api.<dominio>/legal/eliminar-cuenta` |
-| Contenido generado por usuarios | Chat entre personas. Hay bloqueo y reporte en la app y normas en las condiciones. La revisión de reportes y la suspensión de cuentas llegan en B9 |
+| Contenido generado por usuarios | Chat entre personas. Hay bloqueo y reporte en la app, normas en las condiciones, revisión diaria de los reportes y suspensión de cuentas (`pnpm reports:list` y `pnpm account:suspend`, fase B9; ver [incidencias.md](incidencias.md#una-persona-reportada)) |
 
 ## 4. Seguridad de los datos (borrador del formulario)
 

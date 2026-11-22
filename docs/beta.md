@@ -133,6 +133,19 @@ Revisión de todas las rutas de `apps/api` (sin herramientas externas):
 - La build para otras personas se para si la URL de la API es la de ejemplo; la versión (0.2.0) se ve en Ajustes; y la
   app ya no pide permisos que no usa.
 
+### Operación de la beta (2026-11-22, fase B9)
+
+- **Copias de seguridad cifradas** (`pnpm db:backup`) con su clave fuera de Git, rotación de 14 días y una carpeta
+  opcional fuera del equipo. `pnpm db:restore` comprueba una copia en una base temporal o la restaura de verdad sin
+  riesgo para la base de la app ([operations.md](operations.md#copias-de-seguridad-cifradas-desde-la-fase-b9)). Falta
+  programar la copia diaria en el PC y guardar la clave en un gestor de contraseñas.
+- **Moderación**: `pnpm reports:list` agrupa los reportes por persona y `pnpm account:suspend` suspende una cuenta (cierra
+  sus sesiones, desaparece para los demás y no puede volver a entrar hasta que se levante). Es lo que pide Play para el
+  contenido generado por usuarios.
+- **Métricas** de cada ola sin terceros: `pnpm beta:metrics` (solo recuentos).
+- [Guía para testers](guia-testers.md) para enviar a cada persona y [manual de incidencias](incidencias.md) (caídas, un
+  tester que no puede entrar, reportes, fugas de datos con el plazo de 72 horas y secretos expuestos).
+
 ## Prueba con amigos y familiares: alta única (2026-10-26)
 
 ### Qué hace ya la app
