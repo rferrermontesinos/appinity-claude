@@ -1589,3 +1589,33 @@ Cierra los hallazgos bajos y medios que quedaban de la auditoría del 2026-11-22
   misma función que sirve Inicio y sin escribir nada: así compara el objetivo de 70/20/10 con lo que de verdad sale.
 - **El registro de incidencias va fuera del repositorio**: puede llevar datos personales, y en el repositorio no deben
   estar.
+
+## 2026-11-22 · B10: auditoría final
+
+- **Rutas que distinguen mayúsculas en la API** (`case sensitive routing` de Express): el túnel bloquea `/v1/dev` con
+  una expresión regular que distingue mayúsculas y Express, por defecto, no; `/V1/DEV/session` llegaba a la identidad de
+  desarrollo desde internet. Se cierra en los dos lados: en la API (la opción va en la instancia de Express que se pasa
+  al adaptador de Nest, porque el router se crea en su constructor y después ya no la lee) y en la regla del túnel
+  (`(?i)`). Ninguna ruta tiene mayúsculas en sus tramos fijos, así que nada cambia para la app ni para las URL de vuelta
+  registradas en Google. Express tampoco normaliza `//` ni `%64`; el test lo fija.
+- **La identidad de desarrollo sigue encendida en el PC durante la beta** (propuesta de Claude, revisable): la demo y
+  las cuentas reales están separadas en todo (fuentes simuladas, almas gemelas, catálogo, chat y sesiones), una cuenta
+  local real exige su código de un solo uso y desde fuera hay dos barreras comprobadas. Apagarla (`DEV_AUTH_ENABLED=false`)
+  dejaría al titular sin su cuenta local, que es donde están sus gustos. Queda como opción en
+  [paso-a-beta.md](paso-a-beta.md).
+- **La pantalla de entrada depende de lo que ofrezca el servidor**: un 404 de `/v1/dev/users` significa «sin demo»
+  (producción o túnel), no un error, y solo se ve «Continuar con Google». Cualquier otro fallo sigue mostrando el error
+  con «Reintentar», porque puede ser de conexión. La regla está en `packages/shared` (`devLoginState`), con sus tests.
+- **Imagen de producción sin `|| true`**: un build roto tiene que parar la construcción. Las dependencias de desarrollo
+  se quitan con `pnpm install --prod --offline` (mismas versiones, sin red), porque `pnpm prune` no admite `--filter`.
+  El tamaño (1,2 GB, por el modo plano de pnpm) se acepta para la beta: reducirlo pide `pnpm deploy` o sacar la app
+  móvil del espacio de trabajo, y no frena nada.
+- **Avisos de `pnpm audit` que se quedan**, todos en herramientas de desarrollo: drizzle-kit (esbuild), la CLI de Expo
+  (uuid, glob y zod 3) y ESLint (minimatch). Arreglarlos exige versiones mayores de esas herramientas o de Expo, y no se
+  ejecutan ni en el servidor ni en la app. `concurrently` sí pasa a 10.0.7: quita el único aviso crítico
+  (`shell-quote`).
+- **La copia de datos de una persona no dice quién la reportó**: solo incluye los reportes que hizo ella. Quien reporta
+  no debe quedar identificado ante la persona reportada.
+- **`/health` en modo desarrollo** sigue enseñando detalles técnicos a través del túnel (versión de PostGIS, latido del
+  worker): la API no distingue una petición del túnel de una local y no hay nada personal. En producción ya se ocultan
+  (B2).
