@@ -63,6 +63,24 @@ Revisión de todas las rutas de `apps/api` (sin herramientas externas):
 - **Pendiente con servidor real**: revisar las cabeceras del proxy (HSTS) y repetir la revisión con la evaluación CASA
   de Google.
 
+### Segunda revisión (2026-11-22, Claude Code Game Studios)
+
+- **Arreglado**:
+  - PKCE en el inicio de sesión: un código de un solo uso interceptado ya no sirve sin el verificador de la app.
+  - La vuelta de Steam o Google ya no conecta la fuente a la cuenta de quien tenga la sesión abierta (CSRF de login).
+    Ahora la app confirma la conexión y solo la acepta para la persona que la inició.
+  - URL de vuelta solo https y de un origen conocido en producción.
+  - `PUBLIC_API_URL` obligatoria.
+  - Dependencias con avisos de seguridad actualizadas.
+- **Hecho para la beta**: icono, icono adaptativo y pantalla de inicio de Android (provisionales). Las opciones de
+  privacidad del alta están apagadas por defecto.
+- **Sigue pendiente**:
+  - cliente de push en la app (`expo-notifications` y el registro del token);
+  - Sentry;
+  - un canal de feedback dentro de la app;
+  - los datos del titular en los textos legales;
+  - 1 aviso alto en `pnpm audit` (zod 3 dentro de `@expo/cli`, solo al compilar).
+
 ## Prueba con amigos y familiares: alta única (2026-10-26)
 
 ### Qué hace ya la app

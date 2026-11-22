@@ -25,6 +25,60 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-11-22 · Evaluación completa: seguridad, consentimiento único y «Cuatro direcciones»
+
+Rama `claude/project-thread-yulsc7`, PR contra `main`. Parte de la evaluación con Claude Code Game Studios y de las
+decisiones 1–9 del titular (detalle y motivos en [decisions.md](decisions.md)).
+
+### Qué se ha hecho
+
+- **`main` al día**: las 23 PR apiladas (#1–#24) fusionadas en orden con permiso expreso del titular. `main` ya es la
+  base de trabajo y el alcance queda congelado hasta la beta cerrada.
+- **Seguridad**:
+  - Inicio de sesión con **PKCE S256**: el código de un solo uso solo se canjea con el verificador que generó la app.
+  - **Conexión de fuentes confirmada por la app**: la vuelta del proveedor ya no conecta nada por sí sola. La API guarda
+    la respuesta 3 minutos y solo la persona que inició la conexión la confirma (`POST /v1/me/connections/confirm`).
+    Cierra el CSRF de login en Steam y Google.
+  - En producción, la URL de vuelta tiene que ser https y de un origen web conocido. `PUBLIC_API_URL` es obligatoria y
+    `FACEBOOK_GRAPH_VERSION` se valida.
+  - Dependencias: NestJS 12.6.0 y zod 4.6.7, más overrides de `body-parser`, `multer`, `qs`, `node-forge` y
+    `decode-uri-component`.
+- **Privacidad y consentimiento**:
+  - «Lo que os une» y «que te encuentren por tus contactos» quedan **apagados por defecto** (migración 0021). Se eligen
+    con dos interruptores en el alta y se cambian en Ajustes.
+  - «Lo que os une» tampoco se enseña a quien no puede verte como alma gemela, salvo a tus amistades.
+  - El alta es el **único consentimiento** y lista las fuentes reales del servidor, de modo que una fuente nueva entra
+    sola.
+- **Recomendaciones**: la mezcla se presenta como **70/20/10**, porque el descubrimiento incluye la tarjeta de personas
+  que sigues. El paso a 70/10/10/10 queda para cuando haya patrocinados. Trending ya contaba los votos de la app y ahora
+  está documentado.
+- **Tarjeta de votación «Cuatro direcciones»**: bordes rotulados (← No me gusta, → Me gusta, ↑ Me encanta, ↓ No lo
+  conozco) que se iluminan al arrastrar, borde de la tarjeta con el color de la acción y botones en el mismo orden.
+- **Android**: icono, icono adaptativo, pantalla de inicio y favicon provisionales (`expo-splash-screen`,
+  `expo-system-ui`).
+- CLAUDE.md actualizado con los criterios del titular.
+
+### Comprobaciones
+
+- Contenedor Linux con Node 22.23.5 (el repo pide 24; solo avisa) y PostgreSQL y Redis en Docker.
+- `pnpm test` completo: 415 tests, 414 OK. El fallo (`catalog-connections`: una fuente simulada no lleva URL de vuelta)
+  se corrigió, y los ficheros afectados se repitieron con 24 de 24 OK.
+- Tests nuevos: PKCE (sin reto, verificador erróneo), confirmación de conexión (incluido el 403 a otra persona), URL de
+  vuelta en producción, opciones del alta, `PUBLIC_API_URL`, «Lo que os une» apagado por defecto y oculto a quien no
+  es descubrible.
+- `pnpm lint` y `pnpm typecheck` limpios. La migración 0021 se revisó: solo cambia dos valores por defecto.
+- `pnpm audit --prod`: queda 1 alta (zod 3 dentro de `@expo/cli`, solo en tiempo de build).
+- Vista web exportada y revisada con Playwright a 390 × 844: bordes rotulados, iluminación al arrastrar a la derecha y
+  hacia arriba, borde armado y sellos.
+- `expo prebuild -p android --no-install`: icono adaptativo y pantalla de inicio generados (se borró `android/` después).
+
+### Pendiente
+
+- **Aceptación en el teléfono**. Hace falta un APK nuevo por los plugins nativos de la pantalla de inicio, y el alta y
+  el inicio de sesión cambian.
+- Cliente de push (`expo-notifications`), Sentry, canal de feedback, datos legales del titular, recálculo programado de
+  la rareza y Prettier: fuera de esta entrega.
+
 ## 2026-11-22 · Herramientas: Claude Code Game Studios
 
 - Kit instalado en `.claude/` (78 skills, 49 agentes, reglas y scripts), hooks automáticos desactivados.

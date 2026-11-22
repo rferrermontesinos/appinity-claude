@@ -168,7 +168,7 @@ programador diario (completo) · pnpm db:seed ───────────�
                                                                                            ▼
 recomputeAffinities: preferencias consolidadas de usuarios elegibles del mismo dataset
   → índice objeto → usuarios (prefiltro exacto: solo parejas con algo en común)
-  → affinity-v1 (A → B y B → A) por categoría y global
+  → affinity-v5 (simétrica: la misma cifra en los dos sentidos; lo poco común pesa más) por categoría y global
   → transacción con bloqueo por dataset: sustituye las filas del foco en user_affinities y category_affinities
 API: GET /v1/me/affinities/:userId → «yo → otra persona» (8 categorías, NULL = «—»), sin objetos
 Fase 6: topSoulmates (orden estable, máx. 50, sin bloqueos ni inelegibles) → GET /v1/me/soulmates → pestaña Personas
@@ -183,7 +183,8 @@ GET /v1/me/recommendations → recommendFor(usuario)
   Top 50 (topSoulmates) → preferencias → consenso (≥ 2 apoyos) y descubrimiento (persona ≥ 50 de afinidad)
   zona (user_settings.location, st_dwithin en metros) → votos explícitos del año (occurred_at, zona horaria) → Trending
   filtros de objeto: lugares dentro del radio, eventos no terminados; Trending: estreno del año en obras con fecha
-  mezcla 7/2/1 con cesión de huecos (fillsFor) → tarjetas con motivo verificable
+  mezcla 70/20/10 (consenso / descubrimiento + personas que sigues / Trending) con cesión de huecos (fillsFor)
+    → tarjetas con motivo verificable · 70/10/10/10 cuando haya patrocinados
   fase 9: si falta, respaldos → comunidad (≥ 2 personas, bayes > 0) → conservados (Inicio) → explorar (sin valoraciones)
   POST /v1/me/recommendations/query { limit, category, context: home|category, exclude[] } → Inicio y Categories
 ```
