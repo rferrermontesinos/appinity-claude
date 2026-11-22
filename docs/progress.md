@@ -22,8 +22,32 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 11 | **Paso 1 implementado** (Google: Play, pedidos y guardados), comprobado automáticamente y en parte con servicios reales; falta un export real | Entrega 2026-10-14 · fase 11 (rama `fase-11-fuentes`). Análisis en [source-candidates.md](source-candidates.md) |
 | 12 | **12C (push, servidor) implementada y comprobada automáticamente**; envío real pendiente de build de desarrollo y FCM · **12B (Premium, servidor) implementada y comprobada automáticamente**; compra en la app pendiente de cuentas y build de desarrollo · **12A (chat) implementada, comprobada automáticamente y verificada en la vista web**; 12B (Premium/RevenueCat) y 12C (push) pendientes | Entrega 2026-10-14 · fase 12A (rama `fase-12a-chat`, basada en `fase-10-people`) |
 | 13 | **Preparada**: auth de producción, alta, eliminación de cuenta y despliegue probados en local; beta real pendiente de dominio, servidor y cuentas ([beta.md](beta.md)) · auditoría de seguridad de la API hecha (2026-10-26) · textos legales en borrador (2026-10-26) | Entrega 2026-10-15 · fase 13 (rama `fase-13-beta`) |
+| Beta (B1–B10) | **En curso** (2026-11-22): B1 con PR abierta | Plan y estado en [fases-beta.md](fases-beta.md); cada fase en su PR encadenada sobre la PR #26 |
 
 ---
+
+## Entrega 2026-11-22 · B1: formato del código y comprobación en la CI
+
+Rama `claude/project-thread-a97mv1`, PR contra `claude/project-thread-yulsc7` (PR #26). Primera de las fases B1–B10
+([fases-beta.md](fases-beta.md)).
+
+### Qué se ha hecho
+
+- Plan de fases hasta la beta cerrada Android en [fases-beta.md](fases-beta.md).
+- Prettier con `printWidth` 160 en todo el repositorio, en un único commit de formato (`.git-blame-ignore-revs`).
+- `pnpm format:check` nuevo y en la CI, después del lint.
+
+### Comprobaciones
+
+- Contenedor Linux con Node 22.23.5 (el repo pide 24; solo avisa) y PostGIS 17 y Redis 7.4 en Docker.
+- Antes del cambio, sobre la rama de la PR #26: `pnpm lint` y `pnpm typecheck` limpios y `pnpm test` 44 ficheros y
+  415 tests OK.
+- Después del formato: `pnpm format:check` limpio, `pnpm lint` y `pnpm typecheck` limpios y `pnpm test` 44 ficheros y
+  415 tests OK.
+
+### Pendiente
+
+- Nada propio de B1. Siguiente fase: B2 (restos de seguridad).
 
 ## Entrega 2026-11-22 · Evaluación completa: seguridad, consentimiento único y «Cuatro direcciones»
 

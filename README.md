@@ -6,6 +6,8 @@ Implementación independiente de APPINITY construida desde cero a partir de
 [docs/APPINITY_Especificacion.md](docs/APPINITY_Especificacion.md). No reutiliza código de otras implementaciones.
 
 **Estado:**
+- 2026-11-22: plan de fases hasta la beta cerrada Android en [docs/fases-beta.md](docs/fases-beta.md) (B1–B10, una PR
+  encadenada por fase).
 - 2026-11-22: todas las fases fusionadas en `main` y alcance congelado hasta la beta cerrada. Entrega de seguridad
   (PKCE y conexión confirmada), consentimiento único, privacidad por defecto y tarjeta «Cuatro direcciones»
   ([docs/progress.md](docs/progress.md)).
@@ -410,10 +412,11 @@ Para la beta: App Review de `user_likes` y verificación del negocio en Meta.
 | `pnpm doctor` | Diagnóstico de servicios y red |
 | `pnpm lint` | ESLint (incluye la regla que impide importar proveedores en `packages/algorithms`) |
 | `pnpm typecheck` | `tsc` de paquetes, tests y app móvil |
+| `pnpm format` / `pnpm format:check` | Aplica o comprueba el formato de Prettier (ancho 160; Markdown y `docs/` fuera) |
 | `pnpm test` | Compila y ejecuta los tests unitarios y de integración (requiere `pnpm services:up`) |
 | `pnpm fixtures:catalog` | Regenera la instantánea de catálogo desde Wikidata/Commons (requiere red; tarea manual) |
 
-La CI de GitHub Actions (`.github/workflows/ci.yml`) ejecuta lint, typecheck y tests en cada push, con PostGIS y Redis propios.
+La CI de GitHub Actions (`.github/workflows/ci.yml`) ejecuta lint, formato, typecheck y tests en cada push, con PostGIS y Redis propios.
 
 Los tests de integración usan la base de datos `appinity_claude_test` y la vacían en cada ejecución. Nunca tocan
 `appinity_claude`.

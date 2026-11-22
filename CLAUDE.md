@@ -56,7 +56,7 @@ y detener procesos solo si su línea de comandos contiene `APPINITY CLAUDE`.
 - `pnpm install --frozen-lockfile` · `pnpm setup` (crea `.env` y `apps/mobile/.env`)
 - `pnpm services:up` · `pnpm db:migrate` · `pnpm db:seed` · `pnpm db:reset`
 - `pnpm api` · `pnpm worker` · `pnpm dev` · `pnpm mobile` (Expo en 8091) · `pnpm doctor`
-- `pnpm lint` · `pnpm typecheck` · `pnpm test` (requiere servicios; usa la BD `appinity_claude_test`)
+- `pnpm lint` · `pnpm format:check` · `pnpm typecheck` · `pnpm test` (requiere servicios; usa la BD `appinity_claude_test`)
 - Tras cambiar `packages/database/src/schema`: `pnpm db:generate` y revisar el SQL generado.
 - Los tests de la API importan `apps/api/dist` (ejecutar `pnpm build` antes; `pnpm test` ya lo hace).
 - `pnpm --filter @appinity/mobile web` (puerto 8092): vista web solo para verificar pantallas; no sustituye al teléfono.
