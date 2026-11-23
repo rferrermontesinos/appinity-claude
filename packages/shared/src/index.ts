@@ -8,3 +8,4 @@ export * from './queues.js';
 export * from './errors.js';
 export * from './text.js';
 export * from './user-agent.js';
+export * from './diagnostics.js';

@@ -13,6 +13,7 @@ COPY packages/database/package.json packages/database/
 COPY packages/i18n/package.json packages/i18n/
 COPY packages/ingestion/package.json packages/ingestion/
 COPY packages/integrations/package.json packages/integrations/
+COPY packages/observability/package.json packages/observability/
 COPY packages/shared/package.json packages/shared/
 # Se excluye la app móvil (React Native): el servidor no la necesita.
 RUN pnpm install --frozen-lockfile --filter "!@appinity/mobile"

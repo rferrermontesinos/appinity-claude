@@ -33,6 +33,9 @@ importers:
       '@appinity/integrations':
         specifier: workspace:*
         version: link:packages/integrations
+      '@appinity/observability':
+        specifier: workspace:*
+        version: link:packages/observability
       '@appinity/shared':
         specifier: workspace:*
         version: link:packages/shared
@@ -81,6 +84,9 @@ importers:
       '@appinity/integrations':
         specifier: workspace:*
         version: link:../../packages/integrations
+      '@appinity/observability':
+        specifier: workspace:*
+        version: link:../../packages/observability
       '@appinity/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -321,6 +327,12 @@ importers:
         specifier: 4.6.7
         version: 4.6.7
 
+  packages/observability:
+    dependencies:
+      '@sentry/core':
+        specifier: 11.11.0
+        version: 11.11.0
+
   packages/shared:
     dependencies:
       zod:
@@ -341,6 +353,9 @@ importers:
       '@appinity/integrations':
         specifier: workspace:*
         version: link:../../packages/integrations
+      '@appinity/observability':
+        specifier: workspace:*
+        version: link:../../packages/observability
       '@appinity/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -2030,6 +2045,14 @@ packages:
 
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
+
+  '@sentry/conventions@0.30.0':
+    resolution: {integrity: sha512-WTumd5A2iFmHTRubi6mc6gLHU8LswPQqoNaZu6T1cxiTUmy3WdEw0i8FAnVbcgxTlsumX5oh63/b4B9lY5wAPQ==}
+    engines: {node: '>=14'}
+
+  '@sentry/core@11.11.0':
+    resolution: {integrity: sha512-PRrcEdPrTYuHcbDa6DhJZR9Qg2d+2gjKVXiv2QeiTgxvhvXDxYiaVSXH0lldKTR099Er5TAEChiX7aEu4yNlUw==}
+    engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
   '@sinclair/typebox@0.27.12':
     resolution: {integrity: sha512-hhyNJ+nbR6ZR7pToHvllEFun9TL0sbL+tk/ON75lo+Xas054uez98qRbsuNt7MBCyZKK4+8Yli/OAGZhmfBZ/g==}
@@ -6726,6 +6749,12 @@ snapshots:
     optional: true
 
   '@rolldown/pluginutils@1.0.1': {}
+
+  '@sentry/conventions@0.30.0': {}
+
+  '@sentry/core@11.11.0':
+    dependencies:
+      '@sentry/conventions': 0.30.0
 
   '@sinclair/typebox@0.27.12': {}
 

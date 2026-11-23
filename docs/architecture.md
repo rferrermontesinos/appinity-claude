@@ -256,8 +256,9 @@ identifican por P3418 en Wikidata (`identifyApps`).
 | `GET /media/catalog/*`, `GET /static/fallback/:cat.svg` | Públicas | Imágenes del catálogo (sin datos personales; claves validadas) |
 
 Autorización: `AuthGuard` global, `userId` siempre de la sesión y filtros por usuario en cada consulta. Un recurso
-ajeno responde 404. Errores de dominio → 404/409/403/422 (`DomainErrorsFilter`). CORS solo para `localhost` fuera de
-producción (vista web de desarrollo).
+ajeno responde 404. Errores de dominio → 404/409/403/429/422 y fuentes caídas → 503 (`ApiExceptionsFilter`, que además
+avisa de los 5xx salvo 503 cuando hay `SENTRY_DSN`; fase B4). CORS solo para `localhost` fuera de producción (vista
+web de desarrollo).
 
 ## App móvil
 

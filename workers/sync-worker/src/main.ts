@@ -26,6 +26,7 @@ import {
   checkDigestReceipts,
 } from '@appinity/ingestion';
 import { ExpoPushSender, createAdapterRegistry, createCatalogIdentifier, portabilityGroups } from '@appinity/integrations';
+import { createErrorReporter, installProcessHandlers } from '@appinity/observability';
 import {
   QUEUES,
   isSourceError,
@@ -40,8 +41,17 @@ import {
 import { DelayedError, Queue, UnrecoverableError, Worker, type Job } from 'bullmq';
 import { Redis } from 'ioredis';
 import { loadWorkerEnv } from './env.js';
+import { WORKER_VERSION, failedJobReport } from './failures.js';
 
 const env = loadWorkerEnv();
+// Avisos de errores (fase B4): apagados sin SENTRY_DSN. Con ellos, un error que nadie captura se avisa antes de salir.
+const reporter = createErrorReporter({
+  dsn: env.sentryDsn,
+  service: 'worker',
+  environment: env.sentryEnvironment,
+  release: `appinity-worker@${WORKER_VERSION}`,
+});
+installProcessHandlers(reporter);
 // Los workers de BullMQ exigen maxRetriesPerRequest = null.
 const connection = new Redis(env.redisUrl, { maxRetriesPerRequest: null });
 const heartbeatClient = new Redis(env.redisUrl, { maxRetriesPerRequest: 1 });
@@ -280,7 +290,11 @@ const workers: Worker[] = [
 ];
 
 for (const worker of workers) {
-  worker.on('failed', (job, error) => console.error(`[${worker.name}] trabajo ${job?.id} falló: ${error.message}`));
+  worker.on('failed', (job, error) => {
+    console.error(`[${worker.name}] trabajo ${job?.id} falló: ${error.message}`);
+    const report = failedJobReport(worker.name, job, error);
+    if (report) reporter.captureException(error, report);
+  });
 }
 
 async function beat(): Promise<void> {
@@ -314,7 +328,8 @@ console.log(
     (env.demoMode ? ' · DEMO_MODE: fuentes fixture activas' : '') +
     (env.steamApiKey ? ` · Steam activo (syncs cada ${env.syncIntervalHours} h)` : ' · Steam sin configurar (falta STEAM_WEB_API_KEY)') +
     (env.google ? ' · Google activo' : ' · Google sin configurar (falta el cliente OAuth)') +
-    (env.google && !env.credentialsKey ? ' · AVISO: falta CREDENTIALS_ENCRYPTION_KEY' : ''),
+    (env.google && !env.credentialsKey ? ' · AVISO: falta CREDENTIALS_ENCRYPTION_KEY' : '') +
+    (reporter.enabled ? ` · avisos de errores activos (${env.sentryEnvironment})` : ''),
 );
 
 let stopping = false;
@@ -338,7 +353,7 @@ async function shutdown(signal: string): Promise<void> {
   }
   await Promise.race([Promise.allSettled(workers.map((w) => w.close(true))), new Promise((r) => setTimeout(r, 5_000))]);
   await Promise.allSettled([systemQueue.close(), affinityQueue.close(), producer.close()]);
-  await Promise.allSettled([connection.quit(), heartbeatClient.quit(), database.close()]);
+  await Promise.allSettled([connection.quit(), heartbeatClient.quit(), database.close(), reporter.flush(2_000)]);
   process.exit(0);
 }
 process.on('SIGINT', () => void shutdown('SIGINT'));

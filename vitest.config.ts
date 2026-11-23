@@ -10,7 +10,7 @@ export default defineConfig({
       {
         test: {
           name: 'unit',
-          include: ['packages/*/test/**/*.test.ts'],
+          include: ['packages/*/test/**/*.test.ts', 'workers/*/test/**/*.test.ts'],
           exclude: ['**/*.int.test.ts', '**/node_modules/**', '**/dist/**'],
           environment: 'node',
         },

@@ -20,6 +20,9 @@
     },
     {
       "path": "../../packages/ingestion"
+    },
+    {
+      "path": "../../packages/observability"
     }
   ]
 }

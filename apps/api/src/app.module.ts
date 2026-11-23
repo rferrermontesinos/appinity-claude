@@ -11,11 +11,12 @@ import { UsersRepository } from './auth/users.repository.js';
 import { CatalogQueryService } from './catalog/catalog-query.service.js';
 import { CatalogController } from './catalog/catalog.controller.js';
 import { MediaController } from './catalog/media.controller.js';
-import { DomainErrorsFilter } from './common/domain-errors.filter.js';
+import { ApiExceptionsFilter } from './common/api-exceptions.filter.js';
 import { APP_ENV, type AppEnv } from './config/env.js';
 import { ConnectCallbackController } from './connections/connect-callback.controller.js';
 import { ConnectionsController } from './connections/connections.controller.js';
 import { ConnectionsService } from './connections/connections.service.js';
+import { DiagnosticsController } from './diagnostics/diagnostics.controller.js';
 import { HealthController } from './health/health.controller.js';
 import { LegalController } from './legal/legal.controller.js';
 import { TransparencyController } from './legal/transparency.controller.js';
@@ -54,6 +55,7 @@ export class AppModule {
       ],
       controllers: [
         HealthController,
+        DiagnosticsController,
         LegalController,
         TransparencyController,
         DevAuthController,
@@ -87,7 +89,7 @@ export class AppModule {
         PremiumService,
         { provide: APP_GUARD, useClass: ThrottlerGuard },
         { provide: APP_GUARD, useClass: AuthGuard },
-        { provide: APP_FILTER, useClass: DomainErrorsFilter },
+        { provide: APP_FILTER, useClass: ApiExceptionsFilter },
       ],
     };
   }

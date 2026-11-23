@@ -34,6 +34,9 @@ if (mobileUrl && /localhost|127\.0\.0\.1/.test(mobileUrl)) bad('La URL del móvi
 const legalMissing = ['LEGAL_CONTROLLER_NAME', 'LEGAL_CONTACT_EMAIL'].filter((key) => !env.get(key)?.trim());
 if (legalMissing.length) info(`Textos legales con huecos: falta ${legalMissing.join(' y ')} en .env (antes de la beta; ver docs/operations.md)`);
 else ok('Textos legales: responsable y contacto configurados');
+if (env.get('SENTRY_DSN')?.trim())
+  ok(`Avisos de errores activos (Sentry, entorno ${env.get('SENTRY_ENVIRONMENT')?.trim() || env.get('NODE_ENV') || 'development'})`);
+else info('Avisos de errores apagados (sin SENTRY_DSN; antes de la beta, ver docs/operations.md)');
 
 console.log('\nServicios Docker (proyecto appinity-claude)');
 try {
