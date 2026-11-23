@@ -75,6 +75,27 @@ describe('health', () => {
     expect(body.checks.redis.ok).toBe(true);
     expect(body.mode).toEqual({ environment: 'test', demoMode: true, devAuth: true });
   });
+
+  it('en producción no enseña versiones, latencias ni errores internos (SEC-007)', async () => {
+    const prod = await start(
+      testEnv({
+        NODE_ENV: 'production',
+        DEMO_MODE: 'false',
+        DEV_AUTH_ENABLED: 'false',
+        AUTH_SECRET: 'a'.repeat(48),
+        PUBLIC_API_URL: 'https://api.example.org',
+      }),
+    );
+    try {
+      const res = await fetch(`${prod.base}/health`);
+      const body = (await res.json()) as HealthDto;
+      expect(body.status).toBe('ok');
+      for (const check of Object.values(body.checks)) expect(Object.keys(check)).toEqual(['ok']);
+      expect(JSON.stringify(body)).not.toMatch(/PostGIS|Latido|latencyMs|detail/);
+    } finally {
+      await prod.app.close();
+    }
+  });
 });
 
 describe('textos legales', () => {

@@ -1376,3 +1376,25 @@ de la rareza de `affinity-v5` (deuda técnica anotada en la evaluación).
   `.git-blame-ignore-revs` para que `git blame` y GitHub lo salten.
 - La CI ejecuta `pnpm format:check` después del lint, así que la deriva no vuelve. Markdown y `docs/` siguen fuera de
   Prettier (`.prettierignore`).
+
+## 2026-11-22 · B2: restos de la auditoría de seguridad
+
+Cierra los hallazgos bajos y medios que quedaban de la auditoría del 2026-11-22 (los altos se cerraron en la PR #26).
+
+- **`/health` en producción (SEC-007)**: sigue siendo público (lo usan el proxy y el diagnóstico de la app), pero con
+  `NODE_ENV=production` cada comprobación solo dice `ok`: sin versión de PostGIS, latencias, latido del worker ni
+  textos de error. Fuera de producción conserva el detalle para `pnpm doctor`.
+- **User-Agent saliente (SEC-009)**: Wikimedia y Nominatim exigen identificar la app con un contacto, pero el que se
+  enviaba era la página del repositorio, con el usuario de GitHub del titular. Ahora sale de `OUTBOUND_CONTACT` (URL o
+  email del proyecto) o, si falta, del origen https de `PUBLIC_API_URL`, que en producción es obligatoria. El
+  repositorio solo se usa en desarrollo, desde el PC del titular. Un solo sitio lo construye
+  (`packages/shared/src/user-agent.ts`) para la API (geocodificación del alta), el worker y la caché de imágenes.
+- **Cupo diario de la búsqueda por contactos (SEC-004)**: además de 5 peticiones por minuto, cada cuenta puede
+  comprobar como mucho 5.000 contactos distintos al día (dos búsquedas completas de la app, que envía hasta 2.500).
+  Antes, el límite por minuto dejaba comprobar unos 3,6 millones de emails al día. El contador vive en Redis (48 h) y
+  un lote que no cabe se rechaza entero (429) sin gastar cupo. Con «que me encuentren por mis contactos» apagado por
+  defecto (PR #26), el riesgo residual es bajo; una huella con sal o PSI queda para después de la beta.
+- **`pnpm audit --prod`**: 1 alta y 3 moderadas, todas dentro de `@expo/cli` (zod 3, glob, minimatch y uuid), que
+  solo se usa al compilar la app. La API y el worker no tienen ningún aviso. Se revisará al subir de SDK de Expo.
+- **Aceptado sin cambios (SEC-008)**: registrar un token de push que ya tenía otra cuenta lo pasa a la nueva. Es el
+  caso normal de un teléfono que cambia de cuenta, y abusar de él exige conocer el token de Expo de la víctima.

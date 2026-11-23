@@ -1,8 +1,12 @@
 import { catalogImages, type Database } from '@appinity/database';
+import { outboundUserAgent } from '@appinity/shared';
 import { eq, sql } from 'drizzle-orm';
 import { extensionForMime, type ObjectStorage } from './storage.js';
 
-export const IMAGE_FETCH_USER_AGENT = 'appinity-claude/0.1 (desarrollo local; https://github.com/rferrermontesinos/appinity-claude)';
+/** User-Agent por defecto (Wikimedia lo exige con contacto); el worker pasa el suyo. Ver @appinity/shared/user-agent. */
+export function imageFetchUserAgent(): string {
+  return outboundUserAgent(process.env, 'caché de imágenes');
+}
 
 const MAX_BYTES = 8 * 1024 * 1024;
 
@@ -19,7 +23,13 @@ export const CACHEABLE_IMAGE_SOURCES = new Set(['wikimedia_commons']);
  * (las imágenes de la demo son de Wikimedia Commons con licencias libres). Si falla, la tarjeta sigue usando la
  * URL de origen y, si esta también falla, la app muestra el fallback de la categoría.
  */
-export async function cacheCatalogImage(db: Database, storage: ObjectStorage, imageId: string, fetchImpl: typeof fetch = fetch): Promise<ImageCacheOutcome> {
+export async function cacheCatalogImage(
+  db: Database,
+  storage: ObjectStorage,
+  imageId: string,
+  fetchImpl: typeof fetch = fetch,
+  userAgent: string = imageFetchUserAgent(),
+): Promise<ImageCacheOutcome> {
   const [image] = await db.select().from(catalogImages).where(eq(catalogImages.id, imageId));
   if (!image) return 'missing';
   if (!CACHEABLE_IMAGE_SOURCES.has(image.source)) return 'not_cacheable';
@@ -29,7 +39,7 @@ export async function cacheCatalogImage(db: Database, storage: ObjectStorage, im
 
   try {
     const response = await fetchImpl(image.url, {
-      headers: { 'User-Agent': IMAGE_FETCH_USER_AGENT, Accept: 'image/*' },
+      headers: { 'User-Agent': userAgent, Accept: 'image/*' },
       redirect: 'follow',
       signal: AbortSignal.timeout(20_000),
     });

@@ -15,7 +15,7 @@ import {
 } from '@nestjs/common';
 import { users, type DatabaseHandle } from '@appinity/database';
 import { completeOnboarding, createSession, findOrCreateUserForIdentity, revokeSession, rotateSession } from '@appinity/ingestion';
-import type { AuthProvidersDto, AuthSessionDto } from '@appinity/shared';
+import { outboundUserAgent, type AuthProvidersDto, type AuthSessionDto } from '@appinity/shared';
 import { Throttle } from '@nestjs/throttler';
 import { eq } from 'drizzle-orm';
 import type { Response } from 'express';
@@ -62,8 +62,6 @@ const onboardingSchema = z
     discoverableByContacts: z.boolean().optional(),
   })
   .strict();
-/** Identificación ante Nominatim (OSM). Sin «Claude»: algunos servicios tras Cloudflare lo bloquean. */
-const GEOCODER_USER_AGENT = 'APPINITY/0.1 (+https://github.com/rferrermontesinos/appinity-claude)';
 const deleteSchema = z.object({ confirm: z.literal('ELIMINAR') }).strict();
 
 interface SignInState extends PendingSignIn {
@@ -233,7 +231,7 @@ export class AuthController {
     // Ciudad (opcional): activa Trending y los lugares cercanos sin pedir el GPS. Se guarda aproximada, como siempre.
     // Se geocodifica antes de completar el alta: una ciudad que no existe no deja el alta a medias.
     const city = body.city
-      ? await geocodeCity(body.city, { userAgent: GEOCODER_USER_AGENT }).catch((error: Error) => {
+      ? await geocodeCity(body.city, { userAgent: outboundUserAgent(this.env) }).catch((error: Error) => {
           this.logger.warn(`No se pudo geocodificar la ciudad del alta: ${error.message.slice(0, 120)}`);
           return null;
         })
