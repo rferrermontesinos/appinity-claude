@@ -37,6 +37,13 @@
       "expo-localization",
       "expo-secure-store",
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#FF5E4D"
+        }
+      ],
+      [
         "expo-contacts",
         {
           "contactsPermission": "APPINITY lee los emails de tu agenda solo cuando lo pides, para encontrar a quien ya usa la app. No se sube tu agenda."

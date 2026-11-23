@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import { apiRequest } from '../api/client';
+import { forgetPushToken } from '../push';
 import { useSession } from '../state/session';
 import { spacing } from '../theme';
 import { Body, Button, Card, ErrorCard, Small, TextField, Title } from './ui';
@@ -22,6 +23,8 @@ export function AccountCard({ me }: { me: MeDto }) {
 
   async function logout() {
     setBusy(true);
+    // Antes de cerrar la sesión: la API deja de enviar notificaciones de esta cuenta a este teléfono.
+    await forgetPushToken();
     await apiRequest('/v1/auth/logout', { method: 'POST' }).catch(() => undefined);
     await clear();
   }

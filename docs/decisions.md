@@ -1433,6 +1433,29 @@ Cierra los hallazgos bajos y medios que quedaban de la auditoría del 2026-11-22
   (RGPD art. 7 pide un consentimiento específico; hoy cada proveedor muestra además su pantalla de permiso), el mecanismo
   de transferencia de cada proveedor y si hacen falta NIF y dirección (LSSI).
 
+## 2026-11-22 · B6: notificaciones push en la app
+
+- **Cuándo se pide el permiso**: una sola vez, al entrar con el alta hecha y la frecuencia distinta de «Desactivadas».
+  Es lo que la app ya prometía en Ajustes y lo que espera quien dejó la frecuencia por defecto (tres por semana). Si la
+  persona lo deniega, el sistema no deja volver a preguntar: Ajustes ofrece «Abrir ajustes del teléfono». Si cambia
+  después de «Desactivadas» a otra frecuencia, se pregunta entonces.
+- **El token se registra en cada arranque** (la API lo guarda una sola vez): Expo lo recomienda para que su token siga
+  apuntando al dispositivo cuando el de FCM cambia.
+- **Al cerrar sesión se da de baja el teléfono** antes de cerrar la sesión, para que no lleguen resúmenes de una cuenta
+  que ya no está en el teléfono. Si falla (sin red), al entrar otra cuenta el token pasa a ella. Si la sesión caduca sin
+  cerrar sesión, el teléfono sigue registrado hasta que entre alguien.
+- **Sin `expo-notifications` donde no puede funcionar**: en la web, en Expo Go (Android no admite push desde el SDK 53 y
+  la librería avisa solo con importarla) y en una build sin proyecto de EAS, no se carga (import dinámico). Ajustes dice
+  por qué no llegan, sin simular nada.
+- **Con la app abierta**, el resumen va a la lista de notificaciones sin sonido ni banner: la persona ya está dentro.
+- **Al tocar**, solo se abren las pantallas de una lista cerrada (`PUSH_SCREENS`, hoy solo Inicio). Nunca una ruta que
+  venga en la notificación.
+- **Configuración por variables de entorno** (`app.config.ts`): `EAS_PROJECT_ID` y `GOOGLE_SERVICES_JSON`. Sin ellas la
+  app se compila igual. El `google-services.json` queda fuera de Git: no es un secreto fuerte, pero identifica el
+  proyecto de Firebase y no hace falta publicarlo.
+- **`expo-notifications` fijada en 57.0.22**, la del SDK 57: las 57.0.23 a 57.0.25 traen otra versión de
+  `expo-constants` y habría dos copias del mismo módulo nativo.
+
 ## 2026-11-22 · B5: comentarios de los testers
 
 - **Dentro de la app y con sesión**: Perfil → Enviar comentario guarda el texto en nuestra base de datos, sin terceros

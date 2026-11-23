@@ -65,6 +65,8 @@ y detener procesos solo si su línea de comandos contiene `APPINITY CLAUDE`.
 - `pnpm account:export|account:delete --email x`: peticiones de derechos por email (copia en `exports/`; la baja exige
   `--confirm <handle>`). Ver docs/operations.md.
 - `pnpm feedback:list [--all] [--mark-read]`: comentarios de los testers de la beta (Perfil → Enviar comentario).
+- `pnpm push:test --handle h`: notificación de prueba al teléfono (push con EAS_PROJECT_ID y google-services.json; no en
+  Expo Go).
 - `pnpm secret:set STEAM_WEB_API_KEY`: guarda la clave de Steam en .env sin mostrarla (el usuario, en su terminal).
 - `pnpm secret:set GOOGLE_OAUTH_CLIENT_ID|GOOGLE_OAUTH_CLIENT_SECRET --clipboard`: cliente OAuth de Google. En
   desarrollo Google solo vuelve a `localhost`: el usuario conecta Google desde la vista web del PC (8092) y el permiso

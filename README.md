@@ -412,6 +412,7 @@ Para la beta: App Review de `user_likes` y verificación del negocio en Meta.
 | `pnpm account:export --email x` | Copia en JSON de los datos de una persona que la pide por email (en `exports/`, ignorada por Git) |
 | `pnpm account:delete --email x [--confirm handle]` | Baja pedida por email: sin `--confirm` solo enseña la cuenta; con su handle la elimina como la app |
 | `pnpm feedback:list [--all] [--mark-read]` | Comentarios de los testers (Perfil → Enviar comentario), los no leídos primero |
+| `pnpm push:test --handle h` | Notificación de prueba a los teléfonos activos de esa persona (comprueba Expo, FCM y la app) |
 | `pnpm doctor` | Diagnóstico de servicios y red |
 | `pnpm lint` | ESLint (incluye la regla que impide importar proveedores en `packages/algorithms`) |
 | `pnpm typecheck` | `tsc` de paquetes, tests y app móvil |

@@ -1,5 +1,5 @@
 import { catalogItems, notificationDeliveries, pushTokens, userSettings, users, type Database } from '@appinity/database';
-import type { NotificationFrequency } from '@appinity/shared';
+import { EXPO_PUSH_TOKEN, type NotificationFrequency, type PushScreen } from '@appinity/shared';
 import { and, eq, gt, inArray, isNull, lt, ne, sql } from 'drizzle-orm';
 import { chatInbox } from './chat.js';
 import { ConflictError } from './errors.js';
@@ -37,11 +37,9 @@ export function isDigestDue(frequency: NotificationFrequency, local: { weekday: 
   return DIGEST_WEEKDAYS[frequency].includes(local.weekday) && local.hour >= digestHour && local.hour < digestHour + DIGEST_WINDOW_HOURS;
 }
 
-const EXPO_TOKEN = /^Expo(nent)?PushToken\[[\w-]{10,}\]$/;
-
 /** Registra (o reactiva) el token del dispositivo. Si el dispositivo cambió de cuenta, pasa a la nueva. */
 export async function registerPushToken(db: Database, userId: string, token: string, platform: 'ios' | 'android', now = new Date()): Promise<void> {
-  if (!EXPO_TOKEN.test(token)) throw new ConflictError('Token de notificaciones no válido');
+  if (!EXPO_PUSH_TOKEN.test(token)) throw new ConflictError('Token de notificaciones no válido');
   await db
     .insert(pushTokens)
     .values({ userId, token, platform, createdAt: now, lastSeenAt: now })
@@ -99,6 +97,30 @@ export async function buildDigest(db: Database, userId: string, locale: 'es' | '
   return { recommendations: fresh.length, unreadChats: inbox.badge, title: text.title, body: parts.join(' ') };
 }
 
+/**
+ * Notificación de prueba (`pnpm push:test`, fase B6): llega a los teléfonos activos de una persona para comprobar la
+ * cadena completa (Expo, FCM y la app) sin esperar al resumen. No cuenta como resumen ni cambia nada.
+ */
+export async function sendTestPush(
+  db: Database,
+  sender: PushSender,
+  userId: string,
+  locale: 'es' | 'en' = 'es',
+): Promise<{ devices: number; tickets: PushTicket[] }> {
+  const tokens = await db
+    .select({ token: pushTokens.token })
+    .from(pushTokens)
+    .where(and(eq(pushTokens.userId, userId), isNull(pushTokens.disabledAt)));
+  if (!tokens.length) return { devices: 0, tickets: [] };
+  const text =
+    locale === 'en'
+      ? { title: 'APPINITY test', body: 'If you can see this, notifications work on this phone.' }
+      : { title: 'Prueba de APPINITY', body: 'Si ves esto, las notificaciones funcionan en este teléfono.' };
+  const screen: PushScreen = 'home';
+  const tickets = await sender.send(tokens.map((t) => ({ to: t.token, ...text, data: { screen } })));
+  return { devices: tokens.length, tickets };
+}
+
 export interface DigestRunResult {
   considered: number;
   sent: number;
@@ -152,7 +174,9 @@ export async function sendDueDigests(db: Database, sender: PushSender, options: 
         await finish({ status: 'no_tokens', error: null });
         continue;
       }
-      const tickets = await sender.send(tokens.map((t) => ({ to: t.token, title: digest.title, body: digest.body, data: { screen: 'home' } })));
+      // Tocar el resumen abre Inicio (la app solo acepta las pantallas de PUSH_SCREENS).
+      const screen: PushScreen = 'home';
+      const tickets = await sender.send(tokens.map((t) => ({ to: t.token, title: digest.title, body: digest.body, data: { screen } })));
       const gone = tokens.filter((_, i) => {
         const ticket = tickets[i];
         return ticket?.status === 'error' && ticket.error === 'DeviceNotRegistered';

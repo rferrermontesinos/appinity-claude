@@ -732,8 +732,6 @@ export const es = {
     notificationsDevices_other: 'Dispositivos registrados: {{count}}',
     notificationsLast: 'Último resumen: {{date}} ({{status}})',
     notificationsStatus: { sent: 'enviado', empty: 'nada nuevo', no_tokens: 'sin dispositivo', failed: 'fallido' },
-    notificationsExpoGo:
-      'En Android, Expo Go no admite notificaciones push (desde el SDK 53): llegarán con la versión de desarrollo de la app, que pedirá el permiso al registrarte.',
     privacy: 'Privacidad',
     subscription: 'Suscripción',
     diagnostics: 'Diagnóstico',
@@ -763,6 +761,19 @@ export const es = {
     sentBody: 'Lo hemos recibido y lo leeremos con calma. Si se te ocurre algo más, puedes enviar otro.',
     sendAnother: 'Enviar otro',
     rateLimited: 'Has enviado muchos comentarios en poco tiempo. Gracias: vuelve a intentarlo más tarde.',
+  },
+  push: {
+    channelName: 'Resumen de APPINITY',
+    thisDevice: 'En este teléfono',
+    on: 'Activadas: te llegará el resumen con la frecuencia que elijas.',
+    off: 'Desactivadas: no te llegará el resumen.',
+    blocked: 'Bloqueadas en los ajustes del teléfono: no te llegará el resumen.',
+    enable: 'Activar notificaciones',
+    openSettings: 'Abrir ajustes del teléfono',
+    web: 'La vista web no recibe notificaciones: llegan a la app del teléfono.',
+    expoGo: 'Expo Go no admite notificaciones push en Android (desde el SDK 53): llegan con la app instalada (APK).',
+    noProject: 'Pendiente: esta versión de la app aún no tiene proyecto de EAS, así que no puede recibir notificaciones.',
+    error: 'No se pudieron activar: {{message}}',
   },
   diagnostics: {
     title: 'Conexión con la API',
