@@ -777,6 +777,7 @@ export const es = {
   },
   diagnostics: {
     title: 'Conexión con la API',
+    appVersion: 'Versión de la app',
     apiUrl: 'URL de la API',
     apiUrlSource: 'Origen de la URL',
     apiUrlSourceEnv: 'EXPO_PUBLIC_API_URL',

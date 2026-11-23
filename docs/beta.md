@@ -126,6 +126,13 @@ Revisión de todas las rutas de `apps/api` (sin herramientas externas):
 - Un voto que llega mientras se calcula ya no se pierde, un fallo no bloquea los recálculos siguientes y un problema de
   Redis no hace fallar el voto.
 
+### Google Play (2026-11-22, fase B8)
+
+- Ficha, formularios de contenido y seguridad de los datos, cuestionario de clasificación y el paso a paso de la prueba
+  cerrada, listos para copiar en [google-play.md](google-play.md). No se ha creado nada en Play Console.
+- La build para otras personas se para si la URL de la API es la de ejemplo; la versión (0.2.0) se ve en Ajustes; y la
+  app ya no pide permisos que no usa.
+
 ## Prueba con amigos y familiares: alta única (2026-10-26)
 
 ### Qué hace ya la app

@@ -16,6 +16,7 @@
       "env": { "EXPO_PUBLIC_API_URL": "https://CAMBIAR-dominio-de-la-beta" }
     },
     "production": {
+      "autoIncrement": true,
       "android": { "buildType": "app-bundle" },
       "env": { "EXPO_PUBLIC_API_URL": "https://CAMBIAR-dominio-de-produccion" }
     }

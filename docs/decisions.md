@@ -1531,3 +1531,23 @@ Cierra los hallazgos bajos y medios que quedaban de la auditoría del 2026-11-22
 - **Misma población para la rareza en toda la app**: «Lo que os une» y «Lo que te define» contaban también a personas
   sin la mayoría de edad confirmada, que nunca entran en la afinidad. Ahora las dos partes cuentan a las mismas personas.
 - Sin cambios en la fórmula ni en la versión del motor (`affinity-v5`): solo cuándo se aplica.
+
+## 2026-11-22 · B8: preparar Google Play (sin publicar)
+
+- **Una build para otras personas nunca sale con una URL de ejemplo**: `app.config.ts` para la compilación de los
+  perfiles `preview` y `production` (y de `pnpm android:beta`, con `APPINITY_RELEASE_BUILD=1`) si `EXPO_PUBLIC_API_URL`
+  falta, sigue siendo el `https://CAMBIAR-…` de `eas.json` o no es `https://dominio`. Una app así buscaría la API en una
+  dirección que no existe y no podría ni iniciar sesión; mejor que falle al compilar, con un mensaje que dice qué cambiar.
+  El perfil `development` sigue admitiendo la IP del PC.
+- **Versión 0.2.0** (la primera que puede llegar a Play) y visible en Ajustes → Conexión con la API: es lo primero que
+  hay que saber de un fallo. El número interno de Android lo lleva EAS (`appVersionSource: remote` y `autoIncrement` en
+  `production`), para no subir dos veces el mismo.
+- **Permisos mínimos**: se quitan con `blockedPermissions` los que traen los módulos y la app no usa (ubicación precisa,
+  escribir contactos, almacenamiento y mostrar sobre otras apps). Para la zona basta la ubicación aproximada, y Play pide
+  justificar cada permiso sensible. Si un día hace falta uno, se quita de la lista y se explica aquí.
+- **La ficha, los formularios de contenido y la guía de la prueba cerrada son borradores en el repositorio**
+  ([google-play.md](google-play.md)): no se ha creado nada en Play Console. Las respuestas de seguridad de los datos
+  salen de la política de privacidad; si cambia una, cambia la otra.
+- **Identificador de la app**: se mantiene `dev.appinity.claude` hasta que el titular decida. Una vez subido a Play no se
+  puede cambiar nunca; queda como decisión suya antes de la primera subida.
+- **Capturas solo con la demo** (personas ficticias), nunca con cuentas reales de testers.

@@ -3,7 +3,7 @@
     "name": "APPINITY (Claude)",
     "slug": "appinity-claude",
     "scheme": "appinity-claude",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
@@ -21,7 +21,14 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0C0C0E"
       },
-      "permissions": ["ACCESS_COARSE_LOCATION"]
+      "permissions": ["ACCESS_COARSE_LOCATION"],
+      "blockedPermissions": [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.WRITE_CONTACTS",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ]
     },
     "plugins": [
       "expo-router",
