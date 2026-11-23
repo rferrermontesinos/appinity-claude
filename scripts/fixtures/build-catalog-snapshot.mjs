@@ -10,19 +10,14 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const USER_AGENT =
-  'appinity-claude-fixture-builder/0.1 (https://github.com/rferrermontesinos/appinity-claude)';
+const USER_AGENT = 'appinity-claude-fixture-builder/0.1 (https://github.com/rferrermontesinos/appinity-claude)';
 const SELECTION_PATH = fileURLToPath(new URL('./catalog-selection.json', import.meta.url));
-const OUTPUT_PATH = fileURLToPath(
-  new URL('../../packages/catalog/data/wikidata-snapshot.json', import.meta.url),
-);
+const OUTPUT_PATH = fileURLToPath(new URL('../../packages/catalog/data/wikidata-snapshot.json', import.meta.url));
 const THUMB_WIDTH = 960; // tamaño estándar de miniatura de Wikimedia
 const LANGS = ['es', 'en', 'ca', 'mul'];
 
 const ID_PROPERTIES = {
-  common: [
-    ['P646', 'freebase', 'mid'],
-  ],
+  common: [['P646', 'freebase', 'mid']],
   movies: [
     ['P345', 'imdb', 'title'],
     ['P4947', 'tmdb', 'movie'],

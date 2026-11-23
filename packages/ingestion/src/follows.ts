@@ -55,7 +55,11 @@ export async function unfollowPerson(db: Database, followerId: string, targetId:
 /** IDs que `viewerId` sigue y que siguen siendo seguibles (un examigo o un excreador se ignoran sin borrar nada). */
 export async function activeFollowedIds(db: Database, viewerId: string): Promise<string[]> {
   const rows = await db.select({ id: follows.followedUserId }).from(follows).where(eq(follows.followerUserId, viewerId));
-  const followable = await followableAmong(db, viewerId, rows.map((r) => r.id));
+  const followable = await followableAmong(
+    db,
+    viewerId,
+    rows.map((r) => r.id),
+  );
   return rows.map((r) => r.id).filter((id) => followable.has(id));
 }
 

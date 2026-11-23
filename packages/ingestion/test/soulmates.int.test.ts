@@ -36,7 +36,7 @@ async function createPeople(from: number, count: number) {
     itemIds.forEach((item, i) => {
       if (random() > 0.55) return; // cada persona conoce una parte distinta del catálogo
       const base = ((i + taste) % 4) - 1.5; // −1,5 … 1,5 según el grupo
-      const score = Math.max(-1, Math.min(1, Math.round(((base / 1.5) + (random() - 0.5) * 0.6) * 2) / 2));
+      const score = Math.max(-1, Math.min(1, Math.round((base / 1.5 + (random() - 0.5) * 0.6) * 2) / 2));
       prefs.push({ itemId: item.id, category: item.category, score, confidence: random() > 0.3 ? 1 : 0.6 });
     });
     for (const p of prefs) {
@@ -87,7 +87,14 @@ beforeAll(async () => {
     const category = categories[i % categories.length]!;
     const [row] = await database.db
       .insert(catalogItems)
-      .values({ dataset: 'live', category, itemType: category === 'food' ? 'restaurant' : 'movie', title: `Objeto sintético ${i}`, normalizedTitle: `objeto sintetico ${i}`, createdVia: 'test' })
+      .values({
+        dataset: 'live',
+        category,
+        itemType: category === 'food' ? 'restaurant' : 'movie',
+        title: `Objeto sintético ${i}`,
+        normalizedTitle: `objeto sintetico ${i}`,
+        createdVia: 'test',
+      })
       .returning({ id: catalogItems.id });
     itemIds.push({ id: row!.id, category });
   }
@@ -117,7 +124,17 @@ describe('Top 50 con menos de 50 candidatas', () => {
 
   it('el perfil mínimo no lleva historial: solo nombre, país, foto y cifras', async () => {
     const [first] = await topSoulmates(database.db, people[0]!);
-    expect(Object.keys(first!).sort()).toEqual(['avatarUrl', 'categoriesCompared', 'confidence', 'countryCode', 'displayName', 'exceptionalMutual', 'rank', 'score', 'userId']);
+    expect(Object.keys(first!).sort()).toEqual([
+      'avatarUrl',
+      'categoriesCompared',
+      'confidence',
+      'countryCode',
+      'displayName',
+      'exceptionalMutual',
+      'rank',
+      'score',
+      'userId',
+    ]);
   });
 
   it('excluye bloqueos en ambas direcciones y cuentas que dejan de ser elegibles', async () => {

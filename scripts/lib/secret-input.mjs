@@ -8,10 +8,12 @@ const ANSI_SEQUENCE = /\u001b\[[0-9;?]*[ -/]*[@-~]/g;
 
 /** Quita secuencias ANSI, caracteres de control y espacios. Nunca registra el valor. */
 export function sanitizeSecret(raw) {
-  return String(raw)
-    .replace(ANSI_SEQUENCE, '')
-    // eslint-disable-next-line no-control-regex
-    .replace(/[\u0000-\u001f\u007f\s]/g, '');
+  return (
+    String(raw)
+      .replace(ANSI_SEQUENCE, '')
+      // eslint-disable-next-line no-control-regex
+      .replace(/[\u0000-\u001f\u007f\s]/g, '')
+  );
 }
 
 /** Describe por qué un valor no es válido sin revelarlo (solo longitud y tipo de caracteres). */

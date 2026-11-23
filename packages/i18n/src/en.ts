@@ -53,8 +53,7 @@ export const en: TranslationResources = {
   },
   demo: {
     banner: 'DEMO · simulated user activity',
-    bannerDetail:
-      'Users and their activity are simulated (DEMO_MODE). Catalog items and their images are real (Wikidata and Wikimedia Commons).',
+    bannerDetail: 'Users and their activity are simulated (DEMO_MODE). Catalog items and their images are real (Wikidata and Wikimedia Commons).',
     liveBanner: 'REAL DATA · your account',
     liveBannerDetail:
       'What you see comes from the real sources you connected. Nobody else sees your history: only your name, your country and your affinities.',
@@ -138,7 +137,8 @@ export const en: TranslationResources = {
       'Recommendations come from your soulmates and from ratings in your area. Connect more sources to share more tastes with other people; recommendations are never invented.',
     emptyNoLocation:
       'Add your area in Profile to see restaurants, places and what is highly rated near you. Meanwhile only non-located content is recommended.',
-    testActions: 'Voting (Dislike, Like, Love it) counts for your tastes and your soulmates, with the same weight as a rating from your sources. “Don’t know it” does not count: it stays in Recommendations and comes back to Home in a month. Undo reverts the last action.',
+    testActions:
+      'Voting (Dislike, Like, Love it) counts for your tastes and your soulmates, with the same weight as a rating from your sources. “Don’t know it” does not count: it stays in Recommendations and comes back to Home in a month. Undo reverts the last action.',
   },
   contacts: {
     title: 'From your contacts',
@@ -300,8 +300,7 @@ export const en: TranslationResources = {
   },
   sources: {
     title: 'Sources',
-    help:
-      '"Demo" sources are simulated: they read fictitious activity from repository files, with no OAuth or real providers. Real sources connect with your own account.',
+    help: '"Demo" sources are simulated: they read fictitious activity from repository files, with no OAuth or real providers. Real sources connect with your own account.',
     connect: 'Connect',
     sync: 'Sync',
     fullSync: 'Full resync',
@@ -409,7 +408,8 @@ export const en: TranslationResources = {
       title: 'What others see',
       profile: 'Your name, your profile picture and your affinity. Never your history or your sources.',
       counts: 'Of your soulmates, only counts (“3 soulmates”), never who.',
-      shared: 'With people who share your tastes, only “What you share”, if you turn it on: up to 5 works you both like. You choose it at sign-up and in Settings.',
+      shared:
+        'With people who share your tastes, only “What you share”, if you turn it on: up to 5 works you both like. You choose it at sign-up and in Settings.',
     },
     controls: {
       title: 'Your controls',
@@ -624,8 +624,10 @@ export const en: TranslationResources = {
     active: 'Premium active',
     activeUntil: 'Premium active until {{date}}',
     inactive: 'No Premium',
-    includes: 'Includes exploring up to 200 soulmates (instead of 50) and writing first to any soulmate once enabled. Consensus recommendations still use your 50 closest soulmates.',
-    notPurchasable: 'You cannot buy it from the app yet: the stores and RevenueCat still need to be configured, plus an app build with purchases (Expo Go does not support them).',
+    includes:
+      'Includes exploring up to 200 soulmates (instead of 50) and writing first to any soulmate once enabled. Consensus recommendations still use your 50 closest soulmates.',
+    notPurchasable:
+      'You cannot buy it from the app yet: the stores and RevenueCat still need to be configured, plus an app build with purchases (Expo Go does not support them).',
     sandbox: 'Test environment: only test (sandbox) purchases count.',
   },
   auth: {
@@ -639,12 +641,16 @@ export const en: TranslationResources = {
   },
   onboarding: {
     title: 'Welcome to APPINITY',
-    intro: 'A single consent for all your sources: confirm these two points and we start importing your tastes from Google (Maps, YouTube, Play, Books, Calendar…). It also covers the sources you connect later and the ones we add: we won’t ask again.',
+    intro:
+      'A single consent for all your sources: confirm these two points and we start importing your tastes from Google (Maps, YouTube, Play, Books, Calendar…). It also covers the sources you connect later and the ones we add: we won’t ask again.',
     readTerms: 'Read the terms',
     readPrivacy: 'Read the privacy policy',
     howTitle: 'How it works',
     steps: {
-      connect: { title: 'We import your tastes', text: 'From your sources, all at once, and from what you vote in the app: every vote sharpens your profile. Chatting or making friends never changes your tastes.' },
+      connect: {
+        title: 'We import your tastes',
+        text: 'From your sources, all at once, and from what you vote in the app: every vote sharpens your profile. Chatting or making friends never changes your tastes.',
+      },
       soulmates: { title: 'Find your soulmates', text: 'We work out who shares your tastes, category by category.' },
       discover: { title: 'Discover', text: 'What they rate highly and you don’t know yet, with the reason for each recommendation.' },
     },
@@ -655,7 +661,8 @@ export const en: TranslationResources = {
     cityNote: 'Just the city, for Trending and nearby places. Stored approximately; you can change it in Profile.',
     adult: 'I am 18 or older',
     terms: 'I accept the terms and the privacy policy',
-    consentNote: 'Your tastes come from the sources you connect and from your votes in the app. Nobody sees your history: only your name, your country and your affinities.',
+    consentNote:
+      'Your tastes come from the sources you connect and from your votes in the app. Nobody sees your history: only your name, your country and your affinities.',
     sourcesIncluded: 'This consent includes: {{list}}, and any source we add later. Each provider will show you its own permission screen when you connect it.',
     optionsTitle: 'Options (you can change them in Settings)',
     shareCommon: 'Show “What you share” to my soulmates',
@@ -663,14 +670,16 @@ export const en: TranslationResources = {
     contacts: 'Let people who have my email in their contacts find me',
     contactsHelp: 'So your friends can find you when they join. We don’t store their address books.',
     continue: 'Accept and start importing',
-    googleNote: 'When you accept, Google will ask for one last confirmation for your Maps, YouTube, Play and search data: it is how Google authorises the export. Steam and other accounts are optional, in Profile.',
+    googleNote:
+      'When you accept, Google will ask for one last confirmation for your Maps, YouTube, Play and search data: it is how Google authorises the export. Steam and other accounts are optional, in Profile.',
   },
   account: {
     title: 'Account',
     googleIdentity: 'Google account',
     logout: 'Sign out',
     delete: 'Delete my account',
-    deleteConfirm: 'Granted permissions (Google, Steam…) will be revoked and everything will be deleted: profile, imported tastes, affinities, friendships and chats. This cannot be undone. Type ELIMINAR to confirm.',
+    deleteConfirm:
+      'Granted permissions (Google, Steam…) will be revoked and everything will be deleted: profile, imported tastes, affinities, friendships and chats. This cannot be undone. Type ELIMINAR to confirm.',
     deleteType: 'Type ELIMINAR',
     deleteFinal: 'Delete permanently',
     deleteNote: 'Encrypted backups rotate and the account also disappears from them when they expire (see the operations documentation).',
@@ -719,12 +728,14 @@ export const en: TranslationResources = {
       weekly: 'Weekly',
       off: 'Off',
     },
-    notificationsPending: 'A summary at 19:00 in your time zone (three per week: Monday, Wednesday and Friday), only when there are new recommendations or pending messages.',
+    notificationsPending:
+      'A summary at 19:00 in your time zone (three per week: Monday, Wednesday and Friday), only when there are new recommendations or pending messages.',
     notificationsDevices_one: 'Registered devices: {{count}}',
     notificationsDevices_other: 'Registered devices: {{count}}',
     notificationsLast: 'Last summary: {{date}} ({{status}})',
     notificationsStatus: { sent: 'sent', empty: 'nothing new', no_tokens: 'no device', failed: 'failed' },
-    notificationsExpoGo: 'On Android, Expo Go does not support push notifications (since SDK 53): they will arrive with the development build of the app, which will ask for permission when you sign up.',
+    notificationsExpoGo:
+      'On Android, Expo Go does not support push notifications (since SDK 53): they will arrive with the development build of the app, which will ask for permission when you sign up.',
     privacy: 'Privacy',
     subscription: 'Subscription',
     diagnostics: 'Diagnostics',
@@ -756,7 +767,6 @@ export const en: TranslationResources = {
     redis: 'Redis',
     mode: 'Mode',
     test: 'Test connection',
-    help:
-      'If the phone cannot reach the API: make sure it is on the same network as the PC, the URL uses the PC IP (not localhost) and Windows Firewall allows Node.js on private networks.',
+    help: 'If the phone cannot reach the API: make sure it is on the same network as the PC, the URL uses the PC IP (not localhost) and Windows Firewall allows Node.js on private networks.',
   },
 };

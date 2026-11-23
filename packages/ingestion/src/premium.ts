@@ -34,15 +34,14 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 async function existingUsers(db: Database, ids: Array<string | null | undefined>): Promise<string[]> {
   const candidates = [...new Set(ids.filter((v): v is string => typeof v === 'string' && UUID.test(v)))];
   if (!candidates.length) return [];
-  const rows = await db.select({ id: users.id }).from(users).where(and(inArray(users.id, candidates), isNull(users.deletedAt)));
+  const rows = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(inArray(users.id, candidates), isNull(users.deletedAt)));
   return rows.map((r) => r.id);
 }
 
-export async function applyRevenueCatEvent(
-  db: Database,
-  event: RevenueCatEvent,
-  options: { entitlementId: string; now?: Date },
-): Promise<EventOutcome> {
+export async function applyRevenueCatEvent(db: Database, event: RevenueCatEvent, options: { entitlementId: string; now?: Date }): Promise<EventOutcome> {
   const now = options.now ?? new Date();
   const environment: PremiumEnvironment = event.environment === 'PRODUCTION' ? 'production' : 'sandbox';
   const eventAt = new Date(event.event_timestamp_ms ?? now.getTime());

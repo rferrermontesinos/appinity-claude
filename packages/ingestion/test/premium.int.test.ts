@@ -50,7 +50,11 @@ describe('webhooks de RevenueCat', () => {
   it('compra → Premium hasta la caducidad; el mismo evento repetido no se procesa dos veces', async () => {
     const purchase = event({});
     expect(await applyRevenueCatEvent(database.db, purchase, { ...ENT, now: NOW })).toBe('applied');
-    expect(await sandbox(id.ana!)).toMatchObject({ premium: true, productId: 'appinity_premium_monthly', expiresAt: new Date(NOW.getTime() + 30 * DAY).toISOString() });
+    expect(await sandbox(id.ana!)).toMatchObject({
+      premium: true,
+      productId: 'appinity_premium_monthly',
+      expiresAt: new Date(NOW.getTime() + 30 * DAY).toISOString(),
+    });
     expect(await applyRevenueCatEvent(database.db, purchase, { ...ENT, now: NOW })).toBe('duplicate');
     expect(await database.db.select().from(revenuecatEvents).where(eq(revenuecatEvents.eventId, purchase.id))).toHaveLength(1);
     // Pasada la caducidad sin renovación, deja de ser Premium aunque no haya llegado EXPIRATION.
@@ -58,10 +62,20 @@ describe('webhooks de RevenueCat', () => {
   });
 
   it('cancelar no retira el acceso hasta caducar; EXPIRATION sí', async () => {
-    await applyRevenueCatEvent(database.db, event({ app_user_id: id.bea, type: 'INITIAL_PURCHASE', event_timestamp_ms: NOW.getTime() - 3000 }), { ...ENT, now: NOW });
-    await applyRevenueCatEvent(database.db, event({ app_user_id: id.bea, type: 'CANCELLATION', event_timestamp_ms: NOW.getTime() - 2000 }), { ...ENT, now: NOW });
+    await applyRevenueCatEvent(database.db, event({ app_user_id: id.bea, type: 'INITIAL_PURCHASE', event_timestamp_ms: NOW.getTime() - 3000 }), {
+      ...ENT,
+      now: NOW,
+    });
+    await applyRevenueCatEvent(database.db, event({ app_user_id: id.bea, type: 'CANCELLATION', event_timestamp_ms: NOW.getTime() - 2000 }), {
+      ...ENT,
+      now: NOW,
+    });
     expect(await sandbox(id.bea!)).toMatchObject({ premium: true });
-    await applyRevenueCatEvent(database.db, event({ app_user_id: id.bea, type: 'EXPIRATION', expiration_at_ms: NOW.getTime() - 1000, event_timestamp_ms: NOW.getTime() - 1000 }), { ...ENT, now: NOW });
+    await applyRevenueCatEvent(
+      database.db,
+      event({ app_user_id: id.bea, type: 'EXPIRATION', expiration_at_ms: NOW.getTime() - 1000, event_timestamp_ms: NOW.getTime() - 1000 }),
+      { ...ENT, now: NOW },
+    );
     expect(await sandbox(id.bea!)).toMatchObject({ premium: false, productId: null, expiresAt: null });
   });
 
@@ -80,7 +94,14 @@ describe('webhooks de RevenueCat', () => {
   it('transferencia: el destino gana el acceso y el origen lo pierde', async () => {
     await applyRevenueCatEvent(
       database.db,
-      event({ type: 'TRANSFER', app_user_id: id.dani, transferred_from: [id.ana!], transferred_to: [id.dani!], entitlement_ids: null, event_timestamp_ms: NOW.getTime() }),
+      event({
+        type: 'TRANSFER',
+        app_user_id: id.dani,
+        transferred_from: [id.ana!],
+        transferred_to: [id.dani!],
+        entitlement_ids: null,
+        event_timestamp_ms: NOW.getTime(),
+      }),
       { ...ENT, now: NOW },
     );
     expect(await sandbox(id.ana!)).toMatchObject({ premium: false });
@@ -88,7 +109,9 @@ describe('webhooks de RevenueCat', () => {
   });
 
   it('otro entitlement, usuario desconocido y evento TEST: se registran sin conceder nada', async () => {
-    expect(await applyRevenueCatEvent(database.db, event({ app_user_id: id.carla, entitlement_ids: ['otro'] }), { ...ENT, now: NOW })).toBe('ignored_entitlement');
+    expect(await applyRevenueCatEvent(database.db, event({ app_user_id: id.carla, entitlement_ids: ['otro'] }), { ...ENT, now: NOW })).toBe(
+      'ignored_entitlement',
+    );
     expect(await applyRevenueCatEvent(database.db, event({ app_user_id: '00000000-0000-4000-a000-0000000000ff' }), { ...ENT, now: NOW })).toBe('unknown_user');
     expect(await applyRevenueCatEvent(database.db, event({ type: 'TEST', app_user_id: 'usuario-de-prueba' }), { ...ENT, now: NOW })).toBe('test');
   });

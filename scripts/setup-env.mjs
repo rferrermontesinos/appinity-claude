@@ -29,8 +29,7 @@ function main() {
   if (!current.get('DEV_AUTH_SECRET')) env = setValue(env, 'DEV_AUTH_SECRET', randomBytes(32).toString('base64url'));
   // Sesiones de producción (fase 13): necesario para «Continuar con Google». Se genera una vez y no se muestra.
   if (!current.get('AUTH_SECRET')) env = setValue(env, 'AUTH_SECRET', randomBytes(32).toString('base64url'));
-  if (!current.get('CREDENTIALS_ENCRYPTION_KEY'))
-    env = setValue(env, 'CREDENTIALS_ENCRYPTION_KEY', randomBytes(32).toString('base64'));
+  if (!current.get('CREDENTIALS_ENCRYPTION_KEY')) env = setValue(env, 'CREDENTIALS_ENCRYPTION_KEY', randomBytes(32).toString('base64'));
   writeFileSync(envPath, env, 'utf8');
 
   const candidates = lanCandidates();

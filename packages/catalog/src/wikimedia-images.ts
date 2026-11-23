@@ -38,12 +38,30 @@ export interface ImageClaim {
  * - Resto: foto (P18) y, si falta, logotipo. En restaurantes y cultura no hay logotipo útil.
  */
 export const IMAGE_CLAIMS: Record<Category, Array<[property: string, kind: ImageKind]>> = {
-  movies: [['P3383', 'poster'], ['P154', 'logo']],
-  series: [['P3383', 'poster'], ['P154', 'logo']],
-  podcasts: [['P154', 'logo'], ['P18', 'photo']],
-  books: [['P18', 'photo'], ['P154', 'logo']],
-  music: [['P18', 'photo'], ['P154', 'logo']],
-  games: [['P18', 'photo'], ['P154', 'logo']],
+  movies: [
+    ['P3383', 'poster'],
+    ['P154', 'logo'],
+  ],
+  series: [
+    ['P3383', 'poster'],
+    ['P154', 'logo'],
+  ],
+  podcasts: [
+    ['P154', 'logo'],
+    ['P18', 'photo'],
+  ],
+  books: [
+    ['P18', 'photo'],
+    ['P154', 'logo'],
+  ],
+  music: [
+    ['P18', 'photo'],
+    ['P154', 'logo'],
+  ],
+  games: [
+    ['P18', 'photo'],
+    ['P154', 'logo'],
+  ],
   culture: [['P18', 'photo']],
   food: [['P18', 'photo']],
 };
@@ -59,7 +77,12 @@ export function pickImageClaim(claims: WikidataClaims, category: Category): Imag
 
 /** Nombre de fichero comparable: sin «File:» y con espacios en lugar de guiones bajos. */
 const sameFile = (a: string, b: string) => {
-  const n = (s: string) => s.replace(/^File:/i, '').replace(/_/g, ' ').trim().toLowerCase();
+  const n = (s: string) =>
+    s
+      .replace(/^File:/i, '')
+      .replace(/_/g, ' ')
+      .trim()
+      .toLowerCase();
   return n(a) === n(b);
 };
 
@@ -113,7 +136,10 @@ export class WikimediaImages {
 
   private async json(url: string): Promise<unknown> {
     for (let attempt = 0; ; attempt++) {
-      const response = await this.fetchImpl(url, { headers: { 'User-Agent': this.options.userAgent, Accept: 'application/json' }, signal: AbortSignal.timeout(20_000) });
+      const response = await this.fetchImpl(url, {
+        headers: { 'User-Agent': this.options.userAgent, Accept: 'application/json' },
+        signal: AbortSignal.timeout(20_000),
+      });
       if ((response.status === 429 || response.status >= 500) && attempt < 3) {
         await this.sleep(2_000 * 2 ** attempt);
         continue;
@@ -173,7 +199,15 @@ export class WikimediaImages {
     }
     const out = new Map<string, WikidataDetails>();
     for (const [qid, entity] of entities) {
-      const names = (props: string[]) => [...new Set(props.flatMap((p) => refsOf(entity, p)).map((id) => labels.get(id)).filter((l): l is string => Boolean(l)))].slice(0, 3);
+      const names = (props: string[]) =>
+        [
+          ...new Set(
+            props
+              .flatMap((p) => refsOf(entity, p))
+              .map((id) => labels.get(id))
+              .filter((l): l is string => Boolean(l)),
+          ),
+        ].slice(0, 3);
       out.set(qid, {
         description: entity.descriptions?.es?.value ?? entity.descriptions?.en?.value ?? entity.descriptions?.ca?.value ?? null,
         creators: names(CREATOR_PROPERTIES),
@@ -265,7 +299,10 @@ export async function enrichImagesFromWikidata(
       imageKind: catalogImages.kind,
     })
     .from(catalogItems)
-    .innerJoin(catalogExternalIds, and(eq(catalogExternalIds.catalogItemId, catalogItems.id), eq(catalogExternalIds.provider, 'wikidata'), eq(catalogExternalIds.idType, 'entity')))
+    .innerJoin(
+      catalogExternalIds,
+      and(eq(catalogExternalIds.catalogItemId, catalogItems.id), eq(catalogExternalIds.provider, 'wikidata'), eq(catalogExternalIds.idType, 'entity')),
+    )
     .leftJoin(catalogImages, eq(catalogImages.catalogItemId, catalogItems.id))
     .where(
       and(
@@ -362,7 +399,10 @@ export async function enrichDetailsFromWikidata(
   const rows = await db
     .select({ itemId: catalogItems.id, qid: catalogExternalIds.externalId, description: catalogItems.description, metadata: catalogItems.metadata })
     .from(catalogItems)
-    .innerJoin(catalogExternalIds, and(eq(catalogExternalIds.catalogItemId, catalogItems.id), eq(catalogExternalIds.provider, 'wikidata'), eq(catalogExternalIds.idType, 'entity')))
+    .innerJoin(
+      catalogExternalIds,
+      and(eq(catalogExternalIds.catalogItemId, catalogItems.id), eq(catalogExternalIds.provider, 'wikidata'), eq(catalogExternalIds.idType, 'entity')),
+    )
     .where(
       and(
         eq(catalogItems.dataset, options.dataset ?? 'live'),

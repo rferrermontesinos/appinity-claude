@@ -11,14 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, Switch, Text, View } from 'react-native';
 import { useUpdateSettings, type SettingsPatch } from '../api/queries';
 import { useSession } from '../state/session';
-import {
-  Body,
-  Button,
-  Card,
-  ErrorCard,
-  Small,
-  Title,
-} from './ui';
+import { Body, Button, Card, ErrorCard, Small, Title } from './ui';
 import { radius, spacing, usePalette } from '../theme';
 
 const RADIUS_PRESETS = [1, 5, 10, 20, 30, 50];
@@ -197,7 +190,12 @@ function NotificationsStatus() {
     <>
       <Small>{t('profile.notificationsDevices', { count: status.data.devices })}</Small>
       {last ? (
-        <Small>{t('profile.notificationsLast', { date: new Date(last.createdAt).toLocaleString(i18n.language), status: t(`profile.notificationsStatus.${last.status}`) })}</Small>
+        <Small>
+          {t('profile.notificationsLast', {
+            date: new Date(last.createdAt).toLocaleString(i18n.language),
+            status: t(`profile.notificationsStatus.${last.status}`),
+          })}
+        </Small>
       ) : null}
       {!status.data.devices ? <Small>{t('profile.notificationsExpoGo')}</Small> : null}
     </>

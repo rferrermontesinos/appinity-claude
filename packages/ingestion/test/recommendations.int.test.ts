@@ -43,7 +43,15 @@ let seq = 0;
 async function item(key: string, category: Category, extra: Partial<typeof catalogItems.$inferInsert> = {}) {
   const [row] = await database.db
     .insert(catalogItems)
-    .values({ dataset: 'live', category, itemType: category === 'food' ? 'restaurant' : 'movie', title: `Sintético ${key}`, normalizedTitle: `sintetico ${key}`, createdVia: 'test', ...extra })
+    .values({
+      dataset: 'live',
+      category,
+      itemType: category === 'food' ? 'restaurant' : 'movie',
+      title: `Sintético ${key}`,
+      normalizedTitle: `sintetico ${key}`,
+      createdVia: 'test',
+      ...extra,
+    })
     .returning({ id: catalogItems.id });
   items[key] = row!.id;
 }
@@ -370,7 +378,12 @@ describe('por contenido: arranque en frío sin almas gemelas', () => {
     ]);
     const result = await recommendFor(database.db, solo, { now: NOW, limit: 200 });
     const content = result.items.filter((r) => r.block === 'content');
-    expect(content).toEqual([expect.objectContaining({ itemId: items.relacionado, content: { becauseItemId: items.base0, becauseTitle: 'Sintético base0', relation: 'same_director' } })]);
+    expect(content).toEqual([
+      expect.objectContaining({
+        itemId: items.relacionado,
+        content: { becauseItemId: items.base0, becauseTitle: 'Sintético base0', relation: 'same_director' },
+      }),
+    ]);
     const ids = result.items.map((r) => r.itemId);
     // Lo relacionado con un disgusto no sale «por contenido» (puede salir en explorar, sin señales); lo conocido, nunca.
     expect(result.items.find((r) => r.itemId === items.deDisgusto)?.block).not.toBe('content');

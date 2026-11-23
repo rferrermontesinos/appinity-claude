@@ -59,7 +59,9 @@ export function VoteStamp({ zone, armed }: { zone: DeckAction; armed: boolean })
       }}
     >
       <MaterialCommunityIcons name={look.icon} size={love ? 30 : 26} color={love ? onImage.onLove : color} />
-      <Text style={{ color: love ? onImage.onLove : onImage.text, fontFamily: fonts.displayHeavy, fontSize: love ? 26 : 24, letterSpacing: -0.5 }}>{t(`home.vote.${look.key}`)}</Text>
+      <Text style={{ color: love ? onImage.onLove : onImage.text, fontFamily: fonts.displayHeavy, fontSize: love ? 26 : 24, letterSpacing: -0.5 }}>
+        {t(`home.vote.${look.key}`)}
+      </Text>
     </View>
   );
 }
@@ -101,7 +103,13 @@ export function RoundAction({
       accessibilityState={{ disabled, selected: Boolean(selected) }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => ({ width: 80, alignItems: 'center', gap: 6, opacity: disabled && !selected ? 0.35 : 1, transform: [{ scale: pressed ? 0.9 : 1 }] })}
+      style={({ pressed }) => ({
+        width: 80,
+        alignItems: 'center',
+        gap: 6,
+        opacity: disabled && !selected ? 0.35 : 1,
+        transform: [{ scale: pressed ? 0.9 : 1 }],
+      })}
     >
       <View
         style={{
@@ -118,7 +126,12 @@ export function RoundAction({
       >
         <MaterialCommunityIcons name={icon} size={Math.round(size * 0.46)} color={filled && onColor ? onColor : color} />
       </View>
-      <Text importantForAccessibility="no" accessibilityElementsHidden numberOfLines={1} style={{ color: selected ? c.text : c.textMuted, fontSize: 12, fontWeight: selected ? '700' : '400' }}>
+      <Text
+        importantForAccessibility="no"
+        accessibilityElementsHidden
+        numberOfLines={1}
+        style={{ color: selected ? c.text : c.textMuted, fontSize: 12, fontWeight: selected ? '700' : '400' }}
+      >
         {label}
       </Text>
     </Pressable>
@@ -135,10 +148,44 @@ export function VoteBar({ onAction, disabled }: { onAction: (action: DeckAction)
   const c = usePalette();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center' }}>
-      <RoundAction icon="thumb-down" label={t('home.vote.dislike')} hint={t('home.vote.counts')} color={c.negative} size={56} onPress={() => onAction({ kind: 'vote', value: -1 })} disabled={disabled} />
-      <RoundAction icon="help-circle-outline" label={t('home.vote.unknown')} hint={t('home.vote.unknownHint')} color={c.textMuted} size={46} onPress={() => onAction({ kind: 'unknown' })} disabled={disabled} />
-      <RoundAction icon="heart" label={t('home.vote.love')} hint={t('home.vote.counts')} color={c.love} onColor={c.onLove} size={62} emphasis onPress={() => onAction({ kind: 'vote', value: 2 })} disabled={disabled} />
-      <RoundAction icon="thumb-up" label={t('home.vote.like')} hint={t('home.vote.counts')} color={c.affinity} size={56} onPress={() => onAction({ kind: 'vote', value: 1 })} disabled={disabled} />
+      <RoundAction
+        icon="thumb-down"
+        label={t('home.vote.dislike')}
+        hint={t('home.vote.counts')}
+        color={c.negative}
+        size={56}
+        onPress={() => onAction({ kind: 'vote', value: -1 })}
+        disabled={disabled}
+      />
+      <RoundAction
+        icon="help-circle-outline"
+        label={t('home.vote.unknown')}
+        hint={t('home.vote.unknownHint')}
+        color={c.textMuted}
+        size={46}
+        onPress={() => onAction({ kind: 'unknown' })}
+        disabled={disabled}
+      />
+      <RoundAction
+        icon="heart"
+        label={t('home.vote.love')}
+        hint={t('home.vote.counts')}
+        color={c.love}
+        onColor={c.onLove}
+        size={62}
+        emphasis
+        onPress={() => onAction({ kind: 'vote', value: 2 })}
+        disabled={disabled}
+      />
+      <RoundAction
+        icon="thumb-up"
+        label={t('home.vote.like')}
+        hint={t('home.vote.counts')}
+        color={c.affinity}
+        size={56}
+        onPress={() => onAction({ kind: 'vote', value: 1 })}
+        disabled={disabled}
+      />
     </View>
   );
 }
@@ -179,9 +226,7 @@ function Edge({ direction, active }: { direction: Direction; active: boolean }) 
   if (direction === 'up' || direction === 'down') return <View style={{ alignItems: 'center', opacity }}>{content}</View>;
   // Etiquetas laterales en vertical, leídas de abajo arriba a la izquierda y de arriba abajo a la derecha.
   return (
-    <View
-      style={{ position: 'absolute', top: 0, bottom: 0, [direction]: 0, width: EDGE_GUTTER, alignItems: 'center', justifyContent: 'center', opacity }}
-    >
+    <View style={{ position: 'absolute', top: 0, bottom: 0, [direction]: 0, width: EDGE_GUTTER, alignItems: 'center', justifyContent: 'center', opacity }}>
       <View style={{ width: 220, alignItems: 'center', transform: [{ rotate: direction === 'left' ? '-90deg' : '90deg' }] }}>{content}</View>
     </View>
   );
@@ -202,7 +247,12 @@ export function DirectionEdges({ intent, children }: { intent: DeckAction | null
       <View style={{ paddingHorizontal: EDGE_GUTTER }}>
         {/* Contenedor propio: lo que la tarjeta posiciona en absoluto (la siguiente, debajo) no invade los márgenes. */}
         <View>{children}</View>
-        <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}>
+        <View
+          pointerEvents="none"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}
+        >
           <Edge direction="left" active={active === 'left'} />
           <Edge direction="right" active={active === 'right'} />
         </View>
@@ -225,7 +275,19 @@ export function LastActionBar({ entry, onUndo, disabled }: { entry: DeckEntry | 
   const look = actionLook(c, entry.action);
   const label = t(`home.vote.${look.key}`);
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: c.surfaceRaised, borderRadius: radius.full, paddingLeft: spacing.lg, paddingRight: spacing.xs, alignSelf: 'center', maxWidth: '100%' }}>
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        backgroundColor: c.surfaceRaised,
+        borderRadius: radius.full,
+        paddingLeft: spacing.lg,
+        paddingRight: spacing.xs,
+        alignSelf: 'center',
+        maxWidth: '100%',
+      }}
+    >
       <MaterialCommunityIcons name={look.icon} size={18} color={look.color} />
       <Text accessibilityLiveRegion="polite" numberOfLines={1} style={{ color: c.text, fontSize: 14, flexShrink: 1 }}>
         {t('home.vote.last', { title: entry.item.item.title, label })}
@@ -236,7 +298,14 @@ export function LastActionBar({ entry, onUndo, disabled }: { entry: DeckEntry | 
         accessibilityState={{ disabled }}
         disabled={disabled}
         onPress={onUndo}
-        style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 48, paddingHorizontal: spacing.md, opacity: disabled ? 0.4 : pressed ? 0.6 : 1 })}
+        style={({ pressed }) => ({
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 4,
+          minHeight: 48,
+          paddingHorizontal: spacing.md,
+          opacity: disabled ? 0.4 : pressed ? 0.6 : 1,
+        })}
       >
         <MaterialCommunityIcons name="undo" size={18} color={c.primaryInk} />
         <Text style={{ color: c.primaryInk, fontSize: 14, fontWeight: '700' }}>{t('home.undo')}</Text>

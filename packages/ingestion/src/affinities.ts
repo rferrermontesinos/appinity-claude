@@ -1,4 +1,12 @@
-import { AFFINITY_PARAMS_V1, AFFINITY_VERSION, affinity, indexPreferences, rarityWeight, type AffinityParams, type PreferenceIndex } from '@appinity/algorithms';
+import {
+  AFFINITY_PARAMS_V1,
+  AFFINITY_VERSION,
+  affinity,
+  indexPreferences,
+  rarityWeight,
+  type AffinityParams,
+  type PreferenceIndex,
+} from '@appinity/algorithms';
 import { catalogItems, categoryAffinities, userAffinities, userItemProfiles, users, type Database } from '@appinity/database';
 import { isCategory, type Category } from '@appinity/shared';
 import { and, eq, inArray, isNotNull, isNull, ne, or, sql } from 'drizzle-orm';
@@ -94,7 +102,10 @@ export async function recomputeAffinities(db: Database, options: AffinityRecompu
   let datasets: Dataset[] = ['demo', 'live'];
   if (options.userIds) {
     if (!options.userIds.length) return [];
-    const rows = await db.selectDistinct({ dataset: users.dataset }).from(users).where(inArray(users.id, [...options.userIds]));
+    const rows = await db
+      .selectDistinct({ dataset: users.dataset })
+      .from(users)
+      .where(inArray(users.id, [...options.userIds]));
     datasets = rows.map((r) => r.dataset);
   }
 

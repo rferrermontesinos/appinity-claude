@@ -25,7 +25,12 @@ function TasteRow({ entry }: { entry: TasteItemDto }) {
       style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 56, opacity: pressed ? 0.8 : 1 })}
     >
       <View style={{ width: 48, height: 48, borderRadius: radius.sm, overflow: 'hidden', backgroundColor: c.surfaceAlt }}>
-        <CatalogImage image={item.primaryImage} category={item.category} title={item.title} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+        <CatalogImage
+          image={item.primaryImage}
+          category={item.category}
+          title={item.title}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        />
       </View>
       <View style={{ flex: 1, gap: 2 }}>
         <Text numberOfLines={1} style={{ color: c.text, fontSize: 15, fontWeight: '700' }}>
@@ -35,7 +40,18 @@ function TasteRow({ entry }: { entry: TasteItemDto }) {
           <MaterialCommunityIcons name={meta.icon as never} size={14} color={meta.color} />
           <Text style={{ color: c.textMuted, fontSize: 13 }}>{category}</Text>
           {rarityText ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginLeft: spacing.xs, paddingHorizontal: 6, paddingVertical: 1, borderRadius: radius.full, backgroundColor: c.surfaceAlt }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 3,
+                marginLeft: spacing.xs,
+                paddingHorizontal: 6,
+                paddingVertical: 1,
+                borderRadius: radius.full,
+                backgroundColor: c.surfaceAlt,
+              }}
+            >
               <MaterialCommunityIcons name="diamond-stone" size={12} color={c.affinity} />
               <Text style={{ color: c.text, fontSize: 11, fontWeight: '700' }}>{rarityText}</Text>
             </View>

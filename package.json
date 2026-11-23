@@ -20,6 +20,7 @@
     "typecheck": "pnpm build && tsc -p tsconfig.tests.json && pnpm --filter @appinity/mobile typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "pnpm build && vitest run",
     "test:unit": "vitest run --project unit",
     "test:integration": "pnpm build && vitest run --project integration",

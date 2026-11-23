@@ -20,9 +20,7 @@ const connectSchema = z
     returnUrl: z.string().max(512).refine(isAllowedReturnUrl, 'URL de vuelta no permitida').optional(),
   })
   .strict();
-const initialImportSchema = z
-  .object({ returnUrl: z.string().max(512).refine(isAllowedReturnUrl, 'URL de vuelta no permitida') })
-  .strict();
+const initialImportSchema = z.object({ returnUrl: z.string().max(512).refine(isAllowedReturnUrl, 'URL de vuelta no permitida') }).strict();
 const confirmSchema = z.object({ code: z.string().regex(/^[A-Za-z0-9_-]{20,64}$/) }).strict();
 
 const syncSchema = z.object({ mode: z.enum(['incremental', 'full']).default('incremental') }).strict();

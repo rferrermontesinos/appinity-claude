@@ -103,8 +103,7 @@ export function consolidate(evidence: readonly EvidenceInput[]): ConsolidatedPro
     preferenceConfidence = round4(Math.max(...perSource.map((e) => e.preferenceConfidence)));
 
     const scores = perSource.map((e) => e.preferenceScore);
-    const opposite =
-      scores.some((s) => s >= DISAGREEMENT_MIN_ABS) && scores.some((s) => s <= -DISAGREEMENT_MIN_ABS);
+    const opposite = scores.some((s) => s >= DISAGREEMENT_MIN_ABS) && scores.some((s) => s <= -DISAGREEMENT_MIN_ABS);
     const spread = Math.max(...scores) - Math.min(...scores);
     if (perSource.length > 1 && (opposite || spread >= 1)) {
       hasConflict = true;

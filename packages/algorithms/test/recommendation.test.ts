@@ -58,7 +58,18 @@ describe(`recomendador ${RECOMMENDATION_VERSION}`, () => {
   it('mezcla 7/2/1 por tandas de 10 y, sin candidatos de un bloque, cede su hueco sin inventar nada', () => {
     const list = (prefix: string, n: number) => Array.from({ length: n }, (_, i) => ({ itemId: `${prefix}${i}` }));
     const full = mixRecommendations({ consensus: list('c', 20), discovery: list('d', 5), trending: list('t', 5) }, 10);
-    expect(full.map((r) => r.block)).toEqual(['consensus', 'consensus', 'consensus', 'consensus', 'consensus', 'consensus', 'consensus', 'discovery', 'discovery', 'trending']);
+    expect(full.map((r) => r.block)).toEqual([
+      'consensus',
+      'consensus',
+      'consensus',
+      'consensus',
+      'consensus',
+      'consensus',
+      'consensus',
+      'discovery',
+      'discovery',
+      'trending',
+    ]);
     // Sin Trending: su hueco lo ocupa el consenso, marcado como relleno.
     const noTrending = mixRecommendations({ consensus: list('c', 20), discovery: list('d', 5), trending: [] }, 10);
     expect(noTrending[9]).toMatchObject({ block: 'consensus', fillsFor: 'trending' });
@@ -72,13 +83,30 @@ describe(`recomendador ${RECOMMENDATION_VERSION}`, () => {
   it('seguidos (2026-10-26): gustos fuertes de quien sigues, 1 de cada 10; sin seguidos, su hueco vuelve al descubrimiento', () => {
     const list = (prefix: string, n: number) => Array.from({ length: n }, (_, i) => ({ itemId: `${prefix}${i}` }));
     const followed = followedCandidates([
-      { userId: 'rosalia', preferences: [{ itemId: 'x', score: 0.9, confidence: 0.9 }, { itemId: 'y', score: 0.5, confidence: 1 }] },
+      {
+        userId: 'rosalia',
+        preferences: [
+          { itemId: 'x', score: 0.9, confidence: 0.9 },
+          { itemId: 'y', score: 0.5, confidence: 1 },
+        ],
+      },
       { userId: 'amiga', preferences: [{ itemId: 'x', score: 1, confidence: 0.6 }] },
     ]);
     // «y» no llega al umbral de gusto fuerte; «x» se atribuye a quien más lo respalda.
     expect(followed).toEqual([{ itemId: 'x', score: 0.81, contributorId: 'rosalia' }]);
     const mixed = mixRecommendations({ consensus: list('c', 20), discovery: list('d', 5), followed: list('f', 5), trending: list('t', 5) }, 10);
-    expect(mixed.map((r) => r.block)).toEqual(['consensus', 'consensus', 'consensus', 'consensus', 'consensus', 'consensus', 'consensus', 'discovery', 'followed', 'trending']);
+    expect(mixed.map((r) => r.block)).toEqual([
+      'consensus',
+      'consensus',
+      'consensus',
+      'consensus',
+      'consensus',
+      'consensus',
+      'consensus',
+      'discovery',
+      'followed',
+      'trending',
+    ]);
     const noFollowed = mixRecommendations({ consensus: list('c', 20), discovery: list('d', 5), trending: list('t', 5) }, 10);
     expect(noFollowed[8]).toMatchObject({ block: 'discovery', fillsFor: 'followed' });
   });

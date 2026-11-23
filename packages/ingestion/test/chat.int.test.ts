@@ -103,7 +103,10 @@ describe('solicitud y match (EARLY_ACCESS)', () => {
     await sendFriendRequest(database.db, id.gala!, id.eva!);
     const friendRequest = (await database.db.query.friendships.findMany()).find((f) => f.requesterId === id.gala)!;
     await respondFriendRequest(database.db, id.eva!, friendRequest.id, true);
-    const [row] = await database.db.select().from(conversations).where(eq(conversations.id, await convId(id.gala!, id.eva!)));
+    const [row] = await database.db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.id, await convId(id.gala!, id.eva!)));
     expect(row!.origin).toBe('friendship');
   });
 
@@ -191,7 +194,9 @@ describe('bloquear y deshacer el match', () => {
 describe('primer mensaje directo (PREMIUM_DIRECT_MESSAGE)', () => {
   it('sin entitlement: prohibido; con flag desactivado, también', async () => {
     await expect(sendDirectMessage(database.db, FREE, id.gala!, id.dani!, 'hola')).rejects.toBeInstanceOf(ForbiddenError);
-    await expect(sendDirectMessage(database.db, { ...PREMIUM_FOR_TEST, premiumDirectMessage: false }, id.eva!, id.dani!, 'hola')).rejects.toBeInstanceOf(ForbiddenError);
+    await expect(sendDirectMessage(database.db, { ...PREMIUM_FOR_TEST, premiumDirectMessage: false }, id.eva!, id.dani!, 'hola')).rejects.toBeInstanceOf(
+      ForbiddenError,
+    );
   });
 
   it('Premium escribe; un solo mensaje sin respuesta; aceptar abre la conversación con ese mensaje', async () => {
@@ -220,20 +225,14 @@ describe('anti-abuso y gustos', () => {
   });
 
   it('ningún paso del chat crea ni modifica gustos ni afinidades', async () => {
-    const before = await Promise.all([
-      database.db.select({ n: count() }).from(userItemProfiles),
-      database.db.select({ n: count() }).from(userAffinities),
-    ]);
+    const before = await Promise.all([database.db.select({ n: count() }).from(userItemProfiles), database.db.select({ n: count() }).from(userAffinities)]);
     await sendChatInterest(database.db, FREE, id.fran!, id.gala!);
     const [request] = (await chatInbox(database.db, id.gala!)).requests;
     const { conversationId } = await respondChatRequest(database.db, id.gala!, request!.requestId, 'accept');
     await sendMessage(database.db, id.gala!, conversationId!, 'hola');
     await markConversationRead(database.db, id.fran!, conversationId!);
     await unmatch(database.db, id.fran!, conversationId!);
-    const after = await Promise.all([
-      database.db.select({ n: count() }).from(userItemProfiles),
-      database.db.select({ n: count() }).from(userAffinities),
-    ]);
+    const after = await Promise.all([database.db.select({ n: count() }).from(userItemProfiles), database.db.select({ n: count() }).from(userAffinities)]);
     expect(after).toEqual(before);
   });
 });

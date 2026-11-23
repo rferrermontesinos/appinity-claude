@@ -43,7 +43,10 @@ export const notificationDeliveries = pgTable(
     recommendations: integer('recommendations').notNull().default(0),
     unreadChats: integer('unread_chats').notNull().default(0),
     /** Ids de ticket de Expo (para consultar los recibos). */
-    tickets: text('tickets').array().notNull().default(sql`'{}'::text[]`),
+    tickets: text('tickets')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
     error: text('error'),
     /** Recibos de Expo consultados (~15 min después): ok, o el error de FCM/APNs. */
     receiptsCheckedAt: timestamp('receipts_checked_at', { withTimezone: true }),

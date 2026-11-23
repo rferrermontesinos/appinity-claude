@@ -72,7 +72,11 @@ describe('fase 11 · lectura del export', () => {
   it('enlaces de Maps: nombre y coordenadas si las trae', () => {
     expect(isMapsUrl('https://maps.app.goo.gl/abc')).toBe(true);
     expect(isMapsUrl('https://example.com/maps')).toBe(false);
-    expect(mapsUrlInfo('https://www.google.com/maps/place/Bar+Pinotxo/@41.3817,2.1716,17z')).toEqual({ name: 'Bar Pinotxo', latitude: 41.3817, longitude: 2.1716 });
+    expect(mapsUrlInfo('https://www.google.com/maps/place/Bar+Pinotxo/@41.3817,2.1716,17z')).toEqual({
+      name: 'Bar Pinotxo',
+      latitude: 41.3817,
+      longitude: 2.1716,
+    });
     expect(mapsUrlInfo('https://www.google.com/maps/search/41.40364,2.17428')).toEqual({ latitude: 41.40364, longitude: 2.17428 });
   });
 });
@@ -87,20 +91,31 @@ describe('fase 11 · mapper', () => {
     method: 'test',
   });
   const map = (record: ExportRecord, identified: IdentifiedEntity, stats?: Record<string, number>) =>
-    mapGoogleRecord({ recordId: recordIdOf(record), record, identified } satisfies GoogleRecord, { userId: USER, connectionId: CONNECTION, source: 'google_portability', ...(stats ? { stats } : {}) }).map((o) =>
-      parseObservation(o),
-    );
+    mapGoogleRecord({ recordId: recordIdOf(record), record, identified } satisfies GoogleRecord, {
+      userId: USER,
+      connectionId: CONNECTION,
+      source: 'google_portability',
+      ...(stats ? { stats } : {}),
+    }).map((o) => parseObservation(o));
 
   it('Play: poseído (conocido), sin consumo ni preferencia', () => {
     const [o] = map({ group: 'play.library', title: 'Cien años de soledad', docType: 'book' }, entity('books', 'book'));
-    expect(o).toMatchObject({ observationKind: 'play_library', knownConfidence: 0.9, consumedConfidence: 0, preferenceScore: null, engagement: { type: 'owned' } });
+    expect(o).toMatchObject({
+      observationKind: 'play_library',
+      knownConfidence: 0.9,
+      consumedConfidence: 0,
+      preferenceScore: null,
+      engagement: { type: 'owned' },
+    });
   });
 
   it('pedidos: consumido; desde 2 visitas, preferencia por frecuencia con base «attendance»', () => {
     const venue = { name: 'Bar' };
     const [once] = map({ group: 'order_reserve.purchases_reservations', venue, orders: 1, reservations: 0 }, entity('food', 'restaurant'));
     expect(once).toMatchObject({ consumedConfidence: 0.9, preferenceScore: null, preferenceBasis: null });
-    const [often] = map({ group: 'order_reserve.purchases_reservations', venue, orders: 3, reservations: 1 }, entity('food', 'restaurant'), { food_visits_p95: 8 });
+    const [often] = map({ group: 'order_reserve.purchases_reservations', venue, orders: 3, reservations: 1 }, entity('food', 'restaurant'), {
+      food_visits_p95: 8,
+    });
     expect(often).toMatchObject({ preferenceBasis: 'attendance', preferenceConfidence: 0.45, engagement: { type: 'attendance', value: 4 } });
     expect(often!.preferenceScore).toBeCloseTo(Math.log1p(4) / Math.log1p(8), 4);
   });
@@ -123,7 +138,9 @@ describe('fase 11 · identificación', () => {
       { geocode: async (p) => (p.name === 'Bar' ? { latitude: 1, longitude: 2, countryCode: 'ES' } : null) },
       async (points) => {
         expect(points).toEqual([{ ...found, countryCode: 'ES' }]);
-        return [{ entity: { category: 'food', itemType: 'bar', title: 'Bar', canonicalIds: { 'osm:node': '1' }, confidence: 0.9, method: 'osm_exact_name_100m' } }];
+        return [
+          { entity: { category: 'food', itemType: 'bar', title: 'Bar', canonicalIds: { 'osm:node': '1' }, confidence: 0.9, method: 'osm_exact_name_100m' } },
+        ];
       },
     );
     expect(results[0]).toMatchObject({ entity: { confidence: 0.81, method: 'geocodificado_osm_exact_name_100m' } });
@@ -155,11 +172,13 @@ describe('fase 11 · identificación', () => {
 
   it('Nominatim por nombre: descarta ciudades o calles homónimas y acepta el primer sitio concreto', async () => {
     const fetchImpl = (async () =>
-      new Response(JSON.stringify([
-        { lat: '1', lon: '1', category: 'place' },
-        { lat: '2', lon: '2', category: 'highway' },
-        { lat: '3', lon: '3', category: 'tourism' },
-      ]))) as typeof fetch;
+      new Response(
+        JSON.stringify([
+          { lat: '1', lon: '1', category: 'place' },
+          { lat: '2', lon: '2', category: 'highway' },
+          { lat: '3', lon: '3', category: 'tourism' },
+        ]),
+      )) as typeof fetch;
     const geocoder = new NominatimGeocoder({ userAgent: 'APPINITY-test', fetchImpl, sleep: async () => undefined, minIntervalMs: 0 });
     expect(await geocoder.geocode({ name: 'Aspendos Theater' })).toMatchObject({ latitude: 3, longitude: 3 });
   });
@@ -185,14 +204,25 @@ describe('fase 11 · identificación', () => {
       requests.push(url);
       if (url.searchParams.get('action') === 'query') {
         const wanted = [...url.searchParams.get('srsearch')!.matchAll(/P3418=([\w.]+)/g)].map((m) => m[1]);
-        return new Response(JSON.stringify({ query: { search: Object.entries(entities).filter(([, e]) => wanted.includes(e.pkg)).map(([q]) => ({ title: q })) } }));
+        return new Response(
+          JSON.stringify({
+            query: {
+              search: Object.entries(entities)
+                .filter(([, e]) => wanted.includes(e.pkg))
+                .map(([q]) => ({ title: q })),
+            },
+          }),
+        );
       }
       const claim = (v: unknown) => ({ mainsnak: { datavalue: { value: v } } });
       const ids = url.searchParams.get('ids')!.split('|');
       return new Response(
         JSON.stringify({
           entities: Object.fromEntries(
-            ids.map((id) => [id, { id, labels: { es: { value: entities[id]!.label } }, claims: { P31: [claim({ id: entities[id]!.p31 })], P3418: [claim(entities[id]!.pkg)] } }]),
+            ids.map((id) => [
+              id,
+              { id, labels: { es: { value: entities[id]!.label } }, claims: { P31: [claim({ id: entities[id]!.p31 })], P3418: [claim(entities[id]!.pkg)] } },
+            ]),
           ),
         }),
       );
@@ -235,14 +265,26 @@ describe('fase 11 · sync', () => {
     expect(batch.snapshotKinds?.sort()).toEqual(['food_order', 'play_library', 'saved_place']);
     const records = batch.records as GoogleRecord[];
     const of = (group: string) => records.filter((r) => r.record.group === group);
-    expect(of('play.library').map((r) => r.identified.title).sort()).toEqual(['Cien años de soledad', 'Monument Valley']);
-    expect(of('order_reserve.purchases_reservations')[0]).toMatchObject({ identified: { category: 'food', method: 'geocodificado_osm_name_sin_genericos_100m' } });
+    expect(
+      of('play.library')
+        .map((r) => r.identified.title)
+        .sort(),
+    ).toEqual(['Cien años de soledad', 'Monument Valley']);
+    expect(of('order_reserve.purchases_reservations')[0]).toMatchObject({
+      identified: { category: 'food', method: 'geocodificado_osm_name_sin_genericos_100m' },
+    });
     expect(of('saved.collections')[0]).toMatchObject({ identified: { title: 'Sagrada Família' } });
     expect(batch.stats).toMatchObject({ food_visits_p95: 3 });
     // La app por ID; WhatsApp (sin ID) por título, limitado a videojuegos: fuera de categoría.
-    expect(calls).toEqual(expect.arrayContaining(['app:com.ustwo.monumentvalley', 'work:WhatsApp Messenger', 'text:Restaurante Can Culleretes', 'text:Sagrada Família']));
+    expect(calls).toEqual(
+      expect.arrayContaining(['app:com.ustwo.monumentvalley', 'work:WhatsApp Messenger', 'text:Restaurante Can Culleretes', 'text:Sagrada Família']),
+    );
     const unidentified = batch.partialErrors.filter((e) => e.code === 'unidentified').map((e) => e.message);
-    expect(unidentified).toEqual([expect.stringMatching(/^1 de 3 objetos de la biblioteca de Google Play no se importan: 1 son apps que no son videojuegos fuera de las categorías de APPINITY \(app\)/)]);
+    expect(unidentified).toEqual([
+      expect.stringMatching(
+        /^1 de 3 objetos de la biblioteca de Google Play no se importan: 1 son apps que no son videojuegos fuera de las categorías de APPINITY \(app\)/,
+      ),
+    ]);
   });
 });
 
@@ -271,10 +313,22 @@ describe('Wikidata como localizador de lugares', () => {
       const url = new URL(input.toString());
       if (url.searchParams.get('action') === 'wbsearchentities') {
         const search = url.searchParams.get('search');
-        return new Response(JSON.stringify({ search: search === 'Kayaköy' ? [{ id: 'Q1', label: 'Kayaköy' }, { id: 'Q2', label: 'Kayaköy Beach' }] : [] }));
+        return new Response(
+          JSON.stringify({
+            search:
+              search === 'Kayaköy'
+                ? [
+                    { id: 'Q1', label: 'Kayaköy' },
+                    { id: 'Q2', label: 'Kayaköy Beach' },
+                  ]
+                : [],
+          }),
+        );
       }
       const claim = (v: unknown) => ({ mainsnak: { datavalue: { value: v } } });
-      return new Response(JSON.stringify({ entities: { Q1: { id: 'Q1', claims: { P625: [claim({ latitude: 36.57, longitude: 29.09 })] }, sitelinks: { a: {}, b: {} } } } }));
+      return new Response(
+        JSON.stringify({ entities: { Q1: { id: 'Q1', claims: { P625: [claim({ latitude: 36.57, longitude: 29.09 })] }, sitelinks: { a: {}, b: {} } } } }),
+      );
     }) as typeof fetch;
     const wd = new WikidataWorkIdentifier({ userAgent: 'APPINITY-test', fetchImpl, sleep: async () => undefined });
     expect(await wd.locatePlace('Kayaköy')).toEqual({ latitude: 36.57, longitude: 29.09 });

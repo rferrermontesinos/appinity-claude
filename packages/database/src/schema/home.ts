@@ -38,10 +38,7 @@ export const recommendationImpressions = pgTable(
     lastShownAt: timestamp('last_shown_at', { withTimezone: true }).notNull().defaultNow(),
     timesShown: integer('times_shown').notNull().default(1),
   },
-  (t) => [
-    primaryKey({ columns: [t.userId, t.catalogItemId] }),
-    check('recommendation_impressions_times_positive', sql`${t.timesShown} > 0`),
-  ],
+  (t) => [primaryKey({ columns: [t.userId, t.catalogItemId] }), check('recommendation_impressions_times_positive', sql`${t.timesShown} > 0`)],
 );
 
 /**
@@ -86,8 +83,5 @@ export const itemVotes = pgTable(
     value: integer('value'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [
-    primaryKey({ columns: [t.userId, t.catalogItemId] }),
-    check('item_votes_value_valid', sql`${t.value} IS NULL OR ${t.value} IN (-2, -1, 1, 2)`),
-  ],
+  (t) => [primaryKey({ columns: [t.userId, t.catalogItemId] }), check('item_votes_value_valid', sql`${t.value} IS NULL OR ${t.value} IN (-2, -1, 1, 2)`)],
 );

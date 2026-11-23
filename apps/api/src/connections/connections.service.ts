@@ -119,10 +119,7 @@ export class ConnectionsService {
       lastError: r.lastError,
       observationCount: countBy.get(r.id) ?? 0,
       externalAccountHint: accountHint(r.sourceKey, r.externalAccountRef),
-      missingScopes:
-        r.status === 'revoked'
-          ? 0
-          : (this.registry.get(r.sourceKey)?.requestedScopes ?? []).filter((s) => !r.grantedScopes.includes(s)).length,
+      missingScopes: r.status === 'revoked' ? 0 : (this.registry.get(r.sourceKey)?.requestedScopes ?? []).filter((s) => !r.grantedScopes.includes(s)).length,
     }));
   }
 
@@ -172,7 +169,14 @@ export class ConnectionsService {
   /** Google Books concedido en «Continuar con Google» (mismo consentimiento del alta): conecta y lanza el primer sync. */
   async attachGoogleBooks(userId: string, tokens: { access_token: string; refresh_token?: string; expires_in?: number; scope?: string }): Promise<void> {
     if (!this.hasSource('google_books')) return;
-    const connection = await attachConnection(this.database.db, this.registry, userId, 'google_books', googleBooksConnection(tokens, { shared: true }), this.credentialsOption().credentialsKey);
+    const connection = await attachConnection(
+      this.database.db,
+      this.registry,
+      userId,
+      'google_books',
+      googleBooksConnection(tokens, { shared: true }),
+      this.credentialsOption().credentialsKey,
+    );
     // Sin condiciones aceptadas no se importa nada: el primer sync lo arranca `initialImport` al terminar el alta.
     if (await this.consentGiven(userId)) await this.startSync(userId, connection.id, 'connect', 'full');
   }
@@ -180,7 +184,14 @@ export class ConnectionsService {
   /** Google Calendar concedido en «Continuar con Google»: conecta y lanza el primer sync. */
   async attachGoogleCalendar(userId: string, tokens: { access_token: string; refresh_token?: string; expires_in?: number; scope?: string }): Promise<void> {
     if (!this.hasSource('google_calendar')) return;
-    const connection = await attachConnection(this.database.db, this.registry, userId, 'google_calendar', googleCalendarConnection(tokens), this.credentialsOption().credentialsKey);
+    const connection = await attachConnection(
+      this.database.db,
+      this.registry,
+      userId,
+      'google_calendar',
+      googleCalendarConnection(tokens),
+      this.credentialsOption().credentialsKey,
+    );
     if (await this.consentGiven(userId)) await this.startSync(userId, connection.id, 'connect', 'full');
   }
 
@@ -213,7 +224,12 @@ export class ConnectionsService {
       ? await this.database.db
           .select({ connectionId: sourceSyncRuns.connectionId })
           .from(sourceSyncRuns)
-          .where(inArray(sourceSyncRuns.connectionId, active.map((r) => r.id)))
+          .where(
+            inArray(
+              sourceSyncRuns.connectionId,
+              active.map((r) => r.id),
+            ),
+          )
       : [];
     const synced = new Set(runs.map((r) => r.connectionId));
     let started = 0;
@@ -338,13 +354,7 @@ export class ConnectionsService {
       .select({ id: sourceSyncRuns.id })
       .from(sourceSyncRuns)
       .innerJoin(userConnections, eq(userConnections.id, sourceSyncRuns.connectionId))
-      .where(
-        and(
-          eq(sourceSyncRuns.connectionId, connectionId),
-          eq(userConnections.userId, userId),
-          inArray(sourceSyncRuns.status, ['queued']),
-        ),
-      );
+      .where(and(eq(sourceSyncRuns.connectionId, connectionId), eq(userConnections.userId, userId), inArray(sourceSyncRuns.status, ['queued'])));
     const result = await disconnectSource(this.database.db, this.registry, userId, connectionId, {
       purge,
       ...this.credentialsOption(),

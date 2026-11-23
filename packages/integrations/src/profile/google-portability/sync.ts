@@ -123,11 +123,7 @@ export interface PortabilitySyncOptions {
  * 3. Completos todos, se descargan, se leen y cada registro se identifica en el catálogo (OSM para lugares, Wikidata
  *    para obras). Lo que no se identifica con seguridad no se importa y se informa sin bloquear la instantánea.
  */
-export async function syncPortability(
-  client: GooglePortabilityClient,
-  context: SyncContext,
-  options: PortabilitySyncOptions,
-): Promise<SyncBatch> {
+export async function syncPortability(client: GooglePortabilityClient, context: SyncContext, options: PortabilitySyncOptions): Promise<SyncBatch> {
   const credentials = context.credentials;
   const now = context.now;
   const accessToken = credentials ? await accessTokenFor(client, credentials, now) : null;
@@ -204,7 +200,11 @@ export async function syncPortability(
       if (!isSourceError(error) || error.retryable) throw error;
       delete state.jobs[group];
       await persist();
-      partialErrors.push({ code: 'export_lost', message: `El export anterior de ${GROUP_LABEL[group]} ya no está disponible; se pedirá de nuevo`, blocking: false });
+      partialErrors.push({
+        code: 'export_lost',
+        message: `El export anterior de ${GROUP_LABEL[group]} ya no está disponible; se pedirá de nuevo`,
+        blocking: false,
+      });
       continue;
     }
     if (archive.state === 'COMPLETE') {
@@ -396,7 +396,14 @@ export function summarizeIdentification(results: Array<PlaceIdentification | Ide
   const outOfScope = [...scopes.values()].reduce((a, b) => a + b, 0);
   const ranked = [...scopes].sort((a, b) => b[1] - a[1]);
   const parts = [
-    ...(outOfScope ? [`${outOfScope} ${subject} fuera de las categorías de APPINITY (${ranked.slice(0, 3).map(([s]) => s).join(', ')}${ranked.length > 3 ? '…' : ''})`] : []),
+    ...(outOfScope
+      ? [
+          `${outOfScope} ${subject} fuera de las categorías de APPINITY (${ranked
+            .slice(0, 3)
+            .map(([s]) => s)
+            .join(', ')}${ranked.length > 3 ? '…' : ''})`,
+        ]
+      : []),
     ...(noMatch + ambiguous ? [`${noMatch + ambiguous} no se pudieron identificar con seguridad`] : []),
   ];
   const detail = [

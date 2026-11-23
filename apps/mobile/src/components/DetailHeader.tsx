@@ -15,7 +15,17 @@ export function HeaderButton({ icon, label, onPress }: { icon: keyof typeof Mate
       accessibilityLabel={label}
       onPress={onPress}
       hitSlop={4}
-      style={({ pressed }) => ({ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: c.surfaceRaised, borderWidth: 1, borderColor: c.hairline, opacity: pressed ? 0.7 : 1 })}
+      style={({ pressed }) => ({
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: c.surfaceRaised,
+        borderWidth: 1,
+        borderColor: c.hairline,
+        opacity: pressed ? 0.7 : 1,
+      })}
     >
       <MaterialCommunityIcons name={icon} size={22} color={c.text} />
     </Pressable>

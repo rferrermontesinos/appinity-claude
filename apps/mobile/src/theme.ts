@@ -96,7 +96,17 @@ export function usePalette(): Palette {
 }
 
 /** Texto e iconos sobre imagen: siempre claros, sobre el velo oscuro de la tarjeta (contraste garantizado). */
-export const onImage = { text: '#F5F3F0', muted: 'rgba(245,243,240,0.82)', glass: 'rgba(12,12,14,0.66)', reasonIcon: '#D4F45A', like: '#D4F45A', love: '#FF5DB1', onLove: '#2A0618', dislike: '#FF7A70', unknown: '#D6D2CC' };
+export const onImage = {
+  text: '#F5F3F0',
+  muted: 'rgba(245,243,240,0.82)',
+  glass: 'rgba(12,12,14,0.66)',
+  reasonIcon: '#D4F45A',
+  like: '#D4F45A',
+  love: '#FF5DB1',
+  onLove: '#2A0618',
+  dislike: '#FF7A70',
+  unknown: '#D6D2CC',
+};
 
 /**
  * Bricolage Grotesque (Google Fonts, OFL) solo para titulares, títulos de obras y cifras; el resto, la fuente del

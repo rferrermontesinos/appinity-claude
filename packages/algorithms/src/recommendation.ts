@@ -186,7 +186,12 @@ export interface MixedRecommendation<T extends { itemId: string }> {
  * candidatos, su hueco lo ocupa otro, marcado con `fillsFor`: el de seguidos, primero el descubrimiento (sin seguidos la
  * mezcla queda como antes, 7/2/1); el resto, en el orden consenso → descubrimiento → seguidos → Trending. Sin duplicados.
  */
-export function mixRecommendations<C extends { itemId: string }, D extends { itemId: string }, T extends { itemId: string }, F extends { itemId: string } = never>(
+export function mixRecommendations<
+  C extends { itemId: string },
+  D extends { itemId: string },
+  T extends { itemId: string },
+  F extends { itemId: string } = never,
+>(
   lists: { consensus: readonly C[]; discovery: readonly D[]; trending: readonly T[]; followed?: readonly F[] },
   limit: number,
   params: RecommendationParams = RECOMMENDATION_PARAMS_V1,
@@ -294,7 +299,13 @@ export function contentCandidates(
     const contribution = like.score * like.confidence * Math.min(1, r.weight);
     const current = byTarget.get(r.targetItemId);
     if (!current) {
-      byTarget.set(r.targetItemId, { score: contribution, best: contribution, becauseItemId: r.sourceItemId, relation: r.relation, sources: new Set([r.sourceItemId]) });
+      byTarget.set(r.targetItemId, {
+        score: contribution,
+        best: contribution,
+        becauseItemId: r.sourceItemId,
+        relation: r.relation,
+        sources: new Set([r.sourceItemId]),
+      });
       continue;
     }
     // Varias relaciones desde el mismo gusto no se suman (misma saga y mismo director no cuentan doble).

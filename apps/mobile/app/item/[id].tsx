@@ -78,12 +78,10 @@ function EvidenceRow({ o }: { o: ObservationDto }) {
   };
   return (
     <View style={{ borderWidth: 1, borderColor: c.border, borderRadius: radius.sm, padding: spacing.md, gap: 4 }}>
-      <Text style={{ color: c.text, fontWeight: '700' }}>
-        {t('item.evidenceFrom', { source: sourceLabel(t, o.sourceKey), kind: o.observationKind })}
-      </Text>
+      <Text style={{ color: c.text, fontWeight: '700' }}>{t('item.evidenceFrom', { source: sourceLabel(t, o.sourceKey), kind: o.observationKind })}</Text>
       <Small>
-        {t('dimensions.known')} {o.knownConfidence.toFixed(2)} · {t('dimensions.consumed')} {o.consumedConfidence.toFixed(2)} ·{' '}
-        {t('dimensions.preference')} {formatPreference(o.preferenceScore)}
+        {t('dimensions.known')} {o.knownConfidence.toFixed(2)} · {t('dimensions.consumed')} {o.consumedConfidence.toFixed(2)} · {t('dimensions.preference')}{' '}
+        {formatPreference(o.preferenceScore)}
         {o.preferenceBasis ? ` (${t(`basis.${o.preferenceBasis}`)}, ${o.preferenceConfidence?.toFixed(2)})` : ''}
       </Small>
       {engagement ? <Small>{engagement}</Small> : null}
@@ -162,12 +160,19 @@ export default function ItemScreen() {
                   boxShadow: `0px 16px 32px -18px ${world.color}`,
                 }}
               >
-                <CatalogImage image={image} category={item.category} title={item.title} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+                <CatalogImage
+                  image={image}
+                  category={item.category}
+                  title={item.title}
+                  style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                />
               </View>
               <View style={{ flex: 1, gap: spacing.xs, paddingBottom: spacing.xs }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
                   <MaterialCommunityIcons name={meta.icon as never} size={16} color={meta.color} />
-                  <Text style={{ color: c.textMuted, fontSize: 12, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase' }}>{t(`categories.${item.category}`)}</Text>
+                  <Text style={{ color: c.textMuted, fontSize: 12, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase' }}>
+                    {t(`categories.${item.category}`)}
+                  </Text>
                 </View>
                 <Text accessibilityRole="header" style={{ color: c.text, ...type.h2 }} numberOfLines={4}>
                   {item.title}
@@ -195,7 +200,13 @@ export default function ItemScreen() {
           <ItemCircle itemId={item.id} surface={world.surface} />
           <ItemOpinion itemId={item.id} surface={world.surface} />
 
-          {summary || item.description || genres.length || countries.length || item.releaseDate || item.eventStartsAt || (item.location?.locality && !placeLike) ? (
+          {summary ||
+          item.description ||
+          genres.length ||
+          countries.length ||
+          item.releaseDate ||
+          item.eventStartsAt ||
+          (item.location?.locality && !placeLike) ? (
             <Card style={{ backgroundColor: world.surface }}>
               <SectionTitle>{t('item.about')}</SectionTitle>
               {summary ? (
@@ -203,7 +214,10 @@ export default function ItemScreen() {
                   <Text style={{ color: c.text, fontSize: 15, lineHeight: 22 }}>{summary.text}</Text>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: spacing.xs }}>
                     <Small>{`${t('item.textSource')}:`}</Small>
-                    <LinkText label={`Wikipedia · CC BY-SA 4.0${summary.lang !== i18n.language.slice(0, 2) ? ` · ${t('item.inEnglish')}` : ''}`} url={summary.url} />
+                    <LinkText
+                      label={`Wikipedia · CC BY-SA 4.0${summary.lang !== i18n.language.slice(0, 2) ? ` · ${t('item.inEnglish')}` : ''}`}
+                      url={summary.url}
+                    />
                   </View>
                 </View>
               ) : item.description ? (

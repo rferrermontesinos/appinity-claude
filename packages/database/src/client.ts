@@ -11,10 +11,7 @@ export interface DatabaseHandle {
   close(): Promise<void>;
 }
 
-export function createDatabase(
-  connectionString: string,
-  options: { max?: number; applicationName?: string } = {},
-): DatabaseHandle {
+export function createDatabase(connectionString: string, options: { max?: number; applicationName?: string } = {}): DatabaseHandle {
   const pool = new pg.Pool({
     connectionString,
     max: options.max ?? 10,

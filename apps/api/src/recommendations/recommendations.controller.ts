@@ -78,18 +78,18 @@ export class RecommendationsController {
       .where(and(eq(catalogExpansions.dataset, auth.dataset), eq(catalogExpansions.category, body.category)));
     if (state?.exhausted) return { status: 'exhausted' };
     const bucket = Math.floor(Date.now() / 30_000);
-    await this.queues.system.add('expand-catalog', { dataset: auth.dataset, category: body.category }, { jobId: `expand-${auth.dataset}-${body.category}-${bucket}` });
+    await this.queues.system.add(
+      'expand-catalog',
+      { dataset: auth.dataset, category: body.category },
+      { jobId: `expand-${auth.dataset}-${body.category}-${bucket}` },
+    );
     return { status: 'queued' };
   }
 
   /** Igual que GET, con la cola de la sesión en el cuerpo: un mazo sin fin no cabe en una URL. */
   @Post('query')
   @HttpCode(200)
-  query(
-    @CurrentUser() auth: AuthContext,
-    @Req() req: Request,
-    @Body(new ZodPipe(bodySchema)) body: z.infer<typeof bodySchema>,
-  ): Promise<RecommendationsDto> {
+  query(@CurrentUser() auth: AuthContext, @Req() req: Request, @Body(new ZodPipe(bodySchema)) body: z.infer<typeof bodySchema>): Promise<RecommendationsDto> {
     return this.build(auth, req, body);
   }
 
@@ -121,9 +121,17 @@ export class RecommendationsController {
             reason: {
               code: r.block,
               ...(r.consensus ? { supporters: r.consensus.supporters, opinionated: r.consensus.opinionated } : {}),
-              ...(r.discovery ? { contributor: { userId: r.discovery.contributorId, displayName: r.discovery.contributorName }, contributorFollowed: r.discovery.contributorFollowed } : {}),
+              ...(r.discovery
+                ? {
+                    contributor: { userId: r.discovery.contributorId, displayName: r.discovery.contributorName },
+                    contributorFollowed: r.discovery.contributorFollowed,
+                  }
+                : {}),
               ...(r.followed
-                ? { contributor: { userId: r.followed.contributorId, displayName: r.followed.contributorName }, contributorAffinity: r.followed.contributorAffinity }
+                ? {
+                    contributor: { userId: r.followed.contributorId, displayName: r.followed.contributorName },
+                    contributorAffinity: r.followed.contributorAffinity,
+                  }
                 : {}),
               ...(r.followedBy ? { followedBy: r.followedBy } : {}),
               ...(r.trending ? { positiveVoters: r.trending.positiveVoters, totalVoters: r.trending.totalVoters } : {}),

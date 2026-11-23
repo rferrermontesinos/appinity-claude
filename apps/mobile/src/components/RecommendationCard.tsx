@@ -41,13 +41,13 @@ function intentOf(dx: number, dy: number): DeckAction | null {
   return { kind: 'vote', value: dx > 0 ? 1 : -1 };
 }
 type Stamp = { action: DeckAction; armed: boolean } | null;
-const sameZone = (a: DeckAction | null, b: DeckAction | null) =>
-  a?.kind === b?.kind && (a?.kind !== 'vote' || (b?.kind === 'vote' && a.value === b.value));
+const sameZone = (a: DeckAction | null, b: DeckAction | null) => a?.kind === b?.kind && (a?.kind !== 'vote' || (b?.kind === 'vote' && a.value === b.value));
 
 /** Historial de toques que el sistema de respuesta añade a cada evento (los tipos de React Native no lo declaran). */
 type TouchRecord = { startPageX: number; startPageY: number; currentPageX: number; currentPageY: number };
 const touchHistory = (e: GestureResponderEvent) =>
-  (e as GestureResponderEvent & { touchHistory: { touchBank: Array<TouchRecord | undefined>; indexOfSingleActiveTouch: number; mostRecentTimeStamp: number } }).touchHistory;
+  (e as GestureResponderEvent & { touchHistory: { touchBank: Array<TouchRecord | undefined>; indexOfSingleActiveTouch: number; mostRecentTimeStamp: number } })
+    .touchHistory;
 
 /** Lo que pueden pedir los botones de debajo: la tarjeta sale con la misma animación y el mismo sello que el gesto. */
 export interface RecommendationCardHandle {
@@ -79,7 +79,10 @@ export function reasonText(t: (key: string, options?: Record<string, unknown>) =
     case 'trending':
       return t('home.reasonTrending', { count: r.reason.positiveVoters ?? 0 });
     case 'content':
-      return t(`home.reasonContent.${r.reason.because?.relation ?? 'other'}`, { title: r.reason.because?.title ?? '—', defaultValue: t('home.reasonContent.other', { title: r.reason.because?.title ?? '—' }) });
+      return t(`home.reasonContent.${r.reason.because?.relation ?? 'other'}`, {
+        title: r.reason.because?.title ?? '—',
+        defaultValue: t('home.reasonContent.other', { title: r.reason.because?.title ?? '—' }),
+      });
     case 'community':
       return t('home.reasonCommunity', { count: r.reason.supporters ?? 0 });
     case 'kept':
@@ -130,7 +133,6 @@ export const REASON_ICON = {
 export function isPeopleReason(r: RecommendationDto): boolean {
   return r.reason.code === 'consensus' || r.reason.code === 'discovery' || r.reason.code === 'followed' || r.reason.code === 'community';
 }
-
 
 export function RecommendationCard({
   recommendation,
@@ -197,8 +199,7 @@ export function RecommendationCard({
       Animated.sequence([Animated.delay(delay), Animated.timing(v, { toValue, duration: 200, useNativeDriver: false })]);
     // Sale hacia donde apunta su gesto: abajo «No lo conozco», arriba «Me encanta», a los lados el resto.
     const delay = shown ? 0 : 260;
-    const anim =
-      action.kind === 'unknown' ? to(y, 900, delay) : action.value === 2 ? to(y, -900, delay) : to(x, Math.sign(action.value) * 600, delay);
+    const anim = action.kind === 'unknown' ? to(y, 900, delay) : action.value === 2 ? to(y, -900, delay) : to(x, Math.sign(action.value) * 600, delay);
     anim.start(done);
   };
   useImperativeHandle(ref, () => ({ fling: (action) => fling(action) }));
@@ -313,10 +314,23 @@ export function RecommendationCard({
       <View style={{ width: '100%', aspectRatio: 1.1 }}>
         <CatalogImage image={item.primaryImage} category={item.category} title={item.title} style={fill} />
         <View style={{ position: 'absolute', top: spacing.md, left: spacing.md, right: spacing.md, flexDirection: 'row', justifyContent: 'space-between' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: onImage.glass, borderRadius: radius.full, paddingVertical: 6, paddingLeft: spacing.sm, paddingRight: spacing.md }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              backgroundColor: onImage.glass,
+              borderRadius: radius.full,
+              paddingVertical: 6,
+              paddingLeft: spacing.sm,
+              paddingRight: spacing.md,
+            }}
+          >
             <View style={{ width: 8, height: 8, borderRadius: radius.full, backgroundColor: meta.color }} />
             <MaterialCommunityIcons name={meta.icon as never} size={15} color={onImage.text} />
-            <Text style={{ color: onImage.text, fontSize: 12, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase' }}>{t(`categories.${item.category}`)}</Text>
+            <Text style={{ color: onImage.text, fontSize: 12, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase' }}>
+              {t(`categories.${item.category}`)}
+            </Text>
           </View>
           {recommendation.isNew ? (
             <View style={{ backgroundColor: c.secondary, borderRadius: radius.full, paddingHorizontal: spacing.sm, justifyContent: 'center' }}>
@@ -350,7 +364,17 @@ export function RecommendationCard({
       {stamp ? (
         <Animated.View
           pointerEvents="none"
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, aspectRatio: 1.1, alignItems: 'center', justifyContent: 'center', opacity: stampOpacity, transform: [{ scale: stampScale }] }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            aspectRatio: 1.1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: stampOpacity,
+            transform: [{ scale: stampScale }],
+          }}
         >
           <VoteStamp zone={stamp.action} armed={stamp.armed} />
         </Animated.View>

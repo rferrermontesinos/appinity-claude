@@ -23,7 +23,19 @@ export function CategoryChipOnImage({ category }: { category: Category }) {
   const { t } = useTranslation();
   const meta = CATEGORY_META[category];
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, alignSelf: 'flex-start', backgroundColor: onImage.glass, borderRadius: radius.full, paddingVertical: 5, paddingLeft: spacing.sm, paddingRight: spacing.md }}>
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+        alignSelf: 'flex-start',
+        backgroundColor: onImage.glass,
+        borderRadius: radius.full,
+        paddingVertical: 5,
+        paddingLeft: spacing.sm,
+        paddingRight: spacing.md,
+      }}
+    >
       <MaterialCommunityIcons name={meta.icon as never} size={16} color={meta.color} />
       <Text style={{ color: onImage.text, fontSize: 12, fontWeight: '600' }}>{t(`categories.${category}`)}</Text>
     </View>

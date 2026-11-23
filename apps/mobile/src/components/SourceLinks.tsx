@@ -29,18 +29,7 @@ const ICONS: Record<string, Icon> = {
 };
 
 /** Solo donde se consume puede ser la acción principal; las referencias (Wikidata, Wikipedia…) van como chips. */
-const PRIMARY = new Set([
-  'steam',
-  'spotify',
-  'apple_music',
-  'apple_podcasts',
-  'youtube',
-  'google_maps',
-  'imdb',
-  'openlibrary',
-  'goodreads',
-  'website',
-]);
+const PRIMARY = new Set(['steam', 'spotify', 'apple_music', 'apple_podcasts', 'youtube', 'google_maps', 'imdb', 'openlibrary', 'goodreads', 'website']);
 
 /** Abre enlaces externos solo si son https (validación de enlaces). */
 export function openExternal(url: string) {
@@ -51,13 +40,7 @@ export function openExternal(url: string) {
  * «Dónde encontrarlo»: el primer enlace (el de consumo de la categoría: Spotify, Steam, Google Maps…) como acción
  * principal en chispa; el resto, como chips discretos con icono y nombre. El orden lo decide el servidor.
  */
-export function SourceLinks({
-  links,
-  accent,
-}: {
-  links: Array<{ provider: string; url: string }>;
-  accent?: string;
-}) {
+export function SourceLinks({ links, accent }: { links: Array<{ provider: string; url: string }>; accent?: string }) {
   const { t } = useTranslation();
   const c = usePalette();
   if (!links.length) return null;
@@ -83,14 +66,8 @@ export function SourceLinks({
             boxShadow: `0px 10px 28px -10px ${c.accent}`,
           })}
         >
-          <MaterialCommunityIcons
-            name={ICONS[first!.provider] ?? 'open-in-new'}
-            size={22}
-            color={c.accentText}
-          />
-          <Text style={{ color: c.accentText, fontSize: 16, fontWeight: '700' }}>
-            {t('item.openIn', { name: name(first!.provider) })}
-          </Text>
+          <MaterialCommunityIcons name={ICONS[first!.provider] ?? 'open-in-new'} size={22} color={c.accentText} />
+          <Text style={{ color: c.accentText, fontSize: 16, fontWeight: '700' }}>{t('item.openIn', { name: name(first!.provider) })}</Text>
         </Pressable>
       ) : null}
       {rest.length ? (

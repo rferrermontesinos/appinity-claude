@@ -1,12 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  RATING_SCALES,
-  frequencyPreference,
-  normalizeRating,
-  normalizeRating1to10,
-  percentile,
-  playtimePreference,
-} from '../src/normalization.js';
+import { RATING_SCALES, frequencyPreference, normalizeRating, normalizeRating1to10, percentile, playtimePreference } from '../src/normalization.js';
 
 describe('normalización de valoraciones', () => {
   it('1–10 sigue la fórmula de la especificación (rating - 5.5) / 4.5', () => {

@@ -1,16 +1,5 @@
-import {
-  catalogExternalIds,
-  catalogImages,
-  catalogItems,
-  type Database,
-} from '@appinity/database';
-import {
-  CANONICAL_ID_KEYS,
-  type CatalogProvider,
-  type ExternalIdRef,
-  type ExternalItemCandidate,
-  type ProviderCatalogItem,
-} from '@appinity/shared';
+import { catalogExternalIds, catalogImages, catalogItems, type Database } from '@appinity/database';
+import { CANONICAL_ID_KEYS, type CatalogProvider, type ExternalIdRef, type ExternalItemCandidate, type ProviderCatalogItem } from '@appinity/shared';
 import { and, eq, or, sql } from 'drizzle-orm';
 import { RESOLUTION_CONFIDENCE } from './providers/wikidata-snapshot.js';
 import { haversineMeters, normalizeTitle, yearOf } from './text.js';
@@ -79,11 +68,7 @@ export class EntityResolver {
 
     const match = await this.findByRefs(this.db, refs, dataset, notes);
     let method: ResolutionMethod | null = match ? (isCanonical(match.ref) ? 'canonical_id' : 'provider_id') : null;
-    let confidence: number = match
-      ? isCanonical(match.ref)
-        ? RESOLUTION_CONFIDENCE.canonicalId
-        : RESOLUTION_CONFIDENCE.providerId
-      : 0;
+    let confidence: number = match ? (isCanonical(match.ref) ? RESOLUTION_CONFIDENCE.canonicalId : RESOLUTION_CONFIDENCE.providerId) : 0;
     let itemId = match?.itemId ?? null;
 
     if (!itemId) {
@@ -124,8 +109,7 @@ export class EntityResolver {
       .select({ itemType: catalogItems.itemType, parentItemId: catalogItems.parentItemId })
       .from(catalogItems)
       .where(eq(catalogItems.id, itemId));
-    const targetItemId =
-      row && AGGREGATE_TO_PARENT.has(row.itemType) && row.parentItemId ? row.parentItemId : itemId;
+    const targetItemId = row && AGGREGATE_TO_PARENT.has(row.itemType) && row.parentItemId ? row.parentItemId : itemId;
 
     return { itemId, targetItemId, method: method!, confidence, itemsCreated, notes };
   }
@@ -146,11 +130,7 @@ export class EntityResolver {
           eq(catalogExternalIds.dataset, dataset),
           or(
             ...refs.map((r) =>
-              and(
-                eq(catalogExternalIds.provider, r.provider),
-                eq(catalogExternalIds.idType, r.idType),
-                eq(catalogExternalIds.externalId, r.value),
-              ),
+              and(eq(catalogExternalIds.provider, r.provider), eq(catalogExternalIds.idType, r.idType), eq(catalogExternalIds.externalId, r.value)),
             ),
           ),
         ),
@@ -187,10 +167,7 @@ export class EntityResolver {
     const matches = rows.filter(
       (r) =>
         (year === undefined || yearOf(r.releaseDate) === year) &&
-        (!location ||
-          (r.latitude !== null &&
-            r.longitude !== null &&
-            haversineMeters({ latitude: r.latitude, longitude: r.longitude }, location) <= 150)),
+        (!location || (r.latitude !== null && r.longitude !== null && haversineMeters({ latitude: r.latitude, longitude: r.longitude }, location) <= 150)),
     );
     return matches.length === 1 ? matches[0]!.id : null;
   }
@@ -246,9 +223,7 @@ export class EntityResolver {
           itemType: candidate.itemType,
           title: candidate.title,
           normalizedTitle: normalizeTitle(candidate.title),
-          ...(candidate.attributes?.releaseYear
-            ? { releaseDate: `${candidate.attributes.releaseYear}-01-01`, releaseDatePrecision: 'year' as const }
-            : {}),
+          ...(candidate.attributes?.releaseYear ? { releaseDate: `${candidate.attributes.releaseYear}-01-01`, releaseDatePrecision: 'year' as const } : {}),
           ...(location
             ? {
                 latitude: location.latitude,
@@ -331,7 +306,10 @@ export class EntityResolver {
         itemId = existing.itemId;
         if (options.refresh) {
           const { createdVia: _createdVia, dataset: _dataset, ...updatable } = values;
-          await tx.update(catalogItems).set({ ...updatable, updatedAt: sql`now()` }).where(eq(catalogItems.id, itemId));
+          await tx
+            .update(catalogItems)
+            .set({ ...updatable, updatedAt: sql`now()` })
+            .where(eq(catalogItems.id, itemId));
         }
       } else {
         const [row] = await tx.insert(catalogItems).values(values).returning({ id: catalogItems.id });
@@ -384,4 +362,3 @@ async function lockRefs(tx: Tx, refs: readonly ExternalIdRef[], dataset: Dataset
   const keys = [...new Set(refs.map((r) => `${dataset}:${r.provider}:${r.idType}:${r.value}`))].sort();
   for (const key of keys) await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${key}, 0))`);
 }
-

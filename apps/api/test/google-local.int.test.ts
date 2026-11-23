@@ -96,7 +96,11 @@ describe('conexión con Google desde la API', () => {
     expect(((await (await api('/v1/me/connections')).json()) as ConnectionDto[]).some((c) => c.sourceKey === 'google_portability')).toBe(false);
     // Otra cuenta no puede quedarse con la conexión (ni gastar el código).
     const otherCode = (await createOrResetLocalUser(database.db, { handle: 'test_google_otra', displayName: 'Otra (simulada)' })).code;
-    const otherLogin = await realFetch(`${base}/v1/dev/session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle: 'test_google_otra', code: otherCode }) });
+    const otherLogin = await realFetch(`${base}/v1/dev/session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handle: 'test_google_otra', code: otherCode }),
+    });
     const otherToken = ((await otherLogin.json()) as { token: string }).token;
     const stolen = await realFetch(`${base}/v1/me/connections/confirm`, {
       method: 'POST',

@@ -186,7 +186,9 @@ describe('amigos desde los contactos (SHA-256 de emails verificados)', () => {
     const { code, userId } = await handoff(subject);
     const session = (await (await call('POST', '/v1/auth/exchange', undefined, { code, codeVerifier: VERIFIER })).json()) as AuthSessionDto;
     // En el alta se elige si te pueden encontrar por tus contactos (apagado por defecto).
-    expect((await call('POST', '/v1/me/onboarding', session.accessToken, { adult: true, termsAccepted: true, displayName: name, discoverableByContacts })).status).toBe(204);
+    expect(
+      (await call('POST', '/v1/me/onboarding', session.accessToken, { adult: true, termsAccepted: true, displayName: name, discoverableByContacts })).status,
+    ).toBe(204);
     return { token: session.accessToken, userId };
   }
 

@@ -17,11 +17,7 @@ export function isLocalRedirect(redirectUri: string): boolean {
  * elige ahí los datos y la duración (una vez, 30 o 180 días). El verificador PKCE viaja en `pending` (Redis, con el
  * `state`), nunca al cliente.
  */
-export function startPortabilityConnect(
-  client: GooglePortabilityClient,
-  groups: readonly ResourceGroup[],
-  context: ConnectContext,
-): AuthResult {
+export function startPortabilityConnect(client: GooglePortabilityClient, groups: readonly ResourceGroup[], context: ConnectContext): AuthResult {
   if (!context.state) throw new SourceError('not_configured', 'Falta el state del flujo de autorización', false);
   const pkce = createPkce();
   return {
@@ -61,9 +57,7 @@ export async function completePortabilityConnect(
     throw new SourceError('verification_failed', 'No marcaste ningún dato en Google: vuelve a conectar y elige al menos uno', false);
   }
   const access = await client.accessType(token.access_token);
-  const expiresAt = token.refresh_token_expires_in
-    ? new Date(Date.now() + token.refresh_token_expires_in * 1000).toISOString()
-    : undefined;
+  const expiresAt = token.refresh_token_expires_in ? new Date(Date.now() + token.refresh_token_expires_in * 1000).toISOString() : undefined;
   // Sin refresh token (Google no lo entrega en todos los casos; comprobado el 2026-10-15 con un consentimiento real
   // mostrado y aceptado): se guarda el access token y su caducidad. Basta para iniciar los exports en el primer sync,
   // que la API lanza al conectar; cuando caduque, el usuario tendrá que renovar el permiso para volver a exportar.

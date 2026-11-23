@@ -176,7 +176,9 @@ export function useSocialAction() {
     },
     onSuccess: async () => {
       await Promise.all(
-        [dataKeys.friends, dataKeys.following, dataKeys.blocks, dataKeys.soulmates, ['person'], ['chat']].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+        [dataKeys.friends, dataKeys.following, dataKeys.blocks, dataKeys.soulmates, ['person'], ['chat']].map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
       );
     },
   });
@@ -286,10 +288,7 @@ export function useDisconnect() {
   const invalidate = useInvalidateUserData();
   return useMutation({
     mutationFn: ({ connectionId, purge }: { connectionId: string; purge: boolean }) =>
-      apiRequest<DisconnectResultDto>(
-        `/v1/me/connections/${connectionId}?purge=${purge ? 'true' : 'false'}`,
-        { method: 'DELETE' },
-      ),
+      apiRequest<DisconnectResultDto>(`/v1/me/connections/${connectionId}?purge=${purge ? 'true' : 'false'}`, { method: 'DELETE' }),
     onSuccess: invalidate,
   });
 }
@@ -319,7 +318,12 @@ export const chatKeys = {
 };
 
 export function useChatConfig() {
-  return useQuery({ queryKey: chatKeys.config, queryFn: () => apiRequest<ChatConfigDto>('/v1/me/chats/config'), enabled: useHasSession(), staleTime: 5 * 60_000 });
+  return useQuery({
+    queryKey: chatKeys.config,
+    queryFn: () => apiRequest<ChatConfigDto>('/v1/me/chats/config'),
+    enabled: useHasSession(),
+    staleTime: 5 * 60_000,
+  });
 }
 
 /** Bandeja: solicitudes, nuevos matches y conversaciones. Sin push todavía (fase 12C): se consulta periódicamente. */

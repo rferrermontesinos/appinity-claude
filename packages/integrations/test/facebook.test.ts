@@ -30,8 +30,20 @@ describe('Facebook · tipo de página', () => {
   it('semántica: me gusta débil (+0,6), no consumido, y menos confianza si tiene más de 5 años', () => {
     const now = new Date('2026-10-26T00:00:00Z');
     const map = (created: string) =>
-      parseObservation(mapFacebook({ recordId: 'page:1', like: like('1', 'Crims', { created_time: created }), identified: entity('podcasts', 'Crims') }, { userId: USER, connectionId: USER, source: 'facebook' }, now)[0]!);
-    expect(map('2025-01-01T10:00:00+0000')).toMatchObject({ preferenceScore: 0.6, preferenceBasis: 'explicit_like', consumedConfidence: 0, knownConfidence: 0.95, preferenceConfidence: 0.57 });
+      parseObservation(
+        mapFacebook(
+          { recordId: 'page:1', like: like('1', 'Crims', { created_time: created }), identified: entity('podcasts', 'Crims') },
+          { userId: USER, connectionId: USER, source: 'facebook' },
+          now,
+        )[0]!,
+      );
+    expect(map('2025-01-01T10:00:00+0000')).toMatchObject({
+      preferenceScore: 0.6,
+      preferenceBasis: 'explicit_like',
+      consumedConfidence: 0,
+      knownConfidence: 0.95,
+      preferenceConfidence: 0.57,
+    });
     expect(map('2015-01-01T10:00:00+0000').preferenceConfidence).toBeCloseTo(0.57 * 0.7, 4);
   });
 });
@@ -43,7 +55,13 @@ describe('Facebook · conexión y sync', () => {
       const url = new URL(input.toString());
       urls.push(url.toString());
       if (url.pathname.endsWith('/oauth/access_token')) {
-        return new Response(JSON.stringify(url.searchParams.get('grant_type') === 'fb_exchange_token' ? { access_token: 'largo', expires_in: 5_184_000 } : { access_token: 'corto', expires_in: 3600 }));
+        return new Response(
+          JSON.stringify(
+            url.searchParams.get('grant_type') === 'fb_exchange_token'
+              ? { access_token: 'largo', expires_in: 5_184_000 }
+              : { access_token: 'corto', expires_in: 3600 },
+          ),
+        );
       }
       if (url.pathname.endsWith('/me/permissions')) {
         return new Response(JSON.stringify({ data: [{ permission: 'user_likes', status: options.granted === false ? 'declined' : 'granted' }] }));
@@ -60,7 +78,15 @@ describe('Facebook · conexión y sync', () => {
             }),
           );
         }
-        return new Response(JSON.stringify({ data: [like('12', 'Stranger Things', { category: 'TV Show' }), like('13', 'Zara', { category: 'Clothing (Brand)' }), like('14', 'Serie Desconocida', { category: 'TV Show' })] }));
+        return new Response(
+          JSON.stringify({
+            data: [
+              like('12', 'Stranger Things', { category: 'TV Show' }),
+              like('13', 'Zara', { category: 'Clothing (Brand)' }),
+              like('14', 'Serie Desconocida', { category: 'TV Show' }),
+            ],
+          }),
+        );
       }
       return new Response('{}', { status: 404 });
     }) as typeof fetch;
@@ -68,7 +94,8 @@ describe('Facebook · conexión y sync', () => {
   }
 
   const identifier = {
-    identifyByExternalIds: async (items: Array<{ facebook?: string }>) => items.map((i) => (i.facebook === 'vetustamorla' ? entity('music', 'Vetusta Morla') : null)),
+    identifyByExternalIds: async (items: Array<{ facebook?: string }>) =>
+      items.map((i) => (i.facebook === 'vetustamorla' ? entity('music', 'Vetusta Morla') : null)),
     identifyPlace: async (p: { name: string }) => (p.name === 'Casa Lucio' ? entity('food', 'Casa Lucio', 'osm') : null),
     identifyArtists: async () => [{ entity: null }],
     identifyWork: async (w: { title: string }) => (w.title === 'Stranger Things' ? entity('series', 'Stranger Things', 'wikidata_title') : null),
@@ -76,7 +103,12 @@ describe('Facebook · conexión y sync', () => {
 
   it('pide solo user_likes, cambia el código por un token de 60 días y exige que el permiso se haya concedido', async () => {
     const { urls, fetchImpl } = fakeFacebook();
-    const adapter = createFacebookAdapter({ appId: '1234567890', appSecret: 'secreto', redirectUri: 'http://localhost:3100/v1/connect/facebook/callback', fetchImpl });
+    const adapter = createFacebookAdapter({
+      appId: '1234567890',
+      appSecret: 'secreto',
+      redirectUri: 'http://localhost:3100/v1/connect/facebook/callback',
+      fetchImpl,
+    });
     const start = await adapter.connect({ userId: USER, state: 'estado-123' } as never);
     expect(start.kind).toBe('redirect');
     const auth = new URL((start as { url: string }).url);
@@ -86,7 +118,12 @@ describe('Facebook · conexión y sync', () => {
     expect(done).toMatchObject({ kind: 'connected', credentials: { accessToken: 'largo' }, scopes: ['user_likes'] });
     expect(urls.some((u) => u.includes('grant_type=fb_exchange_token'))).toBe(true);
 
-    const declined = createFacebookAdapter({ appId: '1', appSecret: 's', redirectUri: 'http://localhost/cb', fetchImpl: fakeFacebook({ granted: false }).fetchImpl });
+    const declined = createFacebookAdapter({
+      appId: '1',
+      appSecret: 's',
+      redirectUri: 'http://localhost/cb',
+      fetchImpl: fakeFacebook({ granted: false }).fetchImpl,
+    });
     await expect(declined.completeConnect!({ userId: USER, callbackParams: { code: 'abc' } } as never)).rejects.toThrow(/no se concedió/i);
   });
 
@@ -105,7 +142,11 @@ describe('Wikidata · cuentas de Facebook e Instagram', () => {
     const { WikidataWorkIdentifier } = await import('../src/catalog/wikidata-works.js');
     const claim = (v: unknown) => ({ mainsnak: { datavalue: { value: v } } });
     const entities: Record<string, unknown> = {
-      Q100: { id: 'Q100', labels: { es: { value: 'Rosalía' } }, claims: { P31: [claim({ id: 'Q5' })], P106: [claim({ id: 'Q177220' })], P2013: [claim('rosalia')], P2003: [claim('rosalia.vt')] } },
+      Q100: {
+        id: 'Q100',
+        labels: { es: { value: 'Rosalía' } },
+        claims: { P31: [claim({ id: 'Q5' })], P106: [claim({ id: 'Q177220' })], P2013: [claim('rosalia')], P2003: [claim('rosalia.vt')] },
+      },
     };
     const searches: string[] = [];
     const fetchImpl = (async (input: string | URL | Request) => {

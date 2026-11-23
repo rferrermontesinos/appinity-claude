@@ -42,29 +42,18 @@ function ProfileRow({ profile, onPress }: { profile: ProfileView; onPress: () =>
   const c = usePalette();
   const scenarios = scenarioKeys(profile);
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={profile.item.title}
-      onPress={onPress}
-      style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
-    >
+    <Pressable accessibilityRole="button" accessibilityLabel={profile.item.title} onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
       <Card style={{ gap: spacing.sm }}>
         <View style={{ flexDirection: 'row', gap: spacing.md }}>
-          <CatalogImage
-            image={profile.item.primaryImage}
-            category={profile.item.category}
-            compact
-            style={{ width: 56, height: 80, borderRadius: radius.sm }}
-          />
+          <CatalogImage image={profile.item.primaryImage} category={profile.item.category} compact style={{ width: 56, height: 80, borderRadius: radius.sm }} />
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={{ color: c.text, fontWeight: '700', fontSize: 15 }} numberOfLines={2}>
               {profile.item.title}
             </Text>
-            <Small style={{ color: CATEGORY_META[profile.item.category].color, fontWeight: '700' }}>
-              {t(`categories.${profile.item.category}`)}
-            </Small>
+            <Small style={{ color: CATEGORY_META[profile.item.category].color, fontWeight: '700' }}>{t(`categories.${profile.item.category}`)}</Small>
             <Small>
-              {profile.sources.map((k) => t(`sources.names.${k}`, { defaultValue: k })).join(', ')} · {t('model.evidenceCount', { count: profile.evidenceCount })}
+              {profile.sources.map((k) => t(`sources.names.${k}`, { defaultValue: k })).join(', ')} ·{' '}
+              {t('model.evidenceCount', { count: profile.evidenceCount })}
             </Small>
             {profile.hasConflict ? <Badge label={t('model.conflict')} color={c.warn} /> : null}
           </View>
@@ -95,9 +84,7 @@ export default function ModelScreen() {
   // En una cuenta real es «Tus gustos»; con datos simulados sigue siendo la demo del modelo.
   const live = useMe().data?.user.dataset === 'live';
   // Primero los gustos claros, luego lo que no tiene preferencia (NULL) y al final los disgustos.
-  const rows = [...(profiles.data ?? [])].sort(
-    (a, b) => (b.preferenceScore ?? -0.001) - (a.preferenceScore ?? -0.001),
-  );
+  const rows = [...(profiles.data ?? [])].sort((a, b) => (b.preferenceScore ?? -0.001) - (a.preferenceScore ?? -0.001));
 
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
@@ -136,9 +123,7 @@ export default function ModelScreen() {
           </View>
         }
         ListEmptyComponent={profiles.isSuccess ? <Body muted>{t('model.empty')}</Body> : null}
-        renderItem={({ item }) => (
-          <ProfileRow profile={item} onPress={() => openItem(item.item.id)} />
-        )}
+        renderItem={({ item }) => <ProfileRow profile={item} onPress={() => openItem(item.item.id)} />}
       />
     </View>
   );

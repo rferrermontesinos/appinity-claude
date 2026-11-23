@@ -50,9 +50,18 @@ export async function enrichPosters(db: Database, options: PosterOptions & { dat
   const headers = { 'User-Agent': options.userAgent, Accept: 'application/json' };
   // Obras con QID sin cartel todavía (sin imagen, o con logotipo o foto de Commons).
   const rows = await db
-    .select({ itemId: catalogItems.id, category: catalogItems.category, title: catalogItems.title, qid: catalogExternalIds.externalId, imageId: catalogImages.id })
+    .select({
+      itemId: catalogItems.id,
+      category: catalogItems.category,
+      title: catalogItems.title,
+      qid: catalogExternalIds.externalId,
+      imageId: catalogImages.id,
+    })
     .from(catalogItems)
-    .innerJoin(catalogExternalIds, and(eq(catalogExternalIds.catalogItemId, catalogItems.id), eq(catalogExternalIds.provider, 'wikidata'), eq(catalogExternalIds.idType, 'entity')))
+    .innerJoin(
+      catalogExternalIds,
+      and(eq(catalogExternalIds.catalogItemId, catalogItems.id), eq(catalogExternalIds.provider, 'wikidata'), eq(catalogExternalIds.idType, 'entity')),
+    )
     .leftJoin(catalogImages, eq(catalogImages.catalogItemId, catalogItems.id))
     .where(
       and(
@@ -74,7 +83,10 @@ export async function enrichPosters(db: Database, options: PosterOptions & { dat
   const claims = new Map<string, Claims>();
   for (let i = 0; i < rows.length; i += 50) {
     const ids = [...new Set(rows.slice(i, i + 50).map((r) => r.qid))];
-    const response = await fetchImpl(`${WIKIDATA_API}?action=wbgetentities&format=json&props=claims&ids=${ids.join('|')}`, { headers, signal: AbortSignal.timeout(20_000) });
+    const response = await fetchImpl(`${WIKIDATA_API}?action=wbgetentities&format=json&props=claims&ids=${ids.join('|')}`, {
+      headers,
+      signal: AbortSignal.timeout(20_000),
+    });
     if (!response.ok) break;
     const data = (await response.json()) as { entities?: Record<string, { claims?: Claims }> };
     for (const [qid, e] of Object.entries(data.entities ?? {})) claims.set(qid, e.claims ?? {});
@@ -92,7 +104,13 @@ export async function enrichPosters(db: Database, options: PosterOptions & { dat
         const show = (await response.json()) as { url?: string; image?: { original?: string; medium?: string } | null };
         const url = show.image?.original ?? show.image?.medium;
         if (url?.startsWith('https://')) {
-          poster = { source: 'tvmaze', url, descriptionUrl: show.url ?? 'https://www.tvmaze.com', license: 'CC BY-SA 4.0', licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/' };
+          poster = {
+            source: 'tvmaze',
+            url,
+            descriptionUrl: show.url ?? 'https://www.tvmaze.com',
+            license: 'CC BY-SA 4.0',
+            licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+          };
         }
       }
       await sleep(600); // TVmaze: 20 peticiones cada 10 s.
@@ -101,11 +119,20 @@ export async function enrichPosters(db: Database, options: PosterOptions & { dat
       const tmdbId = firstString(c, row.category === 'movies' ? 'P4947' : 'P4983');
       if (tmdbId && /^\d+$/.test(tmdbId)) {
         const kind = row.category === 'movies' ? 'movie' : 'tv';
-        const response = await fetchImpl(`${TMDB_API}/${kind}/${tmdbId}?api_key=${encodeURIComponent(options.tmdbApiKey)}&language=es-ES`, { headers, signal: AbortSignal.timeout(15_000) }).catch(() => null);
+        const response = await fetchImpl(`${TMDB_API}/${kind}/${tmdbId}?api_key=${encodeURIComponent(options.tmdbApiKey)}&language=es-ES`, {
+          headers,
+          signal: AbortSignal.timeout(15_000),
+        }).catch(() => null);
         if (response?.ok) {
           const data = (await response.json()) as { poster_path?: string | null };
           if (data.poster_path) {
-            poster = { source: 'tmdb', url: `${TMDB_IMAGES}${data.poster_path}`, descriptionUrl: `https://www.themoviedb.org/${kind}/${tmdbId}`, license: 'uso no comercial', licenseUrl: 'https://www.themoviedb.org/api-terms-of-use' };
+            poster = {
+              source: 'tmdb',
+              url: `${TMDB_IMAGES}${data.poster_path}`,
+              descriptionUrl: `https://www.themoviedb.org/${kind}/${tmdbId}`,
+              license: 'uso no comercial',
+              licenseUrl: 'https://www.themoviedb.org/api-terms-of-use',
+            };
           }
         }
         await sleep(250);
@@ -135,13 +162,19 @@ export async function enrichPosters(db: Database, options: PosterOptions & { dat
         updatedAt: new Date(),
       };
       if (row.imageId) await db.update(catalogImages).set(values).where(eq(catalogImages.id, row.imageId));
-      else await db.insert(catalogImages).values({ catalogItemId: row.itemId, role: 'primary', ...values }).onConflictDoNothing();
+      else
+        await db
+          .insert(catalogImages)
+          .values({ catalogItemId: row.itemId, role: 'primary', ...values })
+          .onConflictDoNothing();
       result[poster.source]++;
     }
     // Revisado (con o sin cartel): no se vuelve a preguntar hasta que haya clave de TMDb nueva o se borre la marca.
     await db
       .update(catalogItems)
-      .set({ metadata: sql`${catalogItems.metadata} || ${JSON.stringify({ posterCheckedAt: new Date().toISOString(), posterWithTmdb: Boolean(options.tmdbApiKey) })}::jsonb` })
+      .set({
+        metadata: sql`${catalogItems.metadata} || ${JSON.stringify({ posterCheckedAt: new Date().toISOString(), posterWithTmdb: Boolean(options.tmdbApiKey) })}::jsonb`,
+      })
       .where(eq(catalogItems.id, row.itemId));
   }
   return result;

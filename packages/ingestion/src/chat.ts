@@ -1,13 +1,4 @@
-import {
-  conversationMembers,
-  conversations,
-  friendships,
-  messageRequests,
-  messages,
-  userAffinities,
-  userProfiles,
-  type Database,
-} from '@appinity/database';
+import { conversationMembers, conversations, friendships, messageRequests, messages, userAffinities, userProfiles, type Database } from '@appinity/database';
 import { and, asc, count, desc, eq, gt, gte, inArray, isNull, lt, ne, or, sql } from 'drizzle-orm';
 import { ConflictError, ForbiddenError, NotFoundError, RateLimitedError } from './errors.js';
 import { canSeePerson } from './soulmates.js';
@@ -89,7 +80,10 @@ function cleanBody(body: string): string {
 
 async function conversationOfPair(db: Db, a: string, b: string) {
   const [low, high] = ordered(a, b);
-  const [row] = await db.select().from(conversations).where(and(eq(conversations.userLow, low), eq(conversations.userHigh, high)));
+  const [row] = await db
+    .select()
+    .from(conversations)
+    .where(and(eq(conversations.userLow, low), eq(conversations.userHigh, high)));
   return row ?? null;
 }
 
@@ -146,10 +140,7 @@ export async function closeChatForBlock(db: Db, a: string, b: string, now: Date)
   await db
     .delete(messageRequests)
     .where(
-      or(
-        and(eq(messageRequests.senderId, a), eq(messageRequests.recipientId, b)),
-        and(eq(messageRequests.senderId, b), eq(messageRequests.recipientId, a)),
-      ),
+      or(and(eq(messageRequests.senderId, a), eq(messageRequests.recipientId, b)), and(eq(messageRequests.senderId, b), eq(messageRequests.recipientId, a))),
     );
 }
 
@@ -255,14 +246,7 @@ export async function sendChatInterest(db: Database, policy: ChatPolicy, from: s
 }
 
 /** Primer mensaje directo (PREMIUM_DIRECT_MESSAGE). El entitlement se comprueba en servidor. */
-export async function sendDirectMessage(
-  db: Database,
-  policy: ChatPolicy,
-  from: string,
-  to: string,
-  body: string,
-  now = new Date(),
-): Promise<MatchResult> {
+export async function sendDirectMessage(db: Database, policy: ChatPolicy, from: string, to: string, body: string, now = new Date()): Promise<MatchResult> {
   if (!policy.premiumDirectMessage || !(await policy.isPremium(from))) throw new ForbiddenError('Necesitas Premium para escribir sin match');
   const text = cleanBody(body);
   if (!(await canSeePerson(db, from, to))) throw new NotFoundError('Persona no encontrada');
@@ -292,13 +276,7 @@ export async function sendDirectMessage(
 }
 
 /** Aceptar (match) o ignorar una solicitud recibida. Solo quien la recibe puede responderla. */
-export async function respondChatRequest(
-  db: Database,
-  userId: string,
-  requestId: string,
-  action: 'accept' | 'ignore',
-  now = new Date(),
-): Promise<MatchResult> {
+export async function respondChatRequest(db: Database, userId: string, requestId: string, action: 'accept' | 'ignore', now = new Date()): Promise<MatchResult> {
   const [row] = await db.select().from(messageRequests).where(eq(messageRequests.id, requestId));
   if (!row || row.recipientId !== userId || row.status !== 'pending') throw new NotFoundError('Solicitud no encontrada');
   if (!(await canSeePerson(db, userId, row.senderId))) throw new NotFoundError('Persona no encontrada');
@@ -324,7 +302,9 @@ async function memberConversation(db: Database, userId: string, conversationId: 
   const [row] = await db
     .select()
     .from(conversations)
-    .where(and(eq(conversations.id, conversationId), eq(conversations.status, 'active'), or(eq(conversations.userLow, userId), eq(conversations.userHigh, userId))));
+    .where(
+      and(eq(conversations.id, conversationId), eq(conversations.status, 'active'), or(eq(conversations.userLow, userId), eq(conversations.userHigh, userId))),
+    );
   if (!row) throw new NotFoundError('Conversación no encontrada');
   const other = otherOf(row, userId);
   if (!(await canSeePerson(db, userId, other))) throw new NotFoundError('Conversación no encontrada');
@@ -359,7 +339,10 @@ export async function sendMessage(
   const { conversation } = await memberConversation(db, userId, conversationId);
   if (clientId) {
     // Reintento del mismo envío: se devuelve el mensaje ya guardado.
-    const [dup] = await db.select().from(messages).where(and(eq(messages.senderId, userId), eq(messages.clientId, clientId)));
+    const [dup] = await db
+      .select()
+      .from(messages)
+      .where(and(eq(messages.senderId, userId), eq(messages.clientId, clientId)));
     if (dup) return toMessage(dup, userId);
   }
   await assertMessageQuota(db, userId, now);
@@ -398,7 +381,16 @@ async function peopleRows(db: Database, viewer: string, ids: string[]): Promise<
   return new Map(
     ids.map((id) => {
       const p = profileOf.get(id);
-      return [id, { userId: id, displayName: p?.displayName ?? '—', countryCode: p?.countryCode ?? null, avatarUrl: p?.avatarUrl ?? null, affinity: affinityOf.get(id) ?? null }];
+      return [
+        id,
+        {
+          userId: id,
+          displayName: p?.displayName ?? '—',
+          countryCode: p?.countryCode ?? null,
+          avatarUrl: p?.avatarUrl ?? null,
+          affinity: affinityOf.get(id) ?? null,
+        },
+      ];
     }),
   );
 }
@@ -437,7 +429,10 @@ export async function conversationMessages(
       person,
       otherLastReadAt: otherMember?.lastReadAt?.toISOString() ?? null,
     },
-    messages: rows.slice(0, limit).reverse().map((m) => toMessage(m, userId)),
+    messages: rows
+      .slice(0, limit)
+      .reverse()
+      .map((m) => toMessage(m, userId)),
     hasMore: rows.length > limit,
   };
 }

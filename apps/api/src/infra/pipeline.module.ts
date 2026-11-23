@@ -21,13 +21,26 @@ import { ADAPTER_REGISTRY, DATABASE, ENTITY_RESOLVER, QUEUES, STORAGE } from './
           demoMode: env.DEMO_MODE,
           ...(env.STEAM_WEB_API_KEY ? { steam: { apiKey: env.STEAM_WEB_API_KEY } } : {}),
           ...(env.TRAKT_CLIENT_ID
-            ? { trakt: { clientId: env.TRAKT_CLIENT_ID, redirectUri: env.TRAKT_REDIRECT_URI, ...(env.TRAKT_CLIENT_SECRET ? { clientSecret: env.TRAKT_CLIENT_SECRET } : {}) } }
+            ? {
+                trakt: {
+                  clientId: env.TRAKT_CLIENT_ID,
+                  redirectUri: env.TRAKT_REDIRECT_URI,
+                  ...(env.TRAKT_CLIENT_SECRET ? { clientSecret: env.TRAKT_CLIENT_SECRET } : {}),
+                },
+              }
             : {}),
           ...(env.ANILIST_CLIENT_ID && env.ANILIST_CLIENT_SECRET
             ? { anilist: { clientId: env.ANILIST_CLIENT_ID, clientSecret: env.ANILIST_CLIENT_SECRET, redirectUri: env.ANILIST_REDIRECT_URI } }
             : {}),
           ...(env.FACEBOOK_APP_ID && env.FACEBOOK_APP_SECRET
-            ? { facebook: { appId: env.FACEBOOK_APP_ID, appSecret: env.FACEBOOK_APP_SECRET, redirectUri: env.FACEBOOK_REDIRECT_URI, graphVersion: env.FACEBOOK_GRAPH_VERSION } }
+            ? {
+                facebook: {
+                  appId: env.FACEBOOK_APP_ID,
+                  appSecret: env.FACEBOOK_APP_SECRET,
+                  redirectUri: env.FACEBOOK_REDIRECT_URI,
+                  graphVersion: env.FACEBOOK_GRAPH_VERSION,
+                },
+              }
             : {}),
           // La API solo conecta y desconecta Google; la identificación de catálogo la hace el worker al sincronizar.
           ...(env.GOOGLE_OAUTH_CLIENT_ID && env.GOOGLE_OAUTH_CLIENT_SECRET
@@ -52,8 +65,7 @@ import { ADAPTER_REGISTRY, DATABASE, ENTITY_RESOLVER, QUEUES, STORAGE } from './
     {
       provide: ENTITY_RESOLVER,
       inject: [APP_ENV, DATABASE],
-      useFactory: (env: AppEnv, database: DatabaseHandle) =>
-        new EntityResolver(database.db, env.DEMO_MODE ? [new WikidataSnapshotProvider()] : []),
+      useFactory: (env: AppEnv, database: DatabaseHandle) => new EntityResolver(database.db, env.DEMO_MODE ? [new WikidataSnapshotProvider()] : []),
     },
     {
       provide: QUEUES,

@@ -1,11 +1,7 @@
 import type { ProfileSourceAdapter, ProfileSourceManifest } from '@appinity/shared';
 import { PLANNED_MANIFESTS } from './planned.js';
 import { createFixtureAdapters } from './profile/fixture/index.js';
-import {
-  GOOGLE_PORTABILITY_MANIFEST,
-  createGooglePortabilityAdapter,
-  type GooglePortabilityAdapterOptions,
-} from './profile/google-portability/index.js';
+import { GOOGLE_PORTABILITY_MANIFEST, createGooglePortabilityAdapter, type GooglePortabilityAdapterOptions } from './profile/google-portability/index.js';
 import { GOOGLE_CALENDAR_MANIFEST, createGoogleCalendarAdapter, type GoogleCalendarOptions } from './profile/google-calendar/index.js';
 import { GOOGLE_BOOKS_MANIFEST, createGoogleBooksAdapter, type GoogleBooksOptions } from './profile/google-books/index.js';
 import { STEAM_MANIFEST, createSteamAdapter, type SteamAdapterOptions } from './profile/steam/index.js';
@@ -101,7 +97,10 @@ export function createAdapterRegistry(options: RegistryOptions): AdapterRegistry
       ...unconfigured(map, ANILIST_MANIFEST, 'Faltan ANILIST_CLIENT_ID y ANILIST_CLIENT_SECRET en el .env del servidor (crea la app en AniList)'),
       ...unconfigured(map, GOOGLE_BOOKS_MANIFEST, 'Falta el cliente OAuth de Google en el .env del servidor'),
       ...unconfigured(map, GOOGLE_CALENDAR_MANIFEST, 'Falta el cliente OAuth de Google en el .env del servidor'),
-      ...PLANNED_MANIFESTS.filter((p) => !map.has(p.key) && p.key !== 'google_portability' && p.key !== 'google_books').map((p) => ({ ...p, connectable: false })),
+      ...PLANNED_MANIFESTS.filter((p) => !map.has(p.key) && p.key !== 'google_portability' && p.key !== 'google_books').map((p) => ({
+        ...p,
+        connectable: false,
+      })),
     ],
   };
 }

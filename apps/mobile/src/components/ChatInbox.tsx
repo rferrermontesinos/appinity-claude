@@ -30,8 +30,14 @@ function LatestHero({ item }: { item: ChatListItemDto }) {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
         <PersonAvatar name={item.person.displayName} url={item.person.avatarUrl} size={56} ring={onPoster.lime} />
         <View style={{ flex: 1 }}>
-          <Text style={{ color: onPoster.muted, fontSize: 12, fontWeight: '600', letterSpacing: 0.4, textTransform: 'uppercase' }}>{t('chat.latestKicker')}</Text>
-          <Text accessibilityRole="header" style={{ color: onPoster.text, fontFamily: fonts.displayHeavy, fontSize: 24, letterSpacing: -0.6 }} numberOfLines={1}>
+          <Text style={{ color: onPoster.muted, fontSize: 12, fontWeight: '600', letterSpacing: 0.4, textTransform: 'uppercase' }}>
+            {t('chat.latestKicker')}
+          </Text>
+          <Text
+            accessibilityRole="header"
+            style={{ color: onPoster.text, fontFamily: fonts.displayHeavy, fontSize: 24, letterSpacing: -0.6 }}
+            numberOfLines={1}
+          >
             {item.person.displayName}
           </Text>
         </View>
@@ -52,7 +58,11 @@ function LatestHero({ item }: { item: ChatListItemDto }) {
           {last.body}
         </Text>
       </View>
-      <Button label={item.unread ? t('chat.replyCount', { count: item.unread }) : t('chat.open')} icon="chat-processing-outline" onPress={() => router.push(`/chat/${item.conversationId}`)} />
+      <Button
+        label={item.unread ? t('chat.replyCount', { count: item.unread }) : t('chat.open')}
+        icon="chat-processing-outline"
+        onPress={() => router.push(`/chat/${item.conversationId}`)}
+      />
     </AuraCard>
   );
 }
@@ -69,7 +79,14 @@ function ConversationRow({ item }: { item: ChatListItemDto }) {
       accessibilityRole="button"
       accessibilityLabel={`${item.person.displayName}. ${last.mine ? t('chat.you') : ''}${last.body}${unread ? `. ${t('chat.unreadA11y', { count: item.unread })}` : ''}`}
       onPress={() => router.push(`/chat/${item.conversationId}`)}
-      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm, minHeight: 64, opacity: pressed ? 0.7 : 1 })}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+        paddingVertical: spacing.sm,
+        minHeight: 64,
+        opacity: pressed ? 0.7 : 1,
+      })}
     >
       <PersonAvatar name={item.person.displayName} url={item.person.avatarUrl} size={48} ring />
       <View style={{ flex: 1, gap: 2 }}>
@@ -85,7 +102,17 @@ function ConversationRow({ item }: { item: ChatListItemDto }) {
         </Text>
       </View>
       {unread ? (
-        <View style={{ minWidth: 24, height: 24, borderRadius: 12, backgroundColor: c.accent, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 }}>
+        <View
+          style={{
+            minWidth: 24,
+            height: 24,
+            borderRadius: 12,
+            backgroundColor: c.accent,
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingHorizontal: 6,
+          }}
+        >
           <Text style={{ color: c.accentText, fontSize: 12, fontWeight: '800' }}>{item.unread}</Text>
         </View>
       ) : null}
@@ -118,9 +145,17 @@ function LegacyRequest({ request }: { request: ChatRequestDto }) {
           size="small"
           icon="chat-processing-outline"
           loading={action.isPending}
-          onPress={() => action.mutate({ kind: 'accept', requestId: request.requestId }, { onSuccess: (r) => r?.conversationId && router.push(`/chat/${r.conversationId}`) })}
+          onPress={() =>
+            action.mutate({ kind: 'accept', requestId: request.requestId }, { onSuccess: (r) => r?.conversationId && router.push(`/chat/${r.conversationId}`) })
+          }
         />
-        <Button label={t('chat.ignore')} size="small" variant="secondary" disabled={action.isPending} onPress={() => action.mutate({ kind: 'ignore', requestId: request.requestId })} />
+        <Button
+          label={t('chat.ignore')}
+          size="small"
+          variant="secondary"
+          disabled={action.isPending}
+          onPress={() => action.mutate({ kind: 'ignore', requestId: request.requestId })}
+        />
       </View>
     </View>
   );
@@ -148,7 +183,10 @@ export function ChatInbox({ onExplore }: { onExplore: () => void }) {
       {latest ? <LatestHero item={latest} /> : null}
       {rest.length ? (
         <View>
-          <Text accessibilityRole="header" style={{ color: c.text, fontFamily: fonts.display, fontSize: 20, letterSpacing: -0.4, marginTop: spacing.sm, marginBottom: spacing.xs }}>
+          <Text
+            accessibilityRole="header"
+            style={{ color: c.text, fontFamily: fonts.display, fontSize: 20, letterSpacing: -0.4, marginTop: spacing.sm, marginBottom: spacing.xs }}
+          >
             {t('chat.moreConversations')}
           </Text>
           {rest.map((m) => (
@@ -157,7 +195,12 @@ export function ChatInbox({ onExplore }: { onExplore: () => void }) {
         </View>
       ) : null}
       {!latest && !data.requests.length ? (
-        <EmptyState icon="chat-outline" title={t('chat.emptyTitle')} body={t('chat.empty')} action={{ label: t('chat.explore'), icon: 'account-heart-outline', onPress: onExplore }} />
+        <EmptyState
+          icon="chat-outline"
+          title={t('chat.emptyTitle')}
+          body={t('chat.empty')}
+          action={{ label: t('chat.explore'), icon: 'account-heart-outline', onPress: onExplore }}
+        />
       ) : null}
       <Small>{t('chat.pollingNote')}</Small>
     </>

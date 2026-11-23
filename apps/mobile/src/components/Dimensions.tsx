@@ -17,7 +17,11 @@ function Cell({ label, value, detail, color }: { label: string; value: string; d
     <View style={{ flex: 1, backgroundColor: c.surfaceAlt, borderRadius: radius.sm, padding: spacing.sm, gap: 2 }}>
       <Text style={{ color: c.textMuted, fontSize: 11, fontWeight: '700' }}>{label}</Text>
       <Text style={{ color: color ?? c.text, fontSize: 17, fontWeight: '800' }}>{value}</Text>
-      {detail ? <Text style={{ color: c.textMuted, fontSize: 10 }} numberOfLines={2}>{detail}</Text> : null}
+      {detail ? (
+        <Text style={{ color: c.textMuted, fontSize: 10 }} numberOfLines={2}>
+          {detail}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -35,8 +39,7 @@ export function Dimensions({
 }: Pick<ItemProfileDto, 'knownConfidence' | 'consumedConfidence' | 'preferenceScore' | 'preferenceConfidence' | 'preferenceBasis'>) {
   const { t } = useTranslation();
   const c = usePalette();
-  const prefColor =
-    preferenceScore === null ? c.textMuted : preferenceScore > 0.05 ? c.positive : preferenceScore < -0.05 ? c.negative : c.neutral;
+  const prefColor = preferenceScore === null ? c.textMuted : preferenceScore > 0.05 ? c.positive : preferenceScore < -0.05 ? c.negative : c.neutral;
   return (
     <View style={{ flexDirection: 'row', gap: spacing.sm }}>
       <Cell label={t('dimensions.known')} value={fmt(knownConfidence)} />

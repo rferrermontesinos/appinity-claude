@@ -102,13 +102,21 @@ export default function CategoryScreen() {
               {feed.expanding ? <Small style={{ textAlign: 'center' }}>{t('categoriesScreen.expanding')}</Small> : null}
               {feed.loading ? <Loading /> : null}
               {!feed.loading && feed.pending ? <Small style={{ textAlign: 'center' }}>{t('categoriesScreen.expandPending')}</Small> : null}
-              {!feed.loading && feed.done ? <Small style={{ textAlign: 'center' }}>{t(local ? 'categoriesScreen.endLocal' : 'categoriesScreen.endCatalog')}</Small> : null}
-              {!feed.loading && !feed.done ? <Button label={t('categoriesScreen.loadMore')} icon="chevron-down" variant="secondary" onPress={() => void feed.more()} /> : null}
+              {!feed.loading && feed.done ? (
+                <Small style={{ textAlign: 'center' }}>{t(local ? 'categoriesScreen.endLocal' : 'categoriesScreen.endCatalog')}</Small>
+              ) : null}
+              {!feed.loading && !feed.done ? (
+                <Button label={t('categoriesScreen.loadMore')} icon="chevron-down" variant="secondary" onPress={() => void feed.more()} />
+              ) : null}
             </View>
           ) : null
         }
         renderItem={({ item: row }) =>
-          row.kind === 'header' ? <SectionHeader section={row.section} /> : <RankedRow r={row.r} rank={row.rank} featured={row.rank <= 3 && sectionOf(row.r) === 'data'} world={world} />
+          row.kind === 'header' ? (
+            <SectionHeader section={row.section} />
+          ) : (
+            <RankedRow r={row.r} rank={row.rank} featured={row.rank <= 3 && sectionOf(row.r) === 'data'} world={world} />
+          )
         }
       />
     </View>

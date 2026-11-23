@@ -1,6 +1,12 @@
 import { parseObservation, type IdentifiedEntity, type SyncContext } from '@appinity/shared';
 import { describe, expect, it } from 'vitest';
-import { calendarCandidates, createGoogleCalendarAdapter, googleCalendarConnection, mapCalendar, type CalendarEvent } from '../src/profile/google-calendar/index.js';
+import {
+  calendarCandidates,
+  createGoogleCalendarAdapter,
+  googleCalendarConnection,
+  mapCalendar,
+  type CalendarEvent,
+} from '../src/profile/google-calendar/index.js';
 import { googleBooksConnection } from '../src/profile/google-books/index.js';
 
 /** Google y el catálogo SIMULADOS: nada sale a la red. */
@@ -13,7 +19,14 @@ const ev = (summary: string, location: string | undefined, date: string, extra: 
   eventType: 'default',
   ...extra,
 });
-const place = (title: string, category: 'food' | 'culture'): IdentifiedEntity => ({ category, itemType: category === 'food' ? 'restaurant' : 'venue', title, canonicalIds: { 'osm:node': title.length.toString() }, confidence: 0.855, method: 'geocodificado_osm' });
+const place = (title: string, category: 'food' | 'culture'): IdentifiedEntity => ({
+  category,
+  itemType: category === 'food' ? 'restaurant' : 'venue',
+  title,
+  canonicalIds: { 'osm:node': title.length.toString() },
+  confidence: 0.855,
+  method: 'geocodificado_osm',
+});
 
 describe('Google Calendar · candidatos', () => {
   it('lugar con nombre, conciertos y películas con prefijo; ignora en línea, privados, direcciones, cancelados y cumpleaños', () => {
@@ -39,9 +52,18 @@ describe('Google Calendar · candidatos', () => {
 
   it('semántica §6: un evento es intención — conocido 0,8 × confianza, consumido 0, preferencia NULL', () => {
     const o = parseObservation(
-      mapCalendar({ recordId: 'food:osm:node:1', identified: place('Casa Lucio', 'food'), events: 2, date: '2026-06-01T21:30:00+02:00', upcoming: false }, { userId: USER, connectionId: USER, source: 'google_calendar' })[0]!,
+      mapCalendar(
+        { recordId: 'food:osm:node:1', identified: place('Casa Lucio', 'food'), events: 2, date: '2026-06-01T21:30:00+02:00', upcoming: false },
+        { userId: USER, connectionId: USER, source: 'google_calendar' },
+      )[0]!,
     );
-    expect(o).toMatchObject({ knownConfidence: 0.684, consumedConfidence: 0, preferenceScore: null, preferenceBasis: null, engagement: { type: 'saved', value: 2 } });
+    expect(o).toMatchObject({
+      knownConfidence: 0.684,
+      consumedConfidence: 0,
+      preferenceScore: null,
+      preferenceBasis: null,
+      engagement: { type: 'saved', value: 2 },
+    });
   });
 });
 
@@ -61,7 +83,8 @@ describe('Google Calendar · sync', () => {
       return new Response(JSON.stringify({ items }));
     }) as typeof fetch;
     const identifier = {
-      identifyPlacesByText: async (places: Array<{ name: string }>) => places.map((p) => ({ entity: p.name === 'Casa Lucio' ? place('Casa Lucio', 'food') : place('Teatro Real', 'culture') })),
+      identifyPlacesByText: async (places: Array<{ name: string }>) =>
+        places.map((p) => ({ entity: p.name === 'Casa Lucio' ? place('Casa Lucio', 'food') : place('Teatro Real', 'culture') })),
       identifyArtists: async (names: string[]) => names.map(() => ({ entity: null, reason: 'no_match' })),
       identifyWork: async () => null,
     } as unknown as Parameters<typeof createGoogleCalendarAdapter>[0]['identifier'];
@@ -83,7 +106,9 @@ describe('Google Calendar · sync', () => {
   });
 
   it('el permiso compartido del alta no se revoca al desconectar (ni Calendar ni Books)', async () => {
-    expect(googleCalendarConnection({ access_token: 'a', refresh_token: 'r', scope: 'openid https://www.googleapis.com/auth/calendar.events.readonly' })).toMatchObject({ credentials: { refreshToken: 'r', sharedGrant: '1' } });
+    expect(
+      googleCalendarConnection({ access_token: 'a', refresh_token: 'r', scope: 'openid https://www.googleapis.com/auth/calendar.events.readonly' }),
+    ).toMatchObject({ credentials: { refreshToken: 'r', sharedGrant: '1' } });
     expect(() => googleCalendarConnection({ access_token: 'a', scope: 'openid' })).toThrow(/Google Calendar/);
     expect(googleBooksConnection({ access_token: 'a', refresh_token: 'r' }, { shared: true })).toMatchObject({ credentials: { sharedGrant: '1' } });
     expect(googleBooksConnection({ access_token: 'a', refresh_token: 'r' })).not.toMatchObject({ credentials: { sharedGrant: '1' } });

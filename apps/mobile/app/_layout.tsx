@@ -61,9 +61,7 @@ function SessionGate() {
 }
 
 export default function RootLayout() {
-  const [queryClient] = useState(
-    () => new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 30_000 } } }),
-  );
+  const [queryClient] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 30_000 } } }));
   const c = usePalette();
   const mode = useThemeMode((s) => s.mode);
   // Bricolage Grotesque se carga sin bloquear: hasta entonces, los titulares usan la fuente del sistema.

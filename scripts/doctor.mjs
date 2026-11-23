@@ -7,9 +7,7 @@ import { lanCandidates, parseEnv } from './lib/network.mjs';
 
 const root = new URL('../', import.meta.url);
 const env = existsSync(new URL('.env', root)) ? parseEnv(readFileSync(new URL('.env', root), 'utf8')) : new Map();
-const mobileEnv = existsSync(new URL('apps/mobile/.env', root))
-  ? parseEnv(readFileSync(new URL('apps/mobile/.env', root), 'utf8'))
-  : new Map();
+const mobileEnv = existsSync(new URL('apps/mobile/.env', root)) ? parseEnv(readFileSync(new URL('apps/mobile/.env', root), 'utf8')) : new Map();
 const port = env.get('API_PORT') || '3100';
 
 const ok = (msg) => console.log(`  ✔ ${msg}`);

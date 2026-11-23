@@ -1,12 +1,6 @@
 import { playtimePreference } from '@appinity/algorithms';
 import type { NormalizeContext, NormalizedObservation } from '@appinity/shared';
-import {
-  STEAM_MAPPER_VERSION,
-  STEAM_MIN_HOURS_FOR_PREFERENCE,
-  STEAM_PREFERENCE_CONFIDENCE,
-  STEAM_TERMS_URL,
-  steamCapsuleUrl,
-} from './constants.js';
+import { STEAM_MAPPER_VERSION, STEAM_MIN_HOURS_FOR_PREFERENCE, STEAM_PREFERENCE_CONFIDENCE, STEAM_TERMS_URL, steamCapsuleUrl } from './constants.js';
 import { steamGameSchema } from './schemas.js';
 
 /**
@@ -21,10 +15,7 @@ export function mapSteamGame(raw: unknown, context: NormalizeContext): Normalize
   const hours = game.playtime_forever / 60;
   const recordId = `app:${game.appid}`;
   const title = game.name ?? `Steam app ${game.appid}`;
-  const score =
-    game.playtime_forever === 0
-      ? null
-      : playtimePreference(hours, context.stats?.playtimeP95Hours ?? null, STEAM_MIN_HOURS_FOR_PREFERENCE);
+  const score = game.playtime_forever === 0 ? null : playtimePreference(hours, context.stats?.playtimeP95Hours ?? null, STEAM_MIN_HOURS_FOR_PREFERENCE);
   const lastPlayed = game.rtime_last_played ? new Date(game.rtime_last_played * 1000).toISOString() : null;
 
   return [
@@ -59,9 +50,7 @@ export function mapSteamGame(raw: unknown, context: NormalizeContext): Normalize
       preferenceConfidence: score === null ? null : STEAM_PREFERENCE_CONFIDENCE,
       preferenceBasis: score === null ? null : 'strong_behavior',
       engagement:
-        game.playtime_forever === 0
-          ? { type: 'owned', value: 0, unit: 'hours' }
-          : { type: 'played', value: Math.round(hours * 10) / 10, unit: 'hours' },
+        game.playtime_forever === 0 ? { type: 'owned', value: 0, unit: 'hours' } : { type: 'played', value: Math.round(hours * 10) / 10, unit: 'hours' },
       metadata: {
         snapshot: true,
         playtimeForeverMinutes: game.playtime_forever,

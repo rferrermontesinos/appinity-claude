@@ -8,14 +8,7 @@ import {
 } from '@appinity/shared';
 import { describe, expect, it } from 'vitest';
 import { createFixtureAdapter } from '../src/profile/fixture/index.js';
-import {
-  mapActivityRecord,
-  mapAudioRecord,
-  mapDiaryRecord,
-  mapPlayRecord,
-  mapScreenRecord,
-  partialDate,
-} from '../src/profile/fixture/mapper.js';
+import { mapActivityRecord, mapAudioRecord, mapDiaryRecord, mapPlayRecord, mapScreenRecord, partialDate } from '../src/profile/fixture/mapper.js';
 import { createAdapterRegistry } from '../src/registry.js';
 
 const LAURA = '00000000-0000-4000-a000-000000000001';
@@ -65,7 +58,13 @@ async function syncAll(source: (typeof FIXTURE_SOURCE_KEYS)[number], userId: str
 describe('mapper fixture_screen (clase TMDb)', () => {
   it('valoración 1–10 normalizada con la fórmula de la especificación', () => {
     const [o] = mapScreenRecord(
-      { id: 'x', type: 'rating', media: { kind: 'movie', tmdbId: 289, imdbId: 'tt0034583', title: 'Casablanca', year: 1942 }, rating: 9, at: '2026-03-14T21:40:00Z' },
+      {
+        id: 'x',
+        type: 'rating',
+        media: { kind: 'movie', tmdbId: 289, imdbId: 'tt0034583', title: 'Casablanca', year: 1942 },
+        rating: 9,
+        at: '2026-03-14T21:40:00Z',
+      },
       ctx(),
     );
     expect(o).toMatchObject({
@@ -101,15 +100,16 @@ describe('mapper fixture_screen (clase TMDb)', () => {
   });
 
   it('rechaza en runtime una valoración fuera de escala', () => {
-    expect(() =>
-      mapScreenRecord({ id: 'z', type: 'rating', media: { kind: 'movie', tmdbId: 1, title: 'X' }, rating: 11, at: null }, ctx()),
-    ).toThrow();
+    expect(() => mapScreenRecord({ id: 'z', type: 'rating', media: { kind: 'movie', tmdbId: 1, title: 'X' }, rating: 11, at: null }, ctx())).toThrow();
   });
 });
 
 describe('mapper fixture_diary', () => {
   it('usa la escala real de 0,5 a 5 estrellas', () => {
-    const [o] = mapDiaryRecord({ entryId: 'd', kind: 'book', ref: { isbn13: '9780141439471', title: 'Frankenstein' }, status: 'rated', stars: 2, date: '2026-06-03' }, ctx());
+    const [o] = mapDiaryRecord(
+      { entryId: 'd', kind: 'book', ref: { isbn13: '9780141439471', title: 'Frankenstein' }, status: 'rated', stars: 2, date: '2026-06-03' },
+      ctx(),
+    );
     expect(o!.preferenceScore).toBeCloseTo(-0.3333, 4);
     expect(o!.externalItem.canonicalIds).toEqual({ 'isbn:isbn13': '9780141439471' });
   });
@@ -239,14 +239,21 @@ describe('registro de adapters', () => {
 
   it('con DEMO_MODE registra las cinco fuentes simuladas, identificadas como tales', () => {
     const registry = createAdapterRegistry({ demoMode: true });
-    expect(registry.adapters().map((a) => a.manifest.key).sort()).toEqual([...FIXTURE_SOURCE_KEYS].sort());
+    expect(
+      registry
+        .adapters()
+        .map((a) => a.manifest.key)
+        .sort(),
+    ).toEqual([...FIXTURE_SOURCE_KEYS].sort());
     for (const adapter of registry.adapters()) {
       expect(adapter.manifest).toMatchObject({ simulated: true, availability: 'fixture', authentication: 'fixture' });
     }
   });
 
   it('las fuentes previstas no declaran capacidades no verificadas', () => {
-    const planned = createAdapterRegistry({ demoMode: true }).manifests().filter((m) => m.availability === 'planned');
+    const planned = createAdapterRegistry({ demoMode: true })
+      .manifests()
+      .filter((m) => m.availability === 'planned');
     expect(planned.length).toBeGreaterThan(0);
     for (const m of planned) expect(Object.values(m.capabilities).every((v) => v === false)).toBe(true);
   });

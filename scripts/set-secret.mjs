@@ -20,8 +20,7 @@ const ALLOWED = {
   GOOGLE_OAUTH_CLIENT_SECRET: {
     pattern: /^GOCSPX-[A-Za-z0-9_-]{20,}$/,
     description: 'el secreto del cliente OAuth de Google, que empieza por GOCSPX-',
-    hint: (value) =>
-      value.endsWith('.apps.googleusercontent.com') ? 'Eso es el ID de cliente: guárdalo con GOOGLE_OAUTH_CLIENT_ID.' : undefined,
+    hint: (value) => (value.endsWith('.apps.googleusercontent.com') ? 'Eso es el ID de cliente: guárdalo con GOOGLE_OAUTH_CLIENT_ID.' : undefined),
   },
   TRAKT_CLIENT_ID: { pattern: /^[A-Za-z0-9_-]{20,128}$/, description: 'el Client ID de tu app de Trakt (letras, números, - y _)' },
   TRAKT_CLIENT_SECRET: { pattern: /^[A-Za-z0-9_-]{20,128}$/, description: 'el Client Secret de tu app de Trakt (letras, números, - y _)' },
@@ -108,9 +107,7 @@ function readHidden(prompt) {
 }
 
 const { pattern, description, hexOnly = false, hint } = ALLOWED[name];
-const raw = fromClipboard
-  ? readClipboard()
-  : await readHidden(`Pega el valor de ${name} y pulsa Enter (verás un * por carácter, no el valor): `);
+const raw = fromClipboard ? readClipboard() : await readHidden(`Pega el valor de ${name} y pulsa Enter (verás un * por carácter, no el valor): `);
 const value = sanitizeSecret(raw);
 if (!pattern.test(value)) {
   console.error(`El valor no tiene el formato esperado para ${name}. No se ha guardado nada.`);

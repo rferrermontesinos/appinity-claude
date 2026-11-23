@@ -1365,3 +1365,14 @@ Cambios técnicos de seguridad hechos a la vez (no requerían decisión):
 Pendiente y no hecho (congelación de alcance o falta de cuentas): Sentry y vía de feedback (cuenta de Sentry del
 titular), cliente de push en la app (`expo-notifications` + FCM), textos legales con los datos del responsable, recálculo
 de la rareza de `affinity-v5` (deuda técnica anotada en la evaluación).
+
+## 2026-11-22 · Fases B1–B10 hasta la beta cerrada y formato del código (B1)
+
+- **Plan**: diez fases encadenadas hasta la beta cerrada Android ([fases-beta.md](fases-beta.md)), cada una en su PR
+  sobre la anterior y la primera sobre la PR #26. Ninguna añade funciones: el alcance sigue congelado.
+- **Prettier con `printWidth` 160** (antes 110, que nunca se había aplicado): es el ancho con el que está escrito el
+  código. Formatear con 110 tocaba 257 ficheros (+15.121/−3.202 líneas); con 160, 192 ficheros (+4.222/−1.610), casi
+  todo saltos de línea en objetos y JSON largos. Un único commit de formato, sin cambios de comportamiento, apuntado en
+  `.git-blame-ignore-revs` para que `git blame` y GitHub lo salten.
+- La CI ejecuta `pnpm format:check` después del lint, así que la deriva no vuelve. Markdown y `docs/` siguen fuera de
+  Prettier (`.prettierignore`).

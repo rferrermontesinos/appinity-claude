@@ -157,7 +157,16 @@ export async function sendDueDigests(db: Database, sender: PushSender, options: 
         const ticket = tickets[i];
         return ticket?.status === 'error' && ticket.error === 'DeviceNotRegistered';
       });
-      if (gone.length) await db.update(pushTokens).set({ disabledAt: now }).where(inArray(pushTokens.token, gone.map((t) => t.token)));
+      if (gone.length)
+        await db
+          .update(pushTokens)
+          .set({ disabledAt: now })
+          .where(
+            inArray(
+              pushTokens.token,
+              gone.map((t) => t.token),
+            ),
+          );
       // Cada ticket se guarda con su token («id|token») para poder desactivarlo si el recibo dice que ya no existe.
       const ok = tickets.flatMap((t, i) => (t.status === 'ok' ? [{ id: t.id, token: tokens[i]!.token }] : []));
       await finish({
@@ -165,7 +174,7 @@ export async function sendDueDigests(db: Database, sender: PushSender, options: 
         recommendations: digest.recommendations,
         unreadChats: digest.unreadChats,
         tickets: ok.map((t) => `${t.id}|${t.token}`),
-        error: ok.length ? null : (tickets.find((t) => t.status === 'error') as { message?: string } | undefined)?.message?.slice(0, 200) ?? 'sin tickets',
+        error: ok.length ? null : ((tickets.find((t) => t.status === 'error') as { message?: string } | undefined)?.message?.slice(0, 200) ?? 'sin tickets'),
       });
       if (ok.length) result.sent++;
       else result.failed++;
@@ -203,7 +212,16 @@ export async function checkDigestReceipts(db: Database, sender: PushSender, opti
     const r = receipts[p.id];
     return r?.status === 'error' && r.error === 'DeviceNotRegistered';
   });
-  if (gone.length) await db.update(pushTokens).set({ disabledAt: now }).where(inArray(pushTokens.token, gone.map((p) => p.token)));
+  if (gone.length)
+    await db
+      .update(pushTokens)
+      .set({ disabledAt: now })
+      .where(
+        inArray(
+          pushTokens.token,
+          gone.map((p) => p.token),
+        ),
+      );
   let errors = 0;
   let checked = 0;
   for (const delivery of pending) {

@@ -68,7 +68,10 @@ export class CatalogQueryService {
       .orderBy(asc(catalogItems.normalizedTitle), asc(catalogItems.id))
       .limit(options.limit)
       .offset(options.offset);
-    const dtos = await this.dtos(rows.map((r) => r.id), baseUrl);
+    const dtos = await this.dtos(
+      rows.map((r) => r.id),
+      baseUrl,
+    );
     const next = options.offset + rows.length;
     return {
       items: rows.map((r) => dtos.get(r.id)!),

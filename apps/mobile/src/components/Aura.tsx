@@ -8,7 +8,13 @@ import { motion } from '../theme';
 export function mixHex(a: string, b: string, t: number): string {
   const pa = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16));
   const pb = [1, 3, 5].map((i) => parseInt(b.slice(i, i + 2), 16));
-  return `#${pa.map((v, i) => Math.round(v + (pb[i]! - v) * t).toString(16).padStart(2, '0')).join('')}`;
+  return `#${pa
+    .map((v, i) =>
+      Math.round(v + (pb[i]! - v) * t)
+        .toString(16)
+        .padStart(2, '0'),
+    )
+    .join('')}`;
 }
 
 /**
@@ -24,7 +30,16 @@ export function Glow({ color, size, x, y, strength }: { color: string; size: num
         return (
           <View
             key={i}
-            style={{ position: 'absolute', left: x - d / 2, top: y - d / 2, width: d, height: d, borderRadius: d / 2, backgroundColor: color, opacity: strength }}
+            style={{
+              position: 'absolute',
+              left: x - d / 2,
+              top: y - d / 2,
+              width: d,
+              height: d,
+              borderRadius: d / 2,
+              backgroundColor: color,
+              opacity: strength,
+            }}
           />
         );
       })}
@@ -93,7 +108,15 @@ export function Grain({ opacity = 0.35 }: { opacity?: number }) {
 }
 
 /** Colores sobre un cartel `AuraCard` (fondo oscuro fijo en ambos temas): AA comprobado en el peor brillo. */
-export const onPoster = { base: '#141708', text: '#F5F3F0', muted: 'rgba(245,243,240,0.78)', lime: '#D4F45A', onLime: '#141A02', track: 'rgba(255,255,255,0.12)', glass: 'rgba(12,12,14,0.45)' };
+export const onPoster = {
+  base: '#141708',
+  text: '#F5F3F0',
+  muted: 'rgba(245,243,240,0.78)',
+  lime: '#D4F45A',
+  onLime: '#141A02',
+  track: 'rgba(255,255,255,0.12)',
+  glass: 'rgba(12,12,14,0.45)',
+};
 
 /**
  * Cartel de «Aura» para los momentos de persona: fondo oscuro teñido con `accent`, brillo lima arriba a la izquierda,
@@ -101,7 +124,12 @@ export const onPoster = { base: '#141708', text: '#F5F3F0', muted: 'rgba(245,243
  */
 export function AuraCard({ accent, children, style }: { accent: string; children: ReactNode; style?: StyleProp<ViewStyle> }) {
   return (
-    <View style={[{ borderRadius: 30, overflow: 'hidden', padding: 18, gap: 4, backgroundColor: onPoster.base, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }, style]}>
+    <View
+      style={[
+        { borderRadius: 30, overflow: 'hidden', padding: 18, gap: 4, backgroundColor: onPoster.base, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+        style,
+      ]}
+    >
       <View pointerEvents="none" aria-hidden accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
         <View style={[StyleSheet.absoluteFill, { backgroundColor: mixHex(accent, onPoster.base, 0.88) }]} />
         <Glow color={onPoster.lime} size={420} x={-40} y={-60} strength={0.012} />

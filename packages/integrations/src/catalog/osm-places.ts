@@ -1,11 +1,4 @@
-import {
-  SourceError,
-  normalizeTitle,
-  type Category,
-  type IdentifiedEntity,
-  type PlaceIdentification,
-  type PlaceToIdentify,
-} from '@appinity/shared';
+import { SourceError, normalizeTitle, type Category, type IdentifiedEntity, type PlaceIdentification, type PlaceToIdentify } from '@appinity/shared';
 import { z } from 'zod';
 
 /**
@@ -54,8 +47,33 @@ const CULTURE_HISTORIC = new Set(['castle', 'monument', 'archaeological_site']);
  * como «de»: «Museu de la Sagrada Família» coincidiría con «Sagrada Família» por delante de la basílica.
  */
 const GENERIC_WORDS = new Set([
-  'restaurante', 'restaurant', 'bar', 'cafe', 'cafeteria', 'taberna', 'tasca', 'pizzeria', 'museo', 'museu', 'museum',
-  'teatro', 'teatre', 'theatre', 'theater', 'cine', 'cinema', 'cines', 'galeria', 'gallery', 'el', 'la', 'los', 'las', 'les', 'l', 'the',
+  'restaurante',
+  'restaurant',
+  'bar',
+  'cafe',
+  'cafeteria',
+  'taberna',
+  'tasca',
+  'pizzeria',
+  'museo',
+  'museu',
+  'museum',
+  'teatro',
+  'teatre',
+  'theatre',
+  'theater',
+  'cine',
+  'cinema',
+  'cines',
+  'galeria',
+  'gallery',
+  'el',
+  'la',
+  'los',
+  'las',
+  'les',
+  'l',
+  'the',
 ]);
 /**
  * Nombre sin descriptor: Google añade a menudo uno tras un separador («Can Pep - Tapas Bar», «Lactuca | Cocina
@@ -308,13 +326,7 @@ export function matchPlace(place: PlaceToIdentify, elements: OsmElement[]): Plac
       // Solo comercios, servicios y lugares (lo que pide la consulta): una estación o una calle homónimas no cuentan.
       if (!at || !POI_KEYS.some((k) => tags[k])) return null;
       const elementNames = names(tags);
-      const tier = elementNames.some((n) => normalizeTitle(n) === exact)
-        ? 3
-        : elementNames.some(sameCore)
-          ? 2
-          : elementNames.some(contains)
-            ? 1
-            : 0;
+      const tier = elementNames.some((n) => normalizeTitle(n) === exact) ? 3 : elementNames.some(sameCore) ? 2 : elementNames.some(contains) ? 1 : 0;
       if (!tier) return null;
       return { el, tags, kind: classifyOsmTags(tags), at, tier, distance: distanceM(origin, at) };
     })
@@ -353,7 +365,11 @@ export function matchPlace(place: PlaceToIdentify, elements: OsmElement[]): Plac
 
 /** Palabras significativas de un nombre (sin genéricas ni palabras de menos de 3 letras). */
 function significantWords(name: string): Set<string> {
-  return new Set(stripGeneric(name).split(' ').filter((w) => w.length >= 3));
+  return new Set(
+    stripGeneric(name)
+      .split(' ')
+      .filter((w) => w.length >= 3),
+  );
 }
 
 /**

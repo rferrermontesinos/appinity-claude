@@ -101,9 +101,7 @@ const entitiesSchema = z.object({
 type Entity = z.infer<typeof entitiesSchema>['entities'][string];
 
 const ids = (entity: Entity, property: string): string[] =>
-  (entity.claims?.[property] ?? [])
-    .map((c) => (c.mainsnak.datavalue?.value as { id?: string } | undefined)?.id)
-    .filter((v): v is string => Boolean(v));
+  (entity.claims?.[property] ?? []).map((c) => (c.mainsnak.datavalue?.value as { id?: string } | undefined)?.id).filter((v): v is string => Boolean(v));
 
 function year(entity: Entity, ...properties: string[]): number | undefined {
   const years = properties
@@ -146,8 +144,7 @@ function kindOf(entity: Entity): { kind: { category: Category; itemType: string 
 }
 
 /** Categorías que se aceptan para un canal de YouTube: artistas musicales y programas de podcast. */
-const isChannelKind = (k: { category: Category; itemType: string }) =>
-  (k.category === 'music' && k.itemType === 'artist') || k.category === 'podcasts';
+const isChannelKind = (k: { category: Category; itemType: string }) => (k.category === 'music' && k.itemType === 'artist') || k.category === 'podcasts';
 
 /** Propiedades de IDs externos de obras y método de identificación que dejan constancia. */
 const EXTERNAL_ID_METHODS: Record<string, string> = {
@@ -532,18 +529,20 @@ export class WikidataWorkIdentifier {
       url.searchParams.set('format', 'json');
       for (let attempt = 0; ; attempt++) {
         // Una consulta que no cabe en 30 s (p. ej., géneros de un solista: millones de personas) se omite sin tumbar el resto.
-        const response = await this.fetchImpl(url, { headers: { 'User-Agent': this.options.userAgent, Accept: 'application/sparql-results+json' }, signal: AbortSignal.timeout(30_000) }).catch(
-          (error: Error) => {
-            if (error.name === 'TimeoutError' || error.name === 'AbortError') return null;
-            throw error;
-          },
-        );
+        const response = await this.fetchImpl(url, {
+          headers: { 'User-Agent': this.options.userAgent, Accept: 'application/sparql-results+json' },
+          signal: AbortSignal.timeout(30_000),
+        }).catch((error: Error) => {
+          if (error.name === 'TimeoutError' || error.name === 'AbortError') return null;
+          throw error;
+        });
         if (!response) break;
         if ((response.status === 429 || response.status >= 500) && attempt < 2) {
           await this.sleep(Number(response.headers.get('retry-after') ?? 0) * 1000 || 5_000 * 2 ** attempt);
           continue;
         }
-        if (!response.ok) throw new SourceError('unavailable', `Wikidata (SPARQL) respondió HTTP ${response.status}`, response.status === 429 || response.status >= 500);
+        if (!response.ok)
+          throw new SourceError('unavailable', `Wikidata (SPARQL) respondió HTTP ${response.status}`, response.status === 429 || response.status >= 500);
         const data = (await response.json()) as { results?: { bindings?: Array<Record<string, { value: string } | undefined>> } };
         for (const b of data.results?.bindings ?? []) rows.push({ relation, b });
         break;
@@ -561,7 +560,10 @@ export class WikidataWorkIdentifier {
     const ranked = [...best.entries()].sort((a, b) => b[1].weight - a[1].weight || b[1].links - a[1].links).slice(0, 12);
     if (!ranked.length) return [];
     const languages = ['es', 'en'];
-    const entities = await this.entities(ranked.map(([q]) => q), languages);
+    const entities = await this.entities(
+      ranked.map(([q]) => q),
+      languages,
+    );
     const out: RelatedWork[] = [];
     for (const [target, r] of ranked) {
       const entity = entities[target];
@@ -571,7 +573,15 @@ export class WikidataWorkIdentifier {
       if (!title) continue;
       const releaseYear = year(entity, 'P577', 'P580');
       out.push({
-        entity: { category, itemType: kind.kind.itemType, title, canonicalIds: { 'wikidata:entity': target }, ...(releaseYear ? { releaseYear } : {}), confidence: 0.95, method: 'wikidata_relacion' },
+        entity: {
+          category,
+          itemType: kind.kind.itemType,
+          title,
+          canonicalIds: { 'wikidata:entity': target },
+          ...(releaseYear ? { releaseYear } : {}),
+          confidence: 0.95,
+          method: 'wikidata_relacion',
+        },
         relation: r.relation,
         weight: r.weight,
       });
@@ -597,8 +607,12 @@ export class WikidataWorkIdentifier {
       const url = new URL(this.options.sparqlEndpoint ?? WIKIDATA_SPARQL);
       url.searchParams.set('query', query);
       url.searchParams.set('format', 'json');
-      const response = await this.fetchImpl(url, { headers: { 'User-Agent': this.options.userAgent, Accept: 'application/sparql-results+json' }, signal: AbortSignal.timeout(45_000) });
-      if (!response.ok) throw new SourceError('unavailable', `Wikidata (SPARQL) respondió HTTP ${response.status}`, response.status === 429 || response.status >= 500);
+      const response = await this.fetchImpl(url, {
+        headers: { 'User-Agent': this.options.userAgent, Accept: 'application/sparql-results+json' },
+        signal: AbortSignal.timeout(45_000),
+      });
+      if (!response.ok)
+        throw new SourceError('unavailable', `Wikidata (SPARQL) respondió HTTP ${response.status}`, response.status === 429 || response.status >= 500);
       const data = (await response.json()) as { results?: { bindings?: Array<Record<string, { value: string } | undefined>> } };
       for (const b of data.results?.bindings ?? []) {
         rows++;
@@ -617,7 +631,15 @@ export class WikidataWorkIdentifier {
       const title = label(entity, languages);
       if (!title) continue;
       const releaseYear = year(entity, 'P577', 'P580');
-      works.push({ category, itemType: kind.kind.itemType, title, canonicalIds: { 'wikidata:entity': qid }, ...(releaseYear ? { releaseYear } : {}), confidence: 0.95, method: 'wikidata_popular' });
+      works.push({
+        category,
+        itemType: kind.kind.itemType,
+        title,
+        canonicalIds: { 'wikidata:entity': qid },
+        ...(releaseYear ? { releaseYear } : {}),
+        confidence: 0.95,
+        method: 'wikidata_popular',
+      });
     }
     return { works, exhausted: false };
   }
@@ -665,7 +687,10 @@ export class WikidataWorkIdentifier {
     for (let attempt = 0; attempt < WIKIDATA_ATTEMPTS; attempt++) {
       let response: Response;
       try {
-        response = await this.fetchImpl(url, { headers: { 'User-Agent': this.options.userAgent, Accept: 'application/json' }, signal: AbortSignal.timeout(20_000) });
+        response = await this.fetchImpl(url, {
+          headers: { 'User-Agent': this.options.userAgent, Accept: 'application/json' },
+          signal: AbortSignal.timeout(20_000),
+        });
       } catch (error) {
         await wait(attempt, (error as Error).name === 'TimeoutError' ? 'sin respuesta' : 'error de red');
         continue;
@@ -704,9 +729,7 @@ function classifyChannel(channelId: string, matches: Array<{ qid: string; entity
   if (!matches.length) return { entity: null, reason: 'no_match' };
   const typed = matches.flatMap((m) => {
     const found = kindOf(m.entity);
-    return found && !found.musicWork && isChannelKind(found.kind)
-      ? [{ ...m, kind: found.kind, sitelinks: Object.keys(m.entity.sitelinks ?? {}).length }]
-      : [];
+    return found && !found.musicWork && isChannelKind(found.kind) ? [{ ...m, kind: found.kind, sitelinks: Object.keys(m.entity.sitelinks ?? {}).length }] : [];
   });
   if (!typed.length) {
     return { entity: null, reason: 'out_of_scope', scope: matches.some((m) => ids(m.entity, 'P31').includes('Q5')) ? 'persona' : 'otro tipo de canal' };

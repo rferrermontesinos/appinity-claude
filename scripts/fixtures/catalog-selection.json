@@ -23,7 +23,13 @@
     { "key": "movies/tears-of-steel", "category": "movies", "qid": "Q1173161" },
     { "key": "movies/sprite-fright", "category": "movies", "qid": "Q100999451" },
     { "key": "movies/robot-dreams", "category": "movies", "qid": "Q119786383" },
-    { "key": "movies/the-room-next-door", "category": "movies", "qid": "Q124359261", "image": null, "imageNote": "La imagen de Wikidata es una fotografía de un acto, no el cartel" },
+    {
+      "key": "movies/the-room-next-door",
+      "category": "movies",
+      "qid": "Q124359261",
+      "image": null,
+      "imageNote": "La imagen de Wikidata es una fotografía de un acto, no el cartel"
+    },
 
     { "key": "series/breaking-bad", "category": "series", "qid": "Q1079" },
     { "key": "series/game-of-thrones", "category": "series", "qid": "Q23572" },
@@ -58,7 +64,13 @@
     { "key": "games/counter-strike-2", "category": "games", "qid": "Q111165107" },
     { "key": "games/elden-ring", "category": "games", "qid": "Q64826862" },
     { "key": "games/stardew-valley", "category": "games", "qid": "Q23013817" },
-    { "key": "games/baldurs-gate-3", "category": "games", "qid": "Q64441774", "image": null, "imageNote": "El logotipo de Wikidata corresponde a otra edición de la saga" },
+    {
+      "key": "games/baldurs-gate-3",
+      "category": "games",
+      "qid": "Q64441774",
+      "image": null,
+      "imageNote": "El logotipo de Wikidata corresponde a otra edición de la saga"
+    },
     { "key": "games/portal-2", "category": "games", "qid": "Q279446", "image": null, "imageNote": "La imagen de Wikidata es un stand de feria, no el juego" },
     { "key": "games/teeworlds", "category": "games", "qid": "Q1463680" },
 
@@ -100,7 +112,15 @@
     { "key": "culture/teatre-museu-dali", "category": "culture", "qid": "Q1143722", "itemType": "museum", "locality": "Figueres" },
     { "key": "culture/setmana-del-llibre-2025", "category": "culture", "qid": "Q136385038", "itemType": "event", "locality": "Barcelona" },
     { "key": "culture/manga-barcelona-31", "category": "culture", "qid": "Q137361952", "itemType": "event", "locality": "Barcelona" },
-    { "key": "culture/viquimarato-matter-matters", "category": "culture", "qid": "Q141556536", "itemType": "event", "locality": "Barcelona", "image": null, "imageNote": "La imagen de Wikidata muestra la sede, no el evento" },
+    {
+      "key": "culture/viquimarato-matter-matters",
+      "category": "culture",
+      "qid": "Q141556536",
+      "itemType": "event",
+      "locality": "Barcelona",
+      "image": null,
+      "imageNote": "La imagen de Wikidata muestra la sede, no el evento"
+    },
 
     { "key": "podcasts/serial", "category": "podcasts", "qid": "Q18357077" },
     { "key": "podcasts/99-invisible", "category": "podcasts", "qid": "Q106800923" },
@@ -113,6 +133,12 @@
     { "key": "podcasts/the-daily", "category": "podcasts", "qid": "Q48741148" },
     { "key": "podcasts/crims", "category": "podcasts", "qid": "Q107381392" },
     { "key": "podcasts/hardcore-history", "category": "podcasts", "qid": "Q52795458" },
-    { "key": "podcasts/welcome-to-night-vale", "category": "podcasts", "qid": "Q15987193", "image": null, "imageNote": "La imagen de Wikidata es un retrato del narrador, no el programa" }
+    {
+      "key": "podcasts/welcome-to-night-vale",
+      "category": "podcasts",
+      "qid": "Q15987193",
+      "image": null,
+      "imageNote": "La imagen de Wikidata es un retrato del narrador, no el programa"
+    }
   ]
 }

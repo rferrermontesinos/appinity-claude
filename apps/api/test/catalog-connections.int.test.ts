@@ -3,15 +3,7 @@ import { EntityResolver, WikidataSnapshotProvider } from '@appinity/catalog';
 import { createDatabase, type DatabaseHandle } from '@appinity/database';
 import { runConnectionSync, seedDemo } from '@appinity/ingestion';
 import { createAdapterRegistry } from '@appinity/integrations';
-import type {
-  CatalogItemDto,
-  ConnectionDto,
-  ItemProfileDetailDto,
-  ItemProfileDto,
-  Page,
-  SourceDto,
-  SyncRunDto,
-} from '@appinity/shared';
+import type { CatalogItemDto, ConnectionDto, ItemProfileDetailDto, ItemProfileDto, Page, SourceDto, SyncRunDto } from '@appinity/shared';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { testEnv, truncateAll } from '../../../test/helpers.js';
 import { createApp } from '../dist/bootstrap.js';
@@ -119,7 +111,10 @@ describe('fuentes y conexiones', () => {
     expect(body.connection).toMatchObject({ sourceKey: 'fixture_screen', status: 'active', simulated: true });
     // Sam no tiene actividad simulada en esta fuente: el sync termina vacío, sin inventar evidencia.
     const provider = new WikidataSnapshotProvider();
-    await runConnectionSync({ database, registry: createAdapterRegistry({ demoMode: true }), resolver: new EntityResolver(database.db, [provider]) }, body.run.id);
+    await runConnectionSync(
+      { database, registry: createAdapterRegistry({ demoMode: true }), resolver: new EntityResolver(database.db, [provider]) },
+      body.run.id,
+    );
     const runs = await call<SyncRunDto[]>(`/v1/me/connections/${body.connection.id}/runs`, 'demo_sam');
     expect(runs.body[0]).toMatchObject({ status: 'succeeded', recordsReceived: 0, observationsInserted: 0 });
     const again = await call('/v1/me/connections', 'demo_sam', { method: 'POST', body: JSON.stringify({ sourceKey: 'fixture_screen' }) });

@@ -38,7 +38,11 @@ export function ProfileHero({ me }: { me: MeDto }) {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
         <PersonAvatar name={me.user.displayName} url={null} size={64} ring={onPoster.lime} />
         <View style={{ flex: 1 }}>
-          <Text accessibilityRole="header" style={{ color: onPoster.text, fontFamily: fonts.displayHeavy, fontSize: 28, lineHeight: 31, letterSpacing: -0.8 }} numberOfLines={2}>
+          <Text
+            accessibilityRole="header"
+            style={{ color: onPoster.text, fontFamily: fonts.displayHeavy, fontSize: 28, lineHeight: 31, letterSpacing: -0.8 }}
+            numberOfLines={2}
+          >
             {me.user.displayName}
           </Text>
           <Text style={{ color: onPoster.muted, fontSize: 14 }} numberOfLines={1}>
@@ -52,7 +56,18 @@ export function ProfileHero({ me }: { me: MeDto }) {
         <Stat value={soulmates.data?.items.length ?? null} label={t('profile.heroSoulmates')} people />
       </View>
       {topCategory ? (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: `${onPoster.base}73`, borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 6 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            alignSelf: 'flex-start',
+            backgroundColor: `${onPoster.base}73`,
+            borderRadius: radius.full,
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+          }}
+        >
           <MaterialCommunityIcons name={CATEGORY_META[topCategory].icon as never} size={15} color={onPoster.text} />
           <Text style={{ color: onPoster.text, fontSize: 12, fontWeight: '600' }}>{t('profile.heroTop', { category: t(`categories.${topCategory}`) })}</Text>
         </View>

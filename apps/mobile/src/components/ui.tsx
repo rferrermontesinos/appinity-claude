@@ -47,10 +47,7 @@ export function Card({ children, style }: { children: ReactNode; style?: StylePr
   const c = usePalette();
   return (
     <View
-      style={[
-        { backgroundColor: c.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: c.hairline, padding: spacing.lg, gap: spacing.sm },
-        style,
-      ]}
+      style={[{ backgroundColor: c.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: c.hairline, padding: spacing.lg, gap: spacing.sm }, style]}
     >
       {children}
     </View>
@@ -136,7 +133,20 @@ export function Badge({ label, color, background, dot }: { label: string; color:
   const c = usePalette();
   if (dot) {
     return (
-      <View style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 3, backgroundColor: c.surfaceAlt, borderWidth: 1, borderColor: c.hairline }}>
+      <View
+        style={{
+          alignSelf: 'flex-start',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+          borderRadius: radius.full,
+          paddingHorizontal: spacing.sm,
+          paddingVertical: 3,
+          backgroundColor: c.surfaceAlt,
+          borderWidth: 1,
+          borderColor: c.hairline,
+        }}
+      >
         <View style={{ width: 8, height: 8, borderRadius: radius.full, backgroundColor: color }} />
         <Text style={{ color: c.text, fontSize: 11, fontWeight: '700', letterSpacing: 0.3 }}>{label}</Text>
       </View>
@@ -180,9 +190,7 @@ export function DemoBanner({ detailed, live }: { detailed?: boolean; live?: bool
       }}
     >
       <Text style={{ color, fontWeight: '800', fontSize: 12, letterSpacing: 0.5 }}>{t(live ? 'demo.liveBanner' : 'demo.banner')}</Text>
-      {detailed ? (
-        <Text style={{ color: c.text, fontSize: 12, lineHeight: 17 }}>{t(live ? 'demo.liveBannerDetail' : 'demo.bannerDetail')}</Text>
-      ) : null}
+      {detailed ? <Text style={{ color: c.text, fontSize: 12, lineHeight: 17 }}>{t(live ? 'demo.liveBannerDetail' : 'demo.bannerDetail')}</Text> : null}
     </View>
   );
 }
@@ -228,11 +236,7 @@ export function CategoryIcon({ category, size = 22 }: { category: Category; size
         justifyContent: 'center',
       }}
     >
-      <MaterialCommunityIcons
-        name={meta.icon as keyof typeof MaterialCommunityIcons.glyphMap}
-        size={size}
-        color={meta.color}
-      />
+      <MaterialCommunityIcons name={meta.icon as keyof typeof MaterialCommunityIcons.glyphMap} size={size} color={meta.color} />
     </View>
   );
 }
@@ -307,7 +311,16 @@ export function EmptyState({
   const c = usePalette();
   return (
     <View
-      style={{ alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xxl, paddingHorizontal: spacing.xl, borderRadius: radius.lg, borderWidth: 1, borderStyle: 'dashed', borderColor: c.border }}
+      style={{
+        alignItems: 'center',
+        gap: spacing.md,
+        paddingVertical: spacing.xxl,
+        paddingHorizontal: spacing.xl,
+        borderRadius: radius.lg,
+        borderWidth: 1,
+        borderStyle: 'dashed',
+        borderColor: c.border,
+      }}
     >
       <View style={{ width: 72, height: 72, borderRadius: radius.full, backgroundColor: c.surfaceRaised, alignItems: 'center', justifyContent: 'center' }}>
         <MaterialCommunityIcons name={icon} size={32} color={c.text} />
@@ -364,9 +377,7 @@ export function TextField({
           backgroundColor: c.surface,
         }}
       />
-      {error || help ? (
-        <Text style={{ color: error ? c.danger : c.textMuted, fontSize: 12, lineHeight: 17 }}>{error ?? help}</Text>
-      ) : null}
+      {error || help ? <Text style={{ color: error ? c.danger : c.textMuted, fontSize: 12, lineHeight: 17 }}>{error ?? help}</Text> : null}
     </View>
   );
 }

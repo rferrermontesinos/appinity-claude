@@ -19,14 +19,7 @@ function LocalAccountCard() {
       <Title>{t('devLogin.localTitle')}</Title>
       <Small>{t('devLogin.localHelp')}</Small>
       <TextField label={t('devLogin.handle')} value={handle} onChangeText={setHandle} autoCapitalize="none" autoCorrect={false} />
-      <TextField
-        label={t('devLogin.code')}
-        value={code}
-        onChangeText={setCode}
-        autoCapitalize="characters"
-        autoCorrect={false}
-        secureTextEntry
-      />
+      <TextField label={t('devLogin.code')} value={code} onChangeText={setCode} autoCapitalize="characters" autoCorrect={false} secureTextEntry />
       {login.isError ? <ErrorCard error={login.error} /> : null}
       <Button
         label={t('devLogin.signIn')}

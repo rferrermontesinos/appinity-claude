@@ -1,0 +1,4 @@
+# Commits que solo cambian el formato: `git blame` y GitHub los saltan.
+# Uso local: git config blame.ignoreRevsFile .git-blame-ignore-revs
+# B1 · Prettier con printWidth 160 en todo el repositorio (2026-11-22)
+5e9b4fa9731c0a8bb7194a0c4def79d8fd8674ef

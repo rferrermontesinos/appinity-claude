@@ -44,10 +44,7 @@ export class MeController {
   }
 
   @Patch('settings')
-  updateSettings(
-    @CurrentUser() auth: AuthContext,
-    @Body(new ZodPipe(settingsSchema)) body: z.infer<typeof settingsSchema>,
-  ): Promise<MeDto> {
+  updateSettings(@CurrentUser() auth: AuthContext, @Body(new ZodPipe(settingsSchema)) body: z.infer<typeof settingsSchema>): Promise<MeDto> {
     return this.me.updateSettings(auth.userId, body as SettingsPatch);
   }
 }

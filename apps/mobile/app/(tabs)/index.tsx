@@ -69,13 +69,13 @@ export default function HomeScreen() {
       {userId ? <HomeDeckSection key={userId} onAura={setAura} /> : <Loading />}
       {/* Guía de la demo: solo con datos simulados; en una cuenta real «Tus gustos» está en Perfil. */}
       {me.data?.user.dataset === 'live' ? null : (
-      <Card>
-        <Title>{t('home.whatYouCanTest')}</Title>
-        <Small>• {t('home.testActions')}</Small>
-        <Small>• {t('home.testKnown')}</Small>
-        <Button label={t('home.openModel')} icon="database-search-outline" variant="secondary" onPress={() => router.push('/model')} />
-        <Button label={t('home.openCategories')} icon="shape-outline" variant="secondary" onPress={() => router.push('/categories')} />
-      </Card>
+        <Card>
+          <Title>{t('home.whatYouCanTest')}</Title>
+          <Small>• {t('home.testActions')}</Small>
+          <Small>• {t('home.testKnown')}</Small>
+          <Button label={t('home.openModel')} icon="database-search-outline" variant="secondary" onPress={() => router.push('/model')} />
+          <Button label={t('home.openCategories')} icon="shape-outline" variant="secondary" onPress={() => router.push('/categories')} />
+        </Card>
       )}
     </Screen>
   );
@@ -91,8 +91,7 @@ function HomeDeckSection({ onAura }: { onAura: (color: string | null) => void })
   const [intent, setIntent] = useState<DeckAction | null>(null);
   const auraColor = deck.current ? CATEGORY_META[deck.current.item.category].color : null;
   useEffect(() => onAura(auraColor), [auraColor, onAura]);
-  const emptyReason =
-    deck.meta?.localFilter === 'no_location' ? t('home.emptyNoLocation') : t('home.emptyNoSoulmates');
+  const emptyReason = deck.meta?.localFilter === 'no_location' ? t('home.emptyNoLocation') : t('home.emptyNoSoulmates');
 
   return (
     <>
@@ -110,7 +109,17 @@ function HomeDeckSection({ onAura }: { onAura: (color: string | null) => void })
                 aria-hidden
                 accessibilityElementsHidden
                 importantForAccessibility="no-hide-descendants"
-                style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden', borderRadius: radius.xl, transform: [{ translateY: 10 }, { scale: 0.95 }, { rotate: '3deg' }], opacity: 0.55 }}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  overflow: 'hidden',
+                  borderRadius: radius.xl,
+                  transform: [{ translateY: 10 }, { scale: 0.95 }, { rotate: '3deg' }],
+                  opacity: 0.55,
+                }}
               >
                 <RecommendationCard recommendation={deck.next} onAction={noop} interactive={false} />
               </View>

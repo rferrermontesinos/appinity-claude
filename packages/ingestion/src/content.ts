@@ -38,7 +38,10 @@ export async function buildContentRelations(
     join users u on u.id = p.user_id and u.dataset = ${dataset} and u.status = 'active' and u.deleted_at is null
     left join ${catalogRelationChecks} k on k.catalog_item_id = c.id
     where c.dataset = ${dataset}
-      and c.category in (${sql.join(RELATED_CATEGORIES.map((x) => sql`${x}`), sql`, `)})
+      and c.category in (${sql.join(
+        RELATED_CATEGORIES.map((x) => sql`${x}`),
+        sql`, `,
+      )})
       and p.preference_score >= ${options.minPreference ?? 0.3}
       and (k.catalog_item_id is null or k.version <> ${CONTENT_RELATIONS_VERSION}
            or k.checked_at < now() - make_interval(days => ${options.recheckDays ?? 30}))
@@ -82,7 +85,10 @@ export async function buildContentRelations(
     await db
       .insert(catalogRelationChecks)
       .values({ catalogItemId: s.item_id, version: CONTENT_RELATIONS_VERSION, relationsFound: found })
-      .onConflictDoUpdate({ target: catalogRelationChecks.catalogItemId, set: { version: CONTENT_RELATIONS_VERSION, relationsFound: found, checkedAt: new Date() } });
+      .onConflictDoUpdate({
+        target: catalogRelationChecks.catalogItemId,
+        set: { version: CONTENT_RELATIONS_VERSION, relationsFound: found, checkedAt: new Date() },
+      });
     result.sources++;
     result.relations += found;
   }
@@ -92,6 +98,11 @@ export async function buildContentRelations(
 /** Títulos de los gustos de origen, para el motivo «porque te gusta X». */
 export async function itemTitles(db: Database, ids: string[]): Promise<Map<string, string>> {
   if (!ids.length) return new Map();
-  const rows = await db.execute<{ id: string; title: string }>(sql`select id, title from ${catalogItems} where id in (${sql.join(ids.map((id) => sql`${id}`), sql`, `)})`);
+  const rows = await db.execute<{ id: string; title: string }>(
+    sql`select id, title from ${catalogItems} where id in (${sql.join(
+      ids.map((id) => sql`${id}`),
+      sql`, `,
+    )})`,
+  );
   return new Map(rows.rows.map((r) => [r.id, r.title]));
 }

@@ -17,9 +17,9 @@ export class DomainErrorsFilter implements ExceptionFilter {
             ? HttpStatus.FORBIDDEN
             : error instanceof RateLimitedError
               ? HttpStatus.TOO_MANY_REQUESTS
-            : error instanceof SourceError && error.retryable
-              ? HttpStatus.SERVICE_UNAVAILABLE
-              : HttpStatus.UNPROCESSABLE_ENTITY;
+              : error instanceof SourceError && error.retryable
+                ? HttpStatus.SERVICE_UNAVAILABLE
+                : HttpStatus.UNPROCESSABLE_ENTITY;
     response.status(status).json({ statusCode: status, error: HttpStatus[status], message: error.message });
   }
 }

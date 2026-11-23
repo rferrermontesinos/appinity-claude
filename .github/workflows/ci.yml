@@ -1,4 +1,4 @@
-# CI de APPINITY: lint, typecheck y tests (unitarios e integración) en cada push y pull request.
+# CI de APPINITY: lint, formato, typecheck y tests (unitarios e integración) en cada push y pull request.
 # Gratis en repositorios públicos. Los servicios replican docker-compose.yml (PostGIS 17 y Redis 7.4) con puertos propios
 # del runner; no se usa ningún secreto real: las claves de test son fijas y de juguete (test/helpers.ts).
 name: CI
@@ -48,5 +48,6 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
+      - run: pnpm format:check
       - run: pnpm typecheck
       - run: pnpm test

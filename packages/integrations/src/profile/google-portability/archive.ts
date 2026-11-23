@@ -54,7 +54,10 @@ export function parseStars(value: unknown): number | null {
 export function urlPattern(url: string): string {
   try {
     const u = new URL(url);
-    const params = [...u.searchParams.keys()].sort().map((k) => `${k}=…`).join('&');
+    const params = [...u.searchParams.keys()]
+      .sort()
+      .map((k) => `${k}=…`)
+      .join('&');
     const path = decodeURIComponent(u.pathname)
       .replace(/0x[0-9a-f]+/gi, '')
       .replace(/[A-Za-z0-9_-]{16,}/g, '…')
@@ -259,10 +262,7 @@ export function extractRecords(
  * Descomprime un archivo ZIP del export y lee sus JSON y CSV. El resto (HTML, audio, música subida…) solo cuenta en el
  * resumen y ni siquiera se descomprime. Los grupos de YouTube devuelven sus datos en `youtube` (se agregan después).
  */
-export function readArchive(
-  group: ResourceGroup,
-  zips: Uint8Array[],
-): { records: ExportRecord[]; summary: ArchiveSummary; youtube?: YouTubeExtract } {
+export function readArchive(group: ResourceGroup, zips: Uint8Array[]): { records: ExportRecord[]; summary: ArchiveSummary; youtube?: YouTubeExtract } {
   const files: ArchiveSummary['files'] = [];
   const json: unknown[] = [];
   const csv: Array<Array<Record<string, string>>> = [];

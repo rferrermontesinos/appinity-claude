@@ -113,14 +113,27 @@ describe('YouTube: identificación y agregación', () => {
       confidence: 0.95,
       method: 'wikidata_canal_youtube',
     };
-    const context = { userId: USER, connectionId: '20000000-0000-4000-a000-0000000000dd', source: 'google_portability' as const, stats: { yt_plays_p95_music: 40 } };
+    const context = {
+      userId: USER,
+      connectionId: '20000000-0000-4000-a000-0000000000dd',
+      source: 'google_portability' as const,
+      stats: { yt_plays_p95_music: 40 },
+    };
     const map = (record: GoogleRecord['record']) => mapGoogleRecord({ recordId: 'wd:Q44190', record, identified: artist } satisfies GoogleRecord, context)[0]!;
     const many = map({ group: 'myactivity.youtube', plays: 12, musicPlays: 12, channels: 1, date: '2026-09-01T00:00:00.000Z' });
     expect(many).toMatchObject({ observationKind: 'yt_plays', consumedConfidence: 0.95, preferenceBasis: 'strong_behavior', preferenceConfidence: 0.57 });
     expect(many.preferenceScore).toBeCloseTo(Math.log1p(12) / Math.log1p(40), 4);
     expect(map({ group: 'myactivity.youtube', plays: 2, musicPlays: 2, channels: 1 })).toMatchObject({ preferenceScore: null, preferenceBasis: null });
-    expect(map({ group: 'youtube.subscriptions', channels: 1 })).toMatchObject({ observationKind: 'yt_subscription', consumedConfidence: 0, preferenceScore: null });
-    expect(map({ group: 'youtube.music', songs: 3 })).toMatchObject({ observationKind: 'ytm_library', consumedConfidence: 0, engagement: { type: 'saved', value: 3 } });
+    expect(map({ group: 'youtube.subscriptions', channels: 1 })).toMatchObject({
+      observationKind: 'yt_subscription',
+      consumedConfidence: 0,
+      preferenceScore: null,
+    });
+    expect(map({ group: 'youtube.music', songs: 3 })).toMatchObject({
+      observationKind: 'ytm_library',
+      consumedConfidence: 0,
+      engagement: { type: 'saved', value: 3 },
+    });
     for (const record of [many, map({ group: 'youtube.music', songs: 3 })]) expect(() => parseObservation(record)).not.toThrow();
   });
 });
@@ -140,27 +153,34 @@ describe('Wikidata: canales de YouTube (P2397) y artistas por nombre', () => {
       }
       if (action === 'wbsearchentities') {
         const search = url.searchParams.get('search')!;
-        return new Response(JSON.stringify({ search: (labelSearch[search] ?? []).map((id) => ({ id, label: entities[id]!.label, match: { type: 'label', text: entities[id]!.label } })) }));
+        return new Response(
+          JSON.stringify({
+            search: (labelSearch[search] ?? []).map((id) => ({ id, label: entities[id]!.label, match: { type: 'label', text: entities[id]!.label } })),
+          }),
+        );
       }
       const claim = (v: unknown) => ({ mainsnak: { datavalue: { value: v } } });
       const out = Object.fromEntries(
-        url.searchParams.get('ids')!.split('|').map((id) => {
-          const e = entities[id]!;
-          return [
-            id,
-            {
+        url.searchParams
+          .get('ids')!
+          .split('|')
+          .map((id) => {
+            const e = entities[id]!;
+            return [
               id,
-              labels: { es: { value: e.label } },
-              sitelinks: Object.fromEntries(Array.from({ length: e.sitelinks ?? 10 }, (_, i) => [`w${i}`, {}])),
-              claims: {
-                P31: e.P31.map((q) => claim({ id: q })),
-                ...(e.P106 ? { P106: e.P106.map((q) => claim({ id: q })) } : {}),
-                ...(e.P2397 ? { P2397: e.P2397.map((c) => claim(c)) } : {}),
-                ...Object.fromEntries(Object.entries(e.ids ?? {}).map(([p, v]) => [p, [claim(v)]])),
+              {
+                id,
+                labels: { es: { value: e.label } },
+                sitelinks: Object.fromEntries(Array.from({ length: e.sitelinks ?? 10 }, (_, i) => [`w${i}`, {}])),
+                claims: {
+                  P31: e.P31.map((q) => claim({ id: q })),
+                  ...(e.P106 ? { P106: e.P106.map((q) => claim({ id: q })) } : {}),
+                  ...(e.P2397 ? { P2397: e.P2397.map((c) => claim(c)) } : {}),
+                  ...Object.fromEntries(Object.entries(e.ids ?? {}).map(([p, v]) => [p, [claim(v)]])),
+                },
               },
-            },
-          ];
-        }),
+            ];
+          }),
       );
       return new Response(JSON.stringify({ entities: out }));
     }) as typeof fetch;

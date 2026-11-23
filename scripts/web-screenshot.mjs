@@ -28,13 +28,18 @@ if (!browser) throw new Error('No se encuentra Edge ni Chrome');
 
 const port = 9333 + Math.floor(Math.random() * 500);
 const profile = mkdtempSync(join(tmpdir(), 'appinity-shot-'));
-const proc = spawn(browser, ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--no-first-run', 'about:blank'], { stdio: 'ignore' });
+const proc = spawn(browser, ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--no-first-run', 'about:blank'], {
+  stdio: 'ignore',
+});
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 try {
   let target;
   for (let i = 0; i < 50 && !target; i++) {
     await sleep(200);
-    target = await fetch(`http://127.0.0.1:${port}/json/list`).then((r) => r.json()).then((l) => l.find((t) => t.type === 'page')).catch(() => undefined);
+    target = await fetch(`http://127.0.0.1:${port}/json/list`)
+      .then((r) => r.json())
+      .then((l) => l.find((t) => t.type === 'page'))
+      .catch(() => undefined);
   }
   const ws = new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((r) => ws.addEventListener('open', r, { once: true }));
@@ -46,16 +51,32 @@ try {
   ws.addEventListener('message', (e) => {
     const msg = JSON.parse(e.data);
     if (msg.id && pending.has(msg.id)) pending.get(msg.id)(msg);
-    if (msg.method === 'Runtime.exceptionThrown') log.push('excepción: ' + (msg.params.exceptionDetails.exception?.description ?? msg.params.exceptionDetails.text).slice(0, 300));
-    if (msg.method === 'Runtime.consoleAPICalled' && ['error', 'warning'].includes(msg.params.type)) log.push(msg.params.type + ': ' + msg.params.args.map((a) => a.value ?? a.description ?? '').join(' ').slice(0, 300));
-    if (msg.method === 'Network.requestWillBeSent' && msg.params.request.url.includes(':3100')) requests.set(msg.params.requestId, msg.params.request.method + ' ' + msg.params.request.url.replace(/^https?:\/\/[^/]+/, ''));
+    if (msg.method === 'Runtime.exceptionThrown')
+      log.push('excepción: ' + (msg.params.exceptionDetails.exception?.description ?? msg.params.exceptionDetails.text).slice(0, 300));
+    if (msg.method === 'Runtime.consoleAPICalled' && ['error', 'warning'].includes(msg.params.type))
+      log.push(
+        msg.params.type +
+          ': ' +
+          msg.params.args
+            .map((a) => a.value ?? a.description ?? '')
+            .join(' ')
+            .slice(0, 300),
+      );
+    if (msg.method === 'Network.requestWillBeSent' && msg.params.request.url.includes(':3100'))
+      requests.set(msg.params.requestId, msg.params.request.method + ' ' + msg.params.request.url.replace(/^https?:\/\/[^/]+/, ''));
     if (msg.method === 'Network.responseReceived' && requests.has(msg.params.requestId)) {
       answered.add(msg.params.requestId);
       log.push('api ' + msg.params.response.status + ' ' + requests.get(msg.params.requestId));
     }
-    if (msg.method === 'Network.loadingFailed' && requests.has(msg.params.requestId)) log.push('api FALLO ' + msg.params.errorText + ' ' + requests.get(msg.params.requestId));
+    if (msg.method === 'Network.loadingFailed' && requests.has(msg.params.requestId))
+      log.push('api FALLO ' + msg.params.errorText + ' ' + requests.get(msg.params.requestId));
   });
-  const send = (method, params = {}) => new Promise((resolve) => { const n = ++id; pending.set(n, resolve); ws.send(JSON.stringify({ id: n, method, params })); });
+  const send = (method, params = {}) =>
+    new Promise((resolve) => {
+      const n = ++id;
+      pending.set(n, resolve);
+      ws.send(JSON.stringify({ id: n, method, params }));
+    });
   const evaluate = async (expression) => (await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true })).result?.result?.value;
   if (light) await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }] });
   await send('Page.enable');
@@ -120,9 +141,16 @@ try {
   // En Windows el lanzador de Edge termina enseguida y sus hijos quedan sueltos: se cierran por la ruta del perfil.
   if (process.platform === 'win32') {
     const name = profile.split(/[\\/]/).pop();
-    spawnSync('powershell', ['-NoProfile', '-Command', `Get-CimInstance Win32_Process -Filter "Name='msedge.exe' OR Name='chrome.exe'" | Where-Object { $_.CommandLine -match '${name}' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`], { stdio: 'ignore' });
-  }
-  else proc.kill('SIGKILL');
+    spawnSync(
+      'powershell',
+      [
+        '-NoProfile',
+        '-Command',
+        `Get-CimInstance Win32_Process -Filter "Name='msedge.exe' OR Name='chrome.exe'" | Where-Object { $_.CommandLine -match '${name}' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`,
+      ],
+      { stdio: 'ignore' },
+    );
+  } else proc.kill('SIGKILL');
   await sleep(500);
   try {
     rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 });

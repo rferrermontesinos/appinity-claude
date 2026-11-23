@@ -18,7 +18,14 @@ const items: Record<string, string> = {};
 async function item(key: string, category: Category) {
   const [row] = await database.db
     .insert(catalogItems)
-    .values({ dataset: 'live', category, itemType: category === 'music' ? 'artist' : 'movie', title: `Obra ${key}`, normalizedTitle: `obra ${key.toLowerCase()}`, createdVia: 'test' })
+    .values({
+      dataset: 'live',
+      category,
+      itemType: category === 'music' ? 'artist' : 'movie',
+      title: `Obra ${key}`,
+      normalizedTitle: `obra ${key.toLowerCase()}`,
+      createdVia: 'test',
+    })
     .returning({ id: catalogItems.id });
   items[key] = row!.id;
 }
@@ -41,12 +48,31 @@ async function prefer(userId: string, key: string, score: number, confidence = 1
 beforeAll(async () => {
   database = createDatabase(testEnv().DATABASE_URL!, { max: 4 });
   await truncateAll(database.db);
-  for (const [key, category] of [['A', 'movies'], ['B', 'movies'], ['C', 'movies'], ['D', 'music'], ['E', 'music'], ['F1', 'series'], ['F2', 'series'], ['F3', 'series']] as const) await item(key, category);
+  for (const [key, category] of [
+    ['A', 'movies'],
+    ['B', 'movies'],
+    ['C', 'movies'],
+    ['D', 'music'],
+    ['E', 'music'],
+    ['F1', 'series'],
+    ['F2', 'series'],
+    ['F3', 'series'],
+  ] as const)
+    await item(key, category);
   vera = (await createOrResetLocalUser(database.db, { handle: 'test_une_vera', displayName: 'Vera' })).userId;
   tomas = (await createOrResetLocalUser(database.db, { handle: 'test_une_tomas', displayName: 'Tomás' })).userId;
   // Apagado por defecto (se elige en el alta): las dos lo activan.
-  await database.db.update(userSettings).set({ shareCommonTastes: true }).where(inArray(userSettings.userId, [vera, tomas]));
-  for (const [key, v, t, tc] of [['A', 1, 1, 1], ['B', 1, 1, 1], ['C', 0.5, 1, 1], ['D', 1, -0.5, 1], ['E', 0.5, 1, 0.3]] as const) {
+  await database.db
+    .update(userSettings)
+    .set({ shareCommonTastes: true })
+    .where(inArray(userSettings.userId, [vera, tomas]));
+  for (const [key, v, t, tc] of [
+    ['A', 1, 1, 1],
+    ['B', 1, 1, 1],
+    ['C', 0.5, 1, 1],
+    ['D', 1, -0.5, 1],
+    ['E', 0.5, 1, 0.3],
+  ] as const) {
     await prefer(vera, key, v);
     await prefer(tomas, key, t, tc);
   }

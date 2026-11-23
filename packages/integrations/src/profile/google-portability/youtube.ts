@@ -230,11 +230,7 @@ function musicName(title: string, heardInMusic: boolean): string | undefined {
  * del propio usuario por categoría en `stats` para calibrar la preferencia. Suscripciones y biblioteca: una entrada
  * por artista o programa.
  */
-export async function processYouTube(
-  data: YouTubeExtract,
-  identifier: EntityIdentifier,
-  onProgress?: (message: string) => void,
-): Promise<YouTubeResult> {
+export async function processYouTube(data: YouTubeExtract, identifier: EntityIdentifier, onProgress?: (message: string) => void): Promise<YouTubeResult> {
   const progress = (done: number, total: number) => onProgress?.(`${data.group}: ${done}/${total} consultados`);
 
   if (data.group === 'myactivity.youtube') {
@@ -269,7 +265,10 @@ export async function processYouTube(
     }));
     const stats: Record<string, number> = {};
     for (const category of ['music', 'podcasts'] as const) {
-      const p95 = percentile(records.filter((r) => r.identified.category === category).map((r) => (r.record as { plays: number }).plays), 0.95);
+      const p95 = percentile(
+        records.filter((r) => r.identified.category === category).map((r) => (r.record as { plays: number }).plays),
+        0.95,
+      );
       if (p95 !== null) stats[`yt_plays_p95_${category}`] = p95;
     }
     return { records, identifications, beyondLimit: ranked.length - chosen.length, total: ranked.length, stats };

@@ -1,6 +1,30 @@
-import { EntityResolver, LocalDiskStorage, WikidataSnapshotProvider, WikimediaImages, cacheCatalogImage, WikipediaSummaries, enrichDetailsFromWikidata, enrichImagesFromWikidata, enrichPosters, enrichSummariesFromWikipedia } from '@appinity/catalog';
+import {
+  EntityResolver,
+  LocalDiskStorage,
+  WikidataSnapshotProvider,
+  WikimediaImages,
+  cacheCatalogImage,
+  WikipediaSummaries,
+  enrichDetailsFromWikidata,
+  enrichImagesFromWikidata,
+  enrichPosters,
+  enrichSummariesFromWikipedia,
+} from '@appinity/catalog';
 import { createDatabase } from '@appinity/database';
-import { buildContentRelations, createProducerQueues, expandCatalog, enqueueAffinity, enqueueImage, enqueueSync, hasStaleAffinities, recomputeAffinities, runConnectionSync, scheduleDueSyncs, sendDueDigests, checkDigestReceipts } from '@appinity/ingestion';
+import {
+  buildContentRelations,
+  createProducerQueues,
+  expandCatalog,
+  enqueueAffinity,
+  enqueueImage,
+  enqueueSync,
+  hasStaleAffinities,
+  recomputeAffinities,
+  runConnectionSync,
+  scheduleDueSyncs,
+  sendDueDigests,
+  checkDigestReceipts,
+} from '@appinity/ingestion';
 import { ExpoPushSender, createAdapterRegistry, createCatalogIdentifier, portabilityGroups } from '@appinity/integrations';
 import {
   QUEUES,
@@ -116,34 +140,57 @@ const workers: Worker[] = [
         const data = job.data as unknown as ExpandCatalogJob;
         const popular = catalogIdentifier.popularWorks;
         if (!isCategory(data.category) || !popular) return { skipped: true };
-        const result = await expandCatalog(database.db, resolver, { popularWorks: (c, o, l) => popular(c, o, l) }, { dataset: data.dataset, category: data.category });
+        const result = await expandCatalog(
+          database.db,
+          resolver,
+          { popularWorks: (c, o, l) => popular(c, o, l) },
+          { dataset: data.dataset, category: data.category },
+        );
         if (result.itemsCreated) {
           const wikimedia = new WikimediaImages({ userAgent: env.catalogUserAgent });
           const images = await enrichImagesFromWikidata(database.db, wikimedia, { dataset: data.dataset });
           for (const id of images.imageIds) await enqueueImage(producer, id);
           await enrichDetailsFromWikidata(database.db, wikimedia, { dataset: data.dataset });
           await enrichSummariesFromWikipedia(database.db, new WikipediaSummaries({ userAgent: env.catalogUserAgent }), { dataset: data.dataset });
-          await enrichPosters(database.db, { userAgent: env.catalogUserAgent, dataset: data.dataset, ...(env.tmdbApiKey ? { tmdbApiKey: env.tmdbApiKey } : {}) });
+          await enrichPosters(database.db, {
+            userAgent: env.catalogUserAgent,
+            dataset: data.dataset,
+            ...(env.tmdbApiKey ? { tmdbApiKey: env.tmdbApiKey } : {}),
+          });
         }
-        console.log(`[catálogo] ampliación de ${data.category} (${data.dataset}): ${result.itemsCreated} obras nuevas de ${result.requested}${result.exhausted ? ' · fin de la lista' : ''}`);
+        console.log(
+          `[catálogo] ampliación de ${data.category} (${data.dataset}): ${result.itemsCreated} obras nuevas de ${result.requested}${result.exhausted ? ' · fin de la lista' : ''}`,
+        );
         return result;
       }
       // Enriquecimiento del catálogo real (prioridad 2 del diagnóstico): imágenes libres de Wikidata y Commons.
       if (job.name === 'enrich-catalog') {
         // Primero las relaciones por contenido (crean objetos nuevos); después, sus imágenes.
-        const relations = await buildContentRelations(database.db, resolver, { relatedWorks: (qid, category) => catalogIdentifier.relatedWorks?.(qid, category) ?? Promise.resolve([]) }, { log: (m) => console.log(`[catálogo] ${m}`) });
+        const relations = await buildContentRelations(
+          database.db,
+          resolver,
+          { relatedWorks: (qid, category) => catalogIdentifier.relatedWorks?.(qid, category) ?? Promise.resolve([]) },
+          { log: (m) => console.log(`[catálogo] ${m}`) },
+        );
         if (relations.relations) console.log(`[catálogo] relaciones por contenido: ${JSON.stringify(relations)}`);
         // Al arrancar se revisan también las imágenes ya guardadas con las reglas actuales (cartel o logotipo en cine).
         const refresh = job.data.requestedAt === 'startup';
         const images = await enrichImagesFromWikidata(database.db, new WikimediaImages({ userAgent: env.catalogUserAgent }), { refresh });
         for (const id of images.imageIds) await enqueueImage(producer, id);
         if (images.inserted || images.updated || images.removed)
-          console.log(`[catálogo] imágenes de Wikimedia: ${images.inserted} nuevas, ${images.updated} cambiadas, ${images.removed} quitadas (${images.candidates} revisadas)`);
+          console.log(
+            `[catálogo] imágenes de Wikimedia: ${images.inserted} nuevas, ${images.updated} cambiadas, ${images.removed} quitadas (${images.candidates} revisadas)`,
+          );
         // Carteles de películas y series (TVmaze; TMDb con clave): prioridad sobre logotipos y fotos de Commons.
         // También la demo: sus obras son reales (Wikidata) y los carteles se sirven por enlace.
         for (const dataset of ['live', 'demo'] as const) {
-          const posters = await enrichPosters(database.db, { userAgent: env.catalogUserAgent, dataset, ...(env.tmdbApiKey ? { tmdbApiKey: env.tmdbApiKey } : {}) });
-          if (posters.tvmaze || posters.tmdb) console.log(`[catálogo] carteles (${dataset}): ${posters.tvmaze} de TVmaze y ${posters.tmdb} de TMDb (${posters.candidates} revisados)`);
+          const posters = await enrichPosters(database.db, {
+            userAgent: env.catalogUserAgent,
+            dataset,
+            ...(env.tmdbApiKey ? { tmdbApiKey: env.tmdbApiKey } : {}),
+          });
+          if (posters.tvmaze || posters.tmdb)
+            console.log(`[catálogo] carteles (${dataset}): ${posters.tvmaze} de TVmaze y ${posters.tmdb} de TMDb (${posters.candidates} revisados)`);
         }
         // Línea de contexto de las tarjetas: descripción, personas y géneros (solo objetos aún no revisados).
         const details = await enrichDetailsFromWikidata(database.db, new WikimediaImages({ userAgent: env.catalogUserAgent }));
@@ -220,11 +267,12 @@ const workers: Worker[] = [
     { connection, prefix: env.queuePrefix, concurrency: 1 },
   ),
   // Caché de imágenes del catálogo, con ritmo limitado para no sobrecargar el origen (Wikimedia).
-  new Worker<CatalogImageJob>(
-    QUEUES.catalogImages,
-    async (job) => ({ outcome: await cacheCatalogImage(database.db, storage, job.data.imageId) }),
-    { connection, prefix: env.queuePrefix, concurrency: 2, limiter: { max: 4, duration: 1_000 } },
-  ),
+  new Worker<CatalogImageJob>(QUEUES.catalogImages, async (job) => ({ outcome: await cacheCatalogImage(database.db, storage, job.data.imageId) }), {
+    connection,
+    prefix: env.queuePrefix,
+    concurrency: 2,
+    limiter: { max: 4, duration: 1_000 },
+  }),
 ];
 
 for (const worker of workers) {

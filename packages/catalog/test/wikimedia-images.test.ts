@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { pickImageClaim } from '../src/wikimedia-images.js';
 
-const claims = (props: Record<string, string>) =>
-  Object.fromEntries(Object.entries(props).map(([p, v]) => [p, [{ mainsnak: { datavalue: { value: v } } }]]));
+const claims = (props: Record<string, string>) => Object.fromEntries(Object.entries(props).map(([p, v]) => [p, [{ mainsnak: { datavalue: { value: v } } }]]));
 
 describe('imagen representativa por categoría (Wikidata)', () => {
   it('en cine: cartel antes que logotipo, y nunca la foto genérica (reparto, estreno, rodaje)', () => {

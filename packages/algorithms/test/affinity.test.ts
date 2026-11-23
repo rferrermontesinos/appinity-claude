@@ -128,7 +128,10 @@ describe(`motor de afinidad ${AFFINITY_VERSION}`, () => {
     const behavior = affinity(idx(profile('games', 12, 0.8, 0.6)), idx(profile('games', 12, 0.8, 0.6))).score!;
     expect(behavior).toBeLessThan(explicit);
     // Calibración documentada: con el suelo 0,75 no queda limitada a ~50 como con la fórmula literal de §11.
-    const literal = affinity(idx(profile('games', 12, 0.8, 0.6)), idx(profile('games', 12, 0.8, 0.6)), { ...AFFINITY_PARAMS_V1, dataConfidenceFloor: 0 }).score!;
+    const literal = affinity(idx(profile('games', 12, 0.8, 0.6)), idx(profile('games', 12, 0.8, 0.6)), {
+      ...AFFINITY_PARAMS_V1,
+      dataConfidenceFloor: 0,
+    }).score!;
     expect(literal).toBeLessThan(55);
     expect(behavior).toBeGreaterThan(70);
   });
@@ -147,7 +150,10 @@ describe(`motor de afinidad ${AFFINITY_VERSION}`, () => {
 
   it('es determinista', () => {
     const a = idx(profile('series', 9, varied), profile('books', 4, 1));
-    const b = idx(profile('series', 9, (i) => -varied(i)), profile('books', 4, 0.5));
+    const b = idx(
+      profile('series', 9, (i) => -varied(i)),
+      profile('books', 4, 0.5),
+    );
     expect(affinity(a, b)).toEqual(affinity(a, b));
   });
 
@@ -173,7 +179,7 @@ describe('affinity-v5: rareza', () => {
     const a = idx(profile('movies', 6, 1));
     const b = idx(profile('movies', 6, (i) => (i < 3 ? 1 : -1)));
     const ids = [...a.get('movies')!.keys()];
-    const weights = (rareFirst: boolean) => new Map(ids.map((id, i) => [id, (i < 3) === rareFirst ? rarityWeight(2, 1000) : rarityWeight(900, 1000)]));
+    const weights = (rareFirst: boolean) => new Map(ids.map((id, i) => [id, i < 3 === rareFirst ? rarityWeight(2, 1000) : rarityWeight(900, 1000)]));
     const plain = affinity(a, b);
     const rareAgreement = affinity(a, b, undefined, weights(true));
     const rareDisagreement = affinity(a, b, undefined, weights(false));
@@ -184,7 +190,15 @@ describe('affinity-v5: rareza', () => {
   });
 
   it('la rareza no crea cifras altas con poca evidencia', () => {
-    const few = affinity(idx(profile('movies', 2, 1)), idx(profile('movies', 2, 1)), undefined, new Map([['movies-0', 7], ['movies-1', 7]]));
+    const few = affinity(
+      idx(profile('movies', 2, 1)),
+      idx(profile('movies', 2, 1)),
+      undefined,
+      new Map([
+        ['movies-0', 7],
+        ['movies-1', 7],
+      ]),
+    );
     expect(few.score!).toBe(affinity(idx(profile('movies', 2, 1)), idx(profile('movies', 2, 1))).score);
     expect(few.score!).toBeLessThan(40);
   });

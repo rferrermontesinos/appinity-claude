@@ -68,7 +68,11 @@ export async function applyHomeAction(db: Database, userId: string, itemId: stri
 }
 
 /** Deshace la última acción vigente del usuario. Devuelve el objeto para volver a mostrarlo, o null si no hay nada. */
-export async function undoLastHomeAction(db: Database, userId: string, now = new Date()): Promise<{ itemId: string; action: HomeAction | 'vote'; profileChanged: boolean } | null> {
+export async function undoLastHomeAction(
+  db: Database,
+  userId: string,
+  now = new Date(),
+): Promise<{ itemId: string; action: HomeAction | 'vote'; profileChanged: boolean } | null> {
   return db.transaction(async (tx) => {
     const [last] = await tx
       .select()

@@ -75,7 +75,17 @@ export function mapGoogleRecord(raw: unknown, context: NormalizeContext): Normal
     case 'search_ugc.media.reviews_and_stars': {
       const stars = record.group === 'maps.reviews' ? record.rating : record.stars;
       if (stars === null) {
-        return [{ ...base, knownConfidence: known, consumedConfidence: known, preferenceScore: null, preferenceConfidence: null, preferenceBasis: null, engagement: { type: 'review' } }];
+        return [
+          {
+            ...base,
+            knownConfidence: known,
+            consumedConfidence: known,
+            preferenceScore: null,
+            preferenceConfidence: null,
+            preferenceBasis: null,
+            engagement: { type: 'review' },
+          },
+        ];
       }
       return [
         {
@@ -90,7 +100,17 @@ export function mapGoogleRecord(raw: unknown, context: NormalizeContext): Normal
       ];
     }
     case 'maps.starred_places':
-      return [{ ...base, knownConfidence: known, consumedConfidence: 0, preferenceScore: null, preferenceConfidence: null, preferenceBasis: null, engagement: { type: 'saved' } }];
+      return [
+        {
+          ...base,
+          knownConfidence: known,
+          consumedConfidence: 0,
+          preferenceScore: null,
+          preferenceConfidence: null,
+          preferenceBasis: null,
+          engagement: { type: 'saved' },
+        },
+      ];
     case 'search_ugc.media.thumbs':
       return [
         {
@@ -104,7 +124,17 @@ export function mapGoogleRecord(raw: unknown, context: NormalizeContext): Normal
         },
       ];
     case 'search_ugc.media.watched':
-      return [{ ...base, knownConfidence: known, consumedConfidence: known, preferenceScore: null, preferenceConfidence: null, preferenceBasis: null, engagement: { type: 'completed' } }];
+      return [
+        {
+          ...base,
+          knownConfidence: known,
+          consumedConfidence: known,
+          preferenceScore: null,
+          preferenceConfidence: null,
+          preferenceBasis: null,
+          engagement: { type: 'completed' },
+        },
+      ];
     case 'myactivity.youtube': {
       const p95 = context.stats?.[`yt_plays_p95_${identified.category}`] ?? null;
       const score = frequencyPreference(record.plays, p95, YT_MIN_PLAYS_FOR_PREFERENCE);
@@ -122,7 +152,17 @@ export function mapGoogleRecord(raw: unknown, context: NormalizeContext): Normal
       ];
     }
     case 'youtube.subscriptions':
-      return [{ ...base, knownConfidence: known, consumedConfidence: 0, preferenceScore: null, preferenceConfidence: null, preferenceBasis: null, engagement: { type: 'saved', unit: 'subscription' } }];
+      return [
+        {
+          ...base,
+          knownConfidence: known,
+          consumedConfidence: 0,
+          preferenceScore: null,
+          preferenceConfidence: null,
+          preferenceBasis: null,
+          engagement: { type: 'saved', unit: 'subscription' },
+        },
+      ];
     case 'youtube.music':
       return [
         {
@@ -136,7 +176,17 @@ export function mapGoogleRecord(raw: unknown, context: NormalizeContext): Normal
         },
       ];
     case 'play.library':
-      return [{ ...base, knownConfidence: known, consumedConfidence: 0, preferenceScore: null, preferenceConfidence: null, preferenceBasis: null, engagement: { type: 'owned', unit: 'play_library' } }];
+      return [
+        {
+          ...base,
+          knownConfidence: known,
+          consumedConfidence: 0,
+          preferenceScore: null,
+          preferenceConfidence: null,
+          preferenceBasis: null,
+          engagement: { type: 'owned', unit: 'play_library' },
+        },
+      ];
     case 'saved.collections':
       return [
         {

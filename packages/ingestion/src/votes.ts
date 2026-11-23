@@ -36,15 +36,27 @@ async function voteConnection(db: Database | Tx, userId: string): Promise<string
 
 /** ¿Ya votó esta obra? (Un voto es definitivo.) */
 export async function hasVoted(db: Database | Tx, userId: string, itemId: string): Promise<boolean> {
-  const [row] = await db.select({ v: itemVotes.catalogItemId }).from(itemVotes).where(and(eq(itemVotes.userId, userId), eq(itemVotes.catalogItemId, itemId)));
+  const [row] = await db
+    .select({ v: itemVotes.catalogItemId })
+    .from(itemVotes)
+    .where(and(eq(itemVotes.userId, userId), eq(itemVotes.catalogItemId, itemId)));
   return Boolean(row);
 }
 
-export async function castVote(db: Database, userId: string, itemId: string, value: VoteValue, now = new Date()): Promise<{ actionId: string; profileChanged: boolean }> {
+export async function castVote(
+  db: Database,
+  userId: string,
+  itemId: string,
+  value: VoteValue,
+  now = new Date(),
+): Promise<{ actionId: string; profileChanged: boolean }> {
   return db.transaction(async (tx) => {
     if (await hasVoted(tx, userId, itemId)) throw new ConflictError('Ya has votado esta obra');
     await tx.insert(itemVotes).values({ userId, catalogItemId: itemId, value, createdAt: now });
-    const [action] = await tx.insert(recommendationActions).values({ userId, catalogItemId: itemId, action: 'vote', createdAt: now }).returning({ id: recommendationActions.id });
+    const [action] = await tx
+      .insert(recommendationActions)
+      .values({ userId, catalogItemId: itemId, action: 'vote', createdAt: now })
+      .returning({ id: recommendationActions.id });
     const connectionId = await voteConnection(tx, userId);
     const preference = VOTE_PREFERENCE[value];
     await tx.insert(userItemObservations).values({
@@ -73,17 +85,29 @@ export async function castVote(db: Database, userId: string, itemId: string, val
 
 /** Tu voto sobre una obra, para la ficha (null si no hay voto o es un «No lo conozco» antiguo). */
 export async function itemOpinion(db: Database, userId: string, itemId: string): Promise<{ voted: boolean; vote: -2 | -1 | 1 | 2 | null }> {
-  const [vote] = await db.select({ value: itemVotes.value }).from(itemVotes).where(and(eq(itemVotes.userId, userId), eq(itemVotes.catalogItemId, itemId)));
+  const [vote] = await db
+    .select({ value: itemVotes.value })
+    .from(itemVotes)
+    .where(and(eq(itemVotes.userId, userId), eq(itemVotes.catalogItemId, itemId)));
   return { voted: Boolean(vote), vote: (vote?.value ?? null) as -2 | -1 | 1 | 2 | null };
 }
 
 /** Deshacer un voto: borra el voto y su observación y recalcula el perfil de esa obra. */
 export async function removeVote(tx: Tx, userId: string, itemId: string): Promise<boolean> {
-  const [vote] = await tx.delete(itemVotes).where(and(eq(itemVotes.userId, userId), eq(itemVotes.catalogItemId, itemId))).returning({ value: itemVotes.value });
+  const [vote] = await tx
+    .delete(itemVotes)
+    .where(and(eq(itemVotes.userId, userId), eq(itemVotes.catalogItemId, itemId)))
+    .returning({ value: itemVotes.value });
   if (!vote || vote.value === null) return false;
   await tx
     .delete(userItemObservations)
-    .where(and(eq(userItemObservations.userId, userId), eq(userItemObservations.sourceKey, VOTE_SOURCE_KEY), eq(userItemObservations.sourceRecordId, recordId(itemId))));
+    .where(
+      and(
+        eq(userItemObservations.userId, userId),
+        eq(userItemObservations.sourceKey, VOTE_SOURCE_KEY),
+        eq(userItemObservations.sourceRecordId, recordId(itemId)),
+      ),
+    );
   await recomputeProfiles(tx, userId, [itemId]);
   return true;
 }

@@ -31,9 +31,15 @@ const NURIA = '00000000-0000-4000-a000-000000000005';
 export const PERSONA_RECIPES: Record<string, Partial<Record<FixtureSourceKey, PersonaRecipe[]>>> = {
   // Clara: gemela de Laura en cine, series y libros; además, las series de Núria y los restaurantes de Marta.
   '00000000-0000-4000-a000-000000000007': {
-    fixture_screen: [{ from: LAURA, mode: 'same' }, { from: NURIA, mode: 'same' }],
+    fixture_screen: [
+      { from: LAURA, mode: 'same' },
+      { from: NURIA, mode: 'same' },
+    ],
     fixture_diary: [{ from: LAURA, mode: 'same' }],
-    fixture_activity: [{ from: LAURA, mode: 'similar' }, { from: MARTA, mode: 'same' }],
+    fixture_activity: [
+      { from: LAURA, mode: 'similar' },
+      { from: MARTA, mode: 'same' },
+    ],
   },
   // Pau: lo contrario de Laura en cine, series y libros.
   '00000000-0000-4000-a000-000000000008': {
@@ -52,7 +58,10 @@ export const PERSONA_RECIPES: Record<string, Partial<Record<FixtureSourceKey, Pe
   },
   // Teo: cine como Laura, series como Núria y restaurantes al revés que Marta (afinidades por categoría muy distintas).
   '00000000-0000-4000-a000-000000000012': {
-    fixture_screen: [{ from: LAURA, mode: 'same' }, { from: NURIA, mode: 'same' }],
+    fixture_screen: [
+      { from: LAURA, mode: 'same' },
+      { from: NURIA, mode: 'same' },
+    ],
     fixture_activity: [{ from: MARTA, mode: 'inverse' }],
   },
   // Vera: muy poca evidencia en común con Laura y con Marta.

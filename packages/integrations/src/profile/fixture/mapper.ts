@@ -1,12 +1,5 @@
 import { RATING_SCALES, frequencyPreference, normalizeRating, playtimePreference } from '@appinity/algorithms';
-import type {
-  Category,
-  FixtureSourceKey,
-  NormalizeContext,
-  NormalizedObservation,
-  PreferenceBasis,
-  TimestampPrecision,
-} from '@appinity/shared';
+import type { Category, FixtureSourceKey, NormalizeContext, NormalizedObservation, PreferenceBasis, TimestampPrecision } from '@appinity/shared';
 import {
   ATTENDANCE_CONFIDENCE,
   AUDIO_MIN_PLAYS_FOR_PREFERENCE,
@@ -24,13 +17,7 @@ import {
   THUMBS_SCORE,
   VISIT_CONFIDENCE,
 } from './constants.js';
-import {
-  activityRecordSchema,
-  audioRecordSchema,
-  diaryRecordSchema,
-  playRecordSchema,
-  screenRecordSchema,
-} from './schemas.js';
+import { activityRecordSchema, audioRecordSchema, diaryRecordSchema, playRecordSchema, screenRecordSchema } from './schemas.js';
 
 type Item = NormalizedObservation['externalItem'];
 
@@ -98,15 +85,24 @@ export function mapScreenRecord(raw: unknown, ctx: NormalizeContext): Normalized
   switch (r.type) {
     case 'rating':
       return [
-        observation(ctx, 'fixture_screen', recordId, 'rating', category, item, {
-          known: 1,
-          consumed: 1,
-          preference: {
-            score: normalizeRating(r.rating!, RATING_SCALES.oneToTen),
-            confidence: EXPLICIT_RATING_CONFIDENCE,
-            basis: 'explicit_rating',
+        observation(
+          ctx,
+          'fixture_screen',
+          recordId,
+          'rating',
+          category,
+          item,
+          {
+            known: 1,
+            consumed: 1,
+            preference: {
+              score: normalizeRating(r.rating!, RATING_SCALES.oneToTen),
+              confidence: EXPLICIT_RATING_CONFIDENCE,
+              basis: 'explicit_rating',
+            },
           },
-        }, { time, engagement: { type: 'rating', value: r.rating!, unit: '1-10' } }),
+          { time, engagement: { type: 'rating', value: r.rating!, unit: '1-10' } },
+        ),
       ];
     case 'watchlist':
       return [observation(ctx, 'fixture_screen', recordId, 'watchlist', category, item, { known: 1, consumed: 0 }, { time, engagement: { type: 'saved' } })];
@@ -139,20 +135,33 @@ export function mapDiaryRecord(raw: unknown, ctx: NormalizeContext): NormalizedO
   const metadata = r.ref.isbn13 ? { edition: { isbn13: r.ref.isbn13 } } : {};
   switch (r.status) {
     case 'want':
-      return [observation(ctx, 'fixture_diary', r.entryId, 'want', category, item, { known: 1, consumed: 0 }, { time, engagement: { type: 'saved' }, metadata })];
+      return [
+        observation(ctx, 'fixture_diary', r.entryId, 'want', category, item, { known: 1, consumed: 0 }, { time, engagement: { type: 'saved' }, metadata }),
+      ];
     case 'logged':
-      return [observation(ctx, 'fixture_diary', r.entryId, 'log', category, item, { known: 1, consumed: 1 }, { time, engagement: { type: 'completed' }, metadata })];
+      return [
+        observation(ctx, 'fixture_diary', r.entryId, 'log', category, item, { known: 1, consumed: 1 }, { time, engagement: { type: 'completed' }, metadata }),
+      ];
     case 'rated':
       return [
-        observation(ctx, 'fixture_diary', r.entryId, 'rating', category, item, {
-          known: 1,
-          consumed: 1,
-          preference: {
-            score: normalizeRating(r.stars!, RATING_SCALES.halfToFiveStars),
-            confidence: EXPLICIT_RATING_CONFIDENCE,
-            basis: 'explicit_rating',
+        observation(
+          ctx,
+          'fixture_diary',
+          r.entryId,
+          'rating',
+          category,
+          item,
+          {
+            known: 1,
+            consumed: 1,
+            preference: {
+              score: normalizeRating(r.stars!, RATING_SCALES.halfToFiveStars),
+              confidence: EXPLICIT_RATING_CONFIDENCE,
+              basis: 'explicit_rating',
+            },
           },
-        }, { time, engagement: { type: 'rating', value: r.stars!, unit: '0.5-5' }, metadata }),
+          { time, engagement: { type: 'rating', value: r.stars!, unit: '0.5-5' }, metadata },
+        ),
       ];
   }
 }
@@ -174,9 +183,7 @@ export function mapActivityRecord(raw: unknown, ctx: NormalizeContext): Normaliz
       ...(r.entity.wikidataId ? { 'wikidata:entity': r.entity.wikidataId } : {}),
       ...(r.entity.kgId ? { 'freebase:mid': r.entity.kgId } : {}),
     },
-    ...(r.entity.lat !== undefined && r.entity.lng !== undefined
-      ? { attributes: { location: { latitude: r.entity.lat, longitude: r.entity.lng } } }
-      : {}),
+    ...(r.entity.lat !== undefined && r.entity.lng !== undefined ? { attributes: { location: { latitude: r.entity.lat, longitude: r.entity.lng } } } : {}),
   };
   const time = instant(r.at);
   const S = 'fixture_activity' as const;
@@ -185,51 +192,96 @@ export function mapActivityRecord(raw: unknown, ctx: NormalizeContext): Normaliz
       return [observation(ctx, S, `saved:${entityKey}`, 'saved', r.category, item, { known: 1, consumed: 0 }, { time, engagement: { type: 'saved' } })];
     case 'review':
       return [
-        observation(ctx, S, `review:${entityKey}`, 'review', r.category, item, {
-          known: 1,
-          consumed: 1,
-          preference: {
-            score: normalizeRating(r.stars!, RATING_SCALES.oneToFiveStars),
-            confidence: EXPLICIT_RATING_CONFIDENCE,
-            basis: 'explicit_rating',
+        observation(
+          ctx,
+          S,
+          `review:${entityKey}`,
+          'review',
+          r.category,
+          item,
+          {
+            known: 1,
+            consumed: 1,
+            preference: {
+              score: normalizeRating(r.stars!, RATING_SCALES.oneToFiveStars),
+              confidence: EXPLICIT_RATING_CONFIDENCE,
+              basis: 'explicit_rating',
+            },
           },
-        }, { time, engagement: { type: 'review', value: r.stars!, unit: '1-5' } }),
+          { time, engagement: { type: 'review', value: r.stars!, unit: '1-5' } },
+        ),
       ];
     case 'visit':
       return [
-        observation(ctx, S, r.activityId, 'visit', r.category, item, {
-          known: 1,
-          consumed: 1,
-          preference: { score: 1, confidence: VISIT_CONFIDENCE, basis: 'attendance' },
-        }, { time, engagement: { type: 'attendance' }, metadata: { inference: 'visita con evidencia suficiente' } }),
+        observation(
+          ctx,
+          S,
+          r.activityId,
+          'visit',
+          r.category,
+          item,
+          {
+            known: 1,
+            consumed: 1,
+            preference: { score: 1, confidence: VISIT_CONFIDENCE, basis: 'attendance' },
+          },
+          { time, engagement: { type: 'attendance' }, metadata: { inference: 'visita con evidencia suficiente' } },
+        ),
       ];
     case 'attended':
       return [
-        observation(ctx, S, r.activityId, 'attendance', r.category, item, {
-          known: 1,
-          consumed: 1,
-          preference: { score: 1, confidence: ATTENDANCE_CONFIDENCE, basis: 'attendance' },
-        }, { time, engagement: { type: 'attendance' }, metadata: { inference: 'asistencia confirmada' } }),
+        observation(
+          ctx,
+          S,
+          r.activityId,
+          'attendance',
+          r.category,
+          item,
+          {
+            known: 1,
+            consumed: 1,
+            preference: { score: 1, confidence: ATTENDANCE_CONFIDENCE, basis: 'attendance' },
+          },
+          { time, engagement: { type: 'attendance' }, metadata: { inference: 'asistencia confirmada' } },
+        ),
       ];
     case 'calendar_event':
       return [
-        observation(ctx, S, r.activityId, 'planned_event', r.category, item, { known: PLANNED_EVENT_KNOWN, consumed: 0 }, {
-          time,
-          metadata: { inference: 'evento previsto: no prueba asistencia' },
-        }),
+        observation(
+          ctx,
+          S,
+          r.activityId,
+          'planned_event',
+          r.category,
+          item,
+          { known: PLANNED_EVENT_KNOWN, consumed: 0 },
+          {
+            time,
+            metadata: { inference: 'evento previsto: no prueba asistencia' },
+          },
+        ),
       ];
     case 'thumbs_up':
     case 'thumbs_down':
       return [
-        observation(ctx, S, `like:${entityKey}`, 'like', r.category, item, {
-          known: 1,
-          consumed: 0,
-          preference: {
-            score: r.action === 'thumbs_up' ? THUMBS_SCORE : -THUMBS_SCORE,
-            confidence: THUMBS_CONFIDENCE,
-            basis: 'explicit_like',
+        observation(
+          ctx,
+          S,
+          `like:${entityKey}`,
+          'like',
+          r.category,
+          item,
+          {
+            known: 1,
+            consumed: 0,
+            preference: {
+              score: r.action === 'thumbs_up' ? THUMBS_SCORE : -THUMBS_SCORE,
+              confidence: THUMBS_CONFIDENCE,
+              basis: 'explicit_like',
+            },
           },
-        }, { time, engagement: { type: 'liked', value: r.action === 'thumbs_up' ? 1 : -1 } }),
+          { time, engagement: { type: 'liked', value: r.action === 'thumbs_up' ? 1 : -1 } },
+        ),
       ];
   }
 }
@@ -247,20 +299,38 @@ export function mapPlayRecord(raw: unknown, ctx: NormalizeContext): NormalizedOb
   const metadata = { snapshot: true, playtimeForeverMinutes: r.playtime_forever, playtime2WeeksMinutes: r.playtime_2weeks ?? 0 };
   if (r.playtime_forever === 0) {
     return [
-      observation(ctx, 'fixture_play', recordId, 'library', 'games', item, { known: 1, consumed: 0 }, {
-        time,
-        engagement: { type: 'owned', value: 0, unit: 'hours' },
-        metadata,
-      }),
+      observation(
+        ctx,
+        'fixture_play',
+        recordId,
+        'library',
+        'games',
+        item,
+        { known: 1, consumed: 0 },
+        {
+          time,
+          engagement: { type: 'owned', value: 0, unit: 'hours' },
+          metadata,
+        },
+      ),
     ];
   }
   const score = playtimePreference(hours, ctx.stats?.playtimeP95Hours ?? null, PLAY_MIN_HOURS_FOR_PREFERENCE);
   return [
-    observation(ctx, 'fixture_play', recordId, 'library', 'games', item, {
-      known: 1,
-      consumed: 1,
-      preference: score === null ? null : { score, confidence: PLAY_PREFERENCE_CONFIDENCE, basis: 'strong_behavior' },
-    }, { time, engagement: { type: 'played', value: Math.round(hours * 10) / 10, unit: 'hours' }, metadata }),
+    observation(
+      ctx,
+      'fixture_play',
+      recordId,
+      'library',
+      'games',
+      item,
+      {
+        known: 1,
+        consumed: 1,
+        preference: score === null ? null : { score, confidence: PLAY_PREFERENCE_CONFIDENCE, basis: 'strong_behavior' },
+      },
+      { time, engagement: { type: 'played', value: Math.round(hours * 10) / 10, unit: 'hours' }, metadata },
+    ),
   ];
 }
 
@@ -273,54 +343,110 @@ export function mapAudioRecord(raw: unknown, ctx: NormalizeContext): NormalizedO
   const S = 'fixture_audio' as const;
   switch (r.kind) {
     case 'artist_playcount': {
-      const item: Item = { sourceId: `artist:${r.artist.mbid}`, itemType: 'artist', title: r.artist.name, canonicalIds: { 'musicbrainz:artist': r.artist.mbid } };
+      const item: Item = {
+        sourceId: `artist:${r.artist.mbid}`,
+        itemType: 'artist',
+        title: r.artist.name,
+        canonicalIds: { 'musicbrainz:artist': r.artist.mbid },
+      };
       const score = frequencyPreference(r.playcount, ctx.stats?.artistPlaycountP95 ?? null, AUDIO_MIN_PLAYS_FOR_PREFERENCE);
       return [
-        observation(ctx, S, `artist:${r.artist.mbid}`, 'playcount', 'music', item, {
-          known: 1,
-          consumed: r.playcount > 0 ? 1 : 0,
-          preference: score === null ? null : { score, confidence: AUDIO_PREFERENCE_CONFIDENCE, basis: 'strong_behavior' },
-        }, { engagement: { type: 'listened', value: r.playcount, unit: 'plays' }, metadata: { snapshot: true } }),
+        observation(
+          ctx,
+          S,
+          `artist:${r.artist.mbid}`,
+          'playcount',
+          'music',
+          item,
+          {
+            known: 1,
+            consumed: r.playcount > 0 ? 1 : 0,
+            preference: score === null ? null : { score, confidence: AUDIO_PREFERENCE_CONFIDENCE, basis: 'strong_behavior' },
+          },
+          { engagement: { type: 'listened', value: r.playcount, unit: 'plays' }, metadata: { snapshot: true } },
+        ),
       ];
     }
     case 'loved_track': {
-      const item: Item = { sourceId: `artist:${r.artist.mbid}`, itemType: 'artist', title: r.artist.name, canonicalIds: { 'musicbrainz:artist': r.artist.mbid } };
+      const item: Item = {
+        sourceId: `artist:${r.artist.mbid}`,
+        itemType: 'artist',
+        title: r.artist.name,
+        canonicalIds: { 'musicbrainz:artist': r.artist.mbid },
+      };
       return [
-        observation(ctx, S, `loved:${r.id}`, 'loved_track', 'music', item, {
-          known: 1,
-          consumed: 1,
-          preference: { score: LOVED_TRACK_SCORE, confidence: LOVED_TRACK_CONFIDENCE, basis: 'explicit_like' },
-        }, {
-          time: instant(r.at),
-          engagement: { type: 'liked' },
-          // La canción se agrega al artista; se conserva el origen y el alcance de la evidencia.
-          metadata: { track: r.track.name, scope: 'track', aggregatedTo: 'artist' },
-        }),
+        observation(
+          ctx,
+          S,
+          `loved:${r.id}`,
+          'loved_track',
+          'music',
+          item,
+          {
+            known: 1,
+            consumed: 1,
+            preference: { score: LOVED_TRACK_SCORE, confidence: LOVED_TRACK_CONFIDENCE, basis: 'explicit_like' },
+          },
+          {
+            time: instant(r.at),
+            engagement: { type: 'liked' },
+            // La canción se agrega al artista; se conserva el origen y el alcance de la evidencia.
+            metadata: { track: r.track.name, scope: 'track', aggregatedTo: 'artist' },
+          },
+        ),
       ];
     }
     case 'show_listening': {
-      const item: Item = { sourceId: `show:${r.show.appleId}`, itemType: 'podcast', title: r.show.name, canonicalIds: { 'apple_podcasts:podcast': r.show.appleId } };
+      const item: Item = {
+        sourceId: `show:${r.show.appleId}`,
+        itemType: 'podcast',
+        title: r.show.name,
+        canonicalIds: { 'apple_podcasts:podcast': r.show.appleId },
+      };
       const score = frequencyPreference(r.episodesPlayed, ctx.stats?.showEpisodesP95 ?? null, PODCAST_MIN_EPISODES_FOR_PREFERENCE);
       return [
-        observation(ctx, S, `show:${r.show.appleId}`, 'listening', 'podcasts', item, {
-          known: 1,
-          consumed: 1,
-          preference: score === null ? null : { score, confidence: PODCAST_PREFERENCE_CONFIDENCE, basis: 'strong_behavior' },
-        }, {
-          time: instant(r.lastPlayedAt),
-          engagement: { type: 'listened', value: r.episodesPlayed, unit: 'episodes' },
-          metadata: { aggregatedFrom: 'episodes', episodeIds: r.episodeIds },
-        }),
+        observation(
+          ctx,
+          S,
+          `show:${r.show.appleId}`,
+          'listening',
+          'podcasts',
+          item,
+          {
+            known: 1,
+            consumed: 1,
+            preference: score === null ? null : { score, confidence: PODCAST_PREFERENCE_CONFIDENCE, basis: 'strong_behavior' },
+          },
+          {
+            time: instant(r.lastPlayedAt),
+            engagement: { type: 'listened', value: r.episodesPlayed, unit: 'episodes' },
+            metadata: { aggregatedFrom: 'episodes', episodeIds: r.episodeIds },
+          },
+        ),
       ];
     }
     case 'podcast_subscription': {
-      const item: Item = { sourceId: `show:${r.show.appleId}`, itemType: 'podcast', title: r.show.name, canonicalIds: { 'apple_podcasts:podcast': r.show.appleId } };
+      const item: Item = {
+        sourceId: `show:${r.show.appleId}`,
+        itemType: 'podcast',
+        title: r.show.name,
+        canonicalIds: { 'apple_podcasts:podcast': r.show.appleId },
+      };
       return [
-        observation(ctx, S, `subscription:${r.show.appleId}`, 'subscription', 'podcasts', item, { known: 1, consumed: 0 }, {
-          time: instant(r.at),
-          engagement: { type: 'saved' },
-          metadata: { inference: 'seguir un programa no demuestra haberlo escuchado' },
-        }),
+        observation(
+          ctx,
+          S,
+          `subscription:${r.show.appleId}`,
+          'subscription',
+          'podcasts',
+          item,
+          { known: 1, consumed: 0 },
+          {
+            time: instant(r.at),
+            engagement: { type: 'saved' },
+            metadata: { inference: 'seguir un programa no demuestra haberlo escuchado' },
+          },
+        ),
       ];
     }
     case 'podcast_episode':
