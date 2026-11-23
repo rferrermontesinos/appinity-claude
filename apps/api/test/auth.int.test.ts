@@ -5,7 +5,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { authSessions, createDatabase, users, type DatabaseHandle } from '@appinity/database';
 import { createSession, findOrCreateUserForIdentity } from '@appinity/ingestion';
-import { CONTACT_HASH_DAILY_MAX, type AuthProvidersDto, type AuthSessionDto, type ContactMatchDto, type MeDto } from '@appinity/shared';
+import { CONTACT_HASH_DAILY_MAX, QUEUES, type AuthProvidersDto, type AuthSessionDto, type ContactMatchDto, type MeDto } from '@appinity/shared';
+import { Queue } from 'bullmq';
 import { eq } from 'drizzle-orm';
 import { Redis } from 'ioredis';
 import { SignJWT, createLocalJWKSet, exportJWK, generateKeyPair } from 'jose';
@@ -176,6 +177,8 @@ describe('sesiones de producción (fase 13)', () => {
   });
 
   it('eliminar la cuenta borra al usuario y cierra todas sus sesiones', async () => {
+    const affinity = new Queue(QUEUES.affinity, { connection: redis, prefix: env.QUEUE_PREFIX });
+    await affinity.obliterate({ force: true });
     const { code, userId } = await handoff('sub-carla');
     const session = (await (await call('POST', '/v1/auth/exchange', undefined, { code, codeVerifier: VERIFIER })).json()) as AuthSessionDto;
     expect((await call('DELETE', '/v1/me', session.accessToken, { confirm: 'no' })).status).toBe(400);
@@ -183,6 +186,10 @@ describe('sesiones de producción (fase 13)', () => {
     expect(await db.db.select().from(users).where(eq(users.id, userId))).toEqual([]);
     expect(await db.db.select().from(authSessions).where(eq(authSessions.userId, userId))).toEqual([]);
     expect((await call('GET', '/v1/me', session.accessToken)).status).toBe(401);
+    // Sin esa persona cambia la rareza de sus obras: las demás parejas se ponen al día en el completo agrupado (B7).
+    expect((await affinity.getDelayed()).map((job) => job.name)).toEqual(['recompute-all']);
+    await affinity.obliterate({ force: true });
+    await affinity.close();
   });
 });
 

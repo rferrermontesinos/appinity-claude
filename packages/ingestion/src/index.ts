@@ -10,6 +10,7 @@ export * from './queues.js';
 export * from './scheduler.js';
 export * from './local-users.js';
 export * from './affinities.js';
+export * from './affinity-jobs.js';
 export * from './soulmates.js';
 export * from './recommendations.js';
 export * from './home.js';

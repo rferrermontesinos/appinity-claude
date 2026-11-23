@@ -164,13 +164,16 @@ API: missingScopes = scopes que pide el adapter − concedidos → la app ofrece
 ## Afinidad (fase 5)
 
 ```text
-sync con cambios / borrado de una fuente → cola «affinity» (job por usuario, agrupado 10 s) ─┐
-programador diario (completo) · pnpm db:seed ──────────────────────────────────────────────┤
-                                                                                           ▼
+voto · sync con cambios · borrado de una fuente → cola «affinity» (job por usuario, agrupado 10 s) ─┐
+  └ tras cada job por usuario (y al eliminar una cuenta): completo agrupado, como mucho cada 10 min ─┤
+programador diario (completo) · versión del motor cambiada al arrancar · pnpm db:seed ─────────────┤
+                                                                                                   ▼
 recomputeAffinities: preferencias consolidadas de usuarios elegibles del mismo dataset
   → índice objeto → usuarios (prefiltro exacto: solo parejas con algo en común)
   → affinity-v5 (simétrica: la misma cifra en los dos sentidos; lo poco común pesa más) por categoría y global
   → transacción con bloqueo por dataset: sustituye las filas del foco en user_affinities y category_affinities
+  (la rareza es del dataset entero: un parcial deja las demás parejas con los pesos de antes hasta el completo, fase B7;
+  la cola deduplica con keepLastIfActive, así que un cambio durante el cálculo se encola al terminar)
 API: GET /v1/me/affinities/:userId → «yo → otra persona» (8 categorías, NULL = «—»), sin objetos
 Fase 6: topSoulmates (orden estable, máx. 50, sin bloqueos ni inelegibles) → GET /v1/me/soulmates → pestaña Personas
         GET /v1/people/:id → perfil mínimo (nombre, país, foto, afinidades) → pantalla person/[id]

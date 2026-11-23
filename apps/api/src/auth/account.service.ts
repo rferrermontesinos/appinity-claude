@@ -1,8 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { users, type DatabaseHandle } from '@appinity/database';
+import { enqueueAffinityRefresh, type ProducerQueues } from '@appinity/ingestion';
 import { eq } from 'drizzle-orm';
 import { ConnectionsService } from '../connections/connections.service.js';
-import { DATABASE } from '../infra/tokens.js';
+import { DATABASE, QUEUES } from '../infra/tokens.js';
 
 export interface AccountDeletion {
   /** Fuentes cuyo permiso se pidió anular en el proveedor. */
@@ -21,6 +22,7 @@ export class AccountService {
 
   constructor(
     @Inject(DATABASE) private readonly database: DatabaseHandle,
+    @Inject(QUEUES) private readonly queues: ProducerQueues,
     private readonly connections: ConnectionsService,
   ) {}
 
@@ -42,6 +44,8 @@ export class AccountService {
       }
     }
     await this.database.db.delete(users).where(eq(users.id, userId));
+    // Sin esta persona cambian la población y la rareza de sus obras, y con ellas los pesos del resto de parejas (B7).
+    await enqueueAffinityRefresh(this.queues).catch((error: Error) => this.logger.warn(`No se pudo encolar el recálculo de afinidades: ${error.message}`));
     return result;
   }
 }

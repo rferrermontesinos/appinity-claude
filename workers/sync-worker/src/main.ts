@@ -19,7 +19,7 @@ import {
   enqueueImage,
   enqueueSync,
   hasStaleAffinities,
-  recomputeAffinities,
+  runAffinityJob,
   runConnectionSync,
   scheduleDueSyncs,
   sendDueDigests,
@@ -261,18 +261,22 @@ const workers: Worker[] = [
     },
     { connection, prefix: env.queuePrefix, concurrency: 2 },
   ),
-  // Afinidades direccionales (§11): de un usuario tras un cambio de evidencia, o de todo cada día.
+  // Afinidades (§11): de un usuario tras un cambio de evidencia y, después, el completo agrupado que pone al día la
+  // rareza en todas las parejas (B7); también el completo diario. De uno en uno: nunca se pisan.
   new Worker<AffinityJob>(
     QUEUES.affinity,
     async (job) => {
-      const results = await recomputeAffinities(database.db, job.data.userId ? { userIds: [job.data.userId] } : {});
-      for (const r of results) {
+      const outcome = await runAffinityJob(database.db, producer, job.data);
+      for (const r of outcome.results) {
         console.log(
           `[afinidad] ${job.data.userId ? `usuario ${job.data.userId}` : 'recálculo completo'} (${r.dataset}): ` +
             `${r.pairsWithAffinity} parejas con afinidad de ${r.pairsCompared} comparadas, ${r.eligibleUsers} usuarios elegibles`,
         );
       }
-      return { results };
+      if (outcome.refresh === 'failed') {
+        console.error(`[afinidad] no se pudo encolar el recálculo completo agrupado (lo cubre el diario): ${outcome.refreshError?.message}`);
+      }
+      return { results: outcome.results, refresh: outcome.refresh };
     },
     { connection, prefix: env.queuePrefix, concurrency: 1 },
   ),

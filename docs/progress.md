@@ -22,7 +22,47 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 11 | **Paso 1 implementado** (Google: Play, pedidos y guardados), comprobado automáticamente y en parte con servicios reales; falta un export real | Entrega 2026-10-14 · fase 11 (rama `fase-11-fuentes`). Análisis en [source-candidates.md](source-candidates.md) |
 | 12 | **12C (push, servidor) implementada y comprobada automáticamente**; envío real pendiente de build de desarrollo y FCM · **12B (Premium, servidor) implementada y comprobada automáticamente**; compra en la app pendiente de cuentas y build de desarrollo · **12A (chat) implementada, comprobada automáticamente y verificada en la vista web**; 12B (Premium/RevenueCat) y 12C (push) pendientes | Entrega 2026-10-14 · fase 12A (rama `fase-12a-chat`, basada en `fase-10-people`) |
 | 13 | **Preparada**: auth de producción, alta, eliminación de cuenta y despliegue probados en local; beta real pendiente de dominio, servidor y cuentas ([beta.md](beta.md)) · auditoría de seguridad de la API hecha (2026-10-26) · textos legales en borrador (2026-10-26) | Entrega 2026-10-15 · fase 13 (rama `fase-13-beta`) |
-| Beta (B1–B10) | **En curso** (2026-11-22): B1 a B6 con PR abierta | Plan y estado en [fases-beta.md](fases-beta.md); cada fase en su PR encadenada sobre la PR #26 |
+| Beta (B1–B10) | **En curso** (2026-11-22): B1 a B7 con PR abierta | Plan y estado en [fases-beta.md](fases-beta.md); cada fase en su PR encadenada sobre la PR #26 |
+
+---
+
+## Entrega 2026-11-22 · B7: rareza al día en todas las parejas
+
+Rama `claude/beta-b7-rareza`, PR contra `claude/beta-b6-push` (B6). Detalle y coste medido en
+[decisions.md](decisions.md).
+
+### Qué se ha hecho
+
+- Tras cada recálculo de las afinidades de una persona (voto, sync o fuente borrada), el worker pide un recálculo
+  completo agrupado a los 10 minutos: las parejas en las que no está vuelven a usar la rareza actual de `affinity-v5`.
+  Uno pendiente sirve para todos los cambios; como mucho uno cada 10 minutos mientras haya actividad. También se pide al
+  eliminar una cuenta. El completo diario sigue como red de seguridad.
+- La cola deja el id de trabajo fijo por la deduplicación de BullMQ (`keepLastIfActive`):
+  - un voto durante el cálculo de esa persona se encola al terminar (antes se perdía hasta el siguiente cambio);
+  - un trabajo fallido ya no bloquea sus recálculos.
+- Si Redis no responde, el voto y el «deshacer» responden igual (ya están guardados) y queda un aviso en el registro.
+- «Lo que os une» y «Lo que te define» cuentan la misma población que la afinidad (sin personas que no confirmaron la
+  mayoría de edad).
+- `runAffinityJob` (ingestión) es lo que ejecuta el worker; comentario de `recomputeAffinities` en su sitio.
+
+### Comprobaciones
+
+- Tests nuevos (2):
+  - una pareja ajena al cambio se queda con los pesos de antes tras el parcial y con los nuevos tras el completo (la
+    cifra coincide con la calculada con la rareza actual); un solo completo pendiente para varios cambios;
+  - con Redis real: dos cambios seguidos son un solo trabajo, un cambio durante el cálculo se encola al terminar y un
+    trabajo fallido no impide encolar otro.
+- Test de la API ampliado: eliminar la cuenta deja en cola el completo agrupado.
+- Los tests fallan si se vuelve al id fijo o se quita el completo (comprobado cambiando el código a mano). Con BullMQ
+  6.3.11, un trabajo fallido con id fijo bloquea los siguientes: comprobado con un script contra Redis.
+- Coste: 100 personas con 300 gustos sintéticos, unos 6 s por completo; la demo, menos de 0,1 s.
+- `pnpm format:check`, `pnpm lint` y `pnpm typecheck` limpios; `pnpm test`: 55 ficheros y 482 tests OK.
+- Sin test: que el voto responda bien con Redis caído (cambio pequeño; revisado a mano).
+
+### Pendiente
+
+- Calibrar la rareza con los datos de la beta (sin cambios aquí).
+- Siguiente fase: B8 (preparar Google Play sin publicar).
 
 ---
 

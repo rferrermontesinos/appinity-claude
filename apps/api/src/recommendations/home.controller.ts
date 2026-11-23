@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Inject, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Inject, Logger, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import { type DatabaseHandle } from '@appinity/database';
 import {
   NotFoundError,
@@ -30,6 +30,8 @@ const voteSchema = z.object({ itemId: z.uuid(), value: z.union([z.literal(-1), z
  */
 @Controller('v1/me/home')
 export class HomeController {
+  private readonly logger = new Logger(HomeController.name);
+
   constructor(
     @Inject(DATABASE) private readonly database: DatabaseHandle,
     @Inject(QUEUES) private readonly queues: ProducerQueues,
@@ -41,7 +43,7 @@ export class HomeController {
   async vote(@CurrentUser() auth: AuthContext, @Body(new ZodPipe(voteSchema)) body: z.infer<typeof voteSchema>): Promise<HomeVoteResultDto> {
     await assertItemVisible(this.database.db, auth.userId, body.itemId);
     const result = await castVote(this.database.db, auth.userId, body.itemId, body.value);
-    if (result.profileChanged) await enqueueAffinity(this.queues, auth.userId);
+    if (result.profileChanged) await this.recomputeAffinities(auth.userId);
     return { actionId: result.actionId };
   }
 
@@ -79,7 +81,15 @@ export class HomeController {
   async undo(@CurrentUser() auth: AuthContext): Promise<HomeUndoResultDto> {
     const result = await undoLastHomeAction(this.database.db, auth.userId);
     if (!result) throw new NotFoundError('No hay ninguna acción que deshacer');
-    if (result.profileChanged) await enqueueAffinity(this.queues, auth.userId);
+    if (result.profileChanged) await this.recomputeAffinities(auth.userId);
     return { itemId: result.itemId, action: result.action };
+  }
+
+  /**
+   * El voto ya está guardado: si Redis no responde, no se devuelve un error (la persona lo repetiría). Sus afinidades
+   * se ponen al día con el siguiente cambio o con el recálculo diario.
+   */
+  private async recomputeAffinities(userId: string): Promise<void> {
+    await enqueueAffinity(this.queues, userId).catch((error: Error) => this.logger.warn(`No se pudo encolar el recálculo de afinidades: ${error.message}`));
   }
 }

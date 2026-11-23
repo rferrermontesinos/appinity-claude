@@ -38,7 +38,16 @@ export async function itemRarity(db: Database, dataset: 'demo' | 'live', itemIds
     .select({ userId: userItemProfiles.userId })
     .from(userItemProfiles)
     .innerJoin(users, eq(users.id, userItemProfiles.userId))
-    .where(and(eq(users.dataset, dataset), eq(users.status, 'active'), isNull(users.deletedAt), isNotNull(userItemProfiles.preferenceScore)))
+    .where(
+      and(
+        eq(users.dataset, dataset),
+        eq(users.status, 'active'),
+        isNull(users.deletedAt),
+        // Igual que en la afinidad: sin la mayoría de edad confirmada, nadie entra en la población.
+        isNotNull(users.adultConfirmedAt),
+        isNotNull(userItemProfiles.preferenceScore),
+      ),
+    )
     .groupBy(userItemProfiles.userId)
     .having(sql`count(*) >= ${AFFINITY_MIN_PREFERENCES}`)
     .as('eligible');
