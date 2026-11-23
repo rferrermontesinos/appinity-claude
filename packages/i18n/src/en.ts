@@ -751,6 +751,21 @@ export const en: TranslationResources = {
     code: 'Access code',
     signIn: 'Sign in with the local account',
   },
+  feedback: {
+    title: 'Send feedback',
+    rowHint: 'Tell us what is broken or missing',
+    intro: 'You are in the closed beta: what you tell us decides what gets fixed first. What breaks, what is unclear, what you miss… We read everything.',
+    label: 'Your feedback',
+    placeholder: 'For example: "When I vote on a film, the card goes blank."',
+    count: '{{count}} of {{max}} characters',
+    privacy:
+      'It is stored with your account, the app version ({{version}}) and the platform. Nothing else: no screenshots and nothing you were looking at. It is deleted if you delete your account.',
+    send: 'Send',
+    sentTitle: 'Thank you!',
+    sentBody: 'We got it and will read it carefully. If anything else comes up, you can send another one.',
+    sendAnother: 'Send another',
+    rateLimited: 'You have sent a lot of feedback in a short time. Thank you: please try again later.',
+  },
   diagnostics: {
     title: 'API connection',
     apiUrl: 'API URL',

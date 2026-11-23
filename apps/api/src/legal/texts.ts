@@ -99,6 +99,8 @@ export function privacyHtml(info: LegalInfo, options: PrivacyOptions = {}): stri
   mensajes de chat.</li>
   <li><strong>Contactos</strong>: solo si pulsas «Buscar en mis contactos». Del teléfono sale una huella (SHA-256) de cada
   email; la comparamos con las cuentas que permiten que las encuentren así y no la guardamos.</li>
+  <li><strong>Tus comentarios</strong>: lo que escribes en «Enviar comentario», con la versión de la app y la plataforma
+  (Android, iOS o web). Nada más: ni capturas ni lo que estabas viendo.</li>
   <li><strong>Datos técnicos</strong>: las sesiones (de cada token guardamos solo una huella), el token de notificaciones
   del dispositivo y el registro de los avisos enviados, y registros de errores y seguridad que no incluyen tus gustos ni
   tus mensajes.</li>
@@ -115,6 +117,7 @@ export function privacyHtml(info: LegalInfo, options: PrivacyOptions = {}): stri
   tu consentimiento, con interruptores que empiezan apagados. Los dos primeros se eligen en el alta; todos se cambian en
   Ajustes.</li>
   <li>Notificaciones: el permiso de tu teléfono y la frecuencia que elijas en Ajustes.</li>
+  <li>Leer tus comentarios para arreglar fallos y mejorar la app: interés legítimo. Los envías tú, cuando quieres.</li>
   <li>Seguridad, prevención de abusos y copias de seguridad: interés legítimo.</li>
 </ul>
 <p>Elaboramos un perfil de tus gustos para calcular afinidades y recomendaciones. No tomamos con él decisiones con efectos
@@ -172,7 +175,7 @@ o las cláusulas contractuales tipo de la Comisión Europea.</p>
 <p>Mientras tengas la cuenta. Al desconectar una fuente puedes borrar lo importado de ella (Perfil → Fuentes →
 «Desconectar y borrar lo importado»). Al eliminar la cuenta pedimos a los proveedores conectados que anulen los permisos
 que les diste y lo borramos todo al momento: perfil, gustos, votos, afinidades, amistades, conversaciones (también para la
-otra persona) y sesiones. Las copias de seguridad tienen acceso restringido y rotan: lo borrado desaparece también de
+otra persona), comentarios y sesiones. Las copias de seguridad tienen acceso restringido y rotan: lo borrado desaparece también de
 ellas en un máximo de 14 días.</p>
 
 <h2>8. Tus derechos</h2>
@@ -253,8 +256,8 @@ y te lo confirmamos por email.</p>
 
 <h2>Qué se borra</h2>
 <p>Todo lo que guardamos de ti: cuenta, perfil y ajustes, gustos importados y votos, afinidades, amistades, seguimientos,
-invitaciones y bloqueos, solicitudes y conversaciones de chat (también para la otra persona), sesiones y tokens de
-notificaciones. Antes pedimos a cada proveedor conectado que lo admita (por ejemplo, Google) que anule el permiso que le
+invitaciones y bloqueos, solicitudes y conversaciones de chat (también para la otra persona), comentarios enviados,
+sesiones y tokens de notificaciones. Antes pedimos a cada proveedor conectado que lo admita (por ejemplo, Google) que anule el permiso que le
 diste a APPINITY.</p>
 
 <h2>Qué se conserva y cuánto tiempo</h2>

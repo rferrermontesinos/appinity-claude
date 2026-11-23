@@ -77,7 +77,7 @@ Revisión de todas las rutas de `apps/api` (sin herramientas externas):
 - **Sigue pendiente**:
   - cliente de push en la app (`expo-notifications` y el registro del token);
   - Sentry (preparado en B4: falta el DSN del titular);
-  - un canal de feedback dentro de la app;
+  - un canal de feedback dentro de la app (hecho en B5: Perfil → Enviar comentario);
   - los datos del titular en los textos legales (desde B3, variables `LEGAL_*`);
   - 1 aviso alto en `pnpm audit` (zod 3 dentro de `@expo/cli`, solo al compilar).
 
@@ -101,6 +101,13 @@ Revisión de todas las rutas de `apps/api` (sin herramientas externas):
 - API, worker y app avisan de sus errores a Sentry cuando hay `SENTRY_DSN`; sin él, no sale nada.
 - Ningún dato personal ni secreto en los avisos (filtro propio antes de enviar); la app no lleva el SDK ni el DSN.
 - Para activarlo: cuenta de Sentry en la región UE y los pasos de [operations.md](operations.md#avisos-de-errores-sentry-fase-b4).
+
+### Comentarios de los testers (2026-11-22, fase B5)
+
+- **Perfil → Enviar comentario**: texto libre de hasta 2.000 caracteres, guardado con la versión de la app y la
+  plataforma. Nada más: ni capturas ni la pantalla que estaban viendo.
+- Cupo de 10 por persona al día. Se leen con `pnpm feedback:list` ([operations.md](operations.md#comentarios-de-la-beta-fase-b5)).
+- Salen en la copia de datos de la persona y se borran con su cuenta; la política de privacidad los nombra.
 
 ## Prueba con amigos y familiares: alta única (2026-10-26)
 

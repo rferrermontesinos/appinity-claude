@@ -31,6 +31,7 @@
     "user:local": "pnpm build && node --env-file-if-exists=.env packages/ingestion/dist/cli/create-local-user.js",
     "account:export": "pnpm build && node --env-file-if-exists=.env apps/api/dist/cli/account.js export",
     "account:delete": "pnpm build && node --env-file-if-exists=.env apps/api/dist/cli/account.js delete",
+    "feedback:list": "pnpm build && node --env-file-if-exists=.env packages/ingestion/dist/cli/list-feedback.js",
     "api": "pnpm build && node --env-file-if-exists=.env apps/api/dist/main.js",
     "worker": "pnpm build && node --env-file-if-exists=.env workers/sync-worker/dist/main.js",
     "dev": "pnpm build && concurrently -k -n build,api,worker -c gray,cyan,magenta \"pnpm build:watch\" \"node --env-file-if-exists=.env --watch apps/api/dist/main.js\" \"node --env-file-if-exists=.env --watch workers/sync-worker/dist/main.js\"",

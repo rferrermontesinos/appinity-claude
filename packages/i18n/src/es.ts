@@ -749,6 +749,21 @@ export const es = {
     code: 'Código de acceso',
     signIn: 'Entrar con la cuenta local',
   },
+  feedback: {
+    title: 'Enviar comentario',
+    rowHint: 'Cuéntanos qué falla o qué echas en falta',
+    intro: 'Estás en la beta cerrada: lo que nos cuentes decide qué se arregla primero. Qué falla, qué no se entiende, qué echas en falta… Lo leemos todo.',
+    label: 'Tu comentario',
+    placeholder: 'Por ejemplo: «Al votar una película, la tarjeta se queda en blanco».',
+    count: '{{count}} de {{max}} caracteres',
+    privacy:
+      'Se guarda con tu cuenta, la versión de la app ({{version}}) y la plataforma. Nada más: ni capturas ni lo que estabas viendo. Se borra si das de baja la cuenta.',
+    send: 'Enviar',
+    sentTitle: '¡Gracias!',
+    sentBody: 'Lo hemos recibido y lo leeremos con calma. Si se te ocurre algo más, puedes enviar otro.',
+    sendAnother: 'Enviar otro',
+    rateLimited: 'Has enviado muchos comentarios en poco tiempo. Gracias: vuelve a intentarlo más tarde.',
+  },
   diagnostics: {
     title: 'Conexión con la API',
     apiUrl: 'URL de la API',

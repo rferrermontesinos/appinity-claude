@@ -24,18 +24,22 @@ export function Screen({
   refreshing,
   onRefresh,
   background,
+  keyboardShouldPersistTaps,
 }: {
   children: ReactNode;
   refreshing?: boolean;
   onRefresh?: () => void;
   /** Fondo propio (p. ej., el tinte de una categoría); por defecto, el de la paleta. */
   background?: string;
+  /** «handled» en pantallas con formulario: el primer toque en un botón actúa aunque el teclado esté abierto. */
+  keyboardShouldPersistTaps?: 'handled';
 }) {
   const c = usePalette();
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: background ?? c.background }}
       contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl }}
+      keyboardShouldPersistTaps={keyboardShouldPersistTaps}
       refreshControl={onRefresh ? <RefreshControl refreshing={Boolean(refreshing)} onRefresh={onRefresh} /> : undefined}
     >
       {children}
@@ -337,7 +341,8 @@ export function EmptyState({
 
 /**
  * Campo de texto del sistema de diseño (variante «outlined»): etiqueta visible encima (no solo el placeholder, que
- * desaparece al escribir), caja de 52 px, borde de acento al enfocar y texto de ayuda o de error debajo.
+ * desaparece al escribir), caja de 52 px (140 si es de varias líneas), borde de acento al enfocar y texto de ayuda o de
+ * error debajo.
  */
 export function TextField({
   label,
@@ -366,9 +371,11 @@ export function TextField({
           input.onBlur?.(e);
         }}
         style={{
-          minHeight: 52,
+          minHeight: input.multiline ? 140 : 52,
           // El borde de 2 px al enfocar se compensa en el relleno para que el texto no salte.
           paddingHorizontal: spacing.md - (focused || error ? 1 : 0),
+          // Varias líneas (p. ej., un comentario): el texto empieza arriba, con algo de aire.
+          ...(input.multiline ? { paddingVertical: spacing.md - (focused || error ? 1 : 0), textAlignVertical: 'top' as const } : {}),
           color: c.text,
           fontSize: 16,
           borderWidth: focused || error ? 2 : 1,

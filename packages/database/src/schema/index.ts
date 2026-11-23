@@ -9,3 +9,4 @@ export * from './chat.js';
 export * from './premium.js';
 export * from './notifications.js';
 export * from './auth.js';
+export * from './feedback.js';

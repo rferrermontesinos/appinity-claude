@@ -5,6 +5,7 @@ import {
   conversationMembers,
   conversations,
   entitlements,
+  feedback,
   follows,
   friendships,
   homeDismissals,
@@ -175,6 +176,7 @@ export async function exportAccountData(db: Database, userId: string, now = new 
     .orderBy(asc(notificationDeliveries.createdAt));
   const premium = await db.select().from(entitlements).where(eq(entitlements.userId, userId));
   const sessions = await db.select().from(authSessions).where(eq(authSessions.userId, userId)).orderBy(asc(authSessions.createdAt));
+  const comments = await db.select().from(feedback).where(eq(feedback.userId, userId)).orderBy(asc(feedback.createdAt));
 
   const items = await itemRefs(db, [
     ...evidence.map((e) => e.catalogItemId),
@@ -360,6 +362,7 @@ export async function exportAccountData(db: Database, userId: string, now = new 
       updatedAt: iso(p.updatedAt),
     })),
     sessions: sessions.map((s) => ({ createdAt: iso(s.createdAt), lastUsedAt: iso(s.lastUsedAt), expiresAt: iso(s.expiresAt), revokedAt: iso(s.revokedAt) })),
+    feedback: comments.map((f) => ({ message: f.message, appVersion: f.appVersion, platform: f.platform, at: iso(f.createdAt), readAt: iso(f.readAt) })),
   };
 }
 
