@@ -409,6 +409,8 @@ Para la beta: App Review de `user_likes` y verificación del negocio en Meta.
 | `pnpm --filter @appinity/mobile web` | Vista web de desarrollo en el puerto 8092 (solo verificación; no sustituye al teléfono) |
 | `pnpm android:build` | Build de desarrollo de Android en este PC (sin EAS): APK en `apps/mobile/android/app/build/outputs/apk/debug/` |
 | `pnpm db:backup` | Copia de la base de datos de desarrollo en `backups/` (ignorada por Git) |
+| `pnpm account:export --email x` | Copia en JSON de los datos de una persona que la pide por email (en `exports/`, ignorada por Git) |
+| `pnpm account:delete --email x [--confirm handle]` | Baja pedida por email: sin `--confirm` solo enseña la cuenta; con su handle la elimina como la app |
 | `pnpm doctor` | Diagnóstico de servicios y red |
 | `pnpm lint` | ESLint (incluye la regla que impide importar proveedores en `packages/algorithms`) |
 | `pnpm typecheck` | `tsc` de paquetes, tests y app móvil |

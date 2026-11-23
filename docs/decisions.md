@@ -1398,3 +1398,37 @@ Cierra los hallazgos bajos y medios que quedaban de la auditoría del 2026-11-22
   solo se usa al compilar la app. La API y el worker no tienen ningún aviso. Se revisará al subir de SDK de Expo.
 - **Aceptado sin cambios (SEC-008)**: registrar un token de push que ya tenía otra cuenta lo pasa a la nueva. Es el
   caso normal de un teléfono que cambia de cuenta, y abusar de él exige conocer el token de Expo de la víctima.
+
+## 2026-11-22 · B3: textos legales y derechos
+
+- **Datos del responsable por variables de entorno** (`LEGAL_CONTROLLER_NAME`, `LEGAL_CONTACT_EMAIL` y, opcionales,
+  `LEGAL_CONTROLLER_ID` y `LEGAL_CONTROLLER_ADDRESS`). No se inventan: mientras falten, las páginas muestran
+  «[pendiente: …]» resaltado, la API lo avisa al arrancar en producción y `pnpm doctor` lo recuerda. No se bloquea el
+  arranque para poder probar el túnel antes de tenerlos. Los valores se escapan en el HTML.
+- **Política y condiciones al día con la app**. La versión del 2026-10-26 contradecía al producto: decía que los votos
+  no cambian los gustos y que «Lo que os une» venía activado. Ahora cuenta lo que hace el código:
+  - los votos cuentan como una nota (fuente `appinity`) y «No lo conozco», amistades y chat no;
+  - las opciones de privacidad empiezan apagadas;
+  - el consentimiento único del alta;
+  - qué ven los demás: descubrimientos con tu nombre («Lo descubre…», afinidad ≥ 50 %), lo que ven quienes te siguen
+    (las amistades se siguen al aceptar) y Trending agregado con un mínimo de 5 personas;
+  - perfilado sin decisiones con efectos jurídicos;
+  - encargados (alojamiento, Cloudflare, Expo y FCM) y carteles de TMDb y TVmaze cargados por enlace (ven la IP);
+  - transferencias internacionales y plazo de un mes para responder;
+  - la frase de Google de que ninguna persona lee los datos.
+  Copias de seguridad: «rotan, máximo 14 días», sin decir «cifradas» hasta que B9 las cifre (lo mismo en la nota de la
+  app al eliminar la cuenta).
+- **Página pública `/legal/eliminar-cuenta`** (Google Play la exige en la sección de seguridad de los datos): pasos en la
+  app (Perfil → Ajustes → Eliminar mi cuenta), petición por email sin la app, qué se borra, qué queda (copias, 14 días) y
+  cómo borrar solo una fuente.
+- **Peticiones por email con comandos**: `pnpm account:export` (copia en JSON para los derechos de acceso y
+  portabilidad) y `pnpm account:delete` (sin `--confirm <handle>` solo enseña la cuenta). La baja usa el mismo
+  `AccountService` que «Eliminar mi cuenta», también para anular los permisos en los proveedores.
+- **Qué deja fuera la copia** y por qué:
+  - secretos (credenciales, huellas de sesión, tokens push, cursores);
+  - los mensajes que escribieron otras personas (solo cuántos) y quién te sigue (solo cuántas personas): son datos de
+    ellas (RGPD art. 15.4);
+  - las afinidades, que incluyen a personas que han elegido no aparecer como almas gemelas.
+- **Para la revisión legal** (no se cambia el producto sin el titular): el consentimiento único que cubre fuentes futuras
+  (RGPD art. 7 pide un consentimiento específico; hoy cada proveedor muestra además su pantalla de permiso), el mecanismo
+  de transferencia de cada proveedor y si hacen falta NIF y dirección (LSSI).

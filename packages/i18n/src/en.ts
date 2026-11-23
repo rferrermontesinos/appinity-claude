@@ -682,7 +682,7 @@ export const en: TranslationResources = {
       'Granted permissions (Google, Steam…) will be revoked and everything will be deleted: profile, imported tastes, affinities, friendships and chats. This cannot be undone. Type ELIMINAR to confirm.',
     deleteType: 'Type ELIMINAR',
     deleteFinal: 'Delete permanently',
-    deleteNote: 'Encrypted backups rotate and the account also disappears from them when they expire (see the operations documentation).',
+    deleteNote: 'Backups rotate: the account also disappears from them within 14 days at most.',
   },
   profile: {
     heroSources: 'active sources',

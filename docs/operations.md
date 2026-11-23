@@ -47,6 +47,9 @@ qué está ya preparado y probado.
 | `OUTBOUND_CONTACT` | Contacto del proyecto (URL o email) en el User-Agent de Wikidata, Wikimedia y Nominatim. Vacía: el origen de `PUBLIC_API_URL`. Nunca un dato personal | Email de soporte o web del proyecto |
 | `CATALOG_USER_AGENT` | Sustituye el User-Agent entero del worker (raro: basta `OUTBOUND_CONTACT`) | «APPINITY/0.1 (+contacto)» |
 | `NOMINATIM_URL` | Geocodificación propia (recomendada con muchos usuarios) | Instancia propia de Nominatim |
+| `LEGAL_CONTROLLER_NAME` | Responsable en la política, las condiciones y la página de baja. Sin ella, las páginas muestran «[pendiente: …]» y la API lo avisa al arrancar | Nombre y apellidos o razón social del titular |
+| `LEGAL_CONTACT_EMAIL` | Email de privacidad, derechos y bajas (enlace `mailto:` en las tres páginas) | Un buzón que el titular lea |
+| `LEGAL_CONTROLLER_ID` / `LEGAL_CONTROLLER_ADDRESS` | NIF y dirección postal del responsable. Opcionales; la LSSI los exige si hay actividad económica | Que lo confirme la revisión legal |
 
 **Rotación**:
 - `AUTH_SECRET`: cambiarlo invalida todos los access tokens (las sesiones se renuevan con su refresh token).
@@ -60,8 +63,9 @@ qué está ya preparado y probado.
   ```
   Se programan con cron o con el programador de tareas.
 - Contienen datos personales: guárdalas **cifradas** y fuera del servidor, con acceso restringido.
-- **Retención**: 14 días. Una cuenta eliminada desaparece de las copias cuando caducan. Así lo explica la app al
-  eliminar la cuenta.
+- **Retención**: 14 días (una copia diaria, se conservan 14). Una cuenta eliminada desaparece de las copias cuando
+  caducan; así lo dicen la app al eliminar la cuenta, la política de privacidad y la página de baja. Si las copias no son
+  diarias, esa promesa no se cumple: programarlas es parte de la puesta en marcha.
 - Restaurar:
   ```bash
   docker exec -i <contenedor> pg_restore -U appinity_claude -d appinity_claude --clean --if-exists < backups/<archivo>.dump
@@ -78,10 +82,37 @@ qué está ya preparado y probado.
   - la API nunca devuelve tokens de proveedores;
   - las credenciales de fuentes van cifradas (AES-256-GCM, ligadas a la conexión);
   - los refresh tokens de sesión solo se guardan como hash.
-- **Eliminar la cuenta** (`DELETE /v1/me`):
-  - desconecta cada fuente revocando el permiso en el proveedor;
-  - después borra al usuario y, en cascada, todo lo suyo: perfil, evidencia, afinidades, amistades, chats, sesiones,
-    tokens push y entitlements.
+- **Eliminar la cuenta** (`DELETE /v1/me` y `pnpm account:delete`, el mismo `AccountService`):
+  - desconecta cada fuente pidiendo al proveedor que anule el permiso (un proveedor que no responde no impide el borrado);
+  - después borra al usuario y, en cascada, todo lo suyo: perfil, evidencia, votos, afinidades, amistades, seguimientos,
+    chats (también para la otra persona), sesiones, tokens push y entitlements. Los eventos de compra de RevenueCat se
+    conservan sin el usuario (`user_id` a NULL).
+
+### Peticiones de derechos por email (fase B3)
+
+La página pública `https://TU-DOMINIO/legal/eliminar-cuenta` (la pide Google Play) y la política de privacidad dan el
+email de `LEGAL_CONTACT_EMAIL`. Cuando llega una petición:
+
+1. **Comprobar la identidad**: el email del remitente tiene que ser el de la cuenta de Google con la que entra en
+   APPINITY. Si escribe desde otro, pedirle que lo haga desde ese.
+2. **Copia de sus datos** (acceso y portabilidad):
+   ```bash
+   pnpm account:export --email persona@gmail.com
+   ```
+   Escribe `exports/appinity-<handle>-<fecha>.json` (fuera de Git; `--out ruta.json` para otra ruta). Incluye cuenta,
+   gustos, evidencias, votos, amistades, chat y ajustes. Deja fuera secretos (credenciales, huellas de sesión, tokens
+   push), los mensajes que escribieron otras personas (solo cuántos) y las afinidades. Enviarla solo a esa persona, por un
+   canal seguro, y borrarla después.
+3. **Eliminar la cuenta**:
+   ```bash
+   pnpm account:delete --email persona@gmail.com                    # enseña qué cuenta es; no borra nada
+   pnpm account:delete --email persona@gmail.com --confirm <handle>  # la elimina como «Eliminar mi cuenta»
+   ```
+   Se ejecuta donde corre la API (usa su `.env` para anular los permisos en los proveedores). Las personas de la demo no
+   se eliminan así. Con la pila de Docker de producción, dentro del contenedor de la API:
+   `docker compose -f docker-compose.prod.yml --env-file .env.production exec api node apps/api/dist/cli/account.js delete --email …`
+   (y `… account.js export --email … --out /tmp/copia.json`, que después se copia con `docker compose cp`).
+4. **Contestar** en un plazo máximo de un mes desde la petición (RGPD, art. 12.3).
 
 ## Builds de la app (EAS)
 

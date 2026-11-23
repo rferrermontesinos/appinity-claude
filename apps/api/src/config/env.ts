@@ -45,6 +45,27 @@ const envSchema = z
       .string()
       .optional()
       .transform((v) => (v ? v.trim() : undefined)),
+    /**
+     * Datos del responsable para los textos legales (/legal/*). No son secretos, pero no se inventan: mientras falten, las
+     * páginas muestran el hueco marcado y la API lo avisa al arrancar en producción. NIF y dirección se recomiendan (la
+     * LSSI los exige si hay actividad económica). Ver docs/operations.md.
+     */
+    LEGAL_CONTROLLER_NAME: z
+      .string()
+      .optional()
+      .transform((v) => (v ? v.trim() : undefined)),
+    LEGAL_CONTROLLER_ID: z
+      .string()
+      .optional()
+      .transform((v) => (v ? v.trim() : undefined)),
+    LEGAL_CONTROLLER_ADDRESS: z
+      .string()
+      .optional()
+      .transform((v) => (v ? v.trim() : undefined)),
+    LEGAL_CONTACT_EMAIL: z
+      .union([z.literal(''), z.email('LEGAL_CONTACT_EMAIL debe ser un email')])
+      .optional()
+      .transform((v) => v || undefined),
     STORAGE_DIR: z.string().default('.data/media'),
     QUEUE_PREFIX: z
       .string()
