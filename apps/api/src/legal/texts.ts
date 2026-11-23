@@ -175,8 +175,8 @@ o las cláusulas contractuales tipo de la Comisión Europea.</p>
 <p>Mientras tengas la cuenta. Al desconectar una fuente puedes borrar lo importado de ella (Perfil → Fuentes →
 «Desconectar y borrar lo importado»). Al eliminar la cuenta pedimos a los proveedores conectados que anulen los permisos
 que les diste y lo borramos todo al momento: perfil, gustos, votos, afinidades, amistades, conversaciones (también para la
-otra persona), comentarios y sesiones. Las copias de seguridad tienen acceso restringido y rotan: lo borrado desaparece también de
-ellas en un máximo de 14 días.</p>
+otra persona), comentarios y sesiones. Las copias de seguridad están cifradas, tienen acceso restringido y rotan: lo borrado
+desaparece también de ellas en un máximo de 14 días.</p>
 
 <h2>8. Tus derechos</h2>
 <p>Puedes acceder a tus datos, rectificarlos, borrarlos, limitar u oponerte a su tratamiento, pedir una copia en un
@@ -212,8 +212,9 @@ también las condiciones de cada proveedor.</p>
 
 <h2>4. Normas de convivencia</h2>
 <p>No acoses, suplantes a nadie, envíes spam ni compartas contenido ilegal o sexual no solicitado. Eres responsable de lo
-que escribes. Puedes bloquear y reportar a cualquier persona. Podemos suspender las cuentas que incumplan estas
-normas.</p>
+que escribes. Puedes bloquear y reportar a cualquier persona: revisamos cada reporte. Podemos suspender las cuentas que
+incumplan estas normas; si suspendemos la tuya, te escribimos con el motivo y puedes pedir que lo revisemos escribiendo a
+${contactHtml(info)}.</p>
 
 <h2>5. Premium</h2>
 <p>Las funciones de pago, cuando existan, se contratarán en la tienda de tu dispositivo y se regirán por sus condiciones
@@ -261,8 +262,8 @@ sesiones y tokens de notificaciones. Antes pedimos a cada proveedor conectado qu
 diste a APPINITY.</p>
 
 <h2>Qué se conserva y cuánto tiempo</h2>
-<p>Nada en la base de datos. Las copias de seguridad, de acceso restringido, rotan: lo borrado desaparece también de ellas
-en un máximo de 14 días.</p>
+<p>Nada en la base de datos. Las copias de seguridad, cifradas y de acceso restringido, rotan: lo borrado desaparece también
+de ellas en un máximo de 14 días.</p>
 
 <h2>Borrar solo una parte</h2>
 <p>Sin eliminar la cuenta, puedes borrar lo importado de una fuente en <strong>Perfil → Fuentes → «Desconectar y borrar lo

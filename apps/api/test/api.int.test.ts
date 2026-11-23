@@ -217,11 +217,11 @@ describe('rutas privadas', () => {
   it('un usuario suspendido pierde el acceso aunque su token sea válido', async () => {
     const token = await login('demo_jordi');
     const jordi = DEMO_USERS.find((u) => u.handle === 'demo_jordi')!;
-    await db.db.update(users).set({ status: 'suspended' }).where(eq(users.id, jordi.id));
+    await db.db.update(users).set({ status: 'suspended', suspendedAt: new Date() }).where(eq(users.id, jordi.id));
     try {
       expect((await get('/v1/me', token)).status).toBe(401);
     } finally {
-      await db.db.update(users).set({ status: 'active' }).where(eq(users.id, jordi.id));
+      await db.db.update(users).set({ status: 'active', suspendedAt: null }).where(eq(users.id, jordi.id));
     }
   });
 });

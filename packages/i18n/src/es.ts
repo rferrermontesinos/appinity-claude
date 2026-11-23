@@ -680,7 +680,7 @@ export const es = {
       'Se revocarán los permisos concedidos (Google, Steam…) y se borrará todo: perfil, gustos importados, afinidades, amistades y chats. No se puede deshacer. Escribe ELIMINAR para confirmar.',
     deleteType: 'Escribe ELIMINAR',
     deleteFinal: 'Eliminar definitivamente',
-    deleteNote: 'Las copias de seguridad rotan: la cuenta desaparece también de ellas en un máximo de 14 días.',
+    deleteNote: 'Las copias de seguridad, cifradas, rotan: la cuenta desaparece también de ellas en un máximo de 14 días.',
   },
   profile: {
     heroSources: 'fuentes activas',

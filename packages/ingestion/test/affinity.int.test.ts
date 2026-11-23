@@ -90,7 +90,7 @@ beforeAll(async () => {
   await prefer('fede', range('m', 'movies', 2, varied));
   // Gus: suspendido → no elegible.
   await prefer('gus', range('m', 'movies', 12, varied));
-  await database.db.update(users).set({ status: 'suspended' }).where(eq(users.id, ids.gus!));
+  await database.db.update(users).set({ status: 'suspended', suspendedAt: new Date() }).where(eq(users.id, ids.gus!));
 });
 
 afterAll(async () => {

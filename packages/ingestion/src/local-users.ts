@@ -20,6 +20,10 @@ export async function createOrResetLocalUser(
   return db.transaction(async (tx) => {
     const [existing] = await tx.select().from(users).where(eq(users.handle, input.handle));
     if (existing && existing.dataset !== 'live') throw new ConflictError('Ese handle pertenece a un usuario de demo');
+    // Un código nuevo no levanta una suspensión (fase B9): eso es cosa de `pnpm account:unsuspend`.
+    if (existing?.status === 'suspended') {
+      throw new ConflictError(`@${input.handle} está suspendida: levanta antes la suspensión con pnpm account:unsuspend`);
+    }
     if (existing) {
       await tx
         .update(users)

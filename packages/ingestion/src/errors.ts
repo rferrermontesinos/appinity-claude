@@ -11,6 +11,9 @@ export class ForbiddenError extends Error {
   readonly code = 'forbidden';
 }
 
+/** La cuenta está suspendida (moderación, fase B9): no puede iniciar sesión. */
+export class AccountSuspendedError extends ForbiddenError {}
+
 export class UnavailableError extends Error {
   readonly code = 'unavailable';
 }

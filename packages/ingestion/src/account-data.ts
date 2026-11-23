@@ -212,6 +212,7 @@ export async function exportAccountData(db: Database, userId: string, now = new 
       id: account.id,
       handle: account.handle,
       status: account.status,
+      suspendedAt: iso(account.suspendedAt),
       createdAt: iso(account.createdAt),
       adultConfirmedAt: iso(account.adultConfirmedAt),
       termsAcceptedAt: iso(account.termsAcceptedAt),
@@ -312,7 +313,7 @@ export async function exportAccountData(db: Database, userId: string, now = new 
       following: following.map((f) => ({ person: person(f.followedUserId), since: iso(f.createdAt) })),
       followers: followers?.n ?? 0,
       blocked: blocked.map((b) => ({ person: person(b.blockedUserId), at: iso(b.createdAt) })),
-      reportsMade: reports.map((r) => ({ person: person(r.reportedId), reason: r.reason, note: r.note, at: iso(r.createdAt) })),
+      reportsMade: reports.map((r) => ({ person: person(r.reportedId), reason: r.reason, note: r.note, at: iso(r.createdAt), reviewedAt: iso(r.reviewedAt) })),
       invitations: invites.map((i) => ({
         code: i.code,
         maxUses: i.maxUses,

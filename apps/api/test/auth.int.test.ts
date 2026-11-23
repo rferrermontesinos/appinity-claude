@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { authSessions, createDatabase, users, type DatabaseHandle } from '@appinity/database';
-import { createSession, findOrCreateUserForIdentity } from '@appinity/ingestion';
+import { AccountSuspendedError, createSession, findOrCreateUserForIdentity, suspendUser } from '@appinity/ingestion';
 import { CONTACT_HASH_DAILY_MAX, QUEUES, type AuthProvidersDto, type AuthSessionDto, type ContactMatchDto, type MeDto } from '@appinity/shared';
 import { Queue } from 'bullmq';
 import { eq } from 'drizzle-orm';
@@ -168,6 +168,16 @@ describe('sesiones de producción (fase 13)', () => {
     expect((await call('POST', '/v1/auth/logout', session.accessToken)).status).toBe(204);
     expect((await call('GET', '/v1/me', session.accessToken)).status).toBe(401);
     expect((await call('POST', '/v1/auth/refresh', undefined, { refreshToken: session.refreshToken })).status).toBe(401);
+  });
+
+  it('suspender la cuenta (moderación, B9) la saca al momento: el token deja de valer, no se renueva y no se vuelve a entrar', async () => {
+    const { code, userId } = await handoff('sub-susi');
+    const session = (await (await call('POST', '/v1/auth/exchange', undefined, { code, codeVerifier: VERIFIER })).json()) as AuthSessionDto;
+    expect((await call('GET', '/v1/me', session.accessToken)).status).toBe(200);
+    await suspendUser(db.db, userId);
+    expect((await call('GET', '/v1/me', session.accessToken)).status).toBe(401);
+    expect((await call('POST', '/v1/auth/refresh', undefined, { refreshToken: session.refreshToken })).status).toBe(401);
+    await expect(handoff('sub-susi')).rejects.toBeInstanceOf(AccountSuspendedError);
   });
 
   it('la misma identidad de Google vuelve a la misma cuenta', async () => {

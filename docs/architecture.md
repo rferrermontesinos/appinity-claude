@@ -80,7 +80,7 @@ Tablas de la fase 1:
 | `conversations` (fase 12A) | Una por pareja ordenada tras el match (request, mutual, friendship o direct); `closed` al deshacer o bloquear |
 | `conversation_members` / `messages` (fase 12A) | Lectura y aviso de match por persona; mensajes de 1 a 1.000 caracteres con `client_id` idempotente |
 | `friendships` (fase 10) | Una fila por pareja (único sobre la pareja ordenada): pending, accepted o rejected; el rechazo no se revela |
-| `user_reports` (fase 10) | Reportes con motivo cerrado y nota opcional (≤ 500) |
+| `user_reports` (fase 10) | Reportes con motivo cerrado y nota opcional (≤ 500); `reviewed_at` al revisarlos (fase B9). Una cuenta suspendida tiene `users.status = 'suspended'` y `suspended_at` (un CHECK exige los dos a la vez) |
 | `user_blocks` (fase 6) | Bloqueo por pareja ordenada (sin autorreferencia). Excluye en ambas direcciones del ranking, del perfil y de la afinidad |
 | `feedback` (fase B5) | Comentarios de los testers: texto (1–2.000), versión de la app, plataforma y `read_at`; se borran con la cuenta |
 | `category_affinities` (fase 5) | Una fila por pareja ordenada y categoría con resultado (sin fila = NULL): puntuación, confianza, evidencia efectiva, acuerdo, cobertura y versión |

@@ -1551,3 +1551,41 @@ Cierra los hallazgos bajos y medios que quedaban de la auditoría del 2026-11-22
 - **Identificador de la app**: se mantiene `dev.appinity.claude` hasta que el titular decida. Una vez subido a Play no se
   puede cambiar nunca; queda como decisión suya antes de la primera subida.
 - **Capturas solo con la demo** (personas ficticias), nunca con cuentas reales de testers.
+
+## 2026-11-22 · B9: operación de la beta
+
+- **Copias cifradas con su propia clave** (`BACKUP_ENCRYPTION_KEY`), no con la de las credenciales de las fuentes:
+  cambiar una no debe romper la otra, y esta hay que guardarla fuera del equipo (sin ella no se restaura nada). La crea
+  `pnpm setup` y avisa de guardarla en un gestor de contraseñas.
+- **El volcado sin cifrar nunca toca el disco**: `pg_dump` pasa por AES-256-GCM al vuelo y se escribe en un fichero
+  `.part` que solo se renombra al terminar bien. La cabecera lleva la huella de la clave (no la clave), para que
+  `db:restore` diga «se cifró con otra clave» en lugar de un error genérico. Con la copia cifrada, guardarla en una
+  carpeta sincronizada con la nube (`BACKUP_COPY_TO`) es aceptable.
+- **Restaurar solo una copia íntegra**: GCM solo confirma la integridad al final, así que la copia se lee entera y se
+  verifica antes de mandar un solo byte a `pg_restore`. Un byte cambiado, una copia cortada o la clave equivocada paran
+  antes de tocar ninguna base.
+- **Restaurar sin dejar la base a medias**: la copia se restaura en otra base (`--single-transaction`) y solo al final se
+  cambian los nombres. Antes, una copia de seguridad del estado actual. Se niega si hay conexiones abiertas (API o worker
+  en marcha). Sin `--confirm`, el comando solo comprueba la copia en una base temporal y enseña qué contiene: es la
+  comprobación mensual.
+- **Rotación de 14 copias**: la política de privacidad promete que lo borrado desaparece de las copias en 14 días. Solo
+  se cumple con una copia al día, por eso `pnpm doctor` avisa si la última tiene más de 36 horas.
+- **Moderación por comando, sin panel**: con el alcance congelado, un panel de administración sería una función nueva.
+  Bastan `pnpm reports:list` (agrupado por persona reportada) y `pnpm account:suspend`, con la misma confirmación por
+  handle que `account:delete`.
+- **Suspender es un estado de la cuenta** (`users.status = 'suspended'` con `suspended_at`, un CHECK exige los dos a la
+  vez), no un borrado: toda la app ya filtra por `status = 'active'` (sesión, perfiles, almas gemelas, afinidad, Trending,
+  contactos, notificaciones), así que la persona desaparece para los demás y vuelve tal cual al levantarla. Se cierran
+  sus sesiones y Google ya no la deja entrar, con un mensaje que dice a qué email escribir.
+- **No se leen los chats para moderar**: la política de privacidad no lo contempla. Se decide con el motivo, la nota y
+  cuántas personas distintas reportan; si hace falta, se pregunta a quien reporta. Las condiciones prometen escribir a la
+  persona suspendida con el motivo y revisar su caso (plantilla en [incidencias.md](incidencias.md)).
+- **Métricas sin terceros**: ni SDK de analítica ni otro encargado del tratamiento, y nada que cambie el consentimiento.
+  Solo recuentos sacados de la base de datos, nunca nombres ni identificadores. Dos medidas son aproximadas y el comando
+  lo dice: «alma gemela tras 48 h» se mira ahora, y la vuelta entre el día 7 y el 13 se deduce de lo que deja huella
+  (votos, tarjetas vistas, mensajes, sesiones y comentarios), porque la app no registra cada apertura. Registrar
+  aperturas sería una función nueva y un dato más en la política de privacidad.
+- **La mezcla de Inicio se mide como la vería cada persona ahora** (la primera tanda de 10 con sus descartes), con la
+  misma función que sirve Inicio y sin escribir nada: así compara el objetivo de 70/20/10 con lo que de verdad sale.
+- **El registro de incidencias va fuera del repositorio**: puede llevar datos personales, y en el repositorio no deben
+  estar.

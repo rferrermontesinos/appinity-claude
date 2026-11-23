@@ -14,7 +14,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { users, type DatabaseHandle } from '@appinity/database';
-import { completeOnboarding, createSession, findOrCreateUserForIdentity, revokeSession, rotateSession } from '@appinity/ingestion';
+import { AccountSuspendedError, completeOnboarding, createSession, findOrCreateUserForIdentity, revokeSession, rotateSession } from '@appinity/ingestion';
 import { outboundUserAgent, type AuthProvidersDto, type AuthSessionDto } from '@appinity/shared';
 import { Throttle } from '@nestjs/throttler';
 import { eq } from 'drizzle-orm';
@@ -184,6 +184,12 @@ export class AuthController {
       await this.redis.set(this.key('handoff', code), JSON.stringify(handoff), 'EX', HANDOFF_TTL);
       back({ auth: 'ok', code });
     } catch (error) {
+      if (error instanceof AccountSuspendedError) {
+        // Moderación (fase B9): decirlo claro, con el contacto para pedir una revisión si está configurado.
+        const contact = this.env.LEGAL_CONTACT_EMAIL?.trim();
+        back({ auth: 'error', message: `Esta cuenta está suspendida.${contact ? ` Si crees que es un error, escribe a ${contact}.` : ''}` });
+        return;
+      }
       this.logger.warn(`Inicio de sesión con Google rechazado: ${(error as Error).message.slice(0, 160)}`);
       back({ auth: 'error', message: 'No se pudo verificar la identidad de Google' });
     }

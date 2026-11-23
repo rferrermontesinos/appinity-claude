@@ -2,7 +2,7 @@
 // Diagnóstico local: servicios Docker, API por localhost y por IP de red, y URL configurada en el móvil.
 // No modifica nada. Uso: pnpm doctor
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { lanCandidates, parseEnv } from './lib/network.mjs';
 
 const root = new URL('../', import.meta.url);
@@ -37,6 +37,23 @@ else ok('Textos legales: responsable y contacto configurados');
 if (env.get('SENTRY_DSN')?.trim())
   ok(`Avisos de errores activos (Sentry, entorno ${env.get('SENTRY_ENVIRONMENT')?.trim() || env.get('NODE_ENV') || 'development'})`);
 else info('Avisos de errores apagados (sin SENTRY_DSN; antes de la beta, ver docs/operations.md)');
+// Copias de seguridad (fase B9): la política de privacidad cuenta con una copia cifrada al día.
+if (!env.get('BACKUP_ENCRYPTION_KEY')?.trim()) info('Sin BACKUP_ENCRYPTION_KEY: ejecuta pnpm setup para poder hacer copias (pnpm db:backup)');
+const backupsDir = new URL('backups/', root);
+const backups = existsSync(backupsDir)
+  ? readdirSync(backupsDir)
+      .filter((name) => /^appinity_claude-.+\.dump(\.enc)?$/.test(name))
+      .sort()
+  : [];
+if (!backups.length) info('Sin copias de seguridad en backups/ (antes de la beta: programar pnpm db:backup a diario, ver docs/operations.md)');
+else {
+  const hours = (Date.now() - statSync(new URL(backups.at(-1), backupsDir)).mtimeMs) / 3600_000;
+  const plaintext = backups.filter((name) => name.endsWith('.dump')).length;
+  const summary = `${backups.length} copia(s) en backups/, la última de hace ${hours < 48 ? `${Math.round(hours)} h` : `${Math.round(hours / 24)} días`}`;
+  if (hours > 36) bad(`${summary}: ¿está programada la copia diaria?`);
+  else ok(summary);
+  if (plaintext) info(`${plaintext} copia(s) antiguas sin cifrar: la rotación de pnpm db:backup las irá borrando`);
+}
 
 console.log('\nServicios Docker (proyecto appinity-claude)');
 try {
