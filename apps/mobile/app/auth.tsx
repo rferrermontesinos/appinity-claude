@@ -4,12 +4,13 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { apiRequest } from '../src/api/client';
+import { takePkceVerifier } from '../src/api/pkce';
 import { Body, Button, Card, Loading, Screen, Title } from '../src/components/ui';
 import { useSession } from '../src/state/session';
 
 /**
  * Vuelta de «Continuar con Google» (fase 13). La API deja un código de un solo uso en la URL; aquí se canjea por la
- * sesión (los tokens nunca viajan en la URL) y se va al alta si falta.
+ * sesión con el secreto PKCE guardado al empezar (los tokens nunca viajan en la URL) y se va al alta si falta.
  */
 export default function AuthReturnScreen() {
   const { t } = useTranslation();
@@ -22,7 +23,13 @@ export default function AuthReturnScreen() {
   useEffect(() => {
     if (started.current || params.auth !== 'ok' || !params.code) return;
     started.current = true;
-    void apiRequest<AuthSessionDto>('/v1/auth/exchange', { method: 'POST', body: { code: params.code }, auth: false })
+    const code = params.code;
+    void takePkceVerifier()
+      .then((codeVerifier) => {
+        // Sin el secreto PKCE de este dispositivo el código no vale: el inicio de sesión no empezó aquí.
+        if (!codeVerifier) throw new Error(t('auth.failed'));
+        return apiRequest<AuthSessionDto>('/v1/auth/exchange', { method: 'POST', body: { code, codeVerifier }, auth: false });
+      })
       .then(async (session) => {
         // Caché vacía antes de la sesión nueva (ver useDevLogin).
         queryClient.clear();
@@ -30,7 +37,7 @@ export default function AuthReturnScreen() {
         router.replace(session.needsOnboarding ? '/onboarding' : '/');
       })
       .catch((e: Error) => setError(e.message));
-  }, [params.auth, params.code, queryClient, router]);
+  }, [params.auth, params.code, queryClient, router, t]);
 
   return (
     <Screen>

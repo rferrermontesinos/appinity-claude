@@ -11,6 +11,7 @@ import { testEnv, truncateAll } from '../../../test/helpers.js';
 import { GoogleOidc } from '../dist/auth/google-oidc.js';
 import { createApp } from '../dist/bootstrap.js';
 import { loadEnv } from '../dist/config/env.js';
+import { isAllowedReturnUrl } from '../dist/connections/return-url.js';
 
 /** Valores SOLO de test (no reales). */
 const AUTH_SECRET = 'secreto-de-sesion-solo-para-tests-0123456789';
@@ -44,12 +45,21 @@ const call = (method: string, path: string, token?: string, body?: unknown) =>
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
 
+/** Secreto PKCE de la app en las pruebas y su desafío (S256). */
+const VERIFIER = 'verificador-pkce-de-prueba-0123456789-abcdefghij';
+const CHALLENGE = createHash('sha256').update(VERIFIER).digest('base64url');
+
 /** Simula la vuelta de Google: lo que dejaría el callback tras verificar el ID token (identidad + sesión + código). */
 async function handoff(subject: string): Promise<{ code: string; userId: string }> {
   const { userId, isNew } = await findOrCreateUserForIdentity(db.db, { provider: 'google', subject, email: `${subject}@example.com`, name: 'Prueba' });
   const session = await createSession(db.db, userId);
   const code = `codigo-de-prueba-${subject}-0123456789`;
-  await redis.set(`${env.QUEUE_PREFIX}:auth-handoff:${code}`, JSON.stringify({ userId, sessionId: session.sessionId, refreshToken: session.refreshToken, isNew }), 'EX', 60);
+  await redis.set(
+    `${env.QUEUE_PREFIX}:auth-handoff:${code}`,
+    JSON.stringify({ userId, sessionId: session.sessionId, refreshToken: session.refreshToken, isNew, codeChallenge: CHALLENGE }),
+    'EX',
+    60,
+  );
   return { code, userId };
 }
 
@@ -86,11 +96,30 @@ describe('OpenID Connect de Google (claves locales, sin red)', () => {
   });
 });
 
+describe('URLs de vuelta', () => {
+  it('en producción solo el esquema de la app: ni Expo Go ni localhost reciben el código', () => {
+    const previous = process.env.NODE_ENV;
+    try {
+      process.env.NODE_ENV = 'production';
+      expect(isAllowedReturnUrl('appinity-claude://auth')).toBe(true);
+      expect(isAllowedReturnUrl('exp://192.168.1.20:8081/--/auth')).toBe(false);
+      expect(isAllowedReturnUrl('http://localhost:8081/auth')).toBe(false);
+      process.env.NODE_ENV = 'development';
+      expect(isAllowedReturnUrl('exp://192.168.1.20:8081/--/auth')).toBe(true);
+      expect(isAllowedReturnUrl('http://localhost:8081/auth')).toBe(true);
+    } finally {
+      process.env.NODE_ENV = previous;
+    }
+  });
+});
+
 describe('sesiones de producción (fase 13)', () => {
   it('proveedores disponibles y vuelta de Google solo a URLs permitidas', async () => {
     expect(await (await call('GET', '/v1/auth/providers')).json()).toEqual<AuthProvidersDto>({ google: true, dev: true });
-    expect((await call('GET', '/v1/auth/google/start?returnUrl=https%3A%2F%2Fmalicioso.example')).status).toBe(400);
-    const start = await call('GET', '/v1/auth/google/start?returnUrl=appinity-claude%3A%2F%2Fprofile');
+    expect((await call('GET', `/v1/auth/google/start?returnUrl=https%3A%2F%2Fmalicioso.example&codeChallenge=${CHALLENGE}`)).status).toBe(400);
+    // Sin desafío PKCE no se empieza.
+    expect((await call('GET', '/v1/auth/google/start?returnUrl=appinity-claude%3A%2F%2Fprofile')).status).toBe(400);
+    const start = await call('GET', `/v1/auth/google/start?returnUrl=appinity-claude%3A%2F%2Fprofile&codeChallenge=${CHALLENGE}`);
     expect(start.status).toBe(302);
     expect(start.headers.get('location')).toMatch(/^https:\/\/accounts\.google\.com\/o\/oauth2\/v2\/auth\?/);
     // Vuelta con un state desconocido: rechazada.
@@ -99,9 +128,9 @@ describe('sesiones de producción (fase 13)', () => {
 
   it('código de un solo uso → sesión; alta; renovación con rotación y detección de reutilización', async () => {
     const { code } = await handoff('sub-ana');
-    const session = (await (await call('POST', '/v1/auth/exchange', undefined, { code })).json()) as AuthSessionDto;
+    const session = (await (await call('POST', '/v1/auth/exchange', undefined, { code, codeVerifier: VERIFIER })).json()) as AuthSessionDto;
     expect(session).toMatchObject({ isNew: true, needsOnboarding: true });
-    expect((await call('POST', '/v1/auth/exchange', undefined, { code })).status).toBe(401);
+    expect((await call('POST', '/v1/auth/exchange', undefined, { code, codeVerifier: VERIFIER })).status).toBe(401);
 
     let me = (await (await call('GET', '/v1/me', session.accessToken)).json()) as MeDto;
     expect(me).toMatchObject({ authKind: 'user', needsOnboarding: true, user: { dataset: 'live' } });
@@ -119,9 +148,16 @@ describe('sesiones de producción (fase 13)', () => {
     expect((await call('POST', '/v1/auth/refresh', undefined, { refreshToken: rotated.refreshToken })).status).toBe(401);
   });
 
+  it('el código solo se canjea con el secreto PKCE de quien empezó; un intento fallido lo gasta y cierra esa sesión', async () => {
+    const { code } = await handoff('sub-eloi');
+    expect((await call('POST', '/v1/auth/exchange', undefined, { code })).status).toBe(400);
+    expect((await call('POST', '/v1/auth/exchange', undefined, { code, codeVerifier: 'otro-secreto-que-no-corresponde-0123456789-abcdef' })).status).toBe(401);
+    expect((await call('POST', '/v1/auth/exchange', undefined, { code, codeVerifier: VERIFIER })).status).toBe(401);
+  });
+
   it('cerrar sesión la invalida al momento', async () => {
     const { code } = await handoff('sub-dani');
-    const session = (await (await call('POST', '/v1/auth/exchange', undefined, { code })).json()) as AuthSessionDto;
+    const session = (await (await call('POST', '/v1/auth/exchange', undefined, { code, codeVerifier: VERIFIER })).json()) as AuthSessionDto;
     expect((await call('POST', '/v1/auth/logout', session.accessToken)).status).toBe(204);
     expect((await call('GET', '/v1/me', session.accessToken)).status).toBe(401);
     expect((await call('POST', '/v1/auth/refresh', undefined, { refreshToken: session.refreshToken })).status).toBe(401);
@@ -135,7 +171,7 @@ describe('sesiones de producción (fase 13)', () => {
 
   it('eliminar la cuenta borra al usuario y cierra todas sus sesiones', async () => {
     const { code, userId } = await handoff('sub-carla');
-    const session = (await (await call('POST', '/v1/auth/exchange', undefined, { code })).json()) as AuthSessionDto;
+    const session = (await (await call('POST', '/v1/auth/exchange', undefined, { code, codeVerifier: VERIFIER })).json()) as AuthSessionDto;
     expect((await call('DELETE', '/v1/me', session.accessToken, { confirm: 'no' })).status).toBe(400);
     expect((await call('DELETE', '/v1/me', session.accessToken, { confirm: 'ELIMINAR' })).status).toBe(204);
     expect(await db.db.select().from(users).where(eq(users.id, userId))).toEqual([]);
@@ -146,18 +182,28 @@ describe('sesiones de producción (fase 13)', () => {
 
 describe('amigos desde los contactos (SHA-256 de emails verificados)', () => {
   const sha = (s: string) => createHash('sha256').update(s).digest('hex');
-  async function signedUp(subject: string, name: string): Promise<{ token: string; userId: string }> {
+  async function signedUp(subject: string, name: string, discoverableByContacts = true): Promise<{ token: string; userId: string }> {
     const { code, userId } = await handoff(subject);
-    const session = (await (await call('POST', '/v1/auth/exchange', undefined, { code })).json()) as AuthSessionDto;
-    expect((await call('POST', '/v1/me/onboarding', session.accessToken, { adult: true, termsAccepted: true, displayName: name })).status).toBe(204);
+    const session = (await (await call('POST', '/v1/auth/exchange', undefined, { code, codeVerifier: VERIFIER })).json()) as AuthSessionDto;
+    // En el alta se elige si te pueden encontrar por tus contactos (apagado por defecto).
+    expect((await call('POST', '/v1/me/onboarding', session.accessToken, { adult: true, termsAccepted: true, displayName: name, discoverableByContacts })).status).toBe(204);
     return { token: session.accessToken, userId };
   }
+
+  it('las opciones de privacidad del alta empiezan apagadas y se guardan si se eligen', async () => {
+    const { code } = await handoff('sub-opciones');
+    const session = (await (await call('POST', '/v1/auth/exchange', undefined, { code, codeVerifier: VERIFIER })).json()) as AuthSessionDto;
+    let me = (await (await call('GET', '/v1/me', session.accessToken)).json()) as MeDto;
+    expect(me.settings).toMatchObject({ discoverableByContacts: false, shareCommonTastes: false });
+    expect((await call('POST', '/v1/me/onboarding', session.accessToken, { adult: true, termsAccepted: true, shareCommonTastes: true })).status).toBe(204);
+    me = (await (await call('GET', '/v1/me', session.accessToken)).json()) as MeDto;
+    expect(me.settings).toMatchObject({ discoverableByContacts: false, shareCommonTastes: true });
+  });
 
   it('encuentra a quien lo permite, sin guardar nada, y respeta el ajuste y los bloqueos', async () => {
     const marta = await signedUp('contacto-marta', 'Marta');
     const pau = await signedUp('contacto-pau', 'Pau');
-    const oculta = await signedUp('contacto-oculta', 'Oculta');
-    expect((await call('PATCH', '/v1/me/settings', oculta.token, { discoverableByContacts: false })).status).toBe(200);
+    await signedUp('contacto-oculta', 'Oculta', false);
     const agenda = ['Contacto-Pau@Example.com', 'contacto-oculta@example.com', 'nadie@example.com', 'contacto-marta@example.com'].map((e) =>
       sha(e.trim().toLowerCase()),
     );

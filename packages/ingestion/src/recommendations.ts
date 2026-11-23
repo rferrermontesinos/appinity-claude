@@ -201,7 +201,8 @@ export async function recommendFor(db: Database, userId: string, options: Recomm
         .where(and(inArray(userItemProfiles.userId, followedIds), isNotNull(userItemProfiles.preferenceScore)))
     : [];
 
-  // Votos de Trending: personas de la zona (sin mirar su afinidad), votos explícitos fechados este año.
+  // Votos de Trending: personas de la zona (sin mirar su afinidad), votos explícitos fechados este año. Incluye los
+  // votos en APPINITY (fuente `appinity`, guardados como explicit_rating): decisión del titular 2026-11-22.
   let votes: Array<{ userId: string; itemId: string; score: number; confidence: number }> = [];
   let trendingStatus: TrendingStatus = 'no_location';
   if (hasLocation && viewer) {

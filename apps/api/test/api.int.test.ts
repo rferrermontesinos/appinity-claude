@@ -96,7 +96,8 @@ describe('textos legales', () => {
     expect(facts.affinityVersion).toMatch(/^affinity-v\d+$/);
     expect(facts.votes).toEqual({ dislike: -0.5, like: 0.5, love: 1 });
     expect(facts.consensus.soulmates).toBe(50);
-    expect(Object.values(facts.mix).reduce((a, b) => a + b, 0)).toBe(100);
+    // Mezcla 70/20/10 (decisión 2026-11-22): el 20 % de descubrimiento incluye el 10 % de personas que sigues.
+    expect(facts.mix).toEqual({ consensus: 70, discovery: 20, followed: 10, trending: 10 });
     expect(facts.neverUsed).toEqual(expect.arrayContaining(['photos', 'gallery', 'demographics', 'popularity', 'dwellTime', 'messages']));
   });
 });
@@ -176,6 +177,17 @@ describe('configuración', () => {
   it('prohíbe DEMO_MODE y la identidad de desarrollo en producción', () => {
     expect(() => loadEnv(testEnv({ NODE_ENV: 'production' }))).toThrow(/prohibidos/);
     expect(() => loadEnv(testEnv({ NODE_ENV: 'production', DEMO_MODE: 'false' }))).toThrow(/prohibidos/);
+  });
+
+  it('en producción exige una URL pública fija (las vueltas OAuth no dependen de la cabecera Host)', () => {
+    const prod = { NODE_ENV: 'production', DEMO_MODE: 'false', DEV_AUTH_ENABLED: 'false', AUTH_SECRET: 'a'.repeat(48) };
+    expect(() => loadEnv(testEnv(prod))).toThrow(/PUBLIC_API_URL/);
+    expect(loadEnv(testEnv({ ...prod, PUBLIC_API_URL: 'https://api.example.org' })).PUBLIC_API_URL).toBe('https://api.example.org');
+  });
+
+  it('valida la versión de la Graph API de Facebook', () => {
+    expect(loadEnv(testEnv({ FACEBOOK_GRAPH_VERSION: 'v24.0' })).FACEBOOK_GRAPH_VERSION).toBe('v24.0');
+    expect(() => loadEnv(testEnv({ FACEBOOK_GRAPH_VERSION: 'vX' }))).toThrow(/FACEBOOK_GRAPH_VERSION/);
   });
 
   it('TRUST_PROXY solo admite rangos o subredes, nunca confiar en todo', () => {

@@ -6,6 +6,9 @@ Implementación independiente de APPINITY construida desde cero a partir de
 [docs/APPINITY_Especificacion.md](docs/APPINITY_Especificacion.md). No reutiliza código de otras implementaciones.
 
 **Estado:**
+- 2026-11-22: todas las fases fusionadas en `main` y alcance congelado hasta la beta cerrada. Entrega de seguridad
+  (PKCE y conexión confirmada), consentimiento único, privacidad por defecto y tarjeta «Cuatro direcciones»
+  ([docs/progress.md](docs/progress.md)).
 - Fases 0 y 1 aceptadas en el teléfono.
 - Fase 2 (Steam) **validada con una cuenta real**.
 - Fuentes revisadas: especificación 1.1 y [docs/fuentes-de-datos.md](docs/fuentes-de-datos.md). TMDb queda descartada
@@ -443,6 +446,13 @@ Más detalle en [docs/architecture.md](docs/architecture.md), [docs/decisions.md
 
 ## Seguridad y datos
 
+- Inicio de sesión con PKCE (S256): el código de un solo uso que vuelve a la app solo se canjea con el verificador que
+  ella misma generó.
+- Conectar una fuente exige confirmarlo desde la app. La vuelta del proveedor no conecta nada por sí sola: la API la
+  guarda 3 minutos y solo la persona que inició la conexión la confirma. En producción, la URL de vuelta tiene que ser
+  https y de un origen conocido.
+- «Lo que os une» y «que te encuentren por tus contactos» están apagados por defecto. Se eligen en el alta, que es el
+  único consentimiento para todas las fuentes, y se cambian en Ajustes.
 - Secretos solo en `.env` (ignorado por Git), generados por `pnpm setup`. Las credenciales de proveedores se cifrarán
   con AES-256-GCM (implementado y probado; sin uso hasta la primera fuente real).
 - Servicios Docker solo en `127.0.0.1`. La API escucha en `0.0.0.0:3100` para el teléfono de la red local.

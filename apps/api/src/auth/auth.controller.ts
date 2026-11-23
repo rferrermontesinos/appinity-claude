@@ -6,7 +6,7 @@ import { Throttle } from '@nestjs/throttler';
 import { eq } from 'drizzle-orm';
 import type { Response } from 'express';
 import type { Redis } from 'ioredis';
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import { Public } from '../common/public.decorator.js';
 import { ZodPipe } from '../common/zod.pipe.js';
@@ -25,11 +25,28 @@ import { SessionTokensService } from './session-tokens.service.js';
 const STATE_TTL = 10 * 60;
 const HANDOFF_TTL = 120;
 
-const startSchema = z.object({ returnUrl: z.string().max(512).refine(isAllowedReturnUrl, 'URL de vuelta no permitida') }).strict();
-const codeSchema = z.object({ code: z.string().regex(/^[\w-]{20,64}$/) }).strict();
+/**
+ * PKCE entre la app y la API (RFC 7636, S256): la app crea un secreto (`codeVerifier`), manda su hash al empezar y el
+ * secreto al canjear. Quien intercepte el código de un solo uso en la URL de vuelta no puede canjearlo.
+ */
+const startSchema = z
+  .object({
+    returnUrl: z.string().max(512).refine(isAllowedReturnUrl, 'URL de vuelta no permitida'),
+    codeChallenge: z.string().regex(/^[A-Za-z0-9_-]{43}$/, 'Falta el desafío PKCE'),
+  })
+  .strict();
+const codeSchema = z.object({ code: z.string().regex(/^[\w-]{20,64}$/), codeVerifier: z.string().regex(/^[A-Za-z0-9._~-]{43,128}$/) }).strict();
 const refreshSchema = z.object({ refreshToken: z.string().min(20).max(200) }).strict();
 const onboardingSchema = z
-  .object({ adult: z.literal(true), termsAccepted: z.literal(true), displayName: z.string().trim().min(1).max(60).optional(), city: z.string().trim().min(2).max(80).optional() })
+  .object({
+    adult: z.literal(true),
+    termsAccepted: z.literal(true),
+    displayName: z.string().trim().min(1).max(60).optional(),
+    city: z.string().trim().min(2).max(80).optional(),
+    /** Opciones de privacidad del alta (apagadas por defecto; se pueden cambiar en Ajustes). */
+    shareCommonTastes: z.boolean().optional(),
+    discoverableByContacts: z.boolean().optional(),
+  })
   .strict();
 /** Identificación ante Nominatim (OSM). Sin «Claude»: algunos servicios tras Cloudflare lo bloquean. */
 const GEOCODER_USER_AGENT = 'APPINITY/0.1 (+https://github.com/rferrermontesinos/appinity-claude)';
@@ -37,17 +54,27 @@ const deleteSchema = z.object({ confirm: z.literal('ELIMINAR') }).strict();
 
 interface SignInState extends PendingSignIn {
   returnUrl: string;
+  codeChallenge: string;
 }
 interface Handoff {
   userId: string;
   sessionId: string;
   refreshToken: string;
   isNew: boolean;
+  codeChallenge: string;
+}
+
+/** ¿Corresponde el secreto PKCE al desafío guardado? Comparación en tiempo constante. */
+export function pkceMatches(codeVerifier: string, codeChallenge: string): boolean {
+  const expected = Buffer.from(createHash('sha256').update(codeVerifier).digest('base64url'));
+  const given = Buffer.from(codeChallenge);
+  return expected.length === given.length && timingSafeEqual(expected, given);
 }
 
 /**
  * Autenticación de producción (fase 13): «Continuar con Google». La API hace todo el flujo OAuth; la app recibe un
  * código de un solo uso (2 min) en la URL de vuelta y lo canjea por la sesión: los tokens nunca viajan en una URL.
+ * El canje exige el secreto PKCE de la app que empezó el flujo.
  */
 @Controller()
 export class AuthController {
@@ -90,7 +117,7 @@ export class AuthController {
       books: this.connections.hasSource('google_books'),
       calendar: this.connections.hasSource('google_calendar'),
     });
-    await this.redis.set(this.key('state', state), JSON.stringify({ ...pending, returnUrl: query.returnUrl } satisfies SignInState), 'EX', STATE_TTL);
+    await this.redis.set(this.key('state', state), JSON.stringify({ ...pending, returnUrl: query.returnUrl, codeChallenge: query.codeChallenge } satisfies SignInState), 'EX', STATE_TTL);
     res.setHeader('Cache-Control', 'no-store');
     res.redirect(302, url);
   }
@@ -134,7 +161,7 @@ export class AuthController {
       }
       const session = await createSession(this.database.db, userId);
       const code = randomBytes(24).toString('base64url');
-      const handoff: Handoff = { userId, sessionId: session.sessionId, refreshToken: session.refreshToken, isNew };
+      const handoff: Handoff = { userId, sessionId: session.sessionId, refreshToken: session.refreshToken, isNew, codeChallenge: pending.codeChallenge };
       await this.redis.set(this.key('handoff', code), JSON.stringify(handoff), 'EX', HANDOFF_TTL);
       back({ auth: 'ok', code });
     } catch (error) {
@@ -143,7 +170,7 @@ export class AuthController {
     }
   }
 
-  /** Canjea el código de un solo uso por la sesión. */
+  /** Canjea el código de un solo uso por la sesión, con el secreto PKCE de quien empezó el inicio de sesión. */
   @Public()
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Post('v1/auth/exchange')
@@ -152,6 +179,11 @@ export class AuthController {
     const raw = await this.redis.getdel(this.key('handoff', body.code));
     if (!raw) throw new UnauthorizedException('Código caducado o ya usado');
     const handoff = JSON.parse(raw) as Handoff;
+    if (!handoff.codeChallenge || !pkceMatches(body.codeVerifier, handoff.codeChallenge)) {
+      // El código ya se consumió (GETDEL): la sesión creada en el callback no debe quedar viva.
+      await revokeSession(this.database.db, handoff.sessionId, handoff.userId).catch(() => undefined);
+      throw new UnauthorizedException('Código caducado o ya usado');
+    }
     return this.sessionDto(handoff.userId, handoff.sessionId, handoff.refreshToken, handoff.isNew);
   }
 
@@ -189,7 +221,11 @@ export class AuthController {
       : null;
     if (body.city && !city) throw new BadRequestException({ code: 'city_not_found', message: 'No encontramos esa ciudad: prueba con otro nombre o déjala en blanco' });
     await completeOnboarding(this.database.db, auth.userId, { adult: body.adult, termsAccepted: body.termsAccepted, ...(body.displayName ? { displayName: body.displayName } : {}) });
-    if (city) await this.me.updateSettings(auth.userId, { location: { label: city.label, latitude: city.latitude, longitude: city.longitude, source: 'manual' } });
+    await this.me.updateSettings(auth.userId, {
+      ...(city ? { location: { label: city.label, latitude: city.latitude, longitude: city.longitude, source: 'manual' as const } } : {}),
+      ...(body.shareCommonTastes !== undefined ? { shareCommonTastes: body.shareCommonTastes } : {}),
+      ...(body.discoverableByContacts !== undefined ? { discoverableByContacts: body.discoverableByContacts } : {}),
+    });
   }
 
   /**

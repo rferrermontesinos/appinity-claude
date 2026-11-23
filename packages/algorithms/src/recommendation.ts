@@ -1,15 +1,18 @@
 import type { Category } from '@appinity/shared';
 
 /**
- * Recomendador (§12 y §13): determinista y versionado. Tres fuentes de candidatos y una mezcla objetivo 70/20/10 que
- * solo se cumple cuando hay candidatos: nunca se inventan apoyos para completar una cuota.
+ * Recomendador (§12 y §13): determinista y versionado. Mezcla objetivo 70/20/10 (decisión del titular, 2026-11-22) que
+ * solo se cumple cuando hay candidatos: nunca se inventan apoyos para completar una cuota. Cuando haya eventos o
+ * productos patrocinados, la mezcla pasará a 70/10/10/10 con ese cuarto bloque.
  *
  * - Consenso (70 %): solo el Top 50 de almas gemelas y una persona = un voto (sus fuentes ya están consolidadas por
  *   objeto). consensus = (apoyos / opiniones) · (1 − e^(−apoyos/3)) · preferencia media de los apoyos · confianza media.
- * - Descubrimiento (20 %): gustos fuertes (≥ 0,8, confianza ≥ 0,7) de UNA persona muy afín (≥ 50). Se registra quién
- *   lo aporta. Puntuación = afinidad (de la categoría si existe) / 100 · preferencia · confianza.
- * - Trending (10 %): votos explícitos de personas de la zona, sin peso por afinidad. Media bayesiana con los votos altos
- *   y los bajos (prior 0, peso 3), mínimo de votantes únicos y proporción de votos altos.
+ * - Descubrimiento (20 %): dos tarjetas de cada diez. Una, gustos fuertes (≥ 0,8, confianza ≥ 0,7) de UNA persona muy
+ *   afín (≥ 50), con quién lo aporta; puntuación = afinidad (de la categoría si existe) / 100 · preferencia · confianza.
+ *   La otra, gustos fuertes de personas que sigues (bloque `followed`); si no sigues a nadie, otro descubrimiento.
+ * - Trending (10 %): votos explícitos de personas de la zona, incluidos los votos en APPINITY (fuente `appinity`,
+ *   decisión 2026-11-22), sin peso por afinidad. Media bayesiana con los votos altos y los bajos (prior 0, peso 3),
+ *   mínimo de votantes únicos y proporción de votos altos.
  */
 export const RECOMMENDATION_VERSION = 'recommendation-v2';
 
@@ -21,7 +24,7 @@ export interface RecommendationParams {
   /** Personas que sigues (creadores y amigos): sin umbral de afinidad, solo gustos fuertes. */
   followed: { minScore: number; minConfidence: number };
   trending: { voteScore: number; voteConfidence: number; minVoters: number; priorWeight: number; priorMean: number; minAverage: number };
-  /** Tarjetas de cada bloque en cada tanda de 10. */
+  /** Tarjetas de cada bloque en cada tanda de 10. Descubrimiento (20 %) = `discovery` + `followed`. */
   mix: { consensus: number; discovery: number; followed: number; trending: number };
 }
 

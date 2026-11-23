@@ -1319,3 +1319,49 @@ APPINITY toma el camino contrario y lo hace visible.
   registros en el repo y podían bloquear commits con criterios de videojuego. Solo se conservan los permisos.
 - `.claude/` deja de estar en `.gitignore`; se ignora solo lo local (`settings.local.json`, `agent-memory/`).
 - Las reglas de producto de `CLAUDE.md` mandan sobre cualquier plantilla del kit.
+
+## 2026-11-22 · Decisiones del titular tras la evaluación con Claude Code Game Studios
+
+Evaluación completa (gate a beta: FAIL; seguridad: DO NOT SHIP; alcance +71 % sobre la especificación). El titular
+respondió punto por punto; lo marcado «elige tú» lo decidió Claude con el motivo indicado.
+
+| # | Decisión | Quién | Aplicación |
+|---|---|---|---|
+| 1 | **Alcance congelado hasta la beta cerrada**: solo bloqueantes, seguridad, privacidad y errores | Titular | `CLAUDE.md` |
+| 2 | **Los votos en la app cuentan en Trending** y el perfil se alimenta de forma continua («con tendencia a infinito») | Titular (criterio) · Claude (aplicación) | Sin filtro de fuente en Trending (`recommendations.ts`); `CLAUDE.md` |
+| 3 | **Afinidad simétrica** (misma cifra en los dos sentidos) | Claude («lo que se venda mejor») | Ya era así desde `affinity-v3`; se corrige `CLAUDE.md`, que decía «direccional» |
+| 4 | **Mezcla 70/20/10** ahora; **70/10/10/10** cuando haya eventos o productos patrocinados | Titular | El 20 % de descubrimiento incluye la tarjeta de personas que sigues (`mix` 7/1/1/1 = 70/(10+10)/10); `/v1/transparency` devuelve 70/20/10 |
+| 5 | **Privacidad por defecto, con opciones a la vista**: «Lo que os une» y «encontrarme por contactos» apagados por defecto y elegibles en el alta; «aparecer como alma gemela», activado | Claude («app simple, con algunas opciones») | Migración 0021; interruptores en el alta; `/people/:id/shared` respeta «aparecer como alma gemela» |
+| 6 | **Un solo consentimiento para todas las fuentes**, presentes y futuras | Titular («importantísimo») | El alta lista las fuentes reales del servidor (una nueva aparece sola); la API no pide consentimiento por fuente |
+| 7 | Fusionar en orden en `main` los 23 PR apilados | Titular | Hecho el 2026-11-22 (#1 … #24; #25 ya estaba en `diseno-aura`) |
+| 8 | Dominio, datos legales del responsable y cuenta de Sentry | Titular (pendiente) | — |
+| 9 | Tarjeta de votación **«Cuatro direcciones»** (propuesta B) | Titular | Bordes rotulados que se iluminan, marco del color del voto y botones en el orden de los gestos |
+
+Motivos de las decisiones de Claude:
+
+- **Afinidad simétrica**: se explica en una frase («sois almas gemelas al 87 %»), encaja con «almas gemelas» y con
+  «Lo que os une», que también es recíproco. Una afinidad direccional obliga a explicar por qué Ana te ve al 90 % y tú a
+  ella al 60 %, y eso resta más de lo que aporta en una beta.
+- **Privacidad por defecto**: «Lo que os une» muestra a otras personas obras que pueden venir de datos de Google con
+  permisos restringidos. La política de uso limitado de Google exige un consentimiento afirmativo para mostrarlos a
+  terceros, y el RGPD (art. 25) pide privacidad por defecto. Con el interruptor en el alta la app sigue siendo simple
+  (un toque) y la verificación de Google no queda en riesgo. Lo mismo con los contactos: con el ajuste activado por
+  defecto, cualquiera podía comprobar si un email tenía cuenta.
+- **Consentimiento único** técnicamente: cada proveedor externo (Steam, Trakt, AniList, Facebook) sigue mostrando su
+  propia pantalla de permiso al conectarlo, porque sin ella no da acceso. APPINITY no añade ninguna otra.
+
+Cambios técnicos de seguridad hechos a la vez (no requerían decisión):
+
+- **PKCE entre la app y la API** en «Continuar con Google»: el canje del código exige el secreto de la app que empezó el
+  flujo. En producción la URL de vuelta solo admite el esquema de la app (Expo Go y localhost, solo en desarrollo).
+- **Conexión de fuentes confirmada por la app**: la vuelta del proveedor ya no crea la conexión; la retiene bajo un
+  código que solo puede confirmar la sesión de quien la empezó (`POST /v1/me/connections/confirm`). Evita que alguien
+  vincule tu cuenta de Trakt, Facebook o Google a la suya mandándote su enlace de autorización.
+- `PUBLIC_API_URL` obligatorio en producción; validación de `FACEBOOK_GRAPH_VERSION` corregida.
+- NestJS 12.6.0, Zod 4.6.7 y versiones mínimas de body-parser, multer, qs, node-forge y decode-uri-component:
+  `pnpm audit --prod` baja de 12 avisos altos a 1 (Zod 3 dentro de `@expo/cli`, solo al compilar; sin parche en la
+  rama 3).
+
+Pendiente y no hecho (congelación de alcance o falta de cuentas): Sentry y vía de feedback (cuenta de Sentry del
+titular), cliente de push en la app (`expo-notifications` + FCM), textos legales con los datos del responsable, recálculo
+de la rareza de `affinity-v5` (deuda técnica anotada en la evaluación).

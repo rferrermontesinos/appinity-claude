@@ -38,6 +38,8 @@ export async function seedDemoUsers(db: Database): Promise<number> {
         locationSource: 'manual' as const,
         locationUpdatedAt: new Date('2026-01-01T00:00:00Z'),
         discoverableByContacts: true,
+        // La demo enseña «Lo que os une»: sus personas ficticias lo tienen activado.
+        shareCommonTastes: true,
         notificationFrequency: 'three_per_week' as const,
       };
       await tx

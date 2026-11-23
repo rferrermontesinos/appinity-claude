@@ -20,14 +20,18 @@ let code: string;
 const google = createFakeGoogle();
 const realFetch = globalThis.fetch;
 
+let cachedToken: string | undefined;
+/** Una sola sesión de desarrollo para todo el fichero (el inicio de sesión de desarrollo tiene límite por minuto). */
 async function token(): Promise<string> {
+  if (cachedToken) return cachedToken;
   const res = await realFetch(`${base}/v1/dev/session`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ handle: 'test_google_hugo', code }),
   });
   expect(res.status).toBe(200);
-  return ((await res.json()) as { token: string }).token;
+  cachedToken = ((await res.json()) as { token: string }).token;
+  return cachedToken;
 }
 
 async function api(path: string, init: RequestInit = {}) {
@@ -86,7 +90,24 @@ describe('conexión con Google desde la API', () => {
     expect(callback.status).toBe(302);
     const back = new URL(callback.headers.get('location')!);
     expect(back.origin + back.pathname).toBe(RETURN_URL);
-    expect(back.searchParams.get('result')).toBe('connected');
+    // La conexión no existe hasta que la app de quien la empezó la confirma con su sesión.
+    expect(back.searchParams.get('result')).toBe('confirm');
+    const confirm = back.searchParams.get('confirm')!;
+    expect(((await (await api('/v1/me/connections')).json()) as ConnectionDto[]).some((c) => c.sourceKey === 'google_portability')).toBe(false);
+    // Otra cuenta no puede quedarse con la conexión (ni gastar el código).
+    const otherCode = (await createOrResetLocalUser(database.db, { handle: 'test_google_otra', displayName: 'Otra (simulada)' })).code;
+    const otherLogin = await realFetch(`${base}/v1/dev/session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ handle: 'test_google_otra', code: otherCode }) });
+    const otherToken = ((await otherLogin.json()) as { token: string }).token;
+    const stolen = await realFetch(`${base}/v1/me/connections/confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${otherToken}` },
+      body: JSON.stringify({ code: confirm }),
+    });
+    expect(stolen.status).toBe(403);
+    const confirmed = await api('/v1/me/connections/confirm', { method: 'POST', body: JSON.stringify({ code: confirm }) });
+    expect(confirmed.status).toBe(200);
+    expect(((await confirmed.json()) as ConnectStartDto).kind).toBe('connected');
+    expect((await api('/v1/me/connections/confirm', { method: 'POST', body: JSON.stringify({ code: confirm }) })).status).toBeGreaterThanOrEqual(400);
 
     const raw = await (await api('/v1/me/connections')).text();
     expect(raw).not.toContain('refresh-simulado');

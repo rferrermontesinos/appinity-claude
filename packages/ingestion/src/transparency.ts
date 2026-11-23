@@ -26,7 +26,8 @@ export function transparencyFacts(): TransparencyDto {
     consensus: { soulmates: CONSENSUS_SOULMATES, minSupporters: p.consensus.minSupporters },
     discovery: { minAffinity: p.discovery.minAffinity },
     trending: { minVoters: p.trending.minVoters },
-    mix: { consensus: pct(p.mix.consensus), discovery: pct(p.mix.discovery), followed: pct(p.mix.followed), trending: pct(p.mix.trending) },
+    // 70/20/10: el 20 % de descubrimiento incluye la parte de personas que sigues.
+    mix: { consensus: pct(p.mix.consensus), discovery: pct(p.mix.discovery + p.mix.followed), followed: pct(p.mix.followed), trending: pct(p.mix.trending) },
     unknownReturnDays: PASS_RETURN_DAYS,
     neverUsed: [...NEVER_USED],
   };

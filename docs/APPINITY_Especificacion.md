@@ -7,6 +7,10 @@ Versión 1.1 · 8 de octubre de 2026 · Documento de trabajo para una IA de prog
 > solo da permisos una vez, en el registro, y nunca introduce tokens. Afecta también a §5, §6, §13, §14, §15, §17 y §18.
 > El detalle y las evidencias están en [fuentes-de-datos.md](fuentes-de-datos.md). El resto de requisitos de la v1.0
 > (5 de octubre de 2026) no cambia.
+>
+> **Decisiones del 22 de noviembre de 2026:** prevalecen sobre este documento donde difieran. Afinidad simétrica, mezcla
+> 70/20/10 (70/10/10/10 con patrocinados), votos de la app en Trending, consentimiento único para todas las fuentes,
+> privacidad apagada por defecto y votación «Cuatro direcciones». Ver [decisions.md](decisions.md) y `CLAUDE.md`.
 
 **Concepto central:** Descubre recomendaciones de tus almas gemelas y conoce a las personas que comparten tus gustos.
 

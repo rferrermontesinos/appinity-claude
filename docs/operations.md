@@ -39,7 +39,7 @@ qué está ya preparado y probado.
 | `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` | «Continuar con Google» y Google Data Portability | Google Cloud Console |
 | `GOOGLE_SIGNIN_REDIRECT_URI` | `https://TU-DOMINIO/v1/auth/google/callback` | Autorizarla en el cliente OAuth |
 | `GOOGLE_OAUTH_REDIRECT_URI` | `https://TU-DOMINIO/v1/connect/google_portability/callback` | Ídem |
-| `PUBLIC_API_URL` | `https://TU-DOMINIO` (vueltas de Steam y enlaces) | — |
+| `PUBLIC_API_URL` | `https://TU-DOMINIO` (vueltas de Steam y enlaces). **Obligatoria**: la API no arranca en producción sin ella | — |
 | `APP_WEB_ORIGIN` | Origen https de la app web, si se publica | — |
 | `STEAM_WEB_API_KEY` | Steam | steamcommunity.com/dev/apikey |
 | `REVENUECAT_WEBHOOK_AUTH` | Webhook de Premium | Panel de RevenueCat |

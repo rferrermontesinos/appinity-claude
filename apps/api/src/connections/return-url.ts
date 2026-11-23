@@ -1,6 +1,8 @@
 /**
  * URLs de vuelta a la app tras autorizar en un proveedor. Lista blanca para evitar redirecciones abiertas:
  * el esquema propio de la app, Expo Go en una IP privada (desarrollo) y localhost (vista web de desarrollo).
+ * En producción solo el esquema de la app y los orígenes https configurados: Expo Go y localhost permitirían que
+ * otro equipo de la misma red o una página local recibieran el código de un solo uso (evaluación 2026-11-22).
  */
 const PRIVATE_HOST = /^(localhost|127\.0\.0\.1|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})$/;
 
@@ -18,6 +20,7 @@ export function isAllowedReturnUrl(value: string): boolean {
   }
   if (url.username || url.password) return false;
   if (url.protocol === 'appinity-claude:') return true;
+  if (process.env.NODE_ENV === 'production') return url.protocol === 'https:' && WEB_ORIGINS.includes(url.origin);
   if (url.protocol === 'exp:' || url.protocol === 'exps:') return PRIVATE_HOST.test(url.hostname);
   if (url.protocol === 'http:') return url.hostname === 'localhost' || url.hostname === '127.0.0.1';
   // Producción: el origen https de la app web, si se configura (APP_WEB_ORIGIN, separados por comas).

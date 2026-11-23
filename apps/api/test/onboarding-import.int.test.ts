@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { INestApplication } from '@nestjs/common';
 import { createDatabase, sourceSyncRuns, userConnections, type DatabaseHandle } from '@appinity/database';
 import { createSession, findOrCreateUserForIdentity } from '@appinity/ingestion';
@@ -49,8 +50,10 @@ async function newGoogleUser(subject: string): Promise<{ userId: string; token: 
   const { userId, isNew } = await findOrCreateUserForIdentity(db.db, { provider: 'google', subject, email: `${subject}@example.com`, name: 'Prueba' });
   const session = await createSession(db.db, userId);
   const code = `codigo-de-prueba-${subject}-0123456789`;
-  await redis.set(`${env.QUEUE_PREFIX}:auth-handoff:${code}`, JSON.stringify({ userId, sessionId: session.sessionId, refreshToken: session.refreshToken, isNew }), 'EX', 60);
-  const dto = (await (await call('POST', '/v1/auth/exchange', undefined, { code })).json()) as AuthSessionDto;
+  const verifier = 'verificador-pkce-de-prueba-0123456789-abcdefghij';
+  const codeChallenge = createHash('sha256').update(verifier).digest('base64url');
+  await redis.set(`${env.QUEUE_PREFIX}:auth-handoff:${code}`, JSON.stringify({ userId, sessionId: session.sessionId, refreshToken: session.refreshToken, isNew, codeChallenge }), 'EX', 60);
+  const dto = (await (await call('POST', '/v1/auth/exchange', undefined, { code, codeVerifier: verifier })).json()) as AuthSessionDto;
   return { userId, token: dto.accessToken };
 }
 

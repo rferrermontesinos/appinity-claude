@@ -27,7 +27,8 @@ function providerParams(query: Record<string, unknown>): Record<string, string> 
 
 /**
  * Vuelta del proveedor (navegador del teléfono). Pública porque el navegador no lleva la sesión de la app: la
- * autoriza el `state` de un solo uso creado al iniciar la conexión. Redirige a la app con el resultado.
+ * autoriza el `state` de un solo uso creado al iniciar la conexión. Redirige a la app con un código de confirmación;
+ * la app lo confirma con su sesión (POST /v1/me/connections/confirm) y entonces se crea la conexión.
  * El `state` va en la ruta (`/callback/:state`); la forma `?state=` se mantiene por compatibilidad.
  */
 @Controller('v1/connect')
@@ -54,12 +55,9 @@ export class ConnectCallbackController {
     const returnUrl = validState ? await this.connections.peekReturnUrl(state) : undefined;
     try {
       if (!validState) throw new Error('Solicitud de conexión no válida');
-      const outcome = await this.connections.completeCallback(sourceKey, state, params);
-      if (outcome.returnUrl) {
-        res.redirect(302, withResult(outcome.returnUrl, { source: sourceKey, result: 'connected' }));
-        return;
-      }
-      res.status(200).type('html').send(page('Cuenta conectada', 'Tu cuenta se ha vinculado. La primera sincronización ya está en marcha.'));
+      // La conexión se completa cuando la app de quien la empezó la confirma con su sesión (ver holdCallback).
+      const held = await this.connections.holdCallback(sourceKey, state, params);
+      res.redirect(302, withResult(held.returnUrl, { source: sourceKey, result: 'confirm', confirm: held.confirm }));
     } catch (error) {
       const message = (error as Error).message.slice(0, 200);
       this.logger.warn(`Callback de ${sourceKey} rechazado: ${message}`);

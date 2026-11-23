@@ -22,6 +22,14 @@ export class PeopleService {
 
   async shared(viewerId: string, targetId: string, baseUrl: string): Promise<SharedTastesDto> {
     if (viewerId === targetId || !(await canSeePerson(this.database.db, viewerId, targetId))) throw new NotFoundError('Persona no encontrada');
+    // Quien se ocultó del ranking de almas gemelas solo comparte «Lo que os une» con sus amistades.
+    const [target] = await this.database.db
+      .select({ discoverable: userSettings.discoverableAsSoulmate })
+      .from(userSettings)
+      .where(eq(userSettings.userId, targetId));
+    if (target && !target.discoverable && (await friendshipState(this.database.db, viewerId, targetId)).state !== 'friends') {
+      return { status: 'off_them', total: 0, items: [] };
+    }
     const result = await sharedTastes(this.database.db, viewerId, targetId);
     return { ...result, items: await this.withItems(result.items, baseUrl) };
   }

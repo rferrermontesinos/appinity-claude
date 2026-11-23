@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Platform, Switch, Text, View } from 'react-native';
 import { apiRequest } from '../src/api/client';
+import { finishConnect, useSources } from '../src/api/queries';
 import { API } from '../src/config';
 import { Body, Button, Card, ErrorCard, Screen, Small, TextField } from '../src/components/ui';
 import { AuraCard, onPoster } from '../src/components/Aura';
@@ -21,7 +22,8 @@ const STEPS = [
 ] as const;
 
 /**
- * Alta única (fase 13): el único momento de consentimiento. Al aceptar mayoría de edad y condiciones empieza la
+ * Alta única (fase 13): el único momento de consentimiento, para todas las fuentes (las de ahora y las que se añadan;
+ * decisión del titular 2026-11-22). Incluye dos opciones de privacidad, apagadas por defecto. Al aceptar mayoría de edad y condiciones empieza la
  * importación de todo Google: Books y Calendar ya se concedieron al iniciar sesión (su primer sync arranca ahora, nunca
  * antes de aceptar) y se abre en seguida el consentimiento de Data Portability (Maps, YouTube, Play, valoraciones…),
  * que Google no deja pedir junto al inicio de sesión. Sin pasar por Perfil ni conectar fuente a fuente.
@@ -35,6 +37,15 @@ export default function OnboardingScreen() {
   const [terms, setTerms] = useState(false);
   const [name, setName] = useState('');
   const [city, setCity] = useState('');
+  // Opciones de privacidad del alta (2026-11-22): apagadas por defecto y a la vista, una sola vez.
+  const [shareCommon, setShareCommon] = useState(false);
+  const [contacts, setContacts] = useState(false);
+  // El consentimiento único cubre todas las fuentes reales del servidor: una fuente nueva aparece aquí sola.
+  const sources = useSources();
+  const sourceList = (sources.data ?? [])
+    .filter((s) => !s.simulated && s.connectable)
+    .map((s) => t(`sources.names.${s.key}`, { defaultValue: s.name }))
+    .join(', ');
   const [error, setError] = useState<unknown>(null);
   const [saving, setSaving] = useState(false);
 
@@ -42,10 +53,21 @@ export default function OnboardingScreen() {
     setSaving(true);
     setError(null);
     try {
-      await apiRequest('/v1/me/onboarding', { method: 'POST', body: { adult: true, termsAccepted: true, ...(name.trim() ? { displayName: name.trim() } : {}), ...(city.trim() ? { city: city.trim() } : {}) } });
+      await apiRequest('/v1/me/onboarding', {
+        method: 'POST',
+        body: {
+          adult: true,
+          termsAccepted: true,
+          shareCommonTastes: shareCommon,
+          discoverableByContacts: contacts,
+          ...(name.trim() ? { displayName: name.trim() } : {}),
+          ...(city.trim() ? { city: city.trim() } : {}),
+        },
+      });
       await queryClient.invalidateQueries({ queryKey: ['me'] });
       // Con las condiciones aceptadas, la importación arranca y Google pide su última confirmación (Data Portability).
-      const returnUrl = Linking.createURL('profile');
+      // Vuelve a Fuentes: allí se confirma la conexión en la web (en el móvil se confirma aquí mismo).
+      const returnUrl = Linking.createURL('sources');
       const imported = await apiRequest<InitialImportDto>('/v1/me/connections/initial-import', { method: 'POST', body: { returnUrl } });
       const next = imported.next;
       if (next?.kind === 'redirect' && !(next.localOnly && Platform.OS !== 'web')) {
@@ -53,7 +75,8 @@ export default function OnboardingScreen() {
           window.location.assign(next.authorizationUrl);
           return;
         }
-        await WebBrowser.openAuthSessionAsync(next.authorizationUrl, returnUrl);
+        const auth = await WebBrowser.openAuthSessionAsync(next.authorizationUrl, returnUrl);
+        if (auth.type === 'success') await finishConnect(Linking.parse(auth.url).queryParams ?? {});
       }
       for (const key of ['connections', 'profiles', 'profile']) await queryClient.invalidateQueries({ queryKey: [key] });
       router.replace('/sources');
@@ -64,9 +87,12 @@ export default function OnboardingScreen() {
     }
   }
 
-  const row = (label: string, value: boolean, onChange: (v: boolean) => void) => (
+  const row = (label: string, value: boolean, onChange: (v: boolean) => void, help?: string) => (
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, minHeight: 48 }}>
-      <Body style={{ flex: 1 }}>{label}</Body>
+      <View style={{ flex: 1, gap: 2 }}>
+        <Body>{label}</Body>
+        {help ? <Small>{help}</Small> : null}
+      </View>
       <Switch value={value} onValueChange={onChange} accessibilityLabel={label} />
     </View>
   );
@@ -116,7 +142,11 @@ export default function OnboardingScreen() {
           <Button label={t('onboarding.readPrivacy')} variant="secondary" size="small" icon="shield-account-outline" onPress={() => void WebBrowser.openBrowserAsync(`${API.url}/legal/privacidad`)} />
         </View>
         <Small>{t('onboarding.consentNote')}</Small>
+        {sourceList ? <Small>{t('onboarding.sourcesIncluded', { list: sourceList })}</Small> : null}
         <Small>{t('onboarding.googleNote')}</Small>
+        <Body style={{ fontWeight: '700', marginTop: spacing.sm }}>{t('onboarding.optionsTitle')}</Body>
+        {row(t('onboarding.shareCommon'), shareCommon, setShareCommon, t('onboarding.shareCommonHelp'))}
+        {row(t('onboarding.contacts'), contacts, setContacts, t('onboarding.contactsHelp'))}
         {error ? <ErrorCard error={error} /> : null}
         <Button label={t('onboarding.continue')} onPress={() => void submit()} disabled={!adult || !terms} loading={saving} />
       </Card>
