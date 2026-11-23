@@ -20,7 +20,11 @@ RUN pnpm install --frozen-lockfile --filter "!@appinity/mobile"
 COPY apps/api apps/api
 COPY workers workers
 COPY packages packages
-RUN pnpm build && pnpm prune --prod --filter "!@appinity/mobile" || true
+RUN pnpm build
+# Fuera las dependencias de desarrollo, con las mismas versiones y sin red (desde el almacén de la capa de arriba).
+# Auditoría B10: antes era `pnpm build && pnpm prune … || true`; `pnpm prune` no admite --filter y fallaba siempre, y
+# el `|| true` también se tragaba un fallo de `pnpm build`, que habría dado una imagen sin compilar.
+RUN CI=true pnpm install --frozen-lockfile --prod --offline --filter "!@appinity/mobile"
 
 FROM node:24-alpine AS runtime
 ENV NODE_ENV=production

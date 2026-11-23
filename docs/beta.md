@@ -16,6 +16,9 @@
 
 ## Lo que falta antes de una beta real (requiere tus cuentas o decisiones)
 
+> **Lista al día (fase B10, 2026-11-22): [paso-a-beta.md](paso-a-beta.md)**, con el orden, la prueba de humo y los
+> riesgos aceptados. Lo de abajo es el plan de la fase 13, con un servidor propio.
+
 1. **Dominio con HTTPS y un servidor**: un VPS pequeño basta para la beta. Sin él, Google solo vuelve a `localhost` y el
    teléfono no puede iniciar sesión.
 2. **Google Cloud**:
@@ -146,6 +149,28 @@ Revisión de todas las rutas de `apps/api` (sin herramientas externas):
 - [Guía para testers](guia-testers.md) para enviar a cada persona y [manual de incidencias](incidencias.md) (caídas, un
   tester que no puede entrar, reportes, fugas de datos con el plazo de 72 horas y secretos expuestos).
 
+### Auditoría final (2026-11-22, fase B10)
+
+Repaso de seguridad, privacidad y paso a beta sobre todo lo anterior. Lo encontrado y arreglado:
+
+- **La identidad de desarrollo se alcanzaba por el túnel con mayúsculas**: el túnel bloquea `/v1/dev` con una expresión
+  que distingue mayúsculas y Express, por defecto, no: `/V1/DEV/session` habría dado desde internet una sesión de la
+  demo (que solo ve la demo) o, con su código, la de tu cuenta local. La API ya distingue mayúsculas, y `/v1//dev` o `/v1/%64ev` tampoco
+  llegan (test de regresión). La regla del túnel no distingue mayúsculas desde ahora, como segunda barrera.
+- **Los testers veían la demo al entrar**: la pantalla de entrada pedía los usuarios de la demo y, con el túnel, mostraba
+  un error rojo. Ahora, si el servidor no ofrece la demo (404), solo aparece «Continuar con Google».
+- **La imagen de producción ocultaba los fallos de compilación**: `pnpm build && pnpm prune … || true` se tragaba un
+  build roto, y `pnpm prune` fallaba siempre (no admite `--filter`). La imagen se ha construido y arrancado en modo
+  producción: migraciones desde cero, `/health` correcto, `/v1/dev/session` 404, páginas legales y worker con latido.
+- **Dependencias**: `concurrently` 10.0.7 quita el único aviso crítico (`shell-quote`). Los avisos que quedan son de
+  herramientas de desarrollo que no se ejecutan en el servidor ni van en la app (detalle en
+  [paso-a-beta.md](paso-a-beta.md#4-riesgos-conocidos-y-aceptados-para-la-beta-cerrada)).
+
+Revisado sin cambios: la separación entre la demo y las cuentas reales (fuentes simuladas, almas gemelas, catálogo y
+sesiones), que una cuenta suspendida se pueda exportar y borrar, que la exportación de una persona no incluya quién la
+reportó, que los secretos y las copias de datos (`exports/`, `backups/`) no entren en Git ni en la imagen, y que en
+Git no haya claves.
+
 ## Prueba con amigos y familiares: alta única (2026-10-26)
 
 ### Qué hace ya la app
@@ -186,8 +211,8 @@ demo) **no** se publica: el túnel lo responde con 404. El PC tiene que estar en
    - Pantalla de consentimiento → «Branding» → dominios autorizados: añade `tudominio.com`.
    - Pantalla de consentimiento → «Audience» → usuarios de prueba: añade el Gmail de cada persona (máximo 100).
 6. **Reiniciar** `pnpm api` y `pnpm worker`. Después, en otra pestaña, `pnpm tunnel` (déjala abierta).
-7. **Comprobar**: `https://api.tudominio.com/health` responde, y `https://api.tudominio.com/v1/dev/session`
-   devuelve 404.
+7. **Comprobar**: `https://api.tudominio.com/health` responde, y `https://api.tudominio.com/v1/dev/session` (y
+   `/V1/DEV/session`) devuelve 404.
 
 **Lo que hago yo después**: `pnpm android:beta -ApiUrl https://api.tudominio.com` → `dist/appinity-beta.apk` (la app
 empaquetada; no necesita Metro), y la prueba completa del alta con Google desde el teléfono.

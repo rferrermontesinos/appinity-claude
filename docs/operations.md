@@ -16,6 +16,11 @@ qué está ya preparado y probado.
   `AUTH_SECRET` (probado con el contenedor real).
 - **Copias de seguridad**: `pnpm db:backup` crea un volcado y se restauró completo (13 migraciones, PostGIS) en otra base
   de datos. Desde la fase B9 van cifradas y `pnpm db:restore` las comprueba (ver «Copias de seguridad»).
+- **Imagen de nuevo (2026-11-22, fase B10)**: construida y arrancada en modo producción contra un PostGIS vacío: las 24
+  migraciones, `/health` correcto y sin detalles, `/v1/dev/session` 404, `/v1/me` 401, las páginas legales y el worker
+  con latido. Desde B10, un fallo de compilación para la construcción (antes lo ocultaba un `|| true`) y la imagen ya no
+  lleva las herramientas de desarrollo (tests, lint, drizzle-kit). Pesa unos 1,2 GB porque el modo plano de pnpm
+  arrastra paquetes de la app móvil.
 
 ## Despliegue
 

@@ -11,3 +11,4 @@ export * from './user-agent.js';
 export * from './diagnostics.js';
 export * from './feedback.js';
 export * from './push.js';
+export * from './dev-login.js';

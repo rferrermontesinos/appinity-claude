@@ -7,7 +7,8 @@ Implementación independiente de APPINITY construida desde cero a partir de
 
 **Estado:**
 - 2026-11-22: plan de fases hasta la beta cerrada Android en [docs/fases-beta.md](docs/fases-beta.md) (B1–B10, una PR
-  encadenada por fase; B1 a B9 con PR abierta). Guía de Google Play en [docs/google-play.md](docs/google-play.md),
+  encadenada por fase; las diez con PR abierta). Lo que falta para invitar a la primera ola, en orden:
+  [docs/paso-a-beta.md](docs/paso-a-beta.md). Guía de Google Play en [docs/google-play.md](docs/google-play.md),
   guía para testers en [docs/guia-testers.md](docs/guia-testers.md) y manual de incidencias en
   [docs/incidencias.md](docs/incidencias.md).
 - 2026-11-22: todas las fases fusionadas en `main` y alcance congelado hasta la beta cerrada. Entrega de seguridad

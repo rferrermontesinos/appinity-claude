@@ -15,8 +15,8 @@ Android» del proyecto; este fichero es su copia en el repositorio.
 | B6 · Push en la app | `expo-notifications`: permiso, registro del token, canal de Android y abrir la pantalla al tocar; sin fallos en Expo Go ni sin proyecto de EAS | Typecheck y tests de la lógica; la entrega real necesita EAS, Firebase y el teléfono | PR abierta (#32) |
 | B7 · Rareza al día | Recálculo completo agrupado tras los recálculos parciales, para que todas las parejas usen los mismos pesos de `affinity-v5` | Test: una pareja ajena al usuario que cambió queda con los pesos nuevos | PR abierta (#33) |
 | B8 · Preparar Google Play (sin publicar) | Build bloqueada si la URL de la API es un marcador, versión visible en Ajustes, permisos revisados, borradores de ficha, seguridad de datos y clasificación, y guía de prueba cerrada | Ficha y formularios listos para copiar ([google-play.md](google-play.md)) | PR abierta (#34) |
-| B9 · Operación de la beta | Copias cifradas con restauración probada, moderación de reportes y suspensión de cuentas (la pide Play), métricas de la beta sin terceros, guía para testers ([guia-testers.md](guia-testers.md)) y manual de incidencias ([incidencias.md](incidencias.md)) | Copia cifrada restaurada en una base de prueba; métricas calculadas sobre la demo | PR abierta |
-| B10 · Auditoría final | Seguridad, QA, lista de publicación y paso a beta revisados de nuevo sobre todo lo anterior, y documentación al día | Paso a beta en verde salvo lo que solo puede hacer el titular | Pendiente |
+| B9 · Operación de la beta | Copias cifradas con restauración probada, moderación de reportes y suspensión de cuentas (la pide Play), métricas de la beta sin terceros, guía para testers ([guia-testers.md](guia-testers.md)) y manual de incidencias ([incidencias.md](incidencias.md)) | Copia cifrada restaurada en una base de prueba; métricas calculadas sobre la demo | PR abierta (#35) |
+| B10 · Auditoría final | Seguridad, QA, lista de publicación y paso a beta revisados de nuevo sobre todo lo anterior, y documentación al día | Paso a beta en verde salvo lo que solo puede hacer el titular ([paso-a-beta.md](paso-a-beta.md)) | PR abierta (#36) |
 
 ## Después de la beta cerrada
 
@@ -36,7 +36,7 @@ Android» del proyecto; este fichero es su copia en el repositorio.
 
 ## Lo que solo puede hacer el titular
 
-Fusionar las PR en orden; probar el APK nuevo en el teléfono; dominio y túnel; Google Cloud (URL de vuelta, dominio,
+En orden y con los enlaces a cada paso: [paso-a-beta.md](paso-a-beta.md). En resumen: fusionar las PR en orden; probar el APK nuevo en el teléfono; dominio y túnel; Google Cloud (URL de vuelta, dominio,
 probadores); datos del responsable para los textos legales; cuenta de Sentry (región UE); cuenta de Expo, `eas init` y
 Firebase para el push; Google Play Console si se reparte por Play (25 USD); decidir si la especificación compartida pasa a
 la versión 1.2; ciudad y grupos de las primeras olas y un email de soporte.

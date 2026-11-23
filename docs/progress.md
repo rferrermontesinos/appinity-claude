@@ -22,7 +22,53 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 | 11 | **Paso 1 implementado** (Google: Play, pedidos y guardados), comprobado automáticamente y en parte con servicios reales; falta un export real | Entrega 2026-10-14 · fase 11 (rama `fase-11-fuentes`). Análisis en [source-candidates.md](source-candidates.md) |
 | 12 | **12C (push, servidor) implementada y comprobada automáticamente**; envío real pendiente de build de desarrollo y FCM · **12B (Premium, servidor) implementada y comprobada automáticamente**; compra en la app pendiente de cuentas y build de desarrollo · **12A (chat) implementada, comprobada automáticamente y verificada en la vista web**; 12B (Premium/RevenueCat) y 12C (push) pendientes | Entrega 2026-10-14 · fase 12A (rama `fase-12a-chat`, basada en `fase-10-people`) |
 | 13 | **Preparada**: auth de producción, alta, eliminación de cuenta y despliegue probados en local; beta real pendiente de dominio, servidor y cuentas ([beta.md](beta.md)) · auditoría de seguridad de la API hecha (2026-10-26) · textos legales en borrador (2026-10-26) | Entrega 2026-10-15 · fase 13 (rama `fase-13-beta`) |
-| Beta (B1–B10) | **En curso** (2026-11-22): B1 a B9 con PR abierta | Plan y estado en [fases-beta.md](fases-beta.md); cada fase en su PR encadenada sobre la PR #26 |
+| Beta (B1–B10) | **Código listo** (2026-11-22): B1 a B10 con PR abierta; falta lo que solo puede hacer el titular | Plan y estado en [fases-beta.md](fases-beta.md); lo que falta, en orden, en [paso-a-beta.md](paso-a-beta.md); cada fase en su PR encadenada sobre la PR #26 |
+
+---
+
+## Entrega 2026-11-22 · B10: auditoría final
+
+Rama `claude/beta-b10-auditoria`, PR contra `claude/beta-b9-operacion` (B9). Lo que falta para invitar a la primera ola,
+en orden, en [paso-a-beta.md](paso-a-beta.md); lo encontrado en [beta.md](beta.md#auditoría-final-2026-11-22-fase-b10)
+y los motivos en [decisions.md](decisions.md).
+
+### Qué se ha hecho
+
+- **Identidad de desarrollo cerrada también en la API**: las rutas distinguen mayúsculas, así que `/V1/DEV/session` ya
+  no llega a `/v1/dev` (el túnel solo bloqueaba las minúsculas). La regla del túnel tampoco distingue mayúsculas desde
+  ahora (se aplica al ejecutar `pnpm tunnel:setup`).
+- **Pantalla de entrada de los testers**: si el servidor no ofrece la demo (404), solo se ve «Continuar con Google».
+  Antes enseñaba la sección de la demo con un error.
+- **Imagen de producción**: sin el `|| true` que ocultaba un build roto y sin las herramientas de desarrollo
+  (`pnpm prune` fallaba siempre).
+- **Dependencias**: `concurrently` 10.0.7 quita el único aviso crítico (`shell-quote`); `express` declarada en la API,
+  que ahora la importa.
+- `exports/` fuera del contexto de la imagen, como `backups/`.
+- **Documentación**: [paso-a-beta.md](paso-a-beta.md) (lo que falta, la prueba de humo y los riesgos aceptados), la
+  auditoría en beta.md, operations.md, fases-beta.md y README.
+
+### Comprobaciones
+
+- Test de regresión de las rutas, que falla sin el arreglo: `/v1/Dev/users`, `/V1/DEV/USERS`, `/v1/DEV/session`,
+  `/v1//dev/users`, `/v1/%64ev/users` y `POST /V1/dev/session` dan 404; `/v1/dev/users` sigue dando 200.
+- A mano, con `curl --path-as-is` contra la API: 14 variantes (barras dobles, `.` y `..`, `%2F`, `;`, `%00`…). Solo dan
+  200 las que empiezan por `/v1/dev/`, que son las que bloquea el túnel.
+- 3 tests de `devLoginState` (qué enseña la pantalla de entrada según la respuesta del servidor).
+- Vista web (8092): con la demo, su lista de personas; con 404, solo «Continuar con Google» y la conexión con la API.
+- Imagen de producción construida y arrancada en modo producción contra un PostGIS vacío: 24 migraciones, `/health` ok
+  y sin detalles, `/v1/dev/session` 404, `/v1/me` 401, páginas legales 200 y worker con latido. Para construirla aquí
+  se añadió, solo en una copia del Dockerfile, el certificado del proxy de este entorno.
+- `pnpm audit`: 0 críticos, 1 alto y 4 moderados, todos en herramientas de desarrollo (zod 3, uuid y glob de la CLI de
+  Expo; esbuild de drizzle-kit; minimatch de ESLint).
+- Revisado sin cambios: la separación entre la demo y las cuentas reales, que una cuenta suspendida se pueda exportar y
+  borrar, que la copia de datos no diga quién reportó a la persona y que no haya secretos en Git.
+- `pnpm format:check`, `pnpm lint` y `pnpm typecheck` limpios; `pnpm test`: 59 ficheros y 499 tests OK.
+- Sin probar: la regla del túnel con Cloudflare (no hay túnel aquí) y la pantalla en el teléfono.
+
+### Pendiente
+
+- Del titular: [paso-a-beta.md](paso-a-beta.md#2-lo-que-te-toca-en-orden), empezando por fusionar las PR en orden.
+- Después: la ola 1 (alfa) con el APK de `pnpm android:beta`.
 
 ---
 
