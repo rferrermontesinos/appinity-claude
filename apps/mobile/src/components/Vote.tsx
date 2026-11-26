@@ -212,7 +212,8 @@ function Edge({ direction, active }: { direction: Direction; active: boolean }) 
   const { t } = useTranslation();
   const c = usePalette();
   const look = actionLook(c, EDGE_ACTION[direction]);
-  const color = look.key === 'unknown' ? c.textMuted : look.color;
+  // Los rótulos van sobre el halo (no sobre una superficie): en claro, un punto más oscuros para mantener AA.
+  const color = mixHex(look.key === 'unknown' ? c.textMuted : look.color, c.text, c.edgeInk);
   const content = (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
       <MaterialCommunityIcons name={EDGE_ARROW[direction]} size={13} color={color} />
@@ -222,19 +223,32 @@ function Edge({ direction, active }: { direction: Direction; active: boolean }) 
       </Text>
     </View>
   );
-  const opacity = active ? 1 : 0.55;
-  if (direction === 'up' || direction === 'down') return <View style={{ alignItems: 'center', opacity }}>{content}</View>;
+  // En reposo, color pleno (AA, 4,5:1 con texto de 11 pt en ambos temas; antes iban atenuados al 55 % y no llegaban);
+  // el borde de la dirección que arrastras crece un poco.
+  const scale = active ? 1.15 : 1;
+  if (direction === 'up' || direction === 'down') return <View style={{ alignItems: 'center', transform: [{ scale }] }}>{content}</View>;
   // Etiquetas laterales en vertical, leídas de abajo arriba a la izquierda y de arriba abajo a la derecha.
   return (
-    <View style={{ position: 'absolute', top: 0, bottom: 0, [direction]: 0, width: EDGE_GUTTER, alignItems: 'center', justifyContent: 'center', opacity }}>
+    <View
+      style={{
+        position: 'absolute',
+        top: 0,
+        bottom: 0,
+        [direction]: 0,
+        width: EDGE_GUTTER,
+        alignItems: 'center',
+        justifyContent: 'center',
+        transform: [{ scale }],
+      }}
+    >
       <View style={{ width: 220, alignItems: 'center', transform: [{ rotate: direction === 'left' ? '-90deg' : '90deg' }] }}>{content}</View>
     </View>
   );
 }
 
 /**
- * «Cuatro direcciones»: el nombre de cada voto en el borde hacia el que se arrastra. Siempre a la vista (atenuados) y,
- * mientras arrastras, el borde de esa dirección se ilumina con su color, su icono y su nombre (nunca solo el color).
+ * «Cuatro direcciones»: el nombre de cada voto en el borde hacia el que se arrastra. Siempre a la vista (en su color, legibles) y,
+ * mientras arrastras, el borde de esa dirección crece, con su color, su icono y su nombre (nunca solo el color).
  * Decorativo para el lector de pantalla: la tarjeta ya ofrece las acciones.
  */
 export function DirectionEdges({ intent, children }: { intent: DeckAction | null; children: ReactNode }) {

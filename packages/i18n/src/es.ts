@@ -704,6 +704,8 @@ export const es = {
     sources: 'Fuentes conectadas',
 
     settings: 'Ajustes',
+    appearance: 'Apariencia',
+    appearanceValue: { light: 'Claro', dark: 'Oscuro', system: 'Como el sistema' },
     language: 'Idioma',
     languageSystem: 'Idioma del sistema',
     radius: 'Radio para restaurantes y cultura',

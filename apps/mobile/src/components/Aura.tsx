@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Animated, Image, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import GRAIN from '../../assets/grain.png';
-import { motion } from '../theme';
+import { motion, usePalette } from '../theme';
 
 /** Mezcla dos colores hex (#RRGGBB): t = 0 devuelve `a`; t = 1, `b`. */
 export function mixHex(a: string, b: string, t: number): string {
@@ -49,11 +49,13 @@ export function Glow({ color, size, x, y, strength }: { color: string; size: num
 
 function AuraLayer({ color, width }: { color: string; width: number }) {
   const light = mixHex(color, '#FFFFFF', 0.15);
+  // En claro, halo más suave: luz de color, no una mancha (y los rótulos de los bordes de votación siguen en AA).
+  const k = usePalette().auraStrength;
   return (
     <>
-      <Glow color={light} size={width * 1.1} x={width * 0.3} y={width * 0.45} strength={0.035} />
-      <Glow color={color} size={width * 1.2} x={width * 0.85} y={width * 1.05} strength={0.03} />
-      <Glow color={color} size={width * 1.4} x={width * 0.5} y={width * 1.7} strength={0.02} />
+      <Glow color={light} size={width * 1.1} x={width * 0.3} y={width * 0.45} strength={0.035 * k} />
+      <Glow color={color} size={width * 1.2} x={width * 0.85} y={width * 1.05} strength={0.03 * k} />
+      <Glow color={color} size={width * 1.4} x={width * 0.5} y={width * 1.7} strength={0.02 * k} />
     </>
   );
 }

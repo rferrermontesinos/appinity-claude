@@ -13,8 +13,9 @@ import { useUpdateSettings, type SettingsPatch } from '../api/queries';
 import { openSystemSettings, syncPush, type PushState } from '../push';
 import { useSession } from '../state/session';
 import { Body, Button, Card, ErrorCard, Small, Title } from './ui';
-import { radius, spacing, usePalette } from '../theme';
+import { radius, spacing, usePalette, useThemeMode, type ThemeMode } from '../theme';
 
+const THEME_MODES: ThemeMode[] = ['light', 'dark', 'system'];
 const RADIUS_PRESETS = [1, 5, 10, 20, 30, 50];
 const FREQUENCIES: NotificationFrequency[] = ['daily', 'three_per_week', 'weekly', 'off'];
 const MANUAL_AREAS = [
@@ -62,6 +63,8 @@ export function SettingsCard({ settings }: { settings: SettingsDto }) {
   const update = useUpdateSettings();
   const [locationError, setLocationError] = useState<string | null>(null);
   const save = (patch: SettingsPatch) => update.mutate(patch);
+  const themeMode = useThemeMode((s) => s.mode);
+  const setThemeMode = useThemeMode((s) => s.setMode);
 
   async function setLocationFromDevice() {
     setLocationError(null);
@@ -91,6 +94,13 @@ export function SettingsCard({ settings }: { settings: SettingsDto }) {
       <ChipRow>
         <Chip label="Español" selected={settings.locale === 'es'} onPress={() => save({ locale: 'es' })} />
         <Chip label="English" selected={settings.locale === 'en'} onPress={() => save({ locale: 'en' })} />
+      </ChipRow>
+
+      <Small style={{ fontWeight: '700', marginTop: spacing.sm }}>{t('profile.appearance')}</Small>
+      <ChipRow>
+        {THEME_MODES.map((mode) => (
+          <Chip key={mode} label={t(`profile.appearanceValue.${mode}`)} selected={themeMode === mode} onPress={() => setThemeMode(mode)} />
+        ))}
       </ChipRow>
 
       <Small style={{ fontWeight: '700', marginTop: spacing.sm }}>{t('profile.location')}</Small>

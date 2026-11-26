@@ -2,7 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { CATEGORY_META, type Category } from '@appinity/shared';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
-import { radius, spacing, type, usePalette, useThemeMode } from '../theme';
+import { radius, spacing, type, useColorSchemeResolved, usePalette } from '../theme';
 import { Grain, mixHex, onPoster } from './Aura';
 
 /**
@@ -12,7 +12,7 @@ import { Grain, mixHex, onPoster } from './Aura';
  */
 export function useCategoryWorld(category: Category) {
   const c = usePalette();
-  const dark = useThemeMode((s) => s.mode) === 'dark';
+  const dark = useColorSchemeResolved() === 'dark';
   const color = CATEGORY_META[category].color;
   return {
     color,

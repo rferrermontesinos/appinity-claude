@@ -14,7 +14,7 @@ import { initI18n } from '../src/i18n';
 import { setupNotifications, syncPush } from '../src/push';
 import { useSession } from '../src/state/session';
 import { BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold, BricolageGrotesque_800ExtraBold, useFonts } from '@expo-google-fonts/bricolage-grotesque';
-import { fonts, usePalette, useThemeMode } from '../src/theme';
+import { fonts, useColorSchemeResolved, usePalette, useThemeMode } from '../src/theme';
 
 const i18n = initI18n();
 // Cierra la ventana de autenticación al volver del proveedor (necesario en web; inocuo en iOS/Android).
@@ -113,14 +113,18 @@ function SessionGate() {
 export default function RootLayout() {
   const [queryClient] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 30_000 } } }));
   const c = usePalette();
-  const mode = useThemeMode((s) => s.mode);
+  const scheme = useColorSchemeResolved();
+  const hydrateTheme = useThemeMode((s) => s.hydrate);
+  useEffect(() => {
+    void hydrateTheme();
+  }, [hydrateTheme]);
   // Bricolage Grotesque se carga sin bloquear: hasta entonces, los titulares usan la fuente del sistema.
   useFonts({ BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold, BricolageGrotesque_800ExtraBold });
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: c.background }}>
       <I18nextProvider i18n={i18n}>
         <QueryClientProvider client={queryClient}>
-          <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
+          <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
           <SessionGate />
           <Stack
             screenOptions={{

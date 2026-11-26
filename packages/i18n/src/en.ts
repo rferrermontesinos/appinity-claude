@@ -706,6 +706,8 @@ export const en: TranslationResources = {
     sources: 'Connected sources',
 
     settings: 'Settings',
+    appearance: 'Appearance',
+    appearanceValue: { light: 'Light', dark: 'Dark', system: 'Match system' },
     language: 'Language',
     languageSystem: 'System language',
     radius: 'Radius for restaurants and culture',

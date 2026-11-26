@@ -26,6 +26,18 @@ ejecutados aquí) · **Aceptado en dispositivo** (lo confirma el usuario en su t
 
 ---
 
+## Entrega 2026-11-26 · Tema claro predeterminado
+
+- **Implementado**: tema claro por defecto; Ajustes → Apariencia (Claro, Oscuro, Como el sistema) guardado en el
+  teléfono; tokens `elevation`, `barShadow`, `auraStrength` y `edgeInk`; pantalla de arranque clara con variante
+  oscura; rótulos de los bordes de votación a color pleno (AA). Ver [design/tema-claro](design/tema-claro/README.md).
+- **Comprobado automáticamente**: `pnpm --filter @appinity/mobile typecheck`, `eslint` y `prettier --check` sin
+  errores; contraste de todos los pares de la paleta ≥ 4,5:1 en ambos temas (script de cálculo) y de los rótulos de
+  votación sobre la captura real. Capturas antes/después en la vista web (390×844) con la demo, contra PostgreSQL 16 +
+  PostGIS y Redis locales en la nube (sin Docker). La suite completa la ejecuta GitHub al empujar la rama.
+- **Pendiente**: aceptación en el teléfono (sobre todo la pantalla de arranque, que solo cambia en un build nativo, no
+  en Expo Go).
+
 ## Entrega 2026-11-22 · B10: auditoría final
 
 Rama `claude/beta-b10-auditoria`, PR contra `claude/beta-b9-operacion` (B9). Lo que falta para invitar a la primera ola,
