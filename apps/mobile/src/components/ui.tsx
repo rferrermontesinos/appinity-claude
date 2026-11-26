@@ -51,7 +51,18 @@ export function Card({ children, style }: { children: ReactNode; style?: StylePr
   const c = usePalette();
   return (
     <View
-      style={[{ backgroundColor: c.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: c.hairline, padding: spacing.lg, gap: spacing.sm }, style]}
+      style={[
+        {
+          backgroundColor: c.surface,
+          borderRadius: radius.lg,
+          borderWidth: 1,
+          borderColor: c.hairline,
+          padding: spacing.lg,
+          gap: spacing.sm,
+          ...(c.elevation ? { boxShadow: c.elevation } : null),
+        },
+        style,
+      ]}
     >
       {children}
     </View>

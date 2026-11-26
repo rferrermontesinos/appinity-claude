@@ -1,25 +1,32 @@
-import { Platform } from 'react-native';
+import { Platform, useColorScheme } from 'react-native';
 import { create } from 'zustand';
+import { secureStorage } from './state/secure-storage';
 
 /**
  * Tokens de la dirección «Aura» (docs/design/aura/, decisions.md 2026-10-26).
  * - Chispa (coral): solo la acción principal. Lima: solo afinidad y almas gemelas. Ámbar: NEW y datos de ejemplo.
  * - Los 8 colores de categoría tiñen el halo y las portadas generadas; nunca son el fondo de un texto.
  * - Cada relleno va con su texto (`on*`); todos los pares superan AA (4,5:1) en ambos temas (contraste calculado).
- * - Oscuro por defecto; el claro queda disponible con `useThemeMode`.
+ * - Claro por defecto (decisión del titular, 2026-11-26: las apps sociales de referencia son claras, más amables); el
+ *   oscuro y «Como el sistema» se eligen en Ajustes → Apariencia y se guardan en el teléfono.
+ * - Profundidad en claro: sombra suave teñida de cálido (`elevation`); en oscuro, tono de superficie sin sombra.
  * Las claves antiguas (accent, textMuted, surfaceAlt…) se conservan como alias para no romper pantallas.
  */
 const light = {
-  background: '#F6F4F1',
+  /** Blanco roto cálido (no #FFF puro): luminoso como las apps de referencia, sin deslumbrar. */
+  background: '#FAF8F5',
   surface: '#FFFFFF',
   surfaceRaised: '#FFFFFF',
-  surfaceAlt: '#EFEBE6',
+  surfaceAlt: '#F2EEE9',
   onSurfaceAlt: '#4A443E',
   text: '#1D1A17',
   textMuted: '#5F574F',
-  textSubtle: '#7C7268',
-  border: '#E1DAD2',
-  hairline: 'rgba(29,26,23,0.08)',
+  textSubtle: '#776D63',
+  border: '#E4DED7',
+  hairline: 'rgba(29,26,23,0.07)',
+  /** Sombra de tarjetas y barra (CSS `boxShadow`), teñida hacia el fondo; '' = sin sombra. */
+  elevation: '0px 1px 2px rgba(60,40,20,0.05), 0px 6px 16px -8px rgba(60,40,20,0.12)',
+  barShadow: '0px -8px 24px -16px rgba(60,40,20,0.22)',
   scrim: 'rgba(29,26,23,0.48)',
   /** Chispa: relleno de la acción principal. */
   accent: '#FF5E4D',
@@ -45,7 +52,11 @@ const light = {
   negative: '#C2362B',
   neutral: '#5F574F',
   /** Fondo del halo: el color de la categoría se mezcla con esto. */
-  auraBase: '#F6F4F1',
+  auraBase: '#FAF8F5',
+  /** Intensidad del halo de Aura (multiplica la opacidad de los brillos). */
+  auraStrength: 0.4,
+  /** Rótulos de los bordes de votación (sobre el halo): cuánto se acercan al color del texto. */
+  edgeInk: 0.3,
 };
 
 const dark: typeof light = {
@@ -59,6 +70,8 @@ const dark: typeof light = {
   textSubtle: '#938F88',
   border: '#34323A',
   hairline: 'rgba(255,255,255,0.08)',
+  elevation: '',
+  barShadow: '0px -12px 32px -18px rgba(0,0,0,0.7)',
   scrim: 'rgba(5,5,6,0.66)',
   accent: '#FF5E4D',
   accentText: '#1A0806',
@@ -80,20 +93,45 @@ const dark: typeof light = {
   negative: '#FF7A70',
   neutral: '#B4B0AA',
   auraBase: '#0C0C0E',
+  auraStrength: 1,
+  edgeInk: 0,
 };
 
 export type Palette = typeof light;
-export type ThemeMode = 'dark' | 'light';
+/** Preferencia de la persona: claro (predeterminado), oscuro o el del sistema. */
+export type ThemeMode = 'light' | 'dark' | 'system';
+export type ColorScheme = 'light' | 'dark';
 
-/** Tema elegido (oscuro por defecto). */
-export const useThemeMode = create<{ mode: ThemeMode; setMode: (mode: ThemeMode) => void }>((set) => ({
-  mode: 'dark',
-  setMode: (mode) => set({ mode }),
+const THEME_KEY = 'appinity.theme';
+const isThemeMode = (v: unknown): v is ThemeMode => v === 'light' || v === 'dark' || v === 'system';
+
+/** Tema elegido (claro por defecto). Se guarda en el teléfono, no en la cuenta: es una preferencia del dispositivo. */
+export const useThemeMode = create<{ mode: ThemeMode; setMode: (mode: ThemeMode) => void; hydrate: () => Promise<void> }>((set) => ({
+  mode: 'light',
+  setMode: (mode) => {
+    set({ mode });
+    void secureStorage.set(THEME_KEY, mode).catch(() => undefined);
+  },
+  hydrate: async () => {
+    const saved = await secureStorage.get(THEME_KEY).catch(() => null);
+    if (isThemeMode(saved)) set({ mode: saved });
+  },
 }));
 
-export function usePalette(): Palette {
-  return useThemeMode((s) => s.mode) === 'light' ? light : dark;
+/** Esquema efectivo: resuelve «Como el sistema» con el ajuste del teléfono. */
+export function useColorSchemeResolved(): ColorScheme {
+  const mode = useThemeMode((s) => s.mode);
+  const system = useColorScheme();
+  if (mode === 'system') return system === 'dark' ? 'dark' : 'light';
+  return mode;
 }
+
+export function usePalette(): Palette {
+  return useColorSchemeResolved() === 'dark' ? dark : light;
+}
+
+/** Solo para los tests de contraste. */
+export const palettes = { light, dark };
 
 /** Texto e iconos sobre imagen: siempre claros, sobre el velo oscuro de la tarjeta (contraste garantizado). */
 export const onImage = {

@@ -43,7 +43,7 @@ export default function TabsLayout() {
           paddingTop: 8,
           paddingBottom: insets.bottom + 10,
           elevation: 0,
-          boxShadow: '0px -12px 32px -18px rgba(0,0,0,0.7)',
+          boxShadow: c.barShadow,
         },
         tabBarActiveTintColor: c.text,
         tabBarInactiveTintColor: c.textSubtle,

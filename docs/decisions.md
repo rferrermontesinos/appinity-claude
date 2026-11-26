@@ -1619,3 +1619,16 @@ Cierra los hallazgos bajos y medios que quedaban de la auditoría del 2026-11-22
 - **`/health` en modo desarrollo** sigue enseñando detalles técnicos a través del túnel (versión de PostGIS, latido del
   worker): la API no distingue una petición del túnel de una local y no hay nada personal. En producción ya se ocultan
   (B2).
+
+## 2026-11-26 · Tema claro predeterminado
+
+- **Claro por defecto** (petición del titular: las apps sociales de referencia son claras y más amables). Matiz
+  registrado: las apps de contenido a pantalla completa (TikTok, Spotify) son oscuras; APPINITY es de conocer personas,
+  así que encaja el claro. Detalle, tabla de rasgos y capturas en [design/tema-claro](design/tema-claro/README.md).
+- **El oscuro se queda como opción**, junto a «Como el sistema», en Ajustes → Apariencia. Es una preferencia del
+  teléfono (se guarda en él), no de la cuenta: no toca la API ni la base de datos.
+- **Misma identidad**: coral para la acción principal, verde de afinidad, Bricolage, la tarjeta «Cuatro direcciones»
+  sobre su imagen y los carteles oscuros (almas gemelas, perfil, categorías), que hacen de «imagen» dentro de la página.
+- **Arreglo de accesibilidad** de paso: los rótulos de los bordes de votación iban al 55 % de opacidad y no llegaban a
+  AA en ningún tema; ahora van a color pleno y el borde activo crece un 15 %.
+- No es una función nueva (alcance congelado): es un cambio visual que pide el titular.
